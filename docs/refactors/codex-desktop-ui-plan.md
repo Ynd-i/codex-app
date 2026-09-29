@@ -18,15 +18,15 @@ Do not copy whole screens or add another client, transport, or session store.
 
 ## Steps
 
-| Step                             | Status                     | Acceptance                                                                                                                                                                               |
-| -------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0. Upstream baseline             | Complete for local startup | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                                  |
-| 1. Window and sidebar appearance | In progress                | Match window frame, navigation rail, sidebar surface, and dark palette; verify window controls, resizing, sidebar toggle, menus, and theme changes. Keep workspace navigation semantics. |
-| 1a. Upstream integration check   | Awaiting a newer revision  | Review custom patch ownership. Rehearse a real merge when remote main advances beyond `53ee9cd`.                                                                                         |
-| 2. Chat navigation               | Pending                    | Individual chat rows retain host, agent, and workspace identities. Verify archive, attention, pinning, and sibling-chat isolation.                                                       |
-| 3. Transcript and composer       | Pending                    | Separate transcript and composer patches; verify streaming, stop, drafts, attachments, approvals, model selection, and reasoning controls.                                               |
-| 4. Supporting panels             | Pending                    | Adapt Diff, files, terminal, and settings separately using additional reference screenshots.                                                                                             |
-| 5. Custom distribution           | Pending                    | Independent package identity and update source; validate packaged launch and updates before distribution.                                                                                |
+| Step                             | Status                               | Acceptance                                                                                                                                                                   |
+| -------------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0. Upstream baseline             | Complete for local startup           | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                      |
+| 1. Window and sidebar appearance | Complete for local macOS development | Desktop shell and dark palette implemented; native navigation, sidebar toggle, menus, theme changes, window resize/fullscreen/reactivation checked. Scoped visual QA passed. |
+| 1a. Upstream integration check   | Patch reviewed; merge deferred       | Custom changes are confined to client presentation. Remote main was still `53ee9cd`; a real merge rehearsal awaits a later upstream revision.                                |
+| 2. Chat navigation               | Pending                              | Individual chat rows retain host, agent, and workspace identities. Verify archive, attention, pinning, and sibling-chat isolation.                                           |
+| 3. Transcript and composer       | Pending                              | Separate transcript and composer patches; verify streaming, stop, drafts, attachments, approvals, model selection, and reasoning controls.                                   |
+| 4. Supporting panels             | Pending                              | Adapt Diff, files, terminal, and settings separately using additional reference screenshots.                                                                                 |
+| 5. Custom distribution           | Pending                              | Independent package identity and update source; validate packaged launch and updates before distribution.                                                                    |
 
 Each slice leaves a runnable app and a small independently revertible commit.
 Update this table and its evidence before moving to the next slice. Local startup
@@ -58,6 +58,43 @@ Remote daemon upgrades retain Paseo's existing protocol and feature checks.
   or remote pairing was exercised.
 - Remote `main` still resolved to `53ee9cd` when checked. No newer revision was
   available for the first merge rehearsal.
+
+## Phase 1 evidence — 2026-09-30
+
+[Visual QA and interaction evidence](../qa-evidence/codex-desktop/design-qa.md)
+records the comparison scope, screenshots, fixes, and remaining acceptance gaps.
+The development window remains available as **Paseo Debug**, currently served by
+Metro on `http://localhost:8083` with daemon `127.0.0.1:6768`.
+
+The first slice adds the 44px titlebar, 50px navigation rail, rounded content
+frame, 278px default sidebar, and a macOS default-dark palette. It retains
+Paseo branding, the existing workspace list, provider selection, menus, and user
+appearance settings. Narrow settings windows give the rail's width back to the
+settings split. Light and other contributed/built-in palettes remain upstream.
+
+Validation: root `npm run typecheck`, `npm run lint`, and formatting passed;
+2 focused Vitest files passed (7 tests). Commit hooks run formatting, lint, and
+workspace typechecks again. The renderer remains a development build; its expected
+Electron CSP warning is not packaged-app acceptance. Native window resize was
+verified; sidebar width clamping is covered by the existing layout tests, while
+sidebar drag persistence has not been independently accepted by automation.
+
+Custom patch ownership:
+
+- `.electron.*` shell and theme-registration modules own the new presentation.
+- Root layout owns composition, corner clearance, focus-mode visibility, and the
+  existing native window-color bridge; sidebar owns its header/footer and width.
+- Panel state changes only the macOS initial width; saved widths are not migrated.
+- `packages/server`, `packages/protocol`, `packages/client`, and the Electron main
+  process remain unchanged. No dependency or transport was added.
+
+Local commits: `bcb2c6a` records the baseline and plan; the following
+`feat(desktop): add codex-style macos shell` commit contains the first UI slice
+and its evidence. No remote push or packaged distribution was performed.
+
+Next: phase 2 chat navigation. Preserve agent/workspace/host identities and test
+archive, attention, pinning, and sibling isolation before changing row ownership.
+The forward control and richer sidebar header actions belong to that slice.
 
 ## Development and validation
 

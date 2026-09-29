@@ -16,6 +16,7 @@ import { scheduleOnRN } from "react-native-worklets";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { TitlebarDragRegion } from "@/components/desktop/titlebar-drag-region";
+import { desktopShellInset, usesDesktopShell } from "@/components/desktop/desktop-shell";
 import { resolveDesktopSidebarWidth } from "@/components/desktop-sidebar-layout";
 import {
   SIDEBAR_RESIZE_ACTIVATION_OFFSET,
@@ -489,6 +490,8 @@ function SidebarFooter({
 }) {
   const newAgentKeys = useShortcutKeys("new-agent");
   const settingsKeys = useShortcutKeys("toggle-settings");
+  const isCompact = useIsCompactFormFactor();
+  const hasNavigationRail = usesDesktopShell && !isCompact;
 
   return (
     <View style={styles.sidebarFooter}>
@@ -513,15 +516,19 @@ function SidebarFooter({
           theme={theme}
         />
         <SidebarUsageButton theme={theme} />
-        <SidebarHelpMenu />
-        <FooterIconButton
-          onPress={handleSettings}
-          testID="sidebar-settings"
-          label={labels.settings}
-          icon={Settings}
-          shortcutKeys={settingsKeys}
-          theme={theme}
-        />
+        {!hasNavigationRail ? (
+          <>
+            <SidebarHelpMenu />
+            <FooterIconButton
+              onPress={handleSettings}
+              testID="sidebar-settings"
+              label={labels.settings}
+              icon={Settings}
+              shortcutKeys={settingsKeys}
+              theme={theme}
+            />
+          </>
+        ) : null}
       </View>
     </View>
   );
@@ -670,7 +677,8 @@ function DesktopSidebar({
   const hasActiveHostFilter = useSidebarViewStore((state) => state.hostFilters.length > 0);
   const sidebarWidth = usePanelStore((state) => state.sidebarWidth);
   const setSidebarWidth = usePanelStore((state) => state.setSidebarWidth);
-  const { width: viewportWidth } = useWindowDimensions();
+  const { width: windowWidth } = useWindowDimensions();
+  const viewportWidth = windowWidth - desktopShellInset;
   const visibleSidebarWidth = resolveDesktopSidebarWidth({
     requestedWidth: sidebarWidth,
     viewportWidth,
@@ -755,7 +763,12 @@ function DesktopSidebar({
     >
       <View style={desktopSidebarBorderStyle}>
         <View style={styles.sidebarDragArea}>
-          {ownsTopLeft || DEV_BUILD_LABEL ? (
+          {usesDesktopShell ? (
+            <View style={styles.desktopBrandRow}>
+              <Text style={styles.desktopBrandLabel}>Paseo</Text>
+            </View>
+          ) : null}
+          {!usesDesktopShell && (ownsTopLeft || DEV_BUILD_LABEL) ? (
             <View style={styles.desktopChromeRow}>
               <TitlebarDragRegion />
               {DEV_BUILD_LABEL ? (
@@ -772,9 +785,8 @@ function DesktopSidebar({
                 </View>
               ) : null}
             </View>
-          ) : (
-            <TitlebarDragRegion />
-          )}
+          ) : null}
+          {!usesDesktopShell && !ownsTopLeft && !DEV_BUILD_LABEL ? <TitlebarDragRegion /> : null}
           <SidebarNavRows style={sidebarHeaderGroupStyle} />
         </View>
 
@@ -925,6 +937,16 @@ const styles = StyleSheet.create((theme) => ({
   },
   sidebarDragArea: {
     position: "relative",
+  },
+  desktopBrandRow: {
+    height: 52,
+    paddingHorizontal: theme.spacing[4],
+    justifyContent: "center",
+  },
+  desktopBrandLabel: {
+    color: theme.colors.foreground,
+    fontSize: theme.fontSize.xl,
+    fontWeight: theme.fontWeight.semibold,
   },
   desktopChromeRow: {
     position: "relative",

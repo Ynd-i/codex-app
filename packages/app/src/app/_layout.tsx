@@ -18,7 +18,7 @@ import {
 import { AppState, useWindowDimensions, View } from "react-native";
 import { GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
-import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { AppearanceProvider } from "@/appearance/provider";
 import { CommandCenter } from "@/command-center/command-center";
 import { CommandCenterRootActions } from "@/command-center/root-registration";
@@ -36,6 +36,11 @@ import { AppearanceStyleBoundary } from "@/components/appearance-style-boundary"
 import { LeftSidebar } from "@/components/left-sidebar";
 import { WindowSidebarMenuToggle } from "@/components/headers/menu-header";
 import { DesktopWindowControls } from "@/components/desktop/window-controls";
+import {
+  DesktopShell,
+  desktopShellInset,
+  usesDesktopShell,
+} from "@/components/desktop/desktop-shell";
 import { SidebarModelProvider } from "@/components/sidebar/sidebar-model";
 import { WorkspacePinShortcutHandler } from "@/components/workspace-pin-shortcut-handler";
 import { WorkspaceRenameHost } from "@/components/workspace-rename-host";
@@ -112,7 +117,7 @@ import {
 import { getDaemonStartService } from "@/runtime/daemon-start-service";
 import { usePanelStore } from "@/stores/panel-store";
 import { flushDraftPersistStorage } from "@/stores/draft-store";
-import { getNextThemePreference } from "@/styles/theme";
+import { getNextThemePreference, type Theme } from "@/styles/theme";
 import { useSessionStore } from "@/stores/session-store";
 import { installWebScrollbarStyles } from "@/styles/install-web-scrollbar-styles";
 import type { HostProfile } from "@/types/host-connection";
@@ -526,7 +531,7 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
     canShare: canDesktopAppSidebarShare({
       contentMinimumWidth: appContentMinimumWidth,
       requestedSidebarWidth: sidebarWidth,
-      viewportWidth,
+      viewportWidth: viewportWidth - desktopShellInset,
     }),
   });
   const hasTopLeftWindowControls = useHasWindowChromeObstruction("top-left");
@@ -576,7 +581,9 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
     <View style={layoutStyles.surfaceFill}>
       {workspaceChrome}
       <AppearanceStyleBoundary>
-        {!isCompactLayout && appChromeLayout.sidebarToggleOwner === "window" ? (
+        {!usesDesktopShell &&
+        !isCompactLayout &&
+        appChromeLayout.sidebarToggleOwner === "window" ? (
           <WindowChromeRegion corners="top-left">
             <WindowChromeSafeArea
               placement="inline"
@@ -622,7 +629,13 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
     surface
   );
 
-  return <CommandCenterProvider>{content}</CommandCenterProvider>;
+  return (
+    <CommandCenterProvider>
+      <DesktopShell chromeEnabled={chromeEnabled && !isWorkspaceFocusModeEnabled}>
+        {content}
+      </DesktopShell>
+    </CommandCenterProvider>
+  );
 }
 
 function SidebarChrome({
@@ -668,7 +681,7 @@ function ProvidersWrapper({ children }: { children: ReactNode }) {
   return (
     <AppearanceProvider>
       <VoiceProvider>
-        <DesktopWindowControlsSync />
+        <ThemedDesktopWindowControlsSync uniProps={windowChromeThemeProps} />
         <OfferLinkListener />
         <HostSessionManager />
         <FaviconStatusSync />
@@ -678,23 +691,26 @@ function ProvidersWrapper({ children }: { children: ReactNode }) {
   );
 }
 
-function DesktopWindowControlsSync() {
+function DesktopWindowControlsSync({ backgroundColor }: { backgroundColor: string }) {
   const { isLoading } = useAppSettings();
-  const { theme } = useUnistyles();
-  const surface0 = theme.colors.surface0;
 
   useEffect(() => {
     if (isLoading || isNative) return;
     void updateDesktopWindowChrome({
-      backgroundColor: surface0,
-      trafficLightOffsetY: -4,
+      backgroundColor,
+      trafficLightOffsetY: usesDesktopShell ? 2 : -4,
     }).catch((error) => {
       console.warn("[DesktopWindow] Failed to update window controls overlay", error);
     });
-  }, [isLoading, surface0]);
+  }, [isLoading, backgroundColor]);
 
   return null;
 }
+
+const ThemedDesktopWindowControlsSync = withUnistyles(DesktopWindowControlsSync);
+const windowChromeThemeProps = (theme: Theme) => ({
+  backgroundColor: usesDesktopShell ? theme.colors.surface1 : theme.colors.surface0,
+});
 
 function OfferLinkListener() {
   const router = useRouter();
