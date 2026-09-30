@@ -37,7 +37,12 @@ test("desktop new chat retains project selection and creates a chat", async ({
     await page.emulateMedia({ colorScheme: "dark" });
     await openAgentRoute(page, { workspaceId: workspace.workspaceId, agentId: existing.id });
     await expect(page.getByTestId("desktop-chat-title")).toHaveText("Existing chat");
-    await page.getByText("New chat", { exact: true }).filter({ visible: true }).first().click();
+    const workspaceRow = page.getByTestId(
+      `sidebar-workspace-row-${getServerId()}:${workspace.workspaceId}`,
+    );
+    await expect(workspaceRow).toBeVisible();
+    await expect(page.getByTestId("desktop-shell-rail")).toHaveCount(0);
+    await page.getByTestId("sidebar-global-new-workspace").click();
     await expect(page.getByTestId("desktop-new-chat-hero")).toContainText(
       workspace.projectDisplayName,
     );
@@ -59,7 +64,7 @@ test("desktop new chat retains project selection and creates a chat", async ({
     await page.setViewportSize({ width: 1352, height: 782 });
     await expect(page.getByTestId("desktop-new-chat-hero")).toBeVisible();
     await expect(composerLocator(page)).toHaveValue("Keep this draft when resizing.");
-    await page.getByTestId(`desktop-chat-${getServerId()}:${existing.id}`).first().click();
+    await workspaceRow.click();
     await expect(page.getByTestId("desktop-chat-title")).toHaveText("Existing chat");
     await page.getByTestId("desktop-shell-back").click();
     await expect(page.getByTestId("desktop-new-chat-hero")).toBeVisible();
@@ -255,8 +260,14 @@ test("desktop chat navigation preserves sibling drafts and scopes pinning", asyn
     await page.emulateMedia({ colorScheme: "dark" });
     await openAgentRoute(page, fixture);
     const title = page.getByTestId("desktop-chat-title");
-    const firstRow = page.getByTestId(`desktop-chat-${serverId}:${fixture.agentId}`).first();
-    const secondRow = page.getByTestId(`desktop-chat-${serverId}:${second.id}`).first();
+    const firstRow = page
+      .getByTestId(`workspace-tab-agent_${fixture.agentId}`)
+      .filter({ visible: true })
+      .first();
+    const secondRow = page
+      .getByTestId(`workspace-tab-agent_${second.id}`)
+      .filter({ visible: true })
+      .first();
     await expect(title).toHaveText("First chat");
     await expect(page.getByTestId("desktop-shell-back")).toBeDisabled();
     await composerLocator(page).fill("Draft stays with first chat");
@@ -293,8 +304,7 @@ test("desktop chat navigation preserves sibling drafts and scopes pinning", asyn
     expect((await fixture.client.fetchAgent({ agentId: fixture.agentId }))?.agent.title).toBe(
       "First chat",
     );
-    await secondRow.hover();
-    await page.getByTestId(`desktop-chat-menu-${serverId}:${second.id}`).first().click();
+    await toolbarMenu.click();
     await page.getByText("Pin to top", { exact: true }).click();
     await expect
       .poll(
@@ -307,7 +317,8 @@ test("desktop chat navigation preserves sibling drafts and scopes pinning", asyn
     expect((await fixture.client.fetchAgent({ agentId: fixture.agentId }))?.agent.labels).toEqual(
       {},
     );
-    await page.keyboard.press("Meta+Shift+P");
+    await toolbarMenu.click();
+    await page.getByText("Unpin", { exact: true }).click();
     await expect
       .poll(
         async () =>
@@ -316,6 +327,14 @@ test("desktop chat navigation preserves sibling drafts and scopes pinning", asyn
           ],
       )
       .toBe("");
+    // The default sidebar keeps the workspace pin shortcut; it must not pin a chat.
+    await page.keyboard.press("Meta+Shift+P");
+    await expect(page.getByTestId("sidebar-pinned-section-header")).toBeVisible();
+    expect(
+      (await fixture.client.fetchAgent({ agentId: second.id }))?.agent.labels["codex-ui.pinned-at"],
+    ).toBe("");
+    await page.keyboard.press("Meta+Shift+P");
+    await expect(page.getByTestId("sidebar-pinned-section-header")).toHaveCount(0);
     await firstRow.click();
     await expect(title).toHaveText("First chat");
     await expect(composerLocator(page)).toHaveValue("Draft stays with first chat");

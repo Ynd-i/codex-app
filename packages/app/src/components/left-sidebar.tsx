@@ -17,10 +17,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { TitlebarDragRegion } from "@/components/desktop/titlebar-drag-region";
 import { desktopShellInset, usesDesktopShell } from "@/components/desktop/desktop-shell";
-import {
-  DesktopChatSidebar,
-  DesktopChatSidebarHeader,
-} from "@/components/desktop/desktop-chat-sidebar";
 import { resolveDesktopSidebarWidth } from "@/components/desktop-sidebar-layout";
 import {
   SIDEBAR_RESIZE_ACTIVATION_OFFSET,
@@ -494,8 +490,6 @@ function SidebarFooter({
 }) {
   const newAgentKeys = useShortcutKeys("new-agent");
   const settingsKeys = useShortcutKeys("toggle-settings");
-  const isCompact = useIsCompactFormFactor();
-  const hasNavigationRail = usesDesktopShell && !isCompact;
 
   return (
     <View style={styles.sidebarFooter}>
@@ -520,19 +514,15 @@ function SidebarFooter({
           theme={theme}
         />
         <SidebarUsageButton theme={theme} />
-        {!hasNavigationRail ? (
-          <>
-            <SidebarHelpMenu />
-            <FooterIconButton
-              onPress={handleSettings}
-              testID="sidebar-settings"
-              label={labels.settings}
-              icon={Settings}
-              shortcutKeys={settingsKeys}
-              theme={theme}
-            />
-          </>
-        ) : null}
+        <SidebarHelpMenu />
+        <FooterIconButton
+          onPress={handleSettings}
+          testID="sidebar-settings"
+          label={labels.settings}
+          icon={Settings}
+          shortcutKeys={settingsKeys}
+          theme={theme}
+        />
       </View>
     </View>
   );
@@ -755,11 +745,7 @@ function DesktopSidebar({
     [insetsTop],
   );
   const sidebarHeaderGroupStyle = useMemo(
-    () => [
-      styles.sidebarHeaderGroup,
-      ownsTopLeft ? styles.sidebarHeaderGroupBelowChrome : null,
-      usesDesktopShell ? styles.desktopChatNav : null,
-    ],
+    () => [styles.sidebarHeaderGroup, ownsTopLeft ? styles.sidebarHeaderGroupBelowChrome : null],
     [ownsTopLeft],
   );
   return (
@@ -771,7 +757,6 @@ function DesktopSidebar({
     >
       <View style={desktopSidebarBorderStyle}>
         <View style={styles.sidebarDragArea}>
-          {usesDesktopShell ? <DesktopChatSidebarHeader /> : null}
           {!usesDesktopShell && (ownsTopLeft || DEV_BUILD_LABEL) ? (
             <View style={styles.desktopChromeRow}>
               <TitlebarDragRegion />
@@ -791,33 +776,31 @@ function DesktopSidebar({
             </View>
           ) : null}
           {!usesDesktopShell && !ownsTopLeft && !DEV_BUILD_LABEL ? <TitlebarDragRegion /> : null}
-          <SidebarNavRows style={sidebarHeaderGroupStyle} chatMode={usesDesktopShell} />
+          <SidebarNavRows style={sidebarHeaderGroupStyle} />
         </View>
 
-        {usesDesktopShell ? <DesktopChatSidebar onAddProject={handleOpenProject} /> : null}
-        {!usesDesktopShell &&
-          (isInitialLoad && !hasActiveHostFilter ? (
-            <SidebarAgentListSkeleton />
-          ) : (
-            <SidebarWorkspaceList
-              collapsedProjectKeys={collapsedProjectKeys}
-              onToggleProjectCollapsed={toggleProjectCollapsed}
-              shortcutIndexByWorkspaceKey={shortcutIndexByWorkspaceKey}
-              groupMode={groupMode}
-              workspaceGroups={workspaceGroups}
-              projectIconTargets={projectIconTargets}
-              pinnedGroups={pinnedGroups}
-              projects={projects}
-              hasProjectsBeforeFilter={hasProjectsBeforeFilter}
-              hasActiveProjectFilter={hasActiveProjectFilter}
-              workspaceEntriesByKey={workspaceEntriesByKey}
-              isRefreshing={isManualRefresh && isRevalidating}
-              onRefresh={handleRefresh}
-              onAddProject={handleOpenProject}
-              onImportSession={handleImportSession}
-              listHeaderComponent={workspacesSectionHeaderElement}
-            />
-          ))}
+        {isInitialLoad && !hasActiveHostFilter ? (
+          <SidebarAgentListSkeleton />
+        ) : (
+          <SidebarWorkspaceList
+            collapsedProjectKeys={collapsedProjectKeys}
+            onToggleProjectCollapsed={toggleProjectCollapsed}
+            shortcutIndexByWorkspaceKey={shortcutIndexByWorkspaceKey}
+            groupMode={groupMode}
+            workspaceGroups={workspaceGroups}
+            projectIconTargets={projectIconTargets}
+            pinnedGroups={pinnedGroups}
+            projects={projects}
+            hasProjectsBeforeFilter={hasProjectsBeforeFilter}
+            hasActiveProjectFilter={hasActiveProjectFilter}
+            workspaceEntriesByKey={workspaceEntriesByKey}
+            isRefreshing={isManualRefresh && isRevalidating}
+            onRefresh={handleRefresh}
+            onAddProject={handleOpenProject}
+            onImportSession={handleImportSession}
+            listHeaderComponent={workspacesSectionHeaderElement}
+          />
+        )}
 
         <SidebarCalloutSlot />
 
@@ -944,7 +927,6 @@ const styles = StyleSheet.create((theme) => ({
   sidebarDragArea: {
     position: "relative",
   },
-  desktopChatNav: { borderBottomWidth: 0, paddingBottom: 4 },
   desktopChromeRow: {
     position: "relative",
     height: HEADER_INNER_HEIGHT,

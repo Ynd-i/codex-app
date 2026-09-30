@@ -8,14 +8,15 @@ distribution and full migration acceptance remain pending; see the
 
 ### Added
 
-- Added a Codex-style macOS titlebar, navigation rail, rounded content frame, and dark palette while retaining the existing themes and providers.
-- Added individual chats in Recent, Pinned, and project groups, with shared rename, archive, pinning, and unread actions in the sidebar and current-chat titlebar.
+- Added a Codex-style macOS titlebar, rounded content frame, and dark palette while retaining the existing themes and providers.
+- Added rename, archive, pinning, and unread actions in the current-chat titlebar.
 - Added Back/Forward chat navigation and the current-chat title, preserving independent drafts when switching between sibling chats.
 - Added a combined model and reasoning popover on macOS, with keyboard and pointer control, provider-defined defaults, and the existing searchable model browser.
 - Added a centered, project-aware new-chat welcome on macOS, with project controls above the bottom composer and drafts retained across compact layouts.
 
 ### Changed
 
+- Restored Paseo's default workspace sidebar, navigation and footer; deferred the custom chat sidebar and navigation rail at the user's request. New sidebar preferences use the default 320px width, while saved widths remain unchanged.
 - Aligned the macOS chat column and composer frame with the reference: a narrower default column, larger corners, tighter padding, and a neutral stop control. Saved content-width preferences still take priority.
 - Moved the macOS composer mode beside attachments and aligned model/reasoning controls to the right, retaining provider-backed selections.
 - Updated macOS selector surfaces to the rounded, raised style used by the reference.

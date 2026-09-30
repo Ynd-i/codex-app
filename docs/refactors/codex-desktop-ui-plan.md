@@ -7,6 +7,14 @@ using the original dark-theme screenshots and the user's `context-images/`. Keep
 providers and remote connections. Model names, modes, permissions, and reasoning
 controls come from the selected host and provider.
 
+**Sidebar scope change — 2026-09-30:** the user does not want the new sidebar
+design. Keep Paseo's default workspace sidebar for now, including its navigation
+rows, project/workspace groups, footer, resizing and workspace pin shortcut.
+The custom chat-row sidebar and navigation rail are outside the current migration
+scope. Restore the default 320px width for new preferences and retain saved
+widths. Earlier sidebar screenshots and phase-2 results below are historical;
+they do not override this decision. Other desktop migration work continues.
+
 The upstream baseline is `getpaseo/paseo` commit `53ee9cd` on `main`. Work lives on
 `codex/desktop-ui`. This document owns the steps, decisions, progress, and evidence.
 The root [changelog](../../CHANGELOG.md) records custom work under Unreleased;
@@ -60,15 +68,15 @@ scope; it does not remove runtime code or add new provider integrations.
 
 ## Steps
 
-| Step                             | Status                                                   | Acceptance                                                                                                                                                                                             |
-| -------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 0. Upstream baseline             | Complete for local startup                               | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                                                |
-| 1. Window and sidebar appearance | Complete for local macOS development                     | Desktop shell and dark palette implemented; native navigation, sidebar toggle, menus, theme changes, window resize/fullscreen/reactivation checked. Scoped visual QA passed.                           |
-| 1a. Upstream integration check   | Merged and rebuilt                                       | Merge `309f2c4` includes upstream `4e9a458` (release notes plus a host-startup race fix). No conflicts; server/client rebuild and 11 targeted startup tests passed.                                    |
-| 2. Chat navigation               | Core interactions verified; chrome consolidation pending | Chat rows, scoped sidebar/titlebar actions, draft isolation and Back/Forward checked in isolated tests and native development. Supporting-panel chrome consolidation remains.                          |
-| 3. Transcript and composer       | Core composer implemented; transcript pending            | Column, frame, mode/model controls and reasoning popover implemented; isolated provider-control, attachment, send/stop checks pass. Attachment menu, transcript matching and native comparison remain. |
-| 4. Supporting panels             | Pending                                                  | Adapt Diff, files, terminal, and settings separately using additional reference screenshots.                                                                                                           |
-| 5. Custom distribution           | Pending                                                  | Independent package identity and update source; validate packaged launch and updates before distribution.                                                                                              |
+| Step                             | Status                                                 | Acceptance                                                                                                                                                                                             |
+| -------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0. Upstream baseline             | Complete for local startup                             | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                                                |
+| 1. Window and sidebar appearance | Complete for local macOS development                   | Desktop shell and dark palette implemented; native navigation, sidebar toggle, menus, theme changes, window resize/fullscreen/reactivation checked. Scoped visual QA passed.                           |
+| 1a. Upstream integration check   | Merged and rebuilt                                     | Merge `309f2c4` includes upstream `4e9a458` (release notes plus a host-startup race fix). No conflicts; server/client rebuild and 11 targeted startup tests passed.                                    |
+| 2. Chat navigation               | Default sidebar retained; chrome consolidation pending | Keep upstream workspace navigation. Current-chat titlebar actions, draft isolation and Back/Forward remain in scope. Custom sidebar work is deferred at the user's request.                            |
+| 3. Transcript and composer       | Core composer implemented; transcript pending          | Column, frame, mode/model controls and reasoning popover implemented; isolated provider-control, attachment, send/stop checks pass. Attachment menu, transcript matching and native comparison remain. |
+| 4. Supporting panels             | Pending                                                | Adapt Diff, files, terminal, and settings separately using additional reference screenshots.                                                                                                           |
+| 5. Custom distribution           | Pending                                                | Independent package identity and update source; validate packaged launch and updates before distribution.                                                                                              |
 
 Each slice leaves a runnable app and a small independently revertible commit.
 Update this table and its evidence before moving to the next slice. Local startup
@@ -345,12 +353,35 @@ Diagnostics has no playback test. The
 contains focus, mode and interrupt actions only. This checks the excluded entry
 points, not microphone hardware or voice backend behavior.
 
+### Default sidebar restoration
+
+The default `SidebarWorkspaceList`, navigation rows and footer are active again.
+The separate navigation rail and the custom chat-pin keyboard override are no
+longer mounted. Cmd+Shift+P pins the workspace as in upstream Paseo; current-chat
+actions remain available through the titlebar menu. Existing sidebar preferences
+and chat metadata were preserved.
+
+The default-sidebar regression failed before the restoration and passed afterward.
+All three scoped desktop flows pass: new chat/project/history, composer and
+settings, and sibling-chat drafts/offline rename/archive with independent workspace
+pinning. Ten sidebar layout/toggle unit tests and root typecheck/lint/format pass.
+Native [restored-sidebar evidence](../qa-evidence/codex-desktop/default-sidebar-native.jpg)
+shows the original workspace rows and footer alongside the migrated chat area.
+Logs: `/private/tmp/paseo-default-sidebar-newchat.log`,
+`/private/tmp/paseo-default-sidebar-interactions.log`,
+`/private/tmp/paseo-default-sidebar-layout-tests.log`,
+`/private/tmp/paseo-default-sidebar-typecheck.log` and
+`/private/tmp/paseo-default-sidebar-lint.log`.
+
 ## Resume checkpoint
 
 Continue in this checkout on `codex/desktop-ui`; preserve the user's untracked
 `context-images/`. Native inspection is available. Reuse the live development
 instance after checking its status. The pinned Playwright runtime supports
 isolated renderer tests.
+
+Preserve the default sidebar per the latest scope change. Do not resume the
+custom sidebar or navigation rail without a new request.
 
 Latest composer evidence is recorded above; the earlier theme/settings tests pass (81).
 The extended chat-action browser case passed in 56.2 seconds. Earlier navigation
