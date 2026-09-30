@@ -1,7 +1,10 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Text, View, type StyleProp, type ViewStyle } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
-import { clampPct, formatAmount, formatResetLabel } from "./format";
+import { clampPct, formatAmount } from "./format";
+import { UsageDeadline } from "./deadline";
 import type { UsageBalance, UsageTone } from "./types";
 
 interface ResolvedBalance {
@@ -9,7 +12,7 @@ interface ResolvedBalance {
   usedPct: number | null;
 }
 
-function resolveBalance(balance: UsageBalance): ResolvedBalance {
+function resolveBalance(balance: UsageBalance, t: TFunction): ResolvedBalance {
   const { used, remaining, limit, unit } = balance;
   if (limit != null && limit > 0) {
     const usedAmount = used ?? (remaining != null ? limit - remaining : null);
@@ -18,7 +21,10 @@ function resolveBalance(balance: UsageBalance): ResolvedBalance {
     return { amountText: `${usedText} / ${formatAmount(limit, unit)}`, usedPct };
   }
   if (remaining != null) {
-    return { amountText: `${formatAmount(remaining, unit)} left`, usedPct: null };
+    return {
+      amountText: t("usage.remainingBalance", { amount: formatAmount(remaining, unit) }),
+      usedPct: null,
+    };
   }
   if (used != null) {
     return { amountText: formatAmount(used, unit), usedPct: null };
@@ -40,9 +46,9 @@ function fillToneStyle(tone: UsageTone) {
 }
 
 export function UsageBalanceBar({ balance }: { balance: UsageBalance }) {
-  const { amountText, usedPct } = resolveBalance(balance);
+  const { t } = useTranslation();
+  const { amountText, usedPct } = resolveBalance(balance, t);
   const tone = balance.tone ?? "default";
-  const resetLabel = formatResetLabel(balance.resetsAt);
 
   const fillStyle = useMemo<StyleProp<ViewStyle>>(
     () => [styles.fill, fillToneStyle(tone), { width: `${clampPct(usedPct ?? 0)}%` }],
@@ -57,7 +63,7 @@ export function UsageBalanceBar({ balance }: { balance: UsageBalance }) {
         </Text>
         <Text style={styles.value}>
           {amountText}
-          {resetLabel ? <Text style={styles.reset}>{` · ${resetLabel}`}</Text> : null}
+          <UsageDeadline at={balance.resetsAt} prefix=" · " style={styles.reset} />
         </Text>
       </View>
       {usedPct != null ? (

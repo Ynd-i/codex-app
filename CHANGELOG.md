@@ -15,6 +15,7 @@ distribution and full migration acceptance remain pending; see the
 - Added a centered, project-aware new-chat welcome on macOS, with project controls above the bottom composer and drafts retained across compact layouts.
 - Added elapsed headers and collapsible activity for completed macOS chat turns. Replies stay visible, search reveals hidden matches, and copying or forking retains the full turn. Expanding keeps the reader's position.
 - Added a local macOS custom-package profile with its own identity, isolated GUI daemon defaults, and disabled automatic updates. The packaged smoke checks the custom identity and rejected update installation.
+- Added macOS usage overview cards with explicit used/remaining allowances, live reset countdowns and localized labels across all supported languages. Existing provider data and refresh behavior are retained.
 
 ### Changed
 

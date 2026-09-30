@@ -1,4 +1,5 @@
 import { Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native-unistyles";
 import {
   DropdownMenu,
@@ -12,7 +13,6 @@ import {
   toolbarLabelTriggerTextStyle,
 } from "@/components/ui/toolbar-label-trigger";
 import { UsageCard } from "./card";
-import { usageCopy } from "./copy";
 import type { UsagePill } from "./model";
 import { useAgentUsage } from "./queries";
 import { UsageSourceIcon } from "./source-icon";
@@ -26,6 +26,7 @@ function pillTriggerStyle(state: MenuTriggerState) {
  * only the card's Refresh asks the source for a new report.
  */
 export function UsageComposerPill({ serverId, agentId }: { serverId: string; agentId: string }) {
+  const { t } = useTranslation();
   const { pill, entry } = useAgentUsage(serverId, agentId);
 
   if (!pill || !entry) return null;
@@ -35,7 +36,7 @@ export function UsageComposerPill({ serverId, agentId }: { serverId: string; age
       <DropdownMenuTrigger
         style={pillTriggerStyle}
         accessibilityRole="button"
-        accessibilityLabel={`${pill.sourceLabel} ${usageCopy.planUsage}`}
+        accessibilityLabel={`${pill.sourceLabel} ${t("usage.planUsage")}`}
         testID="usage-composer-pill"
       >
         {(state) => (
@@ -48,7 +49,7 @@ export function UsageComposerPill({ serverId, agentId }: { serverId: string; age
         offset={8}
         width={300}
         testID="usage-composer-popover"
-        sheetTitle={usageCopy.planUsage}
+        sheetTitle={t("usage.planUsage")}
       >
         <View style={styles.popover}>
           <UsageCard serverId={serverId} entry={entry} compact />

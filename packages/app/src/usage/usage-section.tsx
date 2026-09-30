@@ -1,12 +1,12 @@
 import { RefreshCw } from "lucide-react-native";
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Text, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { settingsStyles } from "@/styles/settings";
 import { SettingsSection } from "@/components/settings/headings/settings-section";
-import { usageCopy } from "./copy";
 import { UsageList } from "./list";
 import type { UsageView } from "./types";
 
@@ -23,6 +23,7 @@ export function UsageSection({
   onRefresh: () => void;
   testID?: string;
 }) {
+  const { t } = useTranslation();
   const busy = view.kind === "loading" || (view.kind === "ready" && view.isRefreshing);
 
   const refreshButton = useMemo(
@@ -34,12 +35,12 @@ export function UsageSection({
           leftIcon={RefreshCw}
           loading={busy}
           onPress={onRefresh}
-          accessibilityLabel={usageCopy.refresh}
+          accessibilityLabel={t("usage.refresh")}
         >
-          {busy ? usageCopy.refreshing : usageCopy.refresh}
+          {busy ? t("usage.refreshing") : t("usage.refresh")}
         </Button>
       ),
-    [busy, onRefresh, view.kind],
+    [busy, onRefresh, t, view.kind],
   );
 
   return (
@@ -58,26 +59,27 @@ function UsageBody({
   view: UsageView;
   onRefresh: () => void;
 }) {
+  const { t } = useTranslation();
   if (view.kind === "unavailable") {
     return <UsageMessage text={view.message} />;
   }
 
   if (view.kind === "loading") {
-    return <UsageMessage text={usageCopy.loading} />;
+    return <UsageMessage text={t("usage.loading")} />;
   }
 
   if (view.kind === "error") {
     return (
-      <Alert size="sm" variant="error" title={usageCopy.errorTitle} description={view.message}>
+      <Alert size="sm" variant="error" title={t("usage.errorTitle")} description={view.message}>
         <Button variant="outline" size="sm" onPress={onRefresh}>
-          {usageCopy.retry}
+          {t("common.actions.retry")}
         </Button>
       </Alert>
     );
   }
 
   if (view.reports.length === 0) {
-    return <UsageMessage text={usageCopy.empty} />;
+    return <UsageMessage text={t("usage.empty")} />;
   }
 
   return <UsageList serverId={serverId} reports={view.reports} />;

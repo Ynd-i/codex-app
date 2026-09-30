@@ -1,5 +1,7 @@
 import { RefreshCw } from "lucide-react-native";
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Text, View, type StyleProp, type TextStyle } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import {
@@ -11,19 +13,18 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { ToolbarButton } from "@/components/ui/pane-content-toolbar";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useIsCompactFormFactor } from "@/constants/layout";
-import { isNative } from "@/constants/platform";
+import { getIsElectronMac, isNative } from "@/constants/platform";
 import { useCompactTimeAgo } from "@/hooks/use-time-ago";
 import { UsageBalanceBar } from "./balance-bar";
-import { usageCopy } from "./copy";
 import { formatUsageFreshness, type UsageRefresh } from "./model";
 import { useReportRefresh } from "./queries";
 import { UsageSourceIcon } from "./source-icon";
-import type { UsageReport, UsageReportEntry } from "./types";
+import type { UsageReportEntry } from "./types";
 import { UsageWindowBar } from "./window-bar";
 
-function statusText(report: UsageReport): string | null {
-  if (report.status === "available") return null;
-  return report.status === "error" ? "Error" : "Unavailable";
+function statusText(status: UsageReportEntry["report"]["status"], t: TFunction): string | null {
+  if (status === "available") return null;
+  return status === "error" ? t("common.errors.error") : t("usage.unavailable");
 }
 
 const ThemedRefreshIcon = withUnistyles(RefreshCw);
@@ -38,19 +39,25 @@ export function UsageCard({
   entry: UsageReportEntry;
   compact?: boolean;
 }) {
+  const { t } = useTranslation();
   const isCompact = useIsCompactFormFactor();
+  const overview = getIsElectronMac() && !isCompact && !compact;
   const { refresh, refreshState } = useReportRefresh(serverId, entry.id);
   // Where there is no hover the freshness is printed on the card; elsewhere the Refresh tooltip.
   const showsFreshnessInline = isNative || isCompact;
   const usage = entry.report;
-  const status = statusText(usage);
+  const status = statusText(usage.status, t);
   const footer = entry.account.label ?? null;
   const balances = usage.balances ?? [];
   const details = usage.details ?? [];
 
   const containerStyle = useMemo(
-    () => [styles.container, compact ? styles.containerCompact : styles.containerPadded],
-    [compact],
+    () => [
+      styles.container,
+      compact ? styles.containerCompact : styles.containerPadded,
+      overview && styles.overview,
+    ],
+    [compact, overview],
   );
   const dotStyle = useMemo(
     () => [
@@ -62,10 +69,10 @@ export function UsageCard({
   );
 
   return (
-    <View style={containerStyle}>
+    <View style={containerStyle} testID={`usage-report-${entry.id}`}>
       <View style={styles.header}>
         <UsageSourceIcon svg={entry.icon ?? null} size={14} />
-        <Text style={styles.name} numberOfLines={1}>
+        <Text style={styles.name(overview)} numberOfLines={1}>
           {entry.sourceLabel}
         </Text>
         {usage.planLabel ? <StatusBadge label={usage.planLabel} variant="muted" /> : null}
@@ -94,7 +101,7 @@ export function UsageCard({
       {usage.windows.length > 0 || balances.length > 0 ? (
         <View style={styles.bars}>
           {usage.windows.map((window) => (
-            <UsageWindowBar key={window.id} window={window} />
+            <UsageWindowBar key={window.id} window={window} overview={overview} />
           ))}
           {balances.map((balance) => (
             <UsageBalanceBar key={balance.id} balance={balance} />
@@ -134,7 +141,7 @@ export function UsageCard({
 
       {refreshState === "failed" ? (
         <Text style={styles.error} testID="usage-refresh-error">
-          {usageCopy.refreshFailed}
+          {t("usage.refreshFailed")}
         </Text>
       ) : null}
     </View>
@@ -155,6 +162,7 @@ function UsageRefreshButton({
   onRefresh: () => void;
   compact: boolean;
 }) {
+  const { t } = useTranslation();
   const isPending = refreshState === "pending";
   const iconSize = iconButtonChromeGlyphSize("small", compact);
   const freshness = useMemo(
@@ -169,7 +177,7 @@ function UsageRefreshButton({
   );
   return (
     <ToolbarButton
-      label={`${usageCopy.refresh} ${sourceLabel}`}
+      label={`${t("usage.refresh")} ${sourceLabel}`}
       tooltip={freshness}
       tooltipSide="top"
       compact={compact}
@@ -197,10 +205,11 @@ function UsageFreshness({
   style: StyleProp<TextStyle>;
   testID: string;
 }) {
+  const { t } = useTranslation();
   const elapsed = useCompactTimeAgo(new Date(fetchedAt));
   return (
     <Text style={style} numberOfLines={1} testID={testID}>
-      {formatUsageFreshness(elapsed)}
+      {formatUsageFreshness(elapsed, t, fetchedAt)}
     </Text>
   );
 }
@@ -225,16 +234,23 @@ const styles = StyleSheet.create((theme) => ({
   containerCompact: {
     gap: theme.spacing[3],
   },
+  overview: {
+    borderWidth: 1,
+    borderColor: theme.colors.borderAccent,
+    borderRadius: 16,
+    backgroundColor: theme.colors.surface1,
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
     gap: theme.spacing[2],
   },
-  name: {
+  name: (overview: boolean) => ({
     flexShrink: 1,
     color: theme.colors.foreground,
-    fontSize: theme.fontSize.base,
-  },
+    fontSize: overview ? theme.fontSize.lg : theme.fontSize.base,
+    fontWeight: overview ? theme.fontWeight.medium : theme.fontWeight.normal,
+  }),
   headerSpacer: {
     flex: 1,
   },

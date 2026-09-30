@@ -1,10 +1,16 @@
-import { formatCompactTimeAgoAsProse } from "@/utils/time";
-import { usageCopy } from "./copy";
+import type { TFunction } from "i18next";
+import { i18n } from "@/i18n/i18next";
 import type { UsageReport, UsageReportEntry, UsageView, UsageWindow } from "./types";
 
 export function usedPercent(window: UsageWindow): number | null {
   if (window.usedPct != null) return window.usedPct;
   if (window.remainingPct != null) return 100 - window.remainingPct;
+  return null;
+}
+
+export function remainingPercent(window: UsageWindow): number | null {
+  if (window.remainingPct != null) return window.remainingPct;
+  if (window.usedPct != null) return 100 - window.usedPct;
   return null;
 }
 
@@ -39,8 +45,27 @@ export function resolveUsagePill(input: {
 }
 
 /** When a report was fetched, from its compact relative time: "Updated 3m ago". */
-export function formatUsageFreshness(compactTimeAgo: string): string {
-  return `${usageCopy.updated} ${formatCompactTimeAgoAsProse(compactTimeAgo)}`;
+export function formatUsageFreshness(
+  compactTimeAgo: string,
+  t: TFunction = i18n.t,
+  fetchedAt?: string,
+): string {
+  if (compactTimeAgo === "now") return t("usage.updatedNow");
+  const match = /^(\d+)([mhd])$/.exec(compactTimeAgo);
+  let time = compactTimeAgo;
+  if (match) {
+    let key: "usage.durationMinutes" | "usage.durationHours" | "usage.durationDays" =
+      "usage.durationMinutes";
+    if (match[2] === "h") key = "usage.durationHours";
+    if (match[2] === "d") key = "usage.durationDays";
+    time = t("usage.ago", { duration: t(key, { count: Number(match[1]) }) });
+  } else if (fetchedAt && Number.isFinite(new Date(fetchedAt).getTime())) {
+    time = new Date(fetchedAt).toLocaleDateString(i18n.resolvedLanguage, {
+      month: "short",
+      day: "numeric",
+    });
+  }
+  return t("usage.updated", { time });
 }
 
 /** A user-requested refresh of one report. The previous report stays on screen throughout. */
@@ -80,8 +105,8 @@ export function resolveUsageView(input: {
   query: UsageQueryState | undefined;
 }): UsageView {
   const { isConnected, supportsUsage, query } = input;
-  if (!isConnected) return { kind: "unavailable", message: usageCopy.hostUnavailable };
-  if (!supportsUsage) return { kind: "unavailable", message: usageCopy.hostUpgradeRequired };
+  if (!isConnected) return { kind: "unavailable", message: i18n.t("usage.hostUnavailable") };
+  if (!supportsUsage) return { kind: "unavailable", message: i18n.t("usage.hostUpgradeRequired") };
   if (query?.data) {
     return { kind: "ready", reports: query.data, isRefreshing: query.isFetching };
   }

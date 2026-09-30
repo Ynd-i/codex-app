@@ -539,14 +539,40 @@ account identifiers were omitted from its evidence.
 All 10 Codex usage-adapter tests pass. No credential refresh, purchase, manual reset
 or provider agent turn was performed. This direct-source verification does not imply
 that the already-running daemon or the previously built custom bundle contains the
-latest adapter; rebuild them during the next runtime acceptance slice.
-The desktop usage layout and localization remain to be adapted from the references.
+latest adapter. The running daemon still reports the earlier labels and units;
+the frontend does not reinterpret those provider fields. No daemon restart or
+backend rebuild was performed during the October 1 frontend verification.
 
 Logs: `/private/tmp/paseo-usage-meter-final-e2e.log`,
 `/private/tmp/paseo-codex-usage-values-green.log`,
 `/private/tmp/paseo-live-usage-read.log`,
 `/private/tmp/paseo-codex-usage-final-probe.log`,
 `/private/tmp/paseo-usage-meter-typecheck.log` and `/private/tmp/paseo-usage-meter-lint.log`.
+
+### Usage overview — 2026-10-01
+
+Wide macOS usage pages now show separate provider/account cards, explicit used
+and remaining values, and reset countdowns driven by the existing shared clock.
+The desktop overview meter represents remaining allowance; compact views retain
+used allowance. Unknown readings stay unavailable, and refresh failures retain
+the last report. All nine supported locales use the existing translation system.
+The source-owned plan, account, quota and balance data continue through the
+existing usage RPCs; this slice changes no backend or protocol.
+
+Validation: 57 focused unit/locale checks, two desktop renderer cases and 15
+existing browser usage regressions pass. The desktop cases cover countdown
+expiry without a forced fetch, refresh failure/retry, live language changes and
+1352/900/700px layouts. They passed again with the restored navigation rail,
+alongside the existing titlebar geometry case. Root format, lint and typecheck
+pass. The [renderer capture](../qa-evidence/codex-desktop/phase4-renderer-usage-overview.png)
+was visually inspected; its provider data is simulated. Native inspection checked
+the layout and actual source status, not the newer adapter or packaged bundle.
+These checks do not establish pixel-for-pixel equality with every reference.
+
+Logs: `/private/tmp/paseo-usage-overview-unit.log`,
+`/private/tmp/paseo-usage-overview-final-e2e.log`,
+`/private/tmp/paseo-usage-overview-browser.log` and
+`/private/tmp/paseo-rail-geometry-e2e.log`.
 
 ## Phase 5 progress — 2026-09-30
 

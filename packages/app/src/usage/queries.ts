@@ -9,7 +9,7 @@ import {
   useHosts,
 } from "@/runtime/host-runtime";
 import { useSessionStore, type SessionState } from "@/stores/session-store";
-import { usageCopy } from "./copy";
+import { i18n } from "@/i18n/i18next";
 import {
   groupUsageByHost,
   replaceReport,
@@ -37,7 +37,7 @@ function agentUsageQueryKey(serverId: string, agentId: string, model: string | n
 
 function requireClient(serverId: string) {
   const client = getHostRuntimeStore().getClient(serverId);
-  if (!client) throw new Error(usageCopy.clientUnavailable);
+  if (!client) throw new Error(i18n.t("usage.clientUnavailable"));
   return client;
 }
 
