@@ -27,6 +27,7 @@ import invariant from "tiny-invariant";
 import { SidebarMenuToggle } from "@/components/headers/menu-header";
 import { ScreenHeader } from "@/components/headers/screen-header";
 import { ScreenTitle } from "@/components/headers/screen-title";
+import { DesktopWorkspaceToolbar, usesDesktopShell } from "@/components/desktop/desktop-shell";
 import { HostBadge } from "@/hosts/host-badge";
 import { useHostBadges } from "@/hosts/use-host-badges";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
@@ -944,6 +945,7 @@ function WorkspaceHeaderProjectRow({
 }
 
 interface WorkspaceHeaderTitleBarProps {
+  desktopTitlebar: boolean;
   isLoading: boolean;
   title: string;
   subtitle: string;
@@ -973,6 +975,7 @@ interface WorkspaceHeaderTitleBarProps {
 }
 
 function WorkspaceHeaderTitleBar({
+  desktopTitlebar,
   isLoading,
   title,
   subtitle,
@@ -1001,21 +1004,22 @@ function WorkspaceHeaderTitleBar({
   onOpenUrlInBrowserTab,
 }: WorkspaceHeaderTitleBarProps) {
   return (
-    <View style={styles.headerTitleContainer}>
-      {isLoading ? (
-        <View style={styles.headerTitleTextGroup}>
-          <View style={styles.headerTitleSkeleton} />
-        </View>
-      ) : (
-        <View style={styles.headerTitleTextGroup}>
-          <ScreenTitle testID="workspace-header-title">{title}</ScreenTitle>
-          <WorkspaceHeaderProjectRow
-            subtitle={subtitle}
-            isSubtitleDistinct={isSubtitleDistinct}
-            serverId={normalizedServerId}
-          />
-        </View>
-      )}
+    <View style={desktopTitlebar ? styles.compactHeaderMenuCluster : styles.headerTitleContainer}>
+      {!desktopTitlebar &&
+        (isLoading ? (
+          <View style={styles.headerTitleTextGroup}>
+            <View style={styles.headerTitleSkeleton} />
+          </View>
+        ) : (
+          <View style={styles.headerTitleTextGroup}>
+            <ScreenTitle testID="workspace-header-title">{title}</ScreenTitle>
+            <WorkspaceHeaderProjectRow
+              subtitle={subtitle}
+              isSubtitleDistinct={isSubtitleDistinct}
+              serverId={normalizedServerId}
+            />
+          </View>
+        ))}
       <View style={styles.compactHeaderMenuCluster}>
         {isMobile ? (
           <WorkspaceHeaderMenuMobile
@@ -1037,6 +1041,11 @@ function WorkspaceHeaderTitleBar({
           />
         ) : (
           <WorkspaceHeaderMenuDesktop
+            title={
+              desktopTitlebar
+                ? [title, isSubtitleDistinct ? subtitle : null].filter(Boolean).join(" · ")
+                : undefined
+            }
             currentBranchName={currentBranchName}
             showWorkspaceSetup={showWorkspaceSetup}
             importAgentDisabled={importAgentDisabled}
@@ -1544,6 +1553,7 @@ function WorkspaceScreenContent({
   const explorerToggleOwner = resolveWorkspaceExplorerToggleOwner({
     isMobile,
     hasMacTrafficLights,
+    hasDesktopTitlebar: usesDesktopShell,
   });
   const isFocusModeEnabled = usePanelStore((state) => state.desktop.focusModeEnabled);
   const toggleFocusMode = usePanelStore((state) => state.toggleFocusMode);
@@ -3788,7 +3798,7 @@ function WorkspaceScreenContent({
               label={explorerSidebarToggleLabel}
               tooltipLabel={t("workspace.tabs.explorerSidebar.toggle")}
               tooltipKeys={EXPLORER_TOGGLE_KEYS}
-              style={styles.compactHeaderActionButton}
+              style={usesDesktopShell ? undefined : styles.compactHeaderActionButton}
               accessibilityState={explorerSidebarToggleAccessibilityState}
             />
           </>
@@ -3878,77 +3888,92 @@ function WorkspaceScreenContent({
       `${WORKSPACE_FLOATING_PANEL_PORTAL_HOST_PREFIX}:${normalizedServerId}:${normalizedWorkspaceId}`,
     [normalizedServerId, normalizedWorkspaceId],
   );
-  const renderWorkspaceScreenHeader = useCallback(
-    () =>
-      showScreenHeader ? (
-        <ScreenHeader
-          left={
-            <>
-              <SidebarMenuToggle />
-              <WorkspaceHeaderTitleBar
-                isLoading={isWorkspaceHeaderLoading}
-                title={workspaceHeaderTitle}
-                subtitle={workspaceHeaderSubtitle}
-                isSubtitleDistinct={isWorkspaceHeaderSubtitleDistinct}
-                currentBranchName={currentBranchName}
-                normalizedServerId={normalizedServerId}
-                normalizedWorkspaceId={normalizedWorkspaceId}
-                workspaceScripts={workspaceScripts}
-                liveTerminalIds={liveTerminalIds}
-                showWorkspaceSetup={showWorkspaceSetup}
-                showCreateBrowserTab={showCreateBrowserTab}
-                isMobile={isMobile}
-                createTerminalDisabled={createTerminalDisabled}
-                importAgentDisabled={!canOpenImportSheet}
-                copyPathDisabled={!workspaceDirectory}
-                onCreateDraftTab={handleCreateDraftTab}
-                onCreateTerminal={handleCreateTerminal}
-                onCreateTerminalWithProfile={handleCreateTerminalWithProfile}
-                onCreateBrowser={handleCreateBrowserTab}
-                onOpenImportSheet={openImportSheet}
-                onCopyWorkspacePath={handleCopyWorkspacePath}
-                onCopyBranchName={handleCopyBranchName}
-                onOpenSetupTab={handleOpenSetupTab}
-                onScriptTerminalStarted={handleScriptTerminalStarted}
-                onViewScriptTerminal={handleViewScriptTerminal}
-                onOpenUrlInBrowserTab={handleOpenUrlInBrowserTab}
-              />
-            </>
-          }
-          right={headerRight}
-        />
-      ) : null,
-    [
-      canOpenImportSheet,
-      createTerminalDisabled,
-      currentBranchName,
-      handleCopyBranchName,
-      handleCopyWorkspacePath,
-      handleCreateBrowserTab,
-      handleCreateDraftTab,
-      handleCreateTerminal,
-      handleCreateTerminalWithProfile,
-      handleOpenSetupTab,
-      handleOpenUrlInBrowserTab,
-      handleScriptTerminalStarted,
-      handleViewScriptTerminal,
-      headerRight,
-      isMobile,
-      isWorkspaceHeaderLoading,
-      liveTerminalIds,
-      normalizedServerId,
-      normalizedWorkspaceId,
-      openImportSheet,
-      showCreateBrowserTab,
-      showScreenHeader,
-      showWorkspaceSetup,
-      workspaceDirectory,
-      workspaceHeaderSubtitle,
-      workspaceHeaderTitle,
-      isWorkspaceHeaderSubtitleDistinct,
-      workspaceScripts,
-    ],
-  );
+  const renderWorkspaceScreenHeader = useCallback(() => {
+    if (!showScreenHeader) return null;
+    const desktopTitlebar = usesDesktopShell && !isMobile;
+    const title = (
+      <WorkspaceHeaderTitleBar
+        desktopTitlebar={desktopTitlebar}
+        isLoading={isWorkspaceHeaderLoading}
+        title={workspaceHeaderTitle}
+        subtitle={workspaceHeaderSubtitle}
+        isSubtitleDistinct={isWorkspaceHeaderSubtitleDistinct}
+        currentBranchName={currentBranchName}
+        normalizedServerId={normalizedServerId}
+        normalizedWorkspaceId={normalizedWorkspaceId}
+        workspaceScripts={workspaceScripts}
+        liveTerminalIds={liveTerminalIds}
+        showWorkspaceSetup={showWorkspaceSetup}
+        showCreateBrowserTab={showCreateBrowserTab}
+        isMobile={isMobile}
+        createTerminalDisabled={createTerminalDisabled}
+        importAgentDisabled={!canOpenImportSheet}
+        copyPathDisabled={!workspaceDirectory}
+        onCreateDraftTab={handleCreateDraftTab}
+        onCreateTerminal={handleCreateTerminal}
+        onCreateTerminalWithProfile={handleCreateTerminalWithProfile}
+        onCreateBrowser={handleCreateBrowserTab}
+        onOpenImportSheet={openImportSheet}
+        onCopyWorkspacePath={handleCopyWorkspacePath}
+        onCopyBranchName={handleCopyBranchName}
+        onOpenSetupTab={handleOpenSetupTab}
+        onScriptTerminalStarted={handleScriptTerminalStarted}
+        onViewScriptTerminal={handleViewScriptTerminal}
+        onOpenUrlInBrowserTab={handleOpenUrlInBrowserTab}
+      />
+    );
+    if (desktopTitlebar) {
+      return isRouteFocused ? (
+        <DesktopWorkspaceToolbar>
+          <View style={styles.headerRight}>
+            {title}
+            {headerRight}
+          </View>
+        </DesktopWorkspaceToolbar>
+      ) : null;
+    }
+    return (
+      <ScreenHeader
+        left={
+          <>
+            <SidebarMenuToggle />
+            {title}
+          </>
+        }
+        right={headerRight}
+      />
+    );
+  }, [
+    canOpenImportSheet,
+    createTerminalDisabled,
+    currentBranchName,
+    handleCopyBranchName,
+    handleCopyWorkspacePath,
+    handleCreateBrowserTab,
+    handleCreateDraftTab,
+    handleCreateTerminal,
+    handleCreateTerminalWithProfile,
+    handleOpenSetupTab,
+    handleOpenUrlInBrowserTab,
+    handleScriptTerminalStarted,
+    handleViewScriptTerminal,
+    headerRight,
+    isMobile,
+    isRouteFocused,
+    isWorkspaceHeaderLoading,
+    liveTerminalIds,
+    normalizedServerId,
+    normalizedWorkspaceId,
+    openImportSheet,
+    showCreateBrowserTab,
+    showScreenHeader,
+    showWorkspaceSetup,
+    workspaceDirectory,
+    workspaceHeaderSubtitle,
+    workspaceHeaderTitle,
+    isWorkspaceHeaderSubtitleDistinct,
+    workspaceScripts,
+  ]);
   const desktopSplitContent = useMemo(() => {
     if (!canRenderDesktopPaneSplits || !workspaceLayout || !persistenceKey) {
       return null;

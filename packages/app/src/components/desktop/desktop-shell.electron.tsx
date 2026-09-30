@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { createContext, useContext, useState, type CSSProperties, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { ArrowLeft, ArrowRight } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { Text, useWindowDimensions, View } from "react-native";
@@ -15,6 +16,8 @@ import {
 import { resolveDesktopSidebarWidth } from "@/components/desktop-sidebar-layout";
 import { usePanelStore } from "@/stores/panel-store";
 import { useSessionStore } from "@/stores/session-store";
+import { useActiveWorkspaceSelection } from "@/stores/navigation-active-workspace-store";
+import { useWorkspaceFields } from "@/stores/session-store-hooks";
 import { inlineUnistylesStyle } from "@/styles/unistyles-inline-style";
 import { TitlebarDragRegion } from "./titlebar-drag-region";
 import type { Theme } from "@/styles/theme";
@@ -29,6 +32,22 @@ const ForwardIcon = withUnistyles(ArrowRight);
 const iconProps = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
 const devLabel = process.env.EXPO_PUBLIC_PASEO_DEV_BUILD_LABEL?.trim();
 
+const WorkspaceToolbarHostContext = createContext<HTMLDivElement | null>(null);
+const workspaceToolbarHostStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  position: "relative",
+  flexShrink: 0,
+  marginLeft: 8,
+  marginRight: 8,
+};
+
+export function DesktopWorkspaceToolbar({ children }: { children: ReactNode }) {
+  const host = useContext(WorkspaceToolbarHostContext);
+  // A DOM portal retains the originating workspace's routing and panel contexts.
+  return host ? createPortal(children, host) : null;
+}
+
 export function DesktopShell({
   children,
   chromeEnabled,
@@ -37,7 +56,14 @@ export function DesktopShell({
   chromeEnabled: boolean;
 }) {
   const { t } = useTranslation();
+  const [toolbarHost, setToolbarHost] = useState<HTMLDivElement | null>(null);
   const navigation = useDesktopNavigationHistory();
+  const selection = useActiveWorkspaceSelection();
+  const workspaceTitle = useWorkspaceFields(
+    selection?.serverId ?? null,
+    selection?.workspaceId ?? null,
+    (workspace) => workspace.name,
+  );
   const sidebarWidth = usePanelStore((state) => state.sidebarWidth);
   const sidebarOpen = usePanelStore((state) => state.desktop.agentListOpen);
   const hasTrafficLights = useHasWindowChromeObstruction("top-left");
@@ -68,67 +94,74 @@ export function DesktopShell({
   if (!usesDesktopShell) return children;
 
   return (
-    <View style={styles.root} testID="desktop-shell">
-      <WindowChromeSafeArea placement="inline" style={styles.titlebar}>
-        <TitlebarDragRegion />
-        <View style={[styles.navigationControls, inlineUnistylesStyle({ width: controlsWidth })]}>
-          <HeaderToggleButton
-            onPress={navigation.back}
-            disabled={!navigation.canGoBack}
-            tooltipLabel={t("common.actions.back")}
-            accessibilityLabel={t("common.actions.back")}
-            accessibilityRole="button"
-            accessible
-            tooltipKeys={[]}
-            tooltipSide="bottom"
-            testID="desktop-shell-back"
-            style={styles.navigationButton}
-          >
-            <BackIcon size={18} uniProps={iconProps} />
-          </HeaderToggleButton>
-          <HeaderToggleButton
-            onPress={navigation.forward}
-            disabled={!navigation.canGoForward}
-            tooltipLabel={t("workspace.browser.controls.forward")}
-            accessibilityLabel={t("workspace.browser.controls.forward")}
-            accessibilityRole="button"
-            accessible
-            tooltipKeys={[]}
-            tooltipSide="bottom"
-            testID="desktop-shell-forward"
-            style={styles.navigationButton}
-          >
-            <ForwardIcon size={18} uniProps={iconProps} />
-          </HeaderToggleButton>
-          {chromeEnabled && !isCompact ? (
-            <WindowSidebarMenuToggle style={styles.navigationButton} tooltipSide="bottom" />
+    <WorkspaceToolbarHostContext.Provider value={toolbarHost}>
+      <View style={styles.root} testID="desktop-shell">
+        <WindowChromeSafeArea placement="inline" style={styles.titlebar}>
+          <TitlebarDragRegion />
+          <View style={[styles.navigationControls, inlineUnistylesStyle({ width: controlsWidth })]}>
+            <HeaderToggleButton
+              onPress={navigation.back}
+              disabled={!navigation.canGoBack}
+              tooltipLabel={t("common.actions.back")}
+              accessibilityLabel={t("common.actions.back")}
+              accessibilityRole="button"
+              accessible
+              tooltipKeys={[]}
+              tooltipSide="bottom"
+              testID="desktop-shell-back"
+              style={styles.navigationButton}
+            >
+              <BackIcon size={18} uniProps={iconProps} />
+            </HeaderToggleButton>
+            <HeaderToggleButton
+              onPress={navigation.forward}
+              disabled={!navigation.canGoForward}
+              tooltipLabel={t("workspace.browser.controls.forward")}
+              accessibilityLabel={t("workspace.browser.controls.forward")}
+              accessibilityRole="button"
+              accessible
+              tooltipKeys={[]}
+              tooltipSide="bottom"
+              testID="desktop-shell-forward"
+              style={styles.navigationButton}
+            >
+              <ForwardIcon size={18} uniProps={iconProps} />
+            </HeaderToggleButton>
+            {chromeEnabled && !isCompact ? (
+              <WindowSidebarMenuToggle style={styles.navigationButton} tooltipSide="bottom" />
+            ) : null}
+          </View>
+          <View style={styles.titleFill}>
+            {chatTitle || workspaceTitle ? (
+              <Text style={styles.chatTitle} numberOfLines={1} testID="desktop-chat-title">
+                {chatTitle || workspaceTitle}
+              </Text>
+            ) : null}
+          </View>
+          {navigation.chat ? (
+            <DesktopChatToolbar
+              serverId={navigation.chat.serverId}
+              agentId={navigation.chat.agentId}
+            />
           ) : null}
-        </View>
-        <View style={styles.titleFill}>
-          {chatTitle ? (
-            <Text style={styles.chatTitle} numberOfLines={1} testID="desktop-chat-title">
-              {chatTitle}
+          <div
+            ref={setToolbarHost}
+            data-testid="desktop-workspace-toolbar"
+            style={workspaceToolbarHostStyle}
+          />
+          {devLabel ? (
+            <Text style={styles.devLabel} testID="dev-build-label" numberOfLines={1}>
+              {devLabel}
             </Text>
           ) : null}
-        </View>
-        {navigation.chat ? (
-          <DesktopChatToolbar
-            serverId={navigation.chat.serverId}
-            agentId={navigation.chat.agentId}
-          />
-        ) : null}
-        {devLabel ? (
-          <Text style={styles.devLabel} testID="dev-build-label" numberOfLines={1}>
-            {devLabel}
-          </Text>
-        ) : null}
-      </WindowChromeSafeArea>
-      <View style={styles.body}>
-        <View style={styles.content} testID="desktop-shell-content">
-          <WindowChromeRegion corners="none">{children}</WindowChromeRegion>
+        </WindowChromeSafeArea>
+        <View style={styles.body}>
+          <View style={styles.content} testID="desktop-shell-content">
+            <WindowChromeRegion corners="none">{children}</WindowChromeRegion>
+          </View>
         </View>
       </View>
-    </View>
+    </WorkspaceToolbarHostContext.Provider>
   );
 }
 

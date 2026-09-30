@@ -75,7 +75,7 @@ scope; it does not remove runtime code or add new provider integrations.
 | 1a. Upstream integration check   | Merged and rebuilt                                     | Merge `309f2c4` includes upstream `4e9a458` (release notes plus a host-startup race fix). No conflicts; server/client rebuild and 11 targeted startup tests passed.                                    |
 | 2. Chat navigation               | Default sidebar retained; chrome consolidation pending | Keep upstream workspace navigation. Current-chat titlebar actions, draft isolation and Back/Forward remain in scope. Custom sidebar work is deferred at the user's request.                            |
 | 3. Transcript and composer       | Core composer implemented; transcript pending          | Column, frame, mode/model controls and reasoning popover implemented; isolated provider-control, attachment, send/stop checks pass. Attachment menu, transcript matching and native comparison remain. |
-| 4. Supporting panels             | Pending                                                | Adapt Diff, files, terminal, and settings separately using additional reference screenshots.                                                                                                           |
+| 4. Supporting panels             | Toolbar consolidated; panel presentation pending       | Active-workspace actions now share the window titlebar. Continue adapting Diff, files, terminal, and settings using their supplied references.                                                         |
 | 5. Custom distribution           | Pending                                                | Independent package identity and update source; validate packaged launch and updates before distribution.                                                                                              |
 
 Each slice leaves a runnable app and a small independently revertible commit.
@@ -373,6 +373,32 @@ Logs: `/private/tmp/paseo-default-sidebar-newchat.log`,
 `/private/tmp/paseo-default-sidebar-typecheck.log` and
 `/private/tmp/paseo-default-sidebar-lint.log`.
 
+## Phase 4 progress — 2026-09-30
+
+The workspace menu, scripts, editor, Git and Explorer controls now share the
+macOS window titlebar, removing the repeated workspace header beneath it. The
+folder menu retains project/branch details and the existing copy/import/setup
+actions. The title falls back to the workspace name when no chat is selected.
+The default sidebar and existing pane/tab behavior are preserved.
+
+The toolbar uses a DOM portal so its original workspace routing and panel
+contexts remain attached. Only the focused workspace contributes controls;
+Settings, inactive retained workspaces and focus mode do not leave stale actions
+behind. Compact layouts continue using the original mobile header. Explorer's
+toggle stays in the titlebar while its panel is open. No provider, transport or
+panel-content implementation was copied or replaced.
+
+All four targeted desktop regressions pass, including the existing composer,
+new-chat/history and offline chat-action flows. Root typecheck, lint and format
+pass. The isolated titlebar check covers two distinct editor paths through the desktop
+IPC test boundary, workspace switching, Settings return, Explorer open/close,
+900px desktop and 700px compact layouts, and focus mode. Native inspection
+confirmed menu placement, project/branch context and Explorer open/close in the
+[consolidated toolbar](../qa-evidence/codex-desktop/phase4-native-workspace-toolbar.jpg).
+Native editor launch, script execution and Git mutation were not exercised.
+The workspace tab row and each panel's detailed presentation still need their
+own visual work; this is not full panel acceptance.
+
 ## Resume checkpoint
 
 Continue in this checkout on `codex/desktop-ui`; preserve the user's untracked
@@ -382,6 +408,12 @@ isolated renderer tests.
 
 Preserve the default sidebar per the latest scope change. Do not resume the
 custom sidebar or navigation rail without a new request.
+
+Continue from the consolidated workspace toolbar. Its focused checks are in
+`/private/tmp/paseo-titlebar-final-e2e.log`, `/private/tmp/paseo-titlebar-typecheck.log`
+and `/private/tmp/paseo-titlebar-lint.log`. Recheck the live native instance after
+structural HMR changes; a normal View > Reload refreshed the new portal without
+restarting either daemon.
 
 Latest composer evidence is recorded above; the earlier theme/settings tests pass (81).
 The extended chat-action browser case passed in 56.2 seconds. Earlier navigation

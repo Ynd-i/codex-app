@@ -5,6 +5,9 @@ import { gotoAppShell, openSettings } from "../../app/e2e/support/helpers/app";
 import { expandFolder, openFileExplorer } from "../../app/e2e/support/helpers/file-explorer";
 import { installDesktopRuntime } from "./support/runtime";
 import { clickSettingsBackToWorkspace } from "../../app/e2e/support/helpers/settings";
+import { getServerId } from "../../app/e2e/support/helpers/server-id";
+import { getE2EDaemonPort } from "../../app/e2e/support/helpers/daemon-port";
+import { selectWorkspaceInSidebar } from "../../app/e2e/support/helpers/sidebar";
 
 interface EditorOpenRecord {
   editorId: string;
@@ -68,6 +71,83 @@ async function expectEditorOpened(input: {
 }
 
 test.describe("Workspace open in editor", () => {
+  test("desktop titlebar keeps workspace actions scoped across navigation", async ({
+    page,
+    withWorkspace,
+  }, testInfo) => {
+    const recordPath = testInfo.outputPath("titlebar-editor.jsonl");
+    await installDesktopRuntime(page, {
+      serverId: getServerId(),
+      manageBuiltInDaemon: false,
+      daemonListen: `127.0.0.1:${getE2EDaemonPort()}`,
+      editorTargets: [
+        {
+          id: "vscode",
+          label: "Visual Studio Code",
+          kind: "editor",
+          icon: { kind: "symbol", name: "folder" },
+        },
+      ],
+      editorRecordPath: recordPath,
+    });
+    const first = await withWorkspace({ prefix: "titlebar-first-" });
+    const second = await withWorkspace({ prefix: "titlebar-second-" });
+    await page.setViewportSize({ width: 1352, height: 782 });
+    await first.navigateTo();
+    const toolbar = page.getByTestId("desktop-workspace-toolbar");
+    const editor = toolbar.getByTestId("workspace-open-in-editor-primary");
+    await expect(editor).toBeVisible();
+    await expect(page.getByTestId("composer-dock-header")).toHaveCount(0);
+    await editor.click();
+    await expectEditorOpened({
+      recordPath,
+      editorId: "vscode",
+      path: first.repoPath,
+      afterCount: 0,
+    });
+    await selectWorkspaceInSidebar(page, second.workspaceId);
+    await expect(toolbar.getByTestId("workspace-header-menu-trigger")).toHaveCount(1);
+    await editor.click();
+    await expectEditorOpened({
+      recordPath,
+      editorId: "vscode",
+      path: second.repoPath,
+      afterCount: 1,
+    });
+    const explorer = toolbar.getByTestId("workspace-explorer-toggle");
+    await expect(explorer).toHaveAttribute("aria-expanded", "false");
+    await explorer.click();
+    await expect(explorer).toHaveAttribute("aria-expanded", "true");
+    await expect(page.getByTestId("workspace-explorer-sidebar-resize-handle")).toBeVisible();
+    await explorer.click();
+    await openSettings(page);
+    await expect(editor).toHaveCount(0);
+    await clickSettingsBackToWorkspace(page);
+    await expect(editor).toHaveCount(1);
+    await editor.click();
+    await expectEditorOpened({
+      recordPath,
+      editorId: "vscode",
+      path: second.repoPath,
+      afterCount: 2,
+    });
+    await page.screenshot({ path: testInfo.outputPath("workspace-titlebar.png") });
+    await page.setViewportSize({ width: 900, height: 680 });
+    await expect(editor).toBeInViewport();
+    await expect(explorer).toBeInViewport();
+    // Compact layouts retain the existing mobile header and its action menu.
+    await page.setViewportSize({ width: 700, height: 680 });
+    await expect(editor).toHaveCount(0);
+    await expect(page.getByTestId("composer-dock-header")).toBeVisible();
+    await expect(page.getByTestId("workspace-header-menu-trigger")).toBeInViewport();
+    await page.setViewportSize({ width: 1352, height: 782 });
+    await expect(editor).toHaveCount(1);
+    await page.keyboard.press("Meta+Shift+f");
+    await expect(editor).toHaveCount(0);
+    await page.keyboard.press("Meta+Shift+f");
+    await expect(editor).toBeVisible();
+  });
+
   test("opens a nested folder in the preferred editor", async ({ page, withWorkspace }) => {
     test.setTimeout(90_000);
 
