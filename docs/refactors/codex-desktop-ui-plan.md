@@ -76,7 +76,7 @@ scope; it does not remove runtime code or add new provider integrations.
 | 2. Chat navigation               | Default sidebar retained; chrome consolidation pending | Keep upstream workspace navigation. Current-chat titlebar actions, draft isolation and Back/Forward remain in scope. Custom sidebar work is deferred at the user's request.                  |
 | 3. Transcript and composer       | Composer and activity verified; visual polish pending  | Column, input/model controls, tool cards and completed-turn activity are checked in native development. Attachment-menu renderer checks pass; native follow-up and transcript polish remain. |
 | 4. Supporting panels             | Toolbar consolidated; panel presentation pending       | Active-workspace actions now share the window titlebar. Continue adapting Diff, files, terminal, and settings using their supplied references.                                               |
-| 5. Custom distribution           | Pending                                                | Independent package identity and update source; validate packaged launch and updates before distribution.                                                                                    |
+| 5. Custom distribution           | Local macOS package verified; distribution pending     | Independent identity, update guard, renderer/daemon/CLI startup and isolated defaults pass. Release source, signing, deep-link ownership and distribution remain.                            |
 
 Each slice leaves a runnable app and a small independently revertible commit.
 Update this table and its evidence before moving to the next slice. Local startup
@@ -126,10 +126,11 @@ Merge upstream source changes and review server, protocol, and client compatibil
 together. Keep custom changes at the presentation boundary. Any required protocol
 change is a separate backward-compatible slice.
 
-The upstream desktop updater targets `getpaseo/paseo`. Before producing a custom
-package, disable installation of the upstream desktop bundle; distribution needs
-an independent release source. The current work is an isolated development build.
-Remote daemon upgrades retain Paseo's existing protocol and feature checks.
+The upstream desktop updater targets `getpaseo/paseo`. Use the
+[custom macOS package command](../release.md#custom-macos-development-package)
+for this fork: automatic updates stay disabled until an independent release source
+and replacement bundle are accepted. Remote daemon upgrades retain Paseo's existing
+protocol and feature checks.
 
 ## Baseline evidence — 2026-09-30
 
@@ -488,6 +489,37 @@ Native editor launch, script execution and Git mutation were not exercised.
 The workspace tab row and each panel's detailed presentation still need their
 own visual work; this is not full panel acceptance.
 
+## Phase 5 progress — 2026-09-30
+
+The local custom-package profile and update guard are implemented. A renamed
+packaged application rejects update checks and installation, including a previously
+downloaded upstream artifact, before any daemon-stop callback. The macOS CLI shim
+supports both upstream and custom Helper names. Packaging hooks resolve the actual
+bundle name. The existing smoke harness checks the custom bundle ID, absence of an
+update feed, real update IPC, renderer/daemon startup and CLI operation.
+
+All 55 focused updater, startup and packaging tests pass. The ARM64 ad-hoc package
+passed the existing real Electron smoke: renderer/preload, desktop-managed daemon,
+bundled CLI cold start, terminal/hook command and cleanup. The update IPC rejects
+checks and installs. The bundle ID is independent and no update feed is embedded.
+A second smoke omitted GUI `PASEO_HOME` and `PASEO_LISTEN`, verified the daemon home
+under isolated Electron user data and a free loopback port, then checked the same
+CLI/terminal flow. Explicit launch overrides also passed in the first run.
+
+The first build exposed a Helper/Framework signing-team mismatch. The local profile
+now uses explicit ad-hoc signing and the documented library-validation entitlement
+while retaining Hardened Runtime; the original failing cold-start path passes.
+The [packaged renderer capture](../qa-evidence/codex-desktop/phase5-packaged-startup.png)
+was visually inspected. This is local packaged startup acceptance. Developer ID
+signing, notarization, a release source, OS deep links, real-provider runs and remote
+pairing remain pending. See the [custom package instructions](../release.md#custom-macos-development-package).
+
+Logs: `/private/tmp/paseo-custom-distribution-unit.log`,
+`/private/tmp/paseo-custom-package-build.log` (initial signing failure),
+`/private/tmp/paseo-custom-package-adhoc.log`,
+`/private/tmp/paseo-custom-package-defaults.log`,
+`/private/tmp/paseo-custom-typecheck.log` and `/private/tmp/paseo-custom-lint.log`.
+
 ## Resume checkpoint
 
 Continue in this checkout on `codex/desktop-ui`; preserve the user's untracked
@@ -506,10 +538,11 @@ structural HMR changes; a normal View > Reload refreshed the new portal without
 restarting either daemon.
 
 Inline tool output and completed-turn activity are verified above. The attachment
-menu passes renderer checks and awaits native follow-up. Continue the remaining
-transcript/panel presentation, then the
-distribution gates. The native mock chat B currently has its activity expanded
-for inspection; its underlying conversation is unchanged.
+menu passes renderer checks and awaits native follow-up. The local custom-package
+smoke passes. Continue transcript/panel presentation and provider usage before the
+remaining distribution and live-provider/remote acceptance. Check the current native
+mock chat state after unlock; its underlying conversation is unchanged by these
+packaged smokes.
 
 Latest composer evidence is recorded above; the earlier theme/settings tests pass (81).
 The extended chat-action browser case passed in 56.2 seconds. Earlier navigation

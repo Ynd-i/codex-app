@@ -20,23 +20,24 @@ function writeExecutable(filePath: string, contents: string): void {
   chmodSync(filePath, 0o755);
 }
 
-function createFakeMacBundle(options: { includeHelper: boolean }): {
+function createFakeMacBundle(options: { includeHelper: boolean; name?: string }): {
   root: string;
   shimPath: string;
 } {
   const root = mkdtempSync(join(tmpdir(), "paseo-cli-shim-test-"));
-  const appPath = join(root, "Paseo.app");
+  const name = options.name ?? "Paseo";
+  const appPath = join(root, `${name}.app`);
   const contentsPath = join(appPath, "Contents");
   const resourcesPath = join(contentsPath, "Resources");
   const shimPath = join(resourcesPath, "bin", "paseo");
-  const mainPath = join(contentsPath, "MacOS", "Paseo");
+  const mainPath = join(contentsPath, "MacOS", name);
   const helperPath = join(
     contentsPath,
     "Frameworks",
-    "Paseo Helper.app",
+    `${name} Helper.app`,
     "Contents",
     "MacOS",
-    "Paseo Helper",
+    `${name} Helper`,
   );
 
   mkdirSync(dirname(shimPath), { recursive: true });
@@ -143,10 +144,10 @@ describe("desktop packaging", () => {
     }
   });
 
-  it("launches the packaged macOS CLI through Helper instead of the main app executable", () => {
+  it.each(["Paseo", "Paseo Custom"])("launches the packaged %s CLI through Helper", (name) => {
     if (process.platform === "win32") return;
 
-    const bundle = createFakeMacBundle({ includeHelper: true });
+    const bundle = createFakeMacBundle({ includeHelper: true, name });
     try {
       const result = spawnSync(bundle.shimPath, ["--version"], { encoding: "utf8" });
 

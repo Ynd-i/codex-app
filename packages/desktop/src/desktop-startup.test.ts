@@ -1,7 +1,39 @@
+import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { runDesktopStartup } from "./desktop-startup";
+import { configureDesktopDaemonEnvironment, runDesktopStartup } from "./desktop-startup";
 
 describe("desktop startup", () => {
+  it("isolates a custom package's daemon while preserving explicit launch settings", () => {
+    const env: NodeJS.ProcessEnv = {};
+    const input = {
+      isPackaged: true,
+      appName: "Paseo Custom",
+      userDataPath: "/tmp/Paseo Custom",
+      env,
+    };
+    configureDesktopDaemonEnvironment(input);
+    expect(env).toEqual({
+      PASEO_HOME: path.join(input.userDataPath, "daemon"),
+      PASEO_LISTEN: "127.0.0.1:0",
+    });
+    env.PASEO_HOME = "/tmp/explicit-smoke-home";
+    env.PASEO_LISTEN = "127.0.0.1:17777";
+    configureDesktopDaemonEnvironment(input);
+    expect(env).toEqual({
+      PASEO_HOME: "/tmp/explicit-smoke-home",
+      PASEO_LISTEN: "127.0.0.1:17777",
+    });
+  });
+
+  it.each([
+    { isPackaged: false, appName: "Paseo Custom" },
+    { isPackaged: true, appName: "Paseo" },
+  ])("preserves existing daemon defaults for $appName packaged=$isPackaged", (identity) => {
+    const env: NodeJS.ProcessEnv = {};
+    configureDesktopDaemonEnvironment({ ...identity, userDataPath: "/tmp/paseo", env });
+    expect(env).toEqual({});
+  });
+
   it("runs CLI passthrough before GUI login-shell env inheritance", async () => {
     const calls: string[] = [];
     await runDesktopStartup({

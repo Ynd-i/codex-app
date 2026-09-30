@@ -96,7 +96,7 @@ import {
   registerExternalQuitSignals,
   stopDesktopManagedDaemonOnQuitIfNeeded,
 } from "./daemon/quit-lifecycle.js";
-import { runDesktopStartup } from "./desktop-startup.js";
+import { configureDesktopDaemonEnvironment, runDesktopStartup } from "./desktop-startup.js";
 import { registerBrowserAutomationIpc } from "./features/browser-automation/ipc.js";
 import { BrowserKeyboard } from "./features/browser-keyboard/index.js";
 import { installAppUpdateOnQuit } from "./features/auto-updater.js";
@@ -111,7 +111,9 @@ const DEV_SERVER_URL = process.env.EXPO_DEV_URL ?? "http://localhost:8081";
 const APP_SCHEME = "paseo";
 const PASEO_DEBUG = process.env.PASEO_DEBUG === "1";
 const DISABLE_SINGLE_INSTANCE_LOCK = process.env.PASEO_DISABLE_SINGLE_INSTANCE_LOCK === "1";
-const APP_NAME = process.env.PASEO_TEST_APP_NAME?.trim() || "Paseo";
+const APP_NAME = app.isPackaged
+  ? app.getName()
+  : process.env.PASEO_TEST_APP_NAME?.trim() || "Paseo";
 const DESKTOP_WINDOW_CHROME_MODE = resolveDesktopWindowChromeMode({
   platform: process.platform,
   override: process.env.PASEO_DESKTOP_WINDOW_CONTROLS,
@@ -919,6 +921,12 @@ async function runCliPassthroughIfRequested(): Promise<boolean> {
 }
 
 async function bootstrap(): Promise<void> {
+  configureDesktopDaemonEnvironment({
+    isPackaged: app.isPackaged,
+    appName: APP_NAME,
+    userDataPath: app.getPath("userData"),
+    env: process.env,
+  });
   if (!setupSingleInstanceLock()) {
     return;
   }

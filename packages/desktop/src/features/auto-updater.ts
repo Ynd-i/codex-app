@@ -225,6 +225,12 @@ class ElectronAppUpdateRuntime implements AppUpdateRuntime {
 const appUpdateService = createAppUpdateService({
   runtime: new ElectronAppUpdateRuntime(),
   isPackaged: () => app.isPackaged,
+  // Only the upstream application may consume its release feed. A renamed build
+  // needs its own publisher and install validation before updates can be enabled.
+  unavailableReason: () =>
+    app.getName() === "Paseo"
+      ? null
+      : "Automatic updates are disabled for custom builds. Install a new custom build manually.",
   now: () => Date.now(),
   bucket: async () => bucketFromStagingUserId(await getStagingUserId()),
   reportCheckError: (error) => {

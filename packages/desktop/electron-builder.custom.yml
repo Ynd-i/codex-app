@@ -1,0 +1,17 @@
+# Keep upstream packaging inputs inherited; this fork has no release feed yet.
+extends: ./electron-builder.yml
+appId: local.paseo.custom.desktop
+productName: Paseo Custom
+executableName: Paseo Custom
+publish: null
+protocols: []
+extraMetadata:
+  productName: Paseo Custom
+directories:
+  output: release-custom
+mac:
+  artifactName: "Paseo-Custom-${version}-${arch}.${ext}"
+  identity: "-"
+  entitlements: assets/entitlements.custom.mac.plist
+  entitlementsInherit: assets/entitlements.custom.mac.plist
+  notarize: false

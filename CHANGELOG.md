@@ -14,6 +14,7 @@ distribution and full migration acceptance remain pending; see the
 - Added a combined model and reasoning popover on macOS, with keyboard and pointer control, provider-defined defaults, and the existing searchable model browser.
 - Added a centered, project-aware new-chat welcome on macOS, with project controls above the bottom composer and drafts retained across compact layouts.
 - Added elapsed headers and collapsible activity for completed macOS chat turns. Replies stay visible, search reveals hidden matches, and copying or forking retains the full turn. Expanding keeps the reader's position.
+- Added a local macOS custom-package profile with its own identity, isolated GUI daemon defaults, and disabled automatic updates. The packaged smoke checks the custom identity and rejected update installation.
 
 ### Changed
 

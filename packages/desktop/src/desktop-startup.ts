@@ -1,3 +1,5 @@
+import path from "node:path";
+
 export interface DesktopStartupDependencies {
   hasPendingGuiLaunchRequest: boolean;
   runCliPassthroughIfRequested: () => Promise<boolean>;
@@ -12,4 +14,19 @@ export async function runDesktopStartup(deps: DesktopStartupDependencies): Promi
 
   deps.inheritLoginShellEnv();
   await deps.bootstrapGui();
+}
+export function configureDesktopDaemonEnvironment({
+  isPackaged,
+  appName,
+  userDataPath,
+  env,
+}: {
+  isPackaged: boolean;
+  appName: string;
+  userDataPath: string;
+  env: NodeJS.ProcessEnv;
+}): void {
+  if (!isPackaged || appName === "Paseo") return;
+  env.PASEO_HOME ||= path.join(userDataPath, "daemon");
+  env.PASEO_LISTEN ||= "127.0.0.1:0";
 }

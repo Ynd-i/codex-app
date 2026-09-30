@@ -2,6 +2,43 @@
 
 All workspaces share one version and release together.
 
+## Custom macOS development package
+
+Use `npm run build:desktop:custom -- --arm64 --dir` for this UI fork. It inherits
+the upstream packaging inputs and selects `electron-builder.custom.yml`: **Paseo
+Custom**, bundle ID `local.paseo.custom.desktop`, output in
+`packages/desktop/release-custom/`. The ordinary desktop build keeps the upstream
+identity and feed; use the custom command for this fork's local artifacts.
+
+The custom profile has no publisher or automatic updates. It does not register the
+upstream `paseo://` operating-system handler. Internal app routes keep their existing
+scheme. Configure a separate release source, deep-link ownership and signing before
+distribution. Do not enable updates until the replacement bundle is validated.
+
+The local profile uses ad-hoc signing, keeps Hardened Runtime and grants JIT plus
+library-validation relaxation to the app and helpers. The latter is required to
+load Electron's frameworks with a different signing team; see
+[electron-builder's macOS signing guidance](https://www.electron.build/v26/docs/features/code-signing/code-signing-mac/).
+Review these entitlements when preparing a Developer ID signed distribution.
+
+Custom GUI startup defaults its daemon home to `daemon/` under Electron user data
+and chooses a free loopback port. Explicit `PASEO_HOME` and `PASEO_LISTEN` values
+remain supported. The bundled CLI keeps its existing CLI defaults; pass `--home`
+or `PASEO_HOME` to target the custom GUI's daemon. Installing a global CLI is a
+separate action.
+
+Run the existing packaged smoke with the custom identity assertion:
+
+```sh
+PASEO_DESKTOP_SMOKE=1 PASEO_DESKTOP_EXPECT_CUSTOM=1 \
+CSC_IDENTITY_AUTO_DISCOVERY=false \
+npm run build:desktop:custom -- --arm64 --dir
+```
+
+This checks the local bundle, isolated renderer/daemon/CLI startup and update IPC.
+Signing, notarization, real-provider runs and remote pairing have separate acceptance
+in the [migration plan](refactors/codex-desktop-ui-plan.md).
+
 ## Two steps
 
 A release has exactly two steps. The agent does the first, the user authorizes the second.
