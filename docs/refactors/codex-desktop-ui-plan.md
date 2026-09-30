@@ -3,13 +3,14 @@
 ## Target and boundaries
 
 Recreate the appearance and core interactions of Codex **26.924.22138** on macOS,
-using the four dark-theme screenshots supplied on 2026-09-30. Keep all Paseo
+using the original dark-theme screenshots and the user's `context-images/`. Keep all Paseo
 providers and remote connections. Model names, modes, permissions, and reasoning
 controls come from the selected host and provider.
 
 The upstream baseline is `getpaseo/paseo` commit `53ee9cd` on `main`. Work lives on
 `codex/desktop-ui`. This document owns the steps, decisions, progress, and evidence.
-The upstream changelog continues to describe shipped releases.
+The root [changelog](../../CHANGELOG.md) records custom work under Unreleased;
+the existing versioned entries describe upstream releases.
 
 Keep the daemon, relay, protocol, connection runtime, timeline synchronization,
 and persistence under their existing owners. Customize desktop presentation
@@ -31,6 +32,43 @@ Do not copy whole screens or add another client, transport, or session store.
 Each slice leaves a runnable app and a small independently revertible commit.
 Update this table and its evidence before moving to the next slice. Local startup
 is not acceptance of provider runs, approvals, or remote pairing.
+
+## Execution plan
+
+Work is authorized through implementation, local validation, and regular commits.
+Keep working on independent slices while a reference or native UI check is blocked.
+Do not treat a missing screenshot as a reason to stop unrelated implementation.
+Use this plan for status and the root changelog for user-visible changes; do not
+create another task ledger.
+
+| Track                  | Ordered slices                                                                                                                                                                                   | Completion evidence                                                                                                                                                     |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Chat and composer      | Finish shared titlebar/sidebar actions; align transcript width, type and spacing; align composer and attachment previews; adapt provider-backed model/effort controls.                           | Targeted action regressions; isolated renderer checks for sibling drafts, navigation, send/stop and attachments; native comparison against the matching supplied state. |
+| Supporting UI          | Inspect the supplied browser and settings states; adapt existing panels one at a time; then tool output, waiting approval and populated diff when their references are available.                | Existing panel navigation and keyboard behavior retained; empty, loading and error states checked; each visual state has its own evidence.                              |
+| Upstream compatibility | Keep presentation in desktop overrides; review each upstream merge; rebuild affected workspace dependencies before checking consumers.                                                           | Small revertible commits, no unintended backend/protocol changes, targeted tests for changed upstream behavior. Last accepted upstream parent: `4e9a458`.               |
+| Distribution           | Inspect existing identity and updater configuration; prevent a custom package from installing official Paseo bundles; prepare a separate identity/channel; build and validate the local package. | Packaged launch and update behavior accepted separately from development. A release destination, signing identity and any publication are resolved before distribution. |
+
+For each slice: inspect its source and reference, make the smallest change, run
+focused checks plus root typecheck/lint/format, review the diff, update the relevant
+evidence and changelog, then commit only the slice's files. Preserve user images
+and other unrelated work. Never restart the production daemon on 6767.
+
+The migration is complete only when the scoped desktop surfaces, provider behavior,
+remote connection behavior, upstream integration, and custom package have their
+required acceptance evidence. Browser tests using an Electron bridge and simulated
+provider do not establish native, real-provider, remote-device, or packaged acceptance.
+
+### Work that can continue unattended
+
+Code inspection, implementation, targeted unit tests, isolated headless renderer
+tests, dependency builds, documentation, and commits can continue while the Mac
+is locked. Native screenshots and window interactions wait for manual unlock.
+The active Codex goal tracks continuation; this document is the durable checkpoint.
+
+At 2% remaining account usage, alert the user; at 1%, save a verified checkpoint
+and prepare the requested banked reset. The current tool exposes usage and reset
+counts but cannot redeem a reset. If execution stops at the limit, manual reset
+is required before continuation; do not claim a reset was applied.
 
 ## Update strategy
 
@@ -92,10 +130,6 @@ Local commits: `bcb2c6a` records the baseline and plan; the following
 `feat(desktop): add codex-style macos shell` commit contains the first UI slice
 and its evidence. No remote push or packaged distribution was performed.
 
-Next: phase 2 chat navigation. Preserve agent/workspace/host identities and test
-archive, attention, pinning, and sibling isolation before changing row ownership.
-The forward control and richer sidebar header actions belong to that slice.
-
 ## Phase 2 progress — 2026-09-30
 
 Chat rows now use the existing agent directory and retain host/workspace/agent
@@ -127,8 +161,7 @@ isolated daemon and Chromium renderer: sibling drafts, initial Back state,
 Back/Forward, chat pinning, and the pin shortcut. This uses a simulated Electron
 bridge; native visual acceptance still requires an unlocked Mac.
 
-Sidebar/actions commit: `4a66271`. The navigation slice is committed separately as
-`feat(desktop): add chat navigation history`. Remaining in phase 2: current-chat
+Sidebar/actions commit: `4a66271`; navigation commit: `1a104c6`. Remaining in phase 2: current-chat
 toolbar actions and final native visual verification. Then continue transcript,
 composer, model/effort and attachment presentation from the available references.
 Real-provider turns and the remaining visual states still need their own checks.
@@ -189,5 +222,12 @@ ignored `.dev/codex-reference/`. Compare matching viewport regions and density.
 ## Reference coverage and next input
 
 Available: full window, empty new-chat state, transcript, attachment previews,
-model menu, and reasoning-intensity menu. Later slices need expanded tool output,
-an approval request, a Diff panel, and appearance/keyboard settings screenshots.
+chat actions, search/history, model and reasoning controls, approval-mode menu,
+browser side panel, and general/appearance/agent/connection settings. Use the
+matching file under `context-images/` before each slice; these files are private
+reference material and are not part of the application bundle.
+
+Still needed for final visual matching: expanded tool execution, an actual waiting
+approval request, a populated code diff, and keyboard settings. The approval-mode
+menu and untracked-files warning do not establish those missing states. Preserve
+the existing behavior until those visual references can be confirmed.

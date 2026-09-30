@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased — custom desktop
+
+These changes are available on `codex/desktop-ui` in local development. Packaged
+distribution and full migration acceptance remain pending; see the
+[migration plan](docs/refactors/codex-desktop-ui-plan.md).
+
+### Added
+
+- Added a Codex-style macOS titlebar, navigation rail, rounded content frame, and dark palette while retaining the existing themes and providers.
+- Added individual chats in Recent, Pinned, and project groups, with chat-scoped rename, archive, pinning, and unread actions.
+- Added Back/Forward chat navigation and the current-chat title, preserving independent drafts when switching between sibling chats.
+
 ## 0.10.2 - 2026-09-30
 
 ### Fixed
