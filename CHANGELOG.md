@@ -22,6 +22,7 @@ distribution and full migration acceptance remain pending; see the
 ### Fixed
 
 - Fixed chat metadata changes remaining paused indefinitely while offline; connection errors and timeouts now return control to the user without discarding a rename draft.
+- Fixed the model popover intercepting the reasoning slider's native arrow keys.
 
 ## 0.10.2 - 2026-09-30
 

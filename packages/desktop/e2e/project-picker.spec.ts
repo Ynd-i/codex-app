@@ -51,6 +51,10 @@ test("desktop composer keeps send and stop reachable with attachments", async ({
       )
       .toBe("ten-second-stream");
     await model.click();
+    await effort.press("ArrowUp");
+    await expect(effort).toHaveAttribute("aria-valuetext", "Medium");
+    await effort.press("ArrowDown");
+    await expect(effort).toHaveAttribute("aria-valuetext", "Low");
     await effort.press("End");
     await expect
       .poll(

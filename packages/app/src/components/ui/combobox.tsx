@@ -1176,6 +1176,13 @@ function DesktopComboboxBody(props: DesktopBodyProps): ReactElement {
   const handleDesktopKey = props.handleDesktopKey;
   const handleWebOverlayKeyDown = useCallback(
     (event: KeyboardEvent) => {
+      // Claim range keys for the overlay while preserving the input's native action.
+      if (
+        event.target instanceof HTMLInputElement &&
+        event.target.type === "range" &&
+        (event.key.startsWith("Arrow") || event.key === "Home" || event.key === "End")
+      )
+        return true;
       if (!isDesktopKey(event.key)) return false;
       return handleDesktopKey(event.key, event);
     },

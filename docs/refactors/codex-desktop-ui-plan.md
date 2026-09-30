@@ -219,10 +219,13 @@ declared default. A one-option model has a disabled range; a model without
 reasoning options opens the model browser directly. The existing provider, profile,
 loading and retry behavior remains under the model browser's ownership.
 
-The expanded renderer case passed in 5.1 seconds (18.1 seconds including setup):
+The expanded renderer case passed in 5.2 seconds (16.1 seconds including setup):
 model selection, keyboard adjustment, reset, deferred pointer submission, one/no
 reasoning option, attachment upload, narrow long-draft layout, send and stop.
-The popover screenshot was inspected. Root typecheck, lint and translation parity
+The popover screenshot was inspected. A follow-up regression caught the generic
+combobox consuming Up/Down; range controls now keep their native arrow/Home/End
+behavior while the overlay prevents those keys reaching background shortcuts.
+Root typecheck, lint and translation parity
 passed (36 locale tests). The macOS combobox frame uses the same rounded surface
 for the preferences and model browser.
 
@@ -244,8 +247,8 @@ parity and chat projection/metadata checks passed. The browser regression caught
 both an initial-open history entry and a paused offline mutation; each was fixed
 before a passing rerun. No live-provider or packaged acceptance is implied.
 
-Relevant logs for the next continuation: `/private/tmp/paseo-model-popover-e2e.log`,
-`/private/tmp/paseo-model-popover-typecheck.log`, `/private/tmp/paseo-model-popover-lint.log`,
+Relevant logs for the next continuation: `/private/tmp/paseo-slider-keys-e2e.log`,
+`/private/tmp/paseo-slider-keys-typecheck.log`, `/private/tmp/paseo-slider-keys-lint.log`,
 `/private/tmp/paseo-model-popover-i18n.log`, `/private/tmp/paseo-composer-settings-tests.log`,
 `/private/tmp/paseo-chat-toolbar-recovery.log`, and
 `/private/tmp/paseo-upstream-runtime-tests.log`. The development instance uses 8083
