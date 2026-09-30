@@ -24,10 +24,12 @@ distribution and full migration acceptance remain pending; see the
 - Updated macOS selector surfaces to the rounded, raised style used by the reference.
 - Matched macOS user-message bubbles to the reference with a 70% width limit, darker fill, and even rounded corners.
 - Made macOS tool rows more compact, kept their tool icons visible, and placed expanded output in a separate rounded card with a heading and bounded scroll area.
+- Matched the macOS attachment menu to the composer width, placed file upload first, and grouped available plugin sources. The menu follows composer/window resizing and preserves keyboard focus and drafts when selection is canceled.
 - Removed voice mode, dictation, their shortcut entries, and audio diagnostics from the custom macOS desktop, in line with the agreed scope. Other platforms and the voice backend remain available.
 
 ### Fixed
 
+- Localized the file-upload label in Chinese, Spanish, French and Arabic.
 - Separated tool expansion from the file-open button, removing nested buttons and making file navigation reachable by keyboard without changing expansion state. Expandable tool rows now expose their expanded state on web.
 - Fixed chat metadata changes remaining paused indefinitely while offline; connection errors and timeouts now return control to the user without discarding a rename draft.
 - Fixed the model popover intercepting the reasoning slider's native arrow keys.

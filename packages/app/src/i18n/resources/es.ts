@@ -164,7 +164,7 @@ export const es: TranslationResources = {
     attachments: {
       addImage: "Agregar imagen",
       pasteImage: "Pegar imagen",
-      addFile: "Upload file",
+      addFile: "Subir archivo",
       addIssueOrPr: "Agregar problema oPR",
       addIssueOrPr_mr: "Agregar problema o MR",
       dropImagesHere: "Suelta imágenes aquí",

@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { BottomSheetBackdrop, BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { ChevronLeft } from "lucide-react-native";
@@ -109,6 +109,10 @@ export interface MenuSurfaceProps {
   align?: Alignment;
   offset?: number;
   width?: number;
+  /** Position against this element while focus still returns to the trigger. */
+  anchorRef?: React.RefObject<View | null>;
+  matchAnchorWidth?: boolean;
+  surfaceStyle?: StyleProp<ViewStyle>;
   minWidth?: number;
   maxWidth?: number;
   maxHeight?: number;
@@ -198,6 +202,9 @@ function MenuPopoverSurface({
   align = "start",
   offset = 4,
   width,
+  anchorRef,
+  matchAnchorWidth,
+  surfaceStyle,
   minWidth = 180,
   maxWidth,
   maxHeight,
@@ -249,11 +256,13 @@ function MenuPopoverSurface({
             open={menu.open}
             onClose={handleClose}
             anchorRect={menu.anchorRect}
-            anchorRef={menu.triggerRef}
+            anchorRef={anchorRef ?? menu.triggerRef}
             side={side}
             align={align}
             offset={offset}
             width={width}
+            matchAnchorWidth={matchAnchorWidth}
+            surfaceStyle={surfaceStyle}
             minWidth={minWidth}
             maxWidth={maxWidth}
             maxHeight={maxHeight}

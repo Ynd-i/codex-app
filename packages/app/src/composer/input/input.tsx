@@ -17,6 +17,7 @@ import {
   useImperativeHandle,
   useMemo,
   forwardRef,
+  Fragment,
 } from "react";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
@@ -43,6 +44,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useShortcutKeys } from "@/hooks/use-shortcut-keys";
@@ -92,6 +94,7 @@ export interface AttachmentMenuItem {
   onSelect: () => void;
   disabled?: boolean;
   icon?: React.ReactElement | null;
+  section?: "plugins";
 }
 
 export interface ComposerInputSnapshot {
@@ -235,19 +238,44 @@ function AttachButtonIcon({
   );
 }
 
-function AttachmentMenuList({ items }: { items: AttachmentMenuItem[] }) {
+const desktopAttachmentItemStyle: React.ComponentProps<typeof DropdownMenuItem>["style"] = ({
+  hovered,
+  focused,
+  pressed,
+  disabled,
+}) => [
+  styles.attachmentMenuItem,
+  !disabled && (hovered || focused || pressed) ? styles.attachmentMenuItemActive : null,
+];
+
+function AttachmentMenuList({
+  items,
+  desktop,
+  title,
+}: {
+  items: AttachmentMenuItem[];
+  desktop: boolean;
+  title: string;
+}) {
+  const { t } = useTranslation();
   return (
     <>
-      {items.map((item) => (
-        <DropdownMenuItem
-          key={item.id}
-          testID={`message-input-attachment-menu-item-${item.id}`}
-          disabled={item.disabled}
-          onSelect={item.onSelect}
-          leading={item.icon ?? null}
-        >
-          {item.label}
-        </DropdownMenuItem>
+      {desktop ? <DropdownMenuLabel>{title}</DropdownMenuLabel> : null}
+      {items.map((item, index) => (
+        <Fragment key={item.id}>
+          {desktop && item.section === "plugins" && items[index - 1]?.section !== "plugins" ? (
+            <DropdownMenuLabel>{t("settings.plugins.title")}</DropdownMenuLabel>
+          ) : null}
+          <DropdownMenuItem
+            testID={`message-input-attachment-menu-item-${item.id}`}
+            disabled={item.disabled}
+            onSelect={item.onSelect}
+            leading={item.icon ?? null}
+            style={desktop ? desktopAttachmentItemStyle : undefined}
+          >
+            {item.label}
+          </DropdownMenuItem>
+        </Fragment>
       ))}
     </>
   );
@@ -261,6 +289,8 @@ function AttachmentDropdown({
   renderAttachButtonIcon,
   attachmentMenuItems,
   addAttachmentLabel,
+  composerRef,
+  compact,
 }: {
   visible: boolean;
   isConnected: boolean;
@@ -269,12 +299,15 @@ function AttachmentDropdown({
   renderAttachButtonIcon: (input: { hovered?: boolean }) => React.ReactElement;
   attachmentMenuItems: AttachmentMenuItem[];
   addAttachmentLabel: string;
+  composerRef: React.RefObject<View | null>;
+  compact: boolean;
 }) {
+  const desktopMenu = getIsElectronMac() && !compact;
   const isButtonDisabled = !isConnected || disabled;
   if (!visible) return null;
   return (
     <DropdownMenu compactMode="sheet">
-      <Tooltip delayDuration={0} enabledOnDesktop enabledOnMobile={false}>
+      <Tooltip delayDuration={0} enabledOnDesktop={!desktopMenu} enabledOnMobile={false}>
         <TooltipTrigger asChild>
           <DropdownMenuTrigger
             disabled={isButtonDisabled}
@@ -294,11 +327,20 @@ function AttachmentDropdown({
         side="top"
         align="start"
         offset={8}
-        minWidth={220}
+        minWidth={desktopMenu ? 0 : 220}
+        anchorRef={desktopMenu ? composerRef : undefined}
+        matchAnchorWidth={desktopMenu}
+        surfaceStyle={desktopMenu ? styles.attachmentMenuSurface : undefined}
+        maxHeight={desktopMenu ? 360 : undefined}
+        scrollable={desktopMenu}
         testID="message-input-attachment-menu"
         sheetTitle={addAttachmentLabel}
       >
-        <AttachmentMenuList items={attachmentMenuItems} />
+        <AttachmentMenuList
+          items={attachmentMenuItems}
+          desktop={desktopMenu}
+          title={addAttachmentLabel}
+        />
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -1832,6 +1874,8 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
             {/* Toolbar left: attachment button + agent controls */}
             <View style={styles.leftButtonGroup}>
               <AttachmentDropdown
+                composerRef={rootRef}
+                compact={isCompact}
                 visible={mode.showAttachments}
                 isConnected={isConnected}
                 disabled={disabled}
@@ -1909,6 +1953,9 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
 );
 
 const styles = StyleSheet.create((theme: Theme) => ({
+  attachmentMenuSurface: { backgroundColor: theme.colors.surface2, borderRadius: 24 },
+  attachmentMenuItem: { borderRadius: theme.borderRadius.full },
+  attachmentMenuItemActive: { backgroundColor: theme.colors.surface3 },
   container: {
     flexShrink: 1,
     position: "relative",

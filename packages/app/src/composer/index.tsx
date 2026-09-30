@@ -2155,6 +2155,15 @@ function ComposerContentImpl({
   );
 
   const attachmentMenuItems = useMemo<AttachmentMenuItem[]>(() => {
+    const desktopMenu = getIsElectronMac() && !isCompactFormFactor;
+    const file: AttachmentMenuItem = {
+      id: "file",
+      label: t("composer.attachments.addFile"),
+      icon: <ThemedPaperclip size={ICON_SIZE.md} uniProps={iconForegroundMutedMapping} />,
+      onSelect: () => {
+        void handlePickFile();
+      },
+    };
     const items: AttachmentMenuItem[] = [
       {
         id: "image",
@@ -2187,21 +2196,14 @@ function ComposerContentImpl({
         },
       },
       ...pluginAttachments.menuItems,
-      {
-        id: "file",
-        label: t("composer.attachments.addFile"),
-        icon: <ThemedPaperclip size={ICON_SIZE.md} uniProps={iconForegroundMutedMapping} />,
-        onSelect: () => {
-          void handlePickFile();
-        },
-      },
     );
-    return items;
+    return desktopMenu ? [file, ...items] : [...items, file];
   }, [
     forgePresentation,
     handlePasteImage,
     handlePickFile,
     handlePickImage,
+    isCompactFormFactor,
     pluginAttachments.menuItems,
     t,
   ]);

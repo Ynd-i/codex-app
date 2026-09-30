@@ -26,6 +26,15 @@ when you have actually looked at it on a phone.
 `ContextMenu` is the exception: it defaults to `compactMode="sheet"` and enables native long press.
 Disable mobile triggering explicitly on draggable rows, where long press belongs to drag instead.
 
+## Popover anchors
+
+A popover may pass `anchorRef` to position against a larger control, such as the
+composer, and `matchAnchorWidth` to use its measured width. This opt-in tracks
+window and anchor-size changes; other menus keep their existing geometry rules.
+Focus still restores to the original trigger. Compact sheets keep their normal
+presentation. `surfaceStyle` and a `MenuItem` style callback allow local color and
+corner adjustments without replacing the selection or keyboard engine.
+
 ## When the items differ per form factor
 
 A menu whose contents depend on what else is on screen gets one component per surface, not one

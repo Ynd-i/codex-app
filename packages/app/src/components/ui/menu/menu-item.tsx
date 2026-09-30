@@ -12,6 +12,7 @@ import {
   View,
   type PressableStateCallbackType,
   type ViewStyle,
+  type StyleProp,
 } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { Check, CheckCircle } from "lucide-react-native";
@@ -222,6 +223,14 @@ function resolveItemLabel(input: {
 }
 
 export interface MenuItemProps {
+  style?:
+    | StyleProp<ViewStyle>
+    | ((state: {
+        pressed: boolean;
+        hovered: boolean;
+        focused: boolean;
+        disabled: boolean;
+      }) => StyleProp<ViewStyle>);
   description?: string;
   onSelect?: () => void;
   disabled?: boolean;
@@ -272,6 +281,7 @@ export function MenuItem({
   closeOnSelect = true,
   testID,
   tooltip,
+  style,
 }: PropsWithChildren<MenuItemProps>): ReactElement {
   const { selectItem } = useMenuContext("MenuItem");
   const isPending = status === "pending" || loading;
@@ -316,8 +326,11 @@ export function MenuItem({
       hovered && !pressed && !isDisabled ? styles.itemHovered : null,
       focused && !isDisabled ? styles.itemHovered : null,
       pressed && !isDisabled ? styles.itemPressed : null,
+      typeof style === "function"
+        ? style({ pressed, hovered, focused, disabled: Boolean(isDisabled) })
+        : style,
     ],
-    [active, isDisabled, muted],
+    [active, isDisabled, muted, style],
   );
 
   const itemTextStyle = useMemo(

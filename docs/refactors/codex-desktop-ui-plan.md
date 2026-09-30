@@ -68,15 +68,15 @@ scope; it does not remove runtime code or add new provider integrations.
 
 ## Steps
 
-| Step                             | Status                                                 | Acceptance                                                                                                                                                                                 |
-| -------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 0. Upstream baseline             | Complete for local startup                             | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                                    |
-| 1. Window and sidebar appearance | Complete for local macOS development                   | Desktop shell and dark palette implemented; native navigation, sidebar toggle, menus, theme changes, window resize/fullscreen/reactivation checked. Scoped visual QA passed.               |
-| 1a. Upstream integration check   | Merged and rebuilt                                     | Merge `309f2c4` includes upstream `4e9a458` (release notes plus a host-startup race fix). No conflicts; server/client rebuild and 11 targeted startup tests passed.                        |
-| 2. Chat navigation               | Default sidebar retained; chrome consolidation pending | Keep upstream workspace navigation. Current-chat titlebar actions, draft isolation and Back/Forward remain in scope. Custom sidebar work is deferred at the user's request.                |
-| 3. Transcript and composer       | Composer and activity verified; visual polish pending  | Column, input/model controls, tool cards and completed-turn activity are implemented and checked in native development. Attachment-menu matching and remaining transcript polish continue. |
-| 4. Supporting panels             | Toolbar consolidated; panel presentation pending       | Active-workspace actions now share the window titlebar. Continue adapting Diff, files, terminal, and settings using their supplied references.                                             |
-| 5. Custom distribution           | Pending                                                | Independent package identity and update source; validate packaged launch and updates before distribution.                                                                                  |
+| Step                             | Status                                                 | Acceptance                                                                                                                                                                                   |
+| -------------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0. Upstream baseline             | Complete for local startup                             | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                                      |
+| 1. Window and sidebar appearance | Complete for local macOS development                   | Desktop shell and dark palette implemented; native navigation, sidebar toggle, menus, theme changes, window resize/fullscreen/reactivation checked. Scoped visual QA passed.                 |
+| 1a. Upstream integration check   | Merged and rebuilt                                     | Merge `309f2c4` includes upstream `4e9a458` (release notes plus a host-startup race fix). No conflicts; server/client rebuild and 11 targeted startup tests passed.                          |
+| 2. Chat navigation               | Default sidebar retained; chrome consolidation pending | Keep upstream workspace navigation. Current-chat titlebar actions, draft isolation and Back/Forward remain in scope. Custom sidebar work is deferred at the user's request.                  |
+| 3. Transcript and composer       | Composer and activity verified; visual polish pending  | Column, input/model controls, tool cards and completed-turn activity are checked in native development. Attachment-menu renderer checks pass; native follow-up and transcript polish remain. |
+| 4. Supporting panels             | Toolbar consolidated; panel presentation pending       | Active-workspace actions now share the window titlebar. Continue adapting Diff, files, terminal, and settings using their supplied references.                                               |
+| 5. Custom distribution           | Pending                                                | Independent package identity and update source; validate packaged launch and updates before distribution.                                                                                    |
 
 Each slice leaves a runnable app and a small independently revertible commit.
 Update this table and its evidence before moving to the next slice. Local startup
@@ -391,6 +391,35 @@ and [expanded](../qa-evidence/codex-desktop/phase3-native-activity-expanded.jpg)
 were inspected in the existing mock conversation. This is simulated-provider and
 local native acceptance, not live-provider, remote-device or packaged acceptance.
 
+### Attachment menu
+
+The wide macOS attachment popover now matches the composer width and opens above
+the whole input. It follows window/composer resizing, keeps file upload first,
+and separates available plugin sources under their own heading. Rounded surfaces
+and focused rows use the existing theme tokens. The supported file, image and
+Issue/PR handlers are reused; unsupported reference actions are not added.
+Compact sheets and other-platform menus retain their existing presentation.
+
+The shared menu engine now accepts a positioning anchor and optional width match;
+focus restoration still targets the original button. Two isolated desktop tests
+cover geometry through delayed animation cleanup, resize, initial keyboard focus, Escape restoration, canceled
+selection, native-read failure, retry, successful daemon upload and draft retention.
+The native dialog/file boundary is simulated in these tests. Two existing browser
+tests cover upload acknowledgment and compact sheet alignment; all 33 targeted
+menu unit tests and 36 locale checks pass. Root typecheck, lint and format pass. Logs:
+`/private/tmp/paseo-attachment-menu-awake.log`,
+`/private/tmp/paseo-attachment-menu-browser-e2e.log`,
+`/private/tmp/paseo-attachment-menu-unit.log`,
+`/private/tmp/paseo-attachment-menu-typecheck.log` and
+`/private/tmp/paseo-attachment-menu-lint.log`.
+
+The [isolated renderer capture](../qa-evidence/codex-desktop/phase3-renderer-attachment-menu.png)
+was visually inspected. The Mac locked during native inspection, before a stable
+menu capture was verified; native menu acceptance remains pending manual unlock.
+Plugin-specific resource selection has not been exercised in this slice.
+Maintenance sleep coincided with fixture setup timeouts. The passing renderer run
+used a temporary `caffeinate -i` wrapper; it changes no persistent power or lock settings.
+
 ### Voice exclusions
 
 The custom macOS desktop now hides both composer microphone controls and the
@@ -462,7 +491,8 @@ own visual work; this is not full panel acceptance.
 ## Resume checkpoint
 
 Continue in this checkout on `codex/desktop-ui`; preserve the user's untracked
-`context-images/`. Native inspection is available. Reuse the live development
+`context-images/`. The Mac is currently locked; native attachment-menu inspection
+must resume after manual unlock. Reuse the live development
 instance after checking its status. The pinned Playwright runtime supports
 isolated renderer tests.
 
@@ -475,8 +505,9 @@ and `/private/tmp/paseo-titlebar-lint.log`. Recheck the live native instance aft
 structural HMR changes; a normal View > Reload refreshed the new portal without
 restarting either daemon.
 
-Inline tool output and completed-turn activity are verified above. Continue the
-attachment-menu work and remaining transcript/panel presentation, then the
+Inline tool output and completed-turn activity are verified above. The attachment
+menu passes renderer checks and awaits native follow-up. Continue the remaining
+transcript/panel presentation, then the
 distribution gates. The native mock chat B currently has its activity expanded
 for inspection; its underlying conversation is unchanged.
 

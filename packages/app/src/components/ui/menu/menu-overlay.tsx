@@ -16,6 +16,7 @@ import {
   Pressable,
   StatusBar,
   View,
+  useWindowDimensions,
   type StyleProp,
   type ViewStyle,
 } from "react-native";
@@ -114,6 +115,7 @@ export function useAnchoredPosition({
   offset,
   scrollable,
   maxHeight,
+  matchAnchorWidth = false,
 }: {
   open: boolean;
   anchorRect: Rect | null;
@@ -123,7 +125,11 @@ export function useAnchoredPosition({
   offset: number;
   scrollable: boolean;
   maxHeight?: number;
+  matchAnchorWidth?: boolean;
 }) {
+  const viewport = useWindowDimensions();
+  const geometryRevision = matchAnchorWidth ? `${viewport.width}:${viewport.height}` : null;
+  const trackedHeight = matchAnchorWidth ? viewport.height : undefined;
   const [triggerRect, setTriggerRect] = useState<Rect | null>(null);
   const [contentSize, setContentSize] = useState<Size | null>(null);
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
@@ -133,7 +139,7 @@ export function useAnchoredPosition({
     if (!contentSize) return null;
     if (!scrollable) return contentSize;
 
-    const { height: screenHeight } = Dimensions.get("window");
+    const screenHeight = trackedHeight ?? Dimensions.get("window").height;
     const viewportMaxHeight = Math.max(screenHeight - 16, 0);
     const resolvedMaxHeight =
       typeof maxHeight === "number" ? Math.min(maxHeight, viewportMaxHeight) : viewportMaxHeight;
@@ -142,7 +148,7 @@ export function useAnchoredPosition({
       width: contentSize.width,
       height: Math.min(contentSize.height, resolvedMaxHeight),
     };
-  }, [contentSize, scrollable, maxHeight]);
+  }, [contentSize, scrollable, maxHeight, trackedHeight]);
 
   useEffect(() => {
     if (!open) {
@@ -167,18 +173,33 @@ export function useAnchoredPosition({
     const statusBarHeight = Platform.OS === "android" ? (StatusBar.currentHeight ?? 0) : 0;
     let cancelled = false;
 
-    void measureElement(anchorRef.current).then((rect) => {
-      if (cancelled) return undefined;
-      // On Android with statusBarTranslucent, measureInWindow returns coordinates relative to
-      // below the status bar while Modal content starts at the screen top.
-      setTriggerRect({ ...rect, y: rect.y + statusBarHeight });
-      return undefined;
-    });
+    const element = anchorRef.current;
+    const measure = () => {
+      void measureElement(element).then((rect) => {
+        if (cancelled) return undefined;
+        // Android measurement excludes the translucent status bar; the modal does not.
+        setTriggerRect({ ...rect, y: rect.y + statusBarHeight });
+        return undefined;
+      });
+    };
+    measure();
+    let observer: ResizeObserver | null = null;
+    if (
+      matchAnchorWidth &&
+      isWeb &&
+      typeof ResizeObserver !== "undefined" &&
+      typeof HTMLElement !== "undefined" &&
+      element instanceof HTMLElement
+    ) {
+      observer = new ResizeObserver(measure);
+      observer.observe(element);
+    }
 
     return () => {
       cancelled = true;
+      observer?.disconnect();
     };
-  }, [anchorRect, anchorRef, open]);
+  }, [anchorRect, anchorRef, open, matchAnchorWidth, geometryRevision]);
 
   useEffect(() => {
     if (!triggerRect || !visibleContentSize) return;
@@ -196,7 +217,7 @@ export function useAnchoredPosition({
 
     setPosition({ x: result.x, y: result.y });
     setActualPlacement(result.actualPlacement);
-  }, [triggerRect, visibleContentSize, side, align, offset]);
+  }, [triggerRect, visibleContentSize, side, align, offset, geometryRevision]);
 
   const onContentLayout = useCallback(
     (event: { nativeEvent: { layout: { width: number; height: number } } }) => {
@@ -209,7 +230,14 @@ export function useAnchoredPosition({
     [],
   );
 
-  return { position, actualPlacement, contentSize, visibleContentSize, onContentLayout };
+  return {
+    position,
+    actualPlacement,
+    contentSize,
+    visibleContentSize,
+    onContentLayout,
+    triggerRect,
+  };
 }
 
 export interface AnchoredSurfaceProps {
@@ -222,6 +250,8 @@ export interface AnchoredSurfaceProps {
   align?: Alignment;
   offset?: number;
   width?: number;
+  matchAnchorWidth?: boolean;
+  surfaceStyle?: StyleProp<ViewStyle>;
   minWidth?: number;
   maxWidth?: number;
   maxHeight?: number;
@@ -257,6 +287,8 @@ export function AnchoredSurface({
   align = "start",
   offset = 4,
   width,
+  matchAnchorWidth,
+  surfaceStyle,
   minWidth = 180,
   maxWidth,
   maxHeight,
@@ -273,17 +305,24 @@ export function AnchoredSurface({
 }: AnchoredSurfaceProps): ReactElement | null {
   const { t } = useTranslation();
   const surfaceNativeID = useId();
-  const { position, actualPlacement, contentSize, visibleContentSize, onContentLayout } =
-    useAnchoredPosition({
-      open,
-      anchorRect,
-      anchorRef,
-      side,
-      align,
-      offset,
-      scrollable,
-      maxHeight,
-    });
+  const {
+    position,
+    actualPlacement,
+    contentSize,
+    visibleContentSize,
+    onContentLayout,
+    triggerRect,
+  } = useAnchoredPosition({
+    open,
+    anchorRect,
+    anchorRef,
+    matchAnchorWidth,
+    side,
+    align,
+    offset,
+    scrollable,
+    maxHeight,
+  });
 
   useReleaseFixedMenuHeight({
     contentSize,
@@ -313,10 +352,11 @@ export function AnchoredSurface({
 
   const frameStyle = useMemo<StyleProp<ViewStyle>>(() => {
     const { width: screenWidth } = Dimensions.get("window");
+    const resolvedWidth = matchAnchorWidth ? triggerRect?.width : width;
     const resolvedWidthStyle: ViewStyle = fullWidth
       ? { width: screenWidth - horizontalPadding * 2 }
       : {
-          ...(typeof width === "number" ? { width } : null),
+          ...(typeof resolvedWidth === "number" ? { width: resolvedWidth } : null),
           ...(typeof minWidth === "number" ? { minWidth } : null),
           ...(typeof maxWidth === "number" ? { maxWidth } : null),
         };
@@ -333,6 +373,8 @@ export function AnchoredSurface({
     fullWidth,
     horizontalPadding,
     width,
+    matchAnchorWidth,
+    triggerRect,
     minWidth,
     maxWidth,
     position?.x,
@@ -345,6 +387,7 @@ export function AnchoredSurface({
     () => [visibleContentSize ? { height: visibleContentSize.height } : null],
     [visibleContentSize],
   );
+  const contentStyle = useMemo(() => [styles.content, surfaceStyle], [surfaceStyle]);
   const surfaceDataSet = useMemo(
     () => ({
       menuSurface: "true",
@@ -385,7 +428,7 @@ export function AnchoredSurface({
         nativeID={surfaceNativeID}
         testID={testID}
         dataSet={surfaceDataSet}
-        style={styles.content}
+        style={contentStyle}
         frameStyle={frameStyle}
         entering={placed ? contentEntering : undefined}
         exiting={
