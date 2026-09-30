@@ -39,7 +39,8 @@ import { useToastHost, type ToastApi, type ToastState } from "@/components/toast
 import type { WorkspaceComposerAttachment } from "@/attachments/types";
 import { useWorkspaceAttachmentScopeKey } from "@/attachments/workspace-attachments-store";
 import { COMPACT_FORM_FACTOR_WIDTH, useIsCompactFormFactor } from "@/constants/layout";
-import { isNative, isWeb } from "@/constants/platform";
+import { getIsElectronMac, isNative, isWeb } from "@/constants/platform";
+import { DESKTOP_CHAT_UNREAD } from "@/components/desktop/desktop-chat-model";
 import { useAgentAttentionClear } from "@/hooks/use-agent-attention-clear";
 import { useAgentInputDraft, type AgentInputDraft } from "@/composer/draft/input-draft";
 import {
@@ -116,6 +117,7 @@ interface ChatAgentStateShape {
 interface ChatAgentSelectedState extends ChatAgentStateShape {
   archivedAt: Date | null;
   requiresAttention: boolean;
+  manualUnread: boolean;
   attentionReason: Agent["attentionReason"] | null;
 }
 
@@ -146,6 +148,7 @@ const EMPTY_CHAT_AGENT_STATE: ChatAgentSelectedState = {
   lastError: null,
   archivedAt: null,
   requiresAttention: false,
+  manualUnread: false,
   attentionReason: null,
 };
 
@@ -172,6 +175,7 @@ function selectChatAgentState(
     lastError: agent.lastError ?? null,
     archivedAt: agent.archivedAt ?? null,
     requiresAttention: agent.requiresAttention ?? false,
+    manualUnread: getIsElectronMac() && agent.labels[DESKTOP_CHAT_UNREAD] === "true",
     attentionReason: agent.attentionReason ?? null,
   };
 }
@@ -826,6 +830,7 @@ function ChatAgentContent({
     client,
     isConnected,
     requiresAttention: agentState.requiresAttention,
+    manualUnread: agentState.manualUnread,
     attentionReason: agentState.attentionReason,
     isScreenFocused: isPaneFocused,
   });

@@ -2,6 +2,12 @@ import { en, type TranslationResources } from "./en";
 import { pluginSettings } from "./plugin-settings";
 
 export const ar: TranslationResources = {
+  desktopChat: {
+    newChat: "محادثة جديدة",
+    actions: "إجراءات المحادثة",
+    markRead: "وضع علامة كمقروءة",
+    markUnread: "وضع علامة كغير مقروءة",
+  },
   paneFind: {
     connectionFailure: "تعذر البحث في هذه المحادثة. تحقق من الاتصال بالمضيف وأعد المحاولة.",
     historyChangedFailure: "تغيّرت المحادثة أثناء البحث. أعد البحث.",

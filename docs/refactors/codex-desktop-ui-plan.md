@@ -23,7 +23,7 @@ Do not copy whole screens or add another client, transport, or session store.
 | 0. Upstream baseline             | Complete for local startup           | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                      |
 | 1. Window and sidebar appearance | Complete for local macOS development | Desktop shell and dark palette implemented; native navigation, sidebar toggle, menus, theme changes, window resize/fullscreen/reactivation checked. Scoped visual QA passed. |
 | 1a. Upstream integration check   | Patch reviewed; merge deferred       | Custom changes are confined to client presentation. Remote main was still `53ee9cd`; a real merge rehearsal awaits a later upstream revision.                                |
-| 2. Chat navigation               | Pending                              | Individual chat rows retain host, agent, and workspace identities. Verify archive, attention, pinning, and sibling-chat isolation.                                           |
+| 2. Chat navigation               | In progress                          | Build agent-level project/recent/pinned rows, then navigation and chat-scoped actions. Reuse the directory/runtime and generic agent metadata API; verify sibling isolation. |
 | 3. Transcript and composer       | Pending                              | Separate transcript and composer patches; verify streaming, stop, drafts, attachments, approvals, model selection, and reasoning controls.                                   |
 | 4. Supporting panels             | Pending                              | Adapt Diff, files, terminal, and settings separately using additional reference screenshots.                                                                                 |
 | 5. Custom distribution           | Pending                              | Independent package identity and update source; validate packaged launch and updates before distribution.                                                                    |
@@ -95,6 +95,45 @@ and its evidence. No remote push or packaged distribution was performed.
 Next: phase 2 chat navigation. Preserve agent/workspace/host identities and test
 archive, attention, pinning, and sibling isolation before changing row ownership.
 The forward control and richer sidebar header actions belong to that slice.
+
+## Phase 2 progress — 2026-09-30
+
+Chat rows now use the existing agent directory and retain host/workspace/agent
+identities. Recent, Pinned, and project groups reuse existing project filters and
+collapsed sections. Empty workspaces retain an entry for files and terminals.
+The workspace-only display options stay in the original UI; the chat header
+exposes only filters that actually affect chat projection.
+
+Chat pinning and manual unread use the generic agent metadata API, with
+`codex-ui.pinned-at` (ISO timestamp; empty means unpinned) and `codex-ui.unread`
+(`true`/`false`). Existing labels are patched, not replaced. No backend or wire
+schema change is needed. Opening one chat clears only that chat's attention;
+manual unread unfocuses only the target chat and survives leaving the pane.
+Permission attention remains protected. The existing archive hook owns rollback
+and tab cleanup. The pin shortcut targets the current chat when one is selected.
+
+Native development verification with two Mock Load Test agents in the same
+workspace confirmed: selecting B preserves A's attention; pinning B leaves A's
+labels unchanged; B's manual unread survives switching to A and clears on reopening
+B; A's draft is absent in B and restored on return; archiving A leaves B idle and
+the workspace usable. These are real daemon/client operations with a simulated
+provider, not real-provider acceptance. Focused projection, metadata, attention,
+and translation-parity checks cover the corresponding regression boundaries.
+
+Remaining in phase 2: titlebar Back/Forward across sibling chats, current-chat
+title/actions, and final visual/shortcut verification. The Mac became locked
+before the last menu/shortcut polish could be checked; the user has been asked
+to unlock it. Code and automated checks can continue meanwhile.
+
+Additional references supplied by the user are in `context-images/`; preserve
+them as user-owned, currently untracked files. They cover chat actions, search,
+model/effort and attachment menus, approval mode, browser and many settings views.
+A real expanded execution, waiting approval request, populated code diff, and
+keyboard-settings reference still need confirmation before those visual changes.
+
+The fetched upstream `3fea128` changes only `CHANGELOG.md`. Merge it after the
+current sidebar slice is committed; record that this rehearsal tests a documentation
+revision, not a backend/client compatibility change.
 
 ## Development and validation
 

@@ -2,6 +2,12 @@ import { en, type TranslationResources } from "./en";
 import { pluginSettings } from "./plugin-settings";
 
 export const ja: TranslationResources = {
+  desktopChat: {
+    newChat: "新しいチャット",
+    actions: "チャットの操作",
+    markRead: "既読にする",
+    markUnread: "未読にする",
+  },
   paneFind: {
     connectionFailure:
       "このチャットを検索できませんでした。ホストへの接続を確認して再試行してください。",

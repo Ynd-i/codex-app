@@ -18,6 +18,7 @@ import {
 } from "@/utils/host-routes";
 import { TitlebarDragRegion } from "./titlebar-drag-region";
 import type { Theme } from "@/styles/theme";
+import { DesktopChatShortcuts } from "./desktop-chat-shortcuts";
 
 export const usesDesktopShell = getIsElectronMac();
 export const desktopShellInset = usesDesktopShell ? 56 : 0;
@@ -97,6 +98,7 @@ export function DesktopShell({
 
   return (
     <View style={styles.root} testID="desktop-shell">
+      <DesktopChatShortcuts />
       <WindowChromeSafeArea placement="inline" style={styles.titlebar}>
         <TitlebarDragRegion />
         <HeaderToggleButton

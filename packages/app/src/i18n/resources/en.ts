@@ -1,4 +1,10 @@
 export const en = {
+  desktopChat: {
+    newChat: "New chat",
+    actions: "Chat actions",
+    markRead: "Mark as read",
+    markUnread: "Mark as unread",
+  },
   paneFind: {
     connectionFailure: "Could not search this chat. Check the host connection and retry.",
     historyChangedFailure: "The chat changed while searching. Search again.",

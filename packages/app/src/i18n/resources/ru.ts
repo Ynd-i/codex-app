@@ -2,6 +2,12 @@ import { en, type TranslationResources } from "./en";
 import { pluginSettings } from "./plugin-settings";
 
 export const ru: TranslationResources = {
+  desktopChat: {
+    newChat: "Новый чат",
+    actions: "Действия с чатом",
+    markRead: "Отметить как прочитанное",
+    markUnread: "Отметить как непрочитанное",
+  },
   paneFind: {
     connectionFailure:
       "Не удалось выполнить поиск в чате. Проверьте подключение к хосту и повторите попытку.",
