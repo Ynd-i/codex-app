@@ -10,6 +10,25 @@ export interface DesktopNavigationHistory {
   index: number;
 }
 
+export function buildDesktopNavigationRoute(input: {
+  pathname: string;
+  params: Record<string, string | string[] | undefined>;
+  segments: readonly string[];
+}): string {
+  const pathParameters = new Set<string>();
+  for (const segment of input.segments) {
+    const match = segment.match(/^\[(?:\.\.\.)?(.+)\]$/);
+    if (match) pathParameters.add(match[1]!);
+  }
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(input.params)) {
+    if (pathParameters.has(key) || value === undefined) continue;
+    for (const item of Array.isArray(value) ? value : [value]) query.append(key, item);
+  }
+  const search = query.toString();
+  return input.pathname + (search ? `?${search}` : "");
+}
+
 export function recordDesktopNavigation(
   history: DesktopNavigationHistory,
   entry: DesktopNavigationEntry,

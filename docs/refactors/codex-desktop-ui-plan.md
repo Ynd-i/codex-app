@@ -17,17 +17,58 @@ and persistence under their existing owners. Customize desktop presentation
 through small composition points and the existing `.electron.*` resolver.
 Do not copy whole screens or add another client, transport, or session store.
 
+### Multi-provider reference scope — 2026-09-30
+
+The user wants the interface to accommodate Claude models, GLM, DeepSeek, OpenRouter,
+and other providers without depending on Codex/ChatGPT-only services. A reference
+image defines presentation, not a feature commitment or a supported-model catalog.
+Use the selected host/provider's actual capabilities for models, reasoning, tools,
+permissions, and usage data; omit unavailable controls. Keep client features such
+as projects, files, terminals, shortcuts, and supported plugins independent of the
+model. Do not assume a capability exists merely because it appears in Codex.
+
+Usage, plan limits, and resets remain in scope for every supported provider and
+account/plan. Show used/remaining allowance, applicable quota windows, next reset
+time or countdown, and available usage history or credit balances using that
+provider's actual data. Distinguish scheduled quota renewal from a manual reset
+or reset-credit redemption; expose the latter only when the selected provider
+and plan support it. Do not hard-code Codex's quota windows, reset rules, prices,
+or account data for Claude, GLM, DeepSeek, OpenRouter, or another integration.
+Unavailable usage data must remain unavailable, not appear as zero. These are
+implementation requirements, not a claim that every integration already exposes
+all of these capabilities.
+
+Exclude these surfaces from the desktop recreation:
+
+- Parental controls and trusted contacts.
+- Voice conversations, dictation, microphone controls, and voice shortcuts, as
+  explicitly requested, even where Paseo has its own optional voice services.
+- ChatGPT Pets and ChatGPT-specific profile/account-management pages. Provider
+  plan information, usage, credit balances, and supported resets remain in scope.
+- ChatGPT-specific import, memories, Computer History, Appshots, and account-bound
+  computer-control integrations.
+- OpenAI-hosted Cloud computer, Codex Cloud, cloud code-review services, and
+  ChatGPT Pages/Space creation flows. Generic local diffs and code review remain
+  in scope where the runtime supports them.
+
+Existing user reference files remain intact. Retained raw screenshots may include
+excluded sidebar items, microphone icons, GPT names, or cloud choices incidentally;
+copy only their applicable layout and interactions, with usage and reset behavior
+adapted to the actual provider and account/plan.
+This request is limited to selecting screenshots and updating implementation
+scope; it does not remove runtime code or add new provider integrations.
+
 ## Steps
 
-| Step                             | Status                                        | Acceptance                                                                                                                                                                                             |
-| -------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 0. Upstream baseline             | Complete for local startup                    | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                                                |
-| 1. Window and sidebar appearance | Complete for local macOS development          | Desktop shell and dark palette implemented; native navigation, sidebar toggle, menus, theme changes, window resize/fullscreen/reactivation checked. Scoped visual QA passed.                           |
-| 1a. Upstream integration check   | Merged and rebuilt                            | Merge `309f2c4` includes upstream `4e9a458` (release notes plus a host-startup race fix). No conflicts; server/client rebuild and 11 targeted startup tests passed.                                    |
-| 2. Chat navigation               | Core implemented; final UI acceptance pending | Chat rows, shared sidebar/titlebar actions, draft isolation, Back/Forward and current title implemented. Final native visual verification remains.                                                     |
-| 3. Transcript and composer       | Core composer implemented; transcript pending | Column, frame, mode/model controls and reasoning popover implemented; isolated provider-control, attachment, send/stop checks pass. Attachment menu, transcript matching and native comparison remain. |
-| 4. Supporting panels             | Pending                                       | Adapt Diff, files, terminal, and settings separately using additional reference screenshots.                                                                                                           |
-| 5. Custom distribution           | Pending                                       | Independent package identity and update source; validate packaged launch and updates before distribution.                                                                                              |
+| Step                             | Status                                                   | Acceptance                                                                                                                                                                                             |
+| -------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0. Upstream baseline             | Complete for local startup                               | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                                                |
+| 1. Window and sidebar appearance | Complete for local macOS development                     | Desktop shell and dark palette implemented; native navigation, sidebar toggle, menus, theme changes, window resize/fullscreen/reactivation checked. Scoped visual QA passed.                           |
+| 1a. Upstream integration check   | Merged and rebuilt                                       | Merge `309f2c4` includes upstream `4e9a458` (release notes plus a host-startup race fix). No conflicts; server/client rebuild and 11 targeted startup tests passed.                                    |
+| 2. Chat navigation               | Core interactions verified; chrome consolidation pending | Chat rows, scoped sidebar/titlebar actions, draft isolation and Back/Forward checked in isolated tests and native development. Supporting-panel chrome consolidation remains.                          |
+| 3. Transcript and composer       | Core composer implemented; transcript pending            | Column, frame, mode/model controls and reasoning popover implemented; isolated provider-control, attachment, send/stop checks pass. Attachment menu, transcript matching and native comparison remain. |
+| 4. Supporting panels             | Pending                                                  | Adapt Diff, files, terminal, and settings separately using additional reference screenshots.                                                                                                           |
+| 5. Custom distribution           | Pending                                                  | Independent package identity and update source; validate packaged launch and updates before distribution.                                                                                              |
 
 Each slice leaves a runnable app and a small independently revertible commit.
 Update this table and its evidence before moving to the next slice. Local startup
@@ -66,9 +107,10 @@ is locked. Native screenshots and window interactions wait for manual unlock.
 The active Codex goal tracks continuation; this document is the durable checkpoint.
 
 At 2% remaining account usage, alert the user; at 1%, save a verified checkpoint
-and prepare the requested banked reset. The current tool exposes usage and reset
-counts but cannot redeem a reset. If execution stops at the limit, manual reset
-is required before continuation; do not claim a reset was applied.
+and prepare the requested banked reset. Check every reported core usage window.
+The current reset tool is available; it requires explicit confirmation for each
+redemption and checks eligibility again. The allowance recovered and the reset
+credit count fell without a reset-tool call from this task.
 
 ## Update strategy
 
@@ -101,8 +143,8 @@ Remote daemon upgrades retain Paseo's existing protocol and feature checks.
 
 [Visual QA and interaction evidence](../qa-evidence/codex-desktop/design-qa.md)
 records the comparison scope, screenshots, fixes, and remaining acceptance gaps.
-The development window remains available as **Paseo Debug**, currently served by
-Metro on `http://localhost:8083` with daemon `127.0.0.1:6768`.
+Those captures used **Paseo Debug** served by Metro on `http://localhost:8083`
+with daemon `127.0.0.1:6768`; see the resume checkpoint for the current instance.
 
 The first slice adds the 44px titlebar, 50px navigation rail, rounded content
 frame, 278px default sidebar, and a macOS default-dark palette. It retains
@@ -180,8 +222,9 @@ Real-provider turns and the remaining visual states still need their own checks.
 Additional references supplied by the user are in `context-images/`; preserve
 them as user-owned, currently untracked files. They cover chat actions, search,
 model/effort and attachment menus, approval mode, browser and many settings views.
-A real expanded execution, waiting approval request, populated code diff, and
-keyboard-settings reference still need confirmation before those visual changes.
+The later recording supplies expanded execution and keyboard-settings references,
+as inventoried below. A waiting approval request and populated code diff still
+need confirmation before those visual changes.
 
 The remote reference advanced again before the merge: the actual second parent
 of merge `309f2c4` is `4e9a458`, which includes `3fea128` and a seven-line host-runtime
@@ -241,16 +284,51 @@ checking project context, picker visibility, configured model, draft retention a
 the mock provider. Its screenshot was inspected; typecheck, lint and locale parity
 passed. No creation or draft store was replaced.
 
+User-message bubbles now use the reference's 70% maximum width, dark fill, 24px
+corners and tighter vertical padding on macOS. The existing text, attachment,
+copy and rewind behavior remains in the shared message renderer. The creation/
+message regression passed in 6.3 seconds (18.8 seconds including setup), including
+Back/Forward between the existing chat and the new-chat draft without losing its
+text. Root typecheck and lint passed for the message change.
+
+### Native follow-up
+
+The real Electron development window is available again. Verified the localized
+[new-chat page](../qa-evidence/codex-desktop/phase3-native-new-chat.jpg), the current-chat
+action menu, and the [model popover](../qa-evidence/codex-desktop/phase3-native-model-menu.jpg).
+Native Back/Forward between project settings and the QA chat also returned to the
+correct chat and title.
+Route serialization now removes only parameters consumed by the active route's
+path segments. It retains an explicit `serverId` on global `/new` routes, so a
+history entry cannot silently lose its chosen host. The regression first reproduced
+the missing host and now passes with the navigation model checks (3 tests).
+The two focused navigation/creation renderer cases also passed after the fix,
+including the real disconnect/retry scenario (1.4 minutes including setup).
+Tab then Up changed Low to Medium, End selected High, and Reset restored Low.
+Native inspection also caught a redundant model tooltip covering the slider;
+that tooltip is now suppressed on the custom macOS surface and was rechecked.
+The existing Mock Load Test chat B accepted a native UI message, streamed a reply,
+and completed its ten-second run. Its Stop control was visible while running;
+the turn finished before the native stop check, so stop execution remains covered
+by the isolated renderer case. [Chat evidence](../qa-evidence/codex-desktop/phase3-native-chat.jpg)
+shows the new bubble and the retained transcript renderer. Mock tool narration
+does not represent actual shell commands or source edits.
+
+These captures retain the development window's saved sidebar width and show the
+remaining workspace header/tab duplication. They establish native rendering and
+the listed interactions, not final full-window fidelity or real-provider acceptance.
+
 This is acceptance of the frame, controls and those simulated-provider interactions.
-The attachment menu, transcript spacing, and native comparison
+The attachment menu, assistant turn presentation, and supporting-panel consolidation
 remain in this phase. Preserve all provider-backed choices while changing their
 presentation.
 
 ## Resume checkpoint
 
 Continue in this checkout on `codex/desktop-ui`; preserve the user's untracked
-`context-images/`. Native inspection is awaiting Mac unlock. The installed pinned
-Playwright Chromium headless runtime now supports isolated renderer tests.
+`context-images/`. Native inspection is available. Reuse the live development
+instance after checking its status. The pinned Playwright runtime supports
+isolated renderer tests.
 
 Latest composer evidence is recorded above; the earlier theme/settings tests pass (81).
 The extended chat-action browser case passed in 56.2 seconds. Earlier navigation
@@ -259,19 +337,26 @@ parity and chat projection/metadata checks passed. The browser regression caught
 both an initial-open history entry and a paused offline mutation; each was fixed
 before a passing rerun. No live-provider or packaged acceptance is implied.
 
-Relevant logs for the next continuation: `/private/tmp/paseo-new-chat-e2e.log`,
+Relevant logs for the next continuation: `/private/tmp/paseo-history-host-e2e.log`,
+`/private/tmp/paseo-history-host-tests.log`, `/private/tmp/paseo-history-host-typecheck.log`,
+`/private/tmp/paseo-history-host-lint.log`, `/private/tmp/paseo-model-tooltip-e2e.log`,
+`/private/tmp/paseo-messages-e2e.log`,
+`/private/tmp/paseo-messages-typecheck.log`, `/private/tmp/paseo-messages-lint.log`,
+`/private/tmp/paseo-new-chat-e2e.log`,
 `/private/tmp/paseo-new-chat-typecheck.log`, `/private/tmp/paseo-new-chat-lint.log`,
 `/private/tmp/paseo-new-chat-i18n.log`, `/private/tmp/paseo-slider-keys-e2e.log`,
 `/private/tmp/paseo-slider-keys-typecheck.log`, `/private/tmp/paseo-slider-keys-lint.log`,
 `/private/tmp/paseo-model-popover-i18n.log`, `/private/tmp/paseo-composer-settings-tests.log`,
 `/private/tmp/paseo-chat-toolbar-recovery.log`, and
-`/private/tmp/paseo-upstream-runtime-tests.log`. The development instance uses 8083
+`/private/tmp/paseo-upstream-runtime-tests.log`. The development instance uses 8082
 and 6768; reuse it if still running. The ignored `.dev/qa-chat-state.mts` queries
-only the two locally created mock fixtures; A was archived and B remains available.
+only the two locally created mock fixtures; A was archived and B now contains the
+native smoke conversation. Its reasoning option was restored to Low.
 
-Unrelated development-runtime WIP appeared during the model-popover slice in
-desktop launch scripts, daemon runtime paths, server environment/supervisor files
-and `docs/development.md`. Preserve its ownership; stage migration files explicitly.
+The unrelated development-launch changes were removed outside this task. A launch
+during that work exited with SIGTRAP; the restored, committed launcher now runs
+successfully. Its current log is `/private/tmp/paseo-codex-dev-restored.log`.
+Continue to inspect and preserve any concurrent work before staging.
 
 ## Development and validation
 
@@ -300,11 +385,66 @@ ignored `.dev/codex-reference/`. Compare matching viewport regions and density.
 
 Available: full window, empty new-chat state, transcript, attachment previews,
 chat actions, search/history, model and reasoning controls, approval-mode menu,
-browser side panel, and general/appearance/agent/connection settings. Use the
-matching file under `context-images/` before each slice; these files are private
+browser side panel, usage/limits/resets, and general/appearance/agent/connection
+settings. Use the matching file under `context-images/` before each slice; these files are private
 reference material and are not part of the application bundle.
 
-Still needed for final visual matching: expanded tool execution, an actual waiting
-approval request, a populated code diff, and keyboard settings. The approval-mode
-menu and untracked-files warning do not establish those missing states. Preserve
-the existing behavior until those visual references can be confirmed.
+Retain the existing [usage overview](../../context-images/codex-settings-usage-overview.png),
+[usage and resets](../../context-images/codex-settings-usage-resets.png), and
+[account usage menu](../../context-images/codex-account-usage-menu.png) as active
+visual references. Adapt their labels, limits, renewal schedules, and any manual
+reset actions to each provider/plan; the screenshots do not establish shared
+Codex reset semantics. These files already exist, so no duplicate capture is needed.
+
+Expanded tool execution and keyboard settings are now covered by the recording
+captures below. An actual waiting approval request and a populated code diff remain
+unverified in this capture task. The approval-mode menu and untracked-files warning
+do not establish those states. Preserve their existing behavior until the visual
+references can be confirmed.
+
+### Recording references — 2026-09-30
+
+Source: user-provided `录屏2026-09-30 12.55.37.mov` (205.383 seconds, 2704×1562).
+Sampled 822 preview frames at four per second, visually reviewed the timeline,
+stable candidates, and brief menu sequences, then selected 25 distinct relevant
+states against the 44 existing PNG references. The exported PNGs preserve the
+original frame dimensions; repeated frames,
+transitions, previously covered settings, and the excluded product surfaces above
+were omitted. This records the supplied video's useful states, not exhaustive
+coverage of the official application.
+
+Validation: all 25 PNGs decode at 2704×1562 and have distinct SHA-256 hashes;
+none exactly duplicates an existing PNG. The selected states were visually
+checked, all reference links resolve, and the 46 pre-existing files (including
+the earlier recording) remained byte-for-byte unchanged.
+
+The new reference files and source timestamps are listed below. All links are
+private visual references, not application assets or feature requirements.
+
+| Source time | Reference                                                                                               | Applicable surface                                         |
+| ----------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| 00:00.60    | [Sidebar collapsed](../../context-images/codex-sidebar-collapsed.png)                                   | Collapsed navigation rail                                  |
+| 00:15.10    | [Chat hover card](../../context-images/codex-sidebar-chat-hover-card.png)                               | Chat metadata preview                                      |
+| 00:16.85    | [Chat context menu](../../context-images/codex-sidebar-chat-context-menu.png)                           | Sidebar chat actions                                       |
+| 00:23.60    | [Sort menu](../../context-images/codex-sidebar-sort-menu.png)                                           | Sidebar sort choices                                       |
+| 00:26.35    | [Project actions](../../context-images/codex-project-actions-menu.png)                                  | Project menu                                               |
+| 00:27.10    | [Project section submenu](../../context-images/codex-project-section-submenu.png)                       | Nested section selection                                   |
+| 00:29.10    | [Edit project](../../context-images/codex-project-edit-dialog.png)                                      | Project name and folders                                   |
+| 00:53.60    | [Browser tools menu](../../context-images/codex-browser-tools-menu.png)                                 | Panel tool chooser; use actual host tools                  |
+| 00:57.10    | [File explorer panel](../../context-images/codex-file-explorer-side-panel.png)                          | File tree and empty editor                                 |
+| 00:58.10    | [Terminal panel](../../context-images/codex-terminal-side-panel.png)                                    | Terminal tab and split layout                              |
+| 00:59.85    | [Side chat panel](../../context-images/codex-side-chat-empty-panel.png)                                 | Split layout only; no temporary-session semantics implied  |
+| 01:05.85    | [Model list](../../context-images/codex-chat-model-list-menu.png)                                       | Provider-backed model menu                                 |
+| 01:13.35    | [Expanded tool activity](../../context-images/codex-tool-activity-expanded.png)                         | Grouped tool activity                                      |
+| 01:23.85    | [Expanded shell output](../../context-images/codex-shell-tool-output-expanded.png)                      | Command and result disclosure                              |
+| 01:59.35    | [Keyboard overview](../../context-images/codex-settings-keyboard-shortcuts-overview.png)                | Shortcut search and editing                                |
+| 02:00.35    | [Navigation shortcuts](../../context-images/codex-settings-keyboard-shortcuts-navigation.png)           | Focus and tab shortcuts                                    |
+| 02:03.35    | [Chat navigation shortcuts](../../context-images/codex-settings-keyboard-shortcuts-chat-navigation.png) | Chat shortcuts; exclude the dictation controls shown below |
+| 02:12.60    | [Installed plugins](../../context-images/codex-settings-plugins-installed.png)                          | Existing plugin settings presentation                      |
+| 02:53.35    | [Create section](../../context-images/codex-sidebar-create-section-dialog.png)                          | Section-name dialog                                        |
+| 03:00.60    | [Section actions](../../context-images/codex-sidebar-section-actions-menu.png)                          | Section context menu                                       |
+| 03:10.10    | [Project new chat](../../context-images/codex-new-chat-project-empty.png)                               | Project-scoped empty chat                                  |
+| 03:11.10    | [Project picker](../../context-images/codex-new-chat-project-picker.png)                                | Searchable project selector                                |
+| 03:13.85    | [Create project](../../context-images/codex-project-create-dialog.png)                                  | Project creation dialog                                    |
+| 03:15.85    | [Projectless new chat](../../context-images/codex-new-chat-projectless.png)                             | Empty chat without a project                               |
+| 03:16.35    | [Work location menu](../../context-images/codex-new-chat-work-location-menu.png)                        | Actual local/remote hosts; omit unsupported cloud choices  |

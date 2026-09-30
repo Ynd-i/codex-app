@@ -1,5 +1,31 @@
 import { expect, it } from "vitest";
-import { recordDesktopNavigation, moveDesktopNavigation } from "./desktop-navigation-history";
+import {
+  buildDesktopNavigationRoute,
+  recordDesktopNavigation,
+  moveDesktopNavigation,
+} from "./desktop-navigation-history";
+
+it("retains the chosen host in new-chat query parameters without duplicating path parameters", () => {
+  expect(
+    buildDesktopNavigationRoute({
+      pathname: "/new",
+      segments: ["new"],
+      params: {
+        serverId: "remote",
+        dir: "/shared/repo",
+        projectId: "remote-project",
+        draftId: "draft",
+      },
+    }),
+  ).toBe("/new?serverId=remote&dir=%2Fshared%2Frepo&projectId=remote-project&draftId=draft");
+  expect(
+    buildDesktopNavigationRoute({
+      pathname: "/settings/hosts/remote/projects",
+      segments: ["settings", "hosts", "[serverId]", "projects"],
+      params: { serverId: "remote", view: ["files", "changes"] },
+    }),
+  ).toBe("/settings/hosts/remote/projects?view=files&view=changes");
+});
 
 it("omits bootstrap and agent-resolution routes from user navigation history", () => {
   const empty = { entries: [], index: -1 };

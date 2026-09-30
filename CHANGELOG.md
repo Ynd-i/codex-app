@@ -19,11 +19,13 @@ distribution and full migration acceptance remain pending; see the
 - Aligned the macOS chat column and composer frame with the reference: a narrower default column, larger corners, tighter padding, and a neutral stop control. Saved content-width preferences still take priority.
 - Moved the macOS composer mode beside attachments and aligned model/reasoning controls to the right, retaining provider-backed selections.
 - Updated macOS selector surfaces to the rounded, raised style used by the reference.
+- Matched macOS user-message bubbles to the reference with a 70% width limit, darker fill, and even rounded corners.
 
 ### Fixed
 
 - Fixed chat metadata changes remaining paused indefinitely while offline; connection errors and timeouts now return control to the user without discarding a rename draft.
 - Fixed the model popover intercepting the reasoning slider's native arrow keys.
+- Fixed new-chat history dropping its target host query parameter, and removed the redundant macOS model tooltip that could cover the reasoning slider.
 
 ## 0.10.2 - 2026-09-30
 

@@ -1008,7 +1008,7 @@ function DesktopAgentControlsContent(props: DesktopAgentControlsContentProps) {
       ) : null}
 
       {canSelectModel ? (
-        <Tooltip delayDuration={0} enabledOnDesktop enabledOnMobile={false}>
+        <Tooltip delayDuration={0} enabledOnDesktop={!desktopChat} enabledOnMobile={false}>
           <TooltipTrigger asChild triggerRefProp="ref">
             <View style={styles.modelControl}>
               <CombinedModelSelector

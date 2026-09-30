@@ -99,7 +99,7 @@ import {
 } from "@/components/attachment-pill";
 import { AttachmentLightbox, type ImageLightboxSource } from "@/components/attachment-lightbox";
 import type { DaemonClient } from "@getpaseo/client/internal/daemon-client";
-import { isWeb, isNative } from "@/constants/platform";
+import { getIsElectronMac, isWeb, isNative } from "@/constants/platform";
 import type { AgentCapabilityFlags } from "@getpaseo/protocol/agent-types";
 import { RewindMenu, type RewindMode } from "@/components/rewind/rewind-menu";
 import { useRewindAgentMutation } from "@/components/rewind/use-rewind-agent-mutation";
@@ -333,7 +333,7 @@ const userMessageStylesheet = StyleSheet.create((theme) => ({
   },
   content: {
     alignItems: "flex-end",
-    maxWidth: "100%",
+    maxWidth: getIsElectronMac() ? "70%" : "100%",
     cursor: "auto",
   },
   containerSpacing: {
@@ -346,11 +346,11 @@ const userMessageStylesheet = StyleSheet.create((theme) => ({
     marginBottom: theme.spacing[4],
   },
   bubble: {
-    backgroundColor: theme.colors.surface3,
-    borderRadius: theme.borderRadius["2xl"],
-    borderTopRightRadius: theme.borderRadius.sm,
+    backgroundColor: getIsElectronMac() ? theme.colors.surface1 : theme.colors.surface3,
+    borderRadius: getIsElectronMac() ? 24 : theme.borderRadius["2xl"],
+    borderTopRightRadius: getIsElectronMac() ? 24 : theme.borderRadius.sm,
     paddingHorizontal: theme.spacing[4],
-    paddingVertical: theme.spacing[4],
+    paddingVertical: getIsElectronMac() ? theme.spacing[3] : theme.spacing[4],
     minWidth: 0,
     flexShrink: 1,
   },

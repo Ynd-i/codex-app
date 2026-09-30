@@ -58,6 +58,15 @@ test("desktop new chat retains project selection and creates a chat", async ({
     await page.setViewportSize({ width: 1352, height: 782 });
     await expect(page.getByTestId("desktop-new-chat-hero")).toBeVisible();
     await expect(composerLocator(page)).toHaveValue("Keep this draft when resizing.");
+    await page.getByTestId(`desktop-chat-${getServerId()}:${existing.id}`).first().click();
+    await expect(page.getByTestId("desktop-chat-title")).toHaveText("Existing chat");
+    await page.getByTestId("desktop-shell-back").click();
+    await expect(page.getByTestId("desktop-new-chat-hero")).toBeVisible();
+    await expect(composerLocator(page)).toHaveValue("Keep this draft when resizing.");
+    await page.getByTestId("desktop-shell-forward").click();
+    await expect(page.getByTestId("desktop-chat-title")).toHaveText("Existing chat");
+    await page.getByTestId("desktop-shell-back").click();
+    await expect(composerLocator(page)).toHaveValue("Keep this draft when resizing.");
     const prompt = "Create a chat from the desktop composer.";
     await composerLocator(page).fill(prompt);
     await page.getByTestId("workspace-create-submit").click();
@@ -72,6 +81,9 @@ test("desktop new chat retains project selection and creates a chat", async ({
       .toBe(1);
     await page.getByRole("button", { name: "Stop agent", exact: true }).click();
     await expectAgentIdle(page);
+    await page.mouse.move(850, 450);
+    await page.screenshot({ path: testInfo.outputPath("first-message.png") });
+    console.info("Transcript visual evidence", testInfo.outputPath("first-message.png"));
   } finally {
     await workspace.cleanup();
   }
