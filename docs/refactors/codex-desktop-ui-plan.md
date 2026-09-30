@@ -108,6 +108,33 @@ remote connection behavior, upstream integration, and custom package have their
 required acceptance evidence. Browser tests using an Electron bridge and simulated
 provider do not establish native, real-provider, remote-device, or packaged acceptance.
 
+### Parallel ownership — 2026-10-01
+
+The user requested separate chats for concrete surfaces. Each owner implements
+one visible slice at a time against the supplied Codex reference, preserving Paseo
+backend, protocol, provider behavior and saved data. The shared starting checkpoint
+is `7aca932`, including the restored rail in `8d4f548`.
+
+| Chat                    | Owned frontend scope                                                                                                                                                                                                                                                              |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Paseo：设置页像素对齐   | `screens/settings/**`, `screens/settings-screen.tsx`, `components/settings/**`, `styles/settings.ts`, and a dedicated settings visual regression.                                                                                                                                 |
+| Paseo：侧栏交互与动画   | `components/sidebar/**`, `components/left-sidebar.tsx`, `components/sidebar-workspace-list.tsx`, sidebar sizing/resize components, `components/desktop/desktop-shell.electron.tsx`, and a dedicated sidebar regression. Preserve the default workspace list and independent rail. |
+| Paseo：聊天窗口像素对齐 | `components/message.tsx`, `agent-stream/**`, `composer/**`, and a dedicated transcript/composer regression. Preserve streaming, drafts, scroll anchoring, provider choices and send/stop behavior.                                                                                |
+
+Owners share this checkout and must preserve each other's edits. Shared theme
+tokens, translations, generic UI primitives, desktop main/preload, routes, the
+changelog and this plan stay with the coordinating chat. Report a needed shared
+change there rather than editing across ownership. No owner stages, commits,
+stashes, switches branches or restarts the live development app. The coordinator
+runs integration checks, records evidence here and creates scoped commits.
+
+Each owner may delegate a bounded subtask to a subagent within its own files;
+avoid overlapping assignments and unnecessary nested delegation. Use isolated
+test state and unique evidence filenames. Native GUI validation is coordinated
+here so simultaneous chats do not drive the same window. Return exact changed
+paths, focused check results, before/after evidence and remaining visual gaps;
+green functional tests alone do not prove pixel equality.
+
 ### Work that can continue unattended
 
 Code inspection, implementation, targeted unit tests, isolated headless renderer
@@ -416,8 +443,10 @@ menu unit tests and 36 locale checks pass. Root typecheck, lint and format pass.
 `/private/tmp/paseo-attachment-menu-lint.log`.
 
 The [isolated renderer capture](../qa-evidence/codex-desktop/phase3-renderer-attachment-menu.png)
-was visually inspected. The Mac locked during native inspection, before a stable
-menu capture was verified; native menu acceptance remains pending manual unlock.
+and [native menu capture](../qa-evidence/codex-desktop/phase3-native-attachment-menu.jpg)
+were visually inspected. On October 1 the existing Electron instance opened the
+real macOS file chooser; canceling selected no file and returned focus to the
+attachment button with the empty draft retained.
 Plugin-specific resource selection has not been exercised in this slice.
 Maintenance sleep coincided with fixture setup timeouts. The passing renderer run
 used a temporary `caffeinate -i` wrapper; it changes no persistent power or lock settings.
@@ -509,9 +538,11 @@ Logs: `/private/tmp/paseo-supporting-panels-final-e2e.log`,
 `/private/tmp/paseo-supporting-panels-layout-unit.log`,
 `/private/tmp/paseo-supporting-panels-typecheck.log` and
 `/private/tmp/paseo-supporting-panels-lint.log`.
-Native tab inspection awaits manual unlock. Integrating panel tabs into the window
-chrome and each panel's detailed presentation still remain; this is not full panel
-acceptance.
+The [native tab capture](../qa-evidence/codex-desktop/phase4-native-panel-tabs.jpg)
+was inspected on October 1 after a normal renderer reload. Active outlines and
+close controls were visible with Explorer open; Explorer was then closed again.
+Integrating panel tabs into the window chrome and each panel's detailed
+presentation still remain; this is not full panel acceptance.
 
 ### Usage data foundation
 
@@ -608,13 +639,16 @@ Logs: `/private/tmp/paseo-custom-distribution-unit.log`,
 ## Resume checkpoint
 
 Continue in this checkout on `codex/desktop-ui`; preserve the user's untracked
-`context-images/`. The Mac is currently locked; native attachment-menu inspection
-must resume after manual unlock. Reuse the live development
-instance after checking its status. The pinned Playwright runtime supports
-isolated renderer tests.
+`context-images/` and unrelated plan edits. The Mac was unlocked for October 1
+native attachment-menu, tab and rail checks. Reuse the live development instance
+after checking its status; user activity may have changed it. The pinned
+Playwright runtime supports isolated renderer tests.
 
 Keep the independent navigation rail and the default workspace sidebar per the
 October 1 clarification. The custom chat-row sidebar remains deferred.
+The rail stays visible when the workspace sidebar is collapsed. Native inspection
+verified both states; the [renderer evidence](../qa-evidence/codex-desktop/restored-navigation-rail.png)
+and desktop route/compact-layout regression pass.
 
 Continue from the consolidated workspace toolbar. Its focused checks are in
 `/private/tmp/paseo-titlebar-final-e2e.log`, `/private/tmp/paseo-titlebar-typecheck.log`
@@ -622,12 +656,12 @@ and `/private/tmp/paseo-titlebar-lint.log`. Recheck the live native instance aft
 structural HMR changes; a normal View > Reload refreshed the new portal without
 restarting either daemon.
 
-Inline tool output and completed-turn activity are verified above. The attachment
-menu passes renderer checks and awaits native follow-up. The local custom-package
-smoke passes. Continue transcript/panel presentation and provider usage before the
-remaining distribution and live-provider/remote acceptance. Check the current native
-mock chat state after unlock; its underlying conversation is unchanged by these
-packaged smokes.
+Inline tool output, completed-turn activity, the attachment menu and panel tabs
+have local native evidence above. The usage overview passes its focused frontend
+checks. Continue matching the supplied Codex images through frontend changes,
+preserving Paseo backend behavior. The earlier local custom-package smoke passes,
+but that bundle predates these latest frontend changes. Distribution and
+live-provider/remote acceptance remain separate outstanding work.
 
 Latest composer evidence is recorded above; the earlier theme/settings tests pass (81).
 The extended chat-action browser case passed in 56.2 seconds. Earlier navigation
