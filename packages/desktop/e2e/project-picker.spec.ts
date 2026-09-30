@@ -10,6 +10,83 @@ import { expectOpenedProject } from "../../app/e2e/support/helpers/project-picke
 import { getServerId } from "../../app/e2e/support/helpers/server-id";
 import { connectSeedClient } from "../../app/e2e/support/helpers/seed-client";
 import { installDesktopRuntime, waitForDirectoryDialog } from "./support/runtime";
+import { seedMockAgentWorkspace, openAgentRoute } from "../../app/e2e/support/helpers/mock-agent";
+import { composerLocator } from "../../app/e2e/support/helpers/composer";
+
+test("desktop chat navigation preserves sibling drafts and scopes pinning", async ({
+  page,
+}, testInfo) => {
+  const fixture = await seedMockAgentWorkspace({
+    repoPrefix: "desktop-chat-navigation-",
+    title: "First chat",
+  });
+  try {
+    const second = await fixture.client.createAgent({
+      provider: "mock",
+      cwd: fixture.cwd,
+      workspaceId: fixture.workspaceId,
+      title: "Second chat",
+      model: "e2e-fast-stream",
+      modeId: "load-test",
+    });
+    const serverId = getServerId();
+    await installDesktopRuntime(page, {
+      serverId,
+      manageBuiltInDaemon: false,
+      daemonListen: `127.0.0.1:${getE2EDaemonPort()}`,
+    });
+    await page.setViewportSize({ width: 1352, height: 782 });
+    await page.emulateMedia({ colorScheme: "dark" });
+    await openAgentRoute(page, fixture);
+    const title = page.getByTestId("desktop-chat-title");
+    const firstRow = page.getByTestId(`desktop-chat-${serverId}:${fixture.agentId}`).first();
+    const secondRow = page.getByTestId(`desktop-chat-${serverId}:${second.id}`).first();
+    await expect(title).toHaveText("First chat");
+    await expect(page.getByTestId("desktop-shell-back")).toBeDisabled();
+    await composerLocator(page).fill("Draft stays with first chat");
+    await secondRow.click();
+    await expect(title).toHaveText("Second chat");
+    await expect(composerLocator(page)).toHaveValue("");
+    await page.getByTestId("desktop-shell-back").click();
+    await expect(title).toHaveText("First chat");
+    await expect(composerLocator(page)).toHaveValue("Draft stays with first chat");
+    await page.getByTestId("desktop-shell-forward").click();
+    await expect(title).toHaveText("Second chat");
+    await secondRow.hover();
+    await page.getByTestId(`desktop-chat-menu-${serverId}:${second.id}`).first().click();
+    await page.getByText("Pin to top", { exact: true }).click();
+    await expect
+      .poll(
+        async () =>
+          (await fixture.client.fetchAgent({ agentId: second.id }))?.agent.labels[
+            "codex-ui.pinned-at"
+          ] ?? "",
+      )
+      .toMatch(/^\d{4}-\d\d-\d\dT/);
+    expect((await fixture.client.fetchAgent({ agentId: fixture.agentId }))?.agent.labels).toEqual(
+      {},
+    );
+    await page.keyboard.press("Meta+Shift+P");
+    await expect
+      .poll(
+        async () =>
+          (await fixture.client.fetchAgent({ agentId: second.id }))?.agent.labels[
+            "codex-ui.pinned-at"
+          ],
+      )
+      .toBe("");
+    await firstRow.click();
+    await expect(title).toHaveText("First chat");
+    await expect(composerLocator(page)).toHaveValue("Draft stays with first chat");
+  } catch (error) {
+    await page
+      .screenshot({ path: testInfo.outputPath("before-cleanup.png") })
+      .catch(() => undefined);
+    throw error;
+  } finally {
+    await fixture.cleanup();
+  }
+});
 
 test("Browse opens the folder selected by the desktop dialog", async ({
   page,

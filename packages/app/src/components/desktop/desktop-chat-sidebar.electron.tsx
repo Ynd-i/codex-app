@@ -363,6 +363,7 @@ const ChatProject = memo(function ChatProject({
           accessibilityRole="button"
           accessibilityLabel={project.projectName}
           accessibilityState={accessibilityState}
+          testID={`sidebar-project-row-${project.viewKey}`}
         >
           <FolderIcon size={18} uniProps={mutedIcon} />
           <Text numberOfLines={1} style={styles.projectTitle}>
@@ -522,7 +523,7 @@ export function DesktopChatSidebar({ onAddProject }: { onAddProject: () => void 
       ListEmptyComponent={empty}
       style={styles.list}
       contentContainerStyle={styles.listContent}
-      testID="desktop-chat-sidebar"
+      testID="sidebar-project-list"
     />
   );
 }

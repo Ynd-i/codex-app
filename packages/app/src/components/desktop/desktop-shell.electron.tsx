@@ -1,6 +1,13 @@
 import { useMemo, type ReactNode } from "react";
-import { router, usePathname, useRootNavigationState } from "expo-router";
-import { ArrowLeft, CalendarClock, History, House, Settings } from "lucide-react-native";
+import { router, usePathname } from "expo-router";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CalendarClock,
+  History,
+  House,
+  Settings,
+} from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { Text, useWindowDimensions, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
@@ -9,7 +16,15 @@ import { HeaderToggleButton } from "@/components/headers/header-toggle-button";
 import { SidebarHelpMenu } from "@/components/sidebar/sidebar-help-menu";
 import { getIsElectronMac } from "@/constants/platform";
 import { SETTINGS_DESKTOP_SPLIT_MIN_WIDTH, useIsCompactFormFactor } from "@/constants/layout";
-import { WindowChromeRegion, WindowChromeSafeArea } from "@/utils/desktop-window";
+import {
+  WindowChromeRegion,
+  WindowChromeSafeArea,
+  useHasWindowChromeObstruction,
+} from "@/utils/desktop-window";
+import { resolveDesktopSidebarWidth } from "@/components/desktop-sidebar-layout";
+import { usePanelStore } from "@/stores/panel-store";
+import { useSessionStore } from "@/stores/session-store";
+import { inlineUnistylesStyle } from "@/styles/unistyles-inline-style";
 import {
   buildOpenProjectRoute,
   buildSchedulesRoute,
@@ -19,11 +34,13 @@ import {
 import { TitlebarDragRegion } from "./titlebar-drag-region";
 import type { Theme } from "@/styles/theme";
 import { DesktopChatShortcuts } from "./desktop-chat-shortcuts";
+import { useDesktopNavigationHistory } from "./use-desktop-navigation-history";
 
 export const usesDesktopShell = getIsElectronMac();
 export const desktopShellInset = usesDesktopShell ? 56 : 0;
 
 const BackIcon = withUnistyles(ArrowLeft);
+const ForwardIcon = withUnistyles(ArrowRight);
 const HomeIcon = withUnistyles(House);
 const HistoryIcon = withUnistyles(History);
 const SchedulesIcon = withUnistyles(CalendarClock);
@@ -85,10 +102,33 @@ export function DesktopShell({
 }) {
   const { t } = useTranslation();
   const pathname = usePathname();
-  const navigationState = useRootNavigationState();
-  const canGoBack = Boolean(navigationState && router.canGoBack());
+  const navigation = useDesktopNavigationHistory();
+  const sidebarWidth = usePanelStore((state) => state.sidebarWidth);
+  const sidebarOpen = usePanelStore((state) => state.desktop.agentListOpen);
+  const hasTrafficLights = useHasWindowChromeObstruction("top-left");
+  const chatTitle = useSessionStore((state) => {
+    if (!navigation.chat) return "";
+    const session = state.sessions[navigation.chat.serverId];
+    return (
+      (
+        session?.agents.get(navigation.chat.agentId) ??
+        session?.agentDetails.get(navigation.chat.agentId)
+      )?.title ?? ""
+    );
+  });
   const isCompact = useIsCompactFormFactor();
   const { width } = useWindowDimensions();
+  const controlsWidth =
+    Math.max(
+      190,
+      sidebarOpen && chromeEnabled && !isCompact
+        ? 51 +
+            resolveDesktopSidebarWidth({
+              requestedWidth: sidebarWidth,
+              viewportWidth: width - desktopShellInset,
+            })
+        : 190,
+    ) - (hasTrafficLights ? 78 : 0);
   const showRail =
     chromeEnabled ||
     (pathname.startsWith("/settings") &&
@@ -101,21 +141,46 @@ export function DesktopShell({
       <DesktopChatShortcuts />
       <WindowChromeSafeArea placement="inline" style={styles.titlebar}>
         <TitlebarDragRegion />
-        <HeaderToggleButton
-          onPress={router.back}
-          disabled={!canGoBack}
-          tooltipLabel={t("common.actions.back")}
-          accessibilityLabel={t("common.actions.back")}
-          accessibilityRole="button"
-          accessible
-          tooltipKeys={[]}
-          tooltipSide="bottom"
-          testID="desktop-shell-back"
-        >
-          <BackIcon size={18} uniProps={iconProps} />
-        </HeaderToggleButton>
-        {chromeEnabled && !isCompact ? <WindowSidebarMenuToggle tooltipSide="bottom" /> : null}
-        <View style={styles.spacer} />
+        <View style={[styles.navigationControls, inlineUnistylesStyle({ width: controlsWidth })]}>
+          <HeaderToggleButton
+            onPress={navigation.back}
+            disabled={!navigation.canGoBack}
+            tooltipLabel={t("common.actions.back")}
+            accessibilityLabel={t("common.actions.back")}
+            accessibilityRole="button"
+            accessible
+            tooltipKeys={[]}
+            tooltipSide="bottom"
+            testID="desktop-shell-back"
+            style={styles.navigationButton}
+          >
+            <BackIcon size={18} uniProps={iconProps} />
+          </HeaderToggleButton>
+          <HeaderToggleButton
+            onPress={navigation.forward}
+            disabled={!navigation.canGoForward}
+            tooltipLabel={t("workspace.browser.controls.forward")}
+            accessibilityLabel={t("workspace.browser.controls.forward")}
+            accessibilityRole="button"
+            accessible
+            tooltipKeys={[]}
+            tooltipSide="bottom"
+            testID="desktop-shell-forward"
+            style={styles.navigationButton}
+          >
+            <ForwardIcon size={18} uniProps={iconProps} />
+          </HeaderToggleButton>
+          {chromeEnabled && !isCompact ? (
+            <WindowSidebarMenuToggle style={styles.navigationButton} tooltipSide="bottom" />
+          ) : null}
+        </View>
+        <View style={styles.titleFill}>
+          {chatTitle ? (
+            <Text style={styles.chatTitle} numberOfLines={1} testID="desktop-chat-title">
+              {chatTitle}
+            </Text>
+          ) : null}
+        </View>
         {devLabel ? (
           <Text style={styles.devLabel} testID="dev-build-label" numberOfLines={1}>
             {devLabel}
@@ -159,7 +224,7 @@ export function DesktopShell({
               onPress={openSettings}
               label={t("sidebar.actions.settings")}
               active={pathname.includes("/settings")}
-              testID="desktop-shell-settings"
+              testID="sidebar-settings"
             >
               <SettingsIcon size={20} uniProps={iconProps} />
             </RailButton>
@@ -180,7 +245,24 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: "row",
     alignItems: "center",
     paddingRight: 12,
-    gap: 8,
+    gap: 0,
+  },
+  navigationControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingLeft: 8,
+    gap: 6,
+    flexShrink: 0,
+  },
+  navigationButton: { width: 28, height: 28, marginLeft: 0 },
+  titleFill: { flex: 1, minWidth: 0, justifyContent: "center", paddingRight: 12 },
+  chatTitle: {
+    color: theme.colors.foreground,
+    fontSize: theme.fontSize.base,
+    lineHeight: 24,
+    borderLeftWidth: 1,
+    borderLeftColor: theme.colors.border,
+    paddingLeft: 12,
   },
   body: { flex: 1, flexDirection: "row", paddingRight: 4, paddingBottom: 4 },
   rail: { width: 50, alignItems: "center", paddingTop: 8, paddingBottom: 8, gap: 8 },

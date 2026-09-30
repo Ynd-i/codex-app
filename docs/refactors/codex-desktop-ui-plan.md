@@ -18,15 +18,15 @@ Do not copy whole screens or add another client, transport, or session store.
 
 ## Steps
 
-| Step                             | Status                               | Acceptance                                                                                                                                                                   |
-| -------------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0. Upstream baseline             | Complete for local startup           | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                      |
-| 1. Window and sidebar appearance | Complete for local macOS development | Desktop shell and dark palette implemented; native navigation, sidebar toggle, menus, theme changes, window resize/fullscreen/reactivation checked. Scoped visual QA passed. |
-| 1a. Upstream integration check   | Patch reviewed; merge deferred       | Custom changes are confined to client presentation. Remote main was still `53ee9cd`; a real merge rehearsal awaits a later upstream revision.                                |
-| 2. Chat navigation               | In progress                          | Build agent-level project/recent/pinned rows, then navigation and chat-scoped actions. Reuse the directory/runtime and generic agent metadata API; verify sibling isolation. |
-| 3. Transcript and composer       | Pending                              | Separate transcript and composer patches; verify streaming, stop, drafts, attachments, approvals, model selection, and reasoning controls.                                   |
-| 4. Supporting panels             | Pending                              | Adapt Diff, files, terminal, and settings separately using additional reference screenshots.                                                                                 |
-| 5. Custom distribution           | Pending                              | Independent package identity and update source; validate packaged launch and updates before distribution.                                                                    |
+| Step                             | Status                                        | Acceptance                                                                                                                                                                                      |
+| -------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0. Upstream baseline             | Complete for local startup                    | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                                         |
+| 1. Window and sidebar appearance | Complete for local macOS development          | Desktop shell and dark palette implemented; native navigation, sidebar toggle, menus, theme changes, window resize/fullscreen/reactivation checked. Scoped visual QA passed.                    |
+| 1a. Upstream integration check   | Merged and rebuilt                            | Merge `309f2c4` includes upstream `4e9a458` (release notes plus a host-startup race fix). No conflicts; server/client rebuild and 11 targeted startup tests passed.                             |
+| 2. Chat navigation               | Core implemented; final UI acceptance pending | Chat rows, scoped actions, draft isolation, Back/Forward and current title implemented. Isolated browser regression passed; current-chat toolbar actions and native visual verification remain. |
+| 3. Transcript and composer       | Pending                                       | Separate transcript and composer patches; verify streaming, stop, drafts, attachments, approvals, model selection, and reasoning controls.                                                      |
+| 4. Supporting panels             | Pending                                       | Adapt Diff, files, terminal, and settings separately using additional reference screenshots.                                                                                                    |
+| 5. Custom distribution           | Pending                                       | Independent package identity and update source; validate packaged launch and updates before distribution.                                                                                       |
 
 Each slice leaves a runnable app and a small independently revertible commit.
 Update this table and its evidence before moving to the next slice. Local startup
@@ -120,10 +120,18 @@ the workspace usable. These are real daemon/client operations with a simulated
 provider, not real-provider acceptance. Focused projection, metadata, attention,
 and translation-parity checks cover the corresponding regression boundaries.
 
-Remaining in phase 2: titlebar Back/Forward across sibling chats, current-chat
-title/actions, and final visual/shortcut verification. The Mac became locked
-before the last menu/shortcut polish could be checked; the user has been asked
-to unlock it. Code and automated checks can continue meanwhile.
+Back/Forward and the current-chat title are now implemented. Navigation history
+ignores bootstrap/workspace-hydration states and waits for explicit open intents
+to settle. A new case in the existing desktop project-picker suite passed with an
+isolated daemon and Chromium renderer: sibling drafts, initial Back state,
+Back/Forward, chat pinning, and the pin shortcut. This uses a simulated Electron
+bridge; native visual acceptance still requires an unlocked Mac.
+
+Sidebar/actions commit: `4a66271`. The navigation slice is committed separately as
+`feat(desktop): add chat navigation history`. Remaining in phase 2: current-chat
+toolbar actions and final native visual verification. Then continue transcript,
+composer, model/effort and attachment presentation from the available references.
+Real-provider turns and the remaining visual states still need their own checks.
 
 Additional references supplied by the user are in `context-images/`; preserve
 them as user-owned, currently untracked files. They cover chat actions, search,
@@ -131,9 +139,29 @@ model/effort and attachment menus, approval mode, browser and many settings view
 A real expanded execution, waiting approval request, populated code diff, and
 keyboard-settings reference still need confirmation before those visual changes.
 
-The fetched upstream `3fea128` changes only `CHANGELOG.md`. Merge it after the
-current sidebar slice is committed; record that this rehearsal tests a documentation
-revision, not a backend/client compatibility change.
+The remote reference advanced again before the merge: the actual second parent
+of merge `309f2c4` is `4e9a458`, which includes `3fea128` and a seven-line host-runtime
+startup guard plus its regression test. The merge commit subject names the earlier
+revision; the parent hash is authoritative. Inspected both changes, rebuilt the
+server/client stack, and passed the 11 initial-connection bootstrap cases.
+
+### Resume checkpoint
+
+Continue in this checkout on `codex/desktop-ui`; preserve the user's untracked
+`context-images/`. Native inspection is awaiting Mac unlock. The installed pinned
+Playwright Chromium headless runtime now supports isolated renderer tests.
+
+Latest checks: root typecheck and lint pass; navigation model tests pass; agent
+attention policy tests pass (16); locale parity and chat projection/metadata tests
+pass; the new desktop browser case passed in 14.8 seconds. Its first run caught an
+initial-open history entry, which was fixed before the passing rerun. No live
+provider or packaged acceptance is implied.
+
+Relevant logs for the next continuation: `/private/tmp/paseo-desktop-chat-e2e.log`,
+`/private/tmp/paseo-phase2b-typecheck.log`, `/private/tmp/paseo-phase2b-lint.log`, and
+`/private/tmp/paseo-upstream-runtime-tests.log`. The development instance uses 8083
+and 6768; reuse it if still running. The ignored `.dev/qa-chat-state.mts` queries
+only the two locally created mock fixtures; A was archived and B remains available.
 
 ## Development and validation
 
