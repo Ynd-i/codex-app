@@ -19,15 +19,15 @@ Do not copy whole screens or add another client, transport, or session store.
 
 ## Steps
 
-| Step                             | Status                                        | Acceptance                                                                                                                                                                   |
-| -------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0. Upstream baseline             | Complete for local startup                    | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                      |
-| 1. Window and sidebar appearance | Complete for local macOS development          | Desktop shell and dark palette implemented; native navigation, sidebar toggle, menus, theme changes, window resize/fullscreen/reactivation checked. Scoped visual QA passed. |
-| 1a. Upstream integration check   | Merged and rebuilt                            | Merge `309f2c4` includes upstream `4e9a458` (release notes plus a host-startup race fix). No conflicts; server/client rebuild and 11 targeted startup tests passed.          |
-| 2. Chat navigation               | Core implemented; final UI acceptance pending | Chat rows, shared sidebar/titlebar actions, draft isolation, Back/Forward and current title implemented. Final native visual verification remains.                           |
-| 3. Transcript and composer       | Pending                                       | Separate transcript and composer patches; verify streaming, stop, drafts, attachments, approvals, model selection, and reasoning controls.                                   |
-| 4. Supporting panels             | Pending                                       | Adapt Diff, files, terminal, and settings separately using additional reference screenshots.                                                                                 |
-| 5. Custom distribution           | Pending                                       | Independent package identity and update source; validate packaged launch and updates before distribution.                                                                    |
+| Step                             | Status                                        | Acceptance                                                                                                                                                                                       |
+| -------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0. Upstream baseline             | Complete for local startup                    | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                                          |
+| 1. Window and sidebar appearance | Complete for local macOS development          | Desktop shell and dark palette implemented; native navigation, sidebar toggle, menus, theme changes, window resize/fullscreen/reactivation checked. Scoped visual QA passed.                     |
+| 1a. Upstream integration check   | Merged and rebuilt                            | Merge `309f2c4` includes upstream `4e9a458` (release notes plus a host-startup race fix). No conflicts; server/client rebuild and 11 targeted startup tests passed.                              |
+| 2. Chat navigation               | Core implemented; final UI acceptance pending | Chat rows, shared sidebar/titlebar actions, draft isolation, Back/Forward and current title implemented. Final native visual verification remains.                                               |
+| 3. Transcript and composer       | Composer frame implemented; controls pending  | Desktop column/frame and stop styling implemented; isolated attachment, long-draft, send and stop checks pass. Transcript detail, empty state, model/effort and attachment-menu matching remain. |
+| 4. Supporting panels             | Pending                                       | Adapt Diff, files, terminal, and settings separately using additional reference screenshots.                                                                                                     |
+| 5. Custom distribution           | Pending                                       | Independent package identity and update source; validate packaged launch and updates before distribution.                                                                                        |
 
 Each slice leaves a runnable app and a small independently revertible commit.
 Update this table and its evidence before moving to the next slice. Local startup
@@ -189,20 +189,44 @@ startup guard plus its regression test. The merge commit subject names the earli
 revision; the parent hash is authoritative. Inspected both changes, rebuilt the
 server/client stack, and passed the 11 initial-connection bootstrap cases.
 
-### Resume checkpoint
+## Phase 3 progress — 2026-09-30
+
+The macOS default chat/Markdown column is now 736px; an explicit saved width still
+wins, and the other platforms keep their 820px default. The composer reuses its
+existing input, attachment, submission and cancellation machinery with a 24px
+radius, tighter insets and a borderless surface. Read-only input retains its
+dotted border. The macOS stop button follows the neutral foreground treatment;
+other platforms retain their original stop styling.
+
+A new case in the existing desktop renderer suite passed with a real isolated
+daemon and the Mock Load Test provider. It uploads a JSON attachment, preserves a
+40-line draft at 900 × 680, verifies that attachment/send/stop controls stay in
+the viewport, sends the message and stops the run. Screenshots at 1352 × 782 and
+900 × 680 were inspected; the test prints their artifact paths. Root typecheck,
+lint and the two theme/settings regression files passed (81 unit tests).
+
+This is acceptance of the frame and those simulated-provider interactions.
+Model/effort grouping, mode placement, the attachment menu, new-chat empty state,
+transcript spacing, and native comparison remain in this phase. Preserve all
+provider-backed choices while changing their presentation.
+
+## Resume checkpoint
 
 Continue in this checkout on `codex/desktop-ui`; preserve the user's untracked
 `context-images/`. Native inspection is awaiting Mac unlock. The installed pinned
 Playwright Chromium headless runtime now supports isolated renderer tests.
 
-Latest checks: root typecheck and lint pass; the extended desktop browser case
-passed in 56.2 seconds. Earlier navigation model, agent attention (16), locale
+Latest checks: root typecheck and lint pass; the composer browser case passed in
+4.0 seconds (14.2 seconds including setup), and theme/settings tests pass (81).
+The extended chat-action browser case passed in 56.2 seconds. Earlier navigation
+model, agent attention (16), locale
 parity and chat projection/metadata checks passed. The browser regression caught
 both an initial-open history entry and a paused offline mutation; each was fixed
 before a passing rerun. No live-provider or packaged acceptance is implied.
 
-Relevant logs for the next continuation: `/private/tmp/paseo-chat-toolbar-recovery.log`,
-`/private/tmp/paseo-chat-toolbar-typecheck.log`, `/private/tmp/paseo-chat-toolbar-lint.log`, and
+Relevant logs for the next continuation: `/private/tmp/paseo-composer-frame-e2e.log`,
+`/private/tmp/paseo-composer-settings-tests.log`, `/private/tmp/paseo-composer-typecheck.log`,
+`/private/tmp/paseo-composer-lint.log`, `/private/tmp/paseo-chat-toolbar-recovery.log`, and
 `/private/tmp/paseo-upstream-runtime-tests.log`. The development instance uses 8083
 and 6768; reuse it if still running. The ignored `.dev/qa-chat-state.mts` queries
 only the two locally created mock fixtures; A was archived and B remains available.

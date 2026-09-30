@@ -1,5 +1,6 @@
 import { Platform } from "react-native";
 import { darkHighlightColors, lightHighlightColors } from "@getpaseo/highlight";
+import { getIsElectronMac } from "@/constants/platform";
 
 export const baseColors = {
   // Base colors
@@ -643,7 +644,7 @@ export const DEFAULT_MONO_FONT_STACK: string = Platform.select({
 });
 
 // Chat and markdown content column; the appearance updater patches the user's width in.
-export const DEFAULT_CONTENT_MAX_WIDTH = 820;
+export const DEFAULT_CONTENT_MAX_WIDTH = getIsElectronMac() ? 736 : 820;
 
 // `fontSize`, `fontFamily`, `lineHeight`, and `contentMaxWidth` are deliberately widened to plain
 // `number`/`string` (not narrowed by `as const`) so the appearance updater can patch

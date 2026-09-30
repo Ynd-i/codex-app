@@ -51,7 +51,7 @@ import { formatShortcut, type ShortcutKey } from "@/utils/format-shortcut";
 import { getShortcutOs } from "@/utils/shortcut-platform";
 import type { MessageInputKeyboardActionKind } from "@/keyboard/actions";
 import { isImeComposingKeyboardEvent } from "@/utils/keyboard-ime";
-import { isWeb } from "@/constants/platform";
+import { getIsElectronMac, isWeb } from "@/constants/platform";
 import { useIsCompactFormFactor } from "@/constants/layout";
 import { useComposerKeyboardScope } from "@/composer/keyboard-scope";
 import { RenderProfile } from "@/utils/render-profiler";
@@ -1916,19 +1916,17 @@ const styles = StyleSheet.create((theme: Theme) => ({
   inputWrapper: {
     flexShrink: 1,
     flexDirection: "column",
-    gap: theme.spacing[3],
-    backgroundColor: theme.colors.surface1,
-    borderWidth: theme.borderWidth[1],
+    gap: getIsElectronMac() ? theme.spacing[2] : theme.spacing[3],
+    backgroundColor: getIsElectronMac() ? theme.colors.surface3 : theme.colors.surface1,
+    borderWidth: getIsElectronMac() ? 0 : theme.borderWidth[1],
     borderColor: theme.colors.borderAccent,
-    borderRadius: theme.borderRadius["2xl"],
-    paddingVertical: {
-      xs: theme.spacing[2],
-      md: theme.spacing[4],
-    },
-    paddingHorizontal: {
-      xs: theme.spacing[3],
-      md: theme.spacing[4],
-    },
+    borderRadius: getIsElectronMac() ? 24 : theme.borderRadius["2xl"],
+    paddingVertical: getIsElectronMac()
+      ? theme.spacing[2]
+      : { xs: theme.spacing[2], md: theme.spacing[4] },
+    paddingHorizontal: getIsElectronMac()
+      ? theme.spacing[3]
+      : { xs: theme.spacing[3], md: theme.spacing[4] },
     ...(isWeb
       ? {
           transitionProperty: "border-color",
@@ -1941,6 +1939,7 @@ const styles = StyleSheet.create((theme: Theme) => ({
   // into it" without swapping the border colour, which reads as an error state.
   inputWrapperReadOnly: {
     borderStyle: "dotted",
+    borderWidth: theme.borderWidth[1],
   },
   textInputScrollWrapper: {
     flexShrink: 1,
@@ -1986,7 +1985,7 @@ const styles = StyleSheet.create((theme: Theme) => ({
     flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "space-between",
-    marginHorizontal: -6,
+    marginHorizontal: getIsElectronMac() ? -4 : -6,
   },
   leftButtonGroup: {
     minWidth: 0,

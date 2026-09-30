@@ -12,6 +12,10 @@ distribution and full migration acceptance remain pending; see the
 - Added individual chats in Recent, Pinned, and project groups, with shared rename, archive, pinning, and unread actions in the sidebar and current-chat titlebar.
 - Added Back/Forward chat navigation and the current-chat title, preserving independent drafts when switching between sibling chats.
 
+### Changed
+
+- Aligned the macOS chat column and composer frame with the reference: a narrower default column, larger corners, tighter padding, and a neutral stop control. Saved content-width preferences still take priority.
+
 ### Fixed
 
 - Fixed chat metadata changes remaining paused indefinitely while offline; connection errors and timeouts now return control to the user without discarding a rename draft.

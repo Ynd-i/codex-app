@@ -118,7 +118,7 @@ import { ComposerKeyboardScopeProvider, useComposerKeyboardScope } from "@/compo
 import { useAppSettings } from "@/hooks/use-settings";
 import { RenderProfile } from "@/utils/render-profiler";
 import { AfterPaintPublication } from "@/composer/after-paint-publication";
-import { isWeb, isNative } from "@/constants/platform";
+import { getIsElectronMac, isWeb, isNative } from "@/constants/platform";
 import type { ForgeSearchItem } from "@getpaseo/protocol/messages";
 import type {
   AttachmentMetadata,
@@ -1112,9 +1112,12 @@ function ComposerCancelButton({
     ? t("composer.cancel.cancelingAgent")
     : t("composer.cancel.stopAgent");
   const icon = isCancellingAgent ? (
-    <LoadingSpinner size="small" color="white" />
+    <ThemedLoadingSpinner size="small" uniProps={cancelSpinnerColorMapping} />
   ) : (
-    <Square size={buttonIconSize} color="white" fill="white" />
+    <ThemedSquare
+      size={getIsElectronMac() ? 10 : buttonIconSize}
+      uniProps={cancelIconColorMapping}
+    />
   );
   const shortcutNode = agentInterruptKeys ? <Shortcut chord={agentInterruptKeys} /> : null;
   return (
@@ -2555,7 +2558,7 @@ const styles = StyleSheet.create((theme: Theme) => ({
     width: 28,
     height: 28,
     borderRadius: theme.borderRadius.full,
-    backgroundColor: theme.colors.palette.red[600],
+    backgroundColor: getIsElectronMac() ? theme.colors.accent : theme.colors.palette.red[600],
     alignItems: "center",
     justifyContent: "center",
     marginLeft: theme.spacing[1],
@@ -2649,7 +2652,8 @@ const styles = StyleSheet.create((theme: Theme) => ({
   },
 })) as unknown as Record<string, object>;
 
-const ThemedAttachmentSpinner = withUnistyles(LoadingSpinner);
+const ThemedLoadingSpinner = withUnistyles(LoadingSpinner);
+const ThemedSquare = withUnistyles(Square);
 const ThemedPencil = withUnistyles(Pencil);
 const ThemedArrowUp = withUnistyles(ArrowUp);
 const ThemedGitPullRequest = withUnistyles(GitPullRequest);
@@ -2662,6 +2666,13 @@ const ThemedFileText = withUnistyles(FileText);
 const iconForegroundMapping = (theme: Theme) => ({ color: theme.colors.foreground });
 const iconForegroundMutedMapping = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
 const iconAccentForegroundMapping = (theme: Theme) => ({ color: theme.colors.accentForeground });
+const cancelSpinnerColorMapping = (theme: Theme) => ({
+  color: getIsElectronMac() ? theme.colors.accentForeground : "white",
+});
+const cancelIconColorMapping = (theme: Theme) => ({
+  ...cancelSpinnerColorMapping(theme),
+  fill: getIsElectronMac() ? theme.colors.accentForeground : "white",
+});
 
 function renderForgeAttachmentIcon(icon: string): ReactElement {
   return (
@@ -2678,5 +2689,5 @@ const githubIssuePillIcon = (
 const filePillIcon = <ThemedFileText size={ICON_SIZE.sm} uniProps={iconForegroundMutedMapping} />;
 
 const pendingFilePillIcon = (
-  <ThemedAttachmentSpinner size={18} uniProps={iconForegroundMutedMapping} />
+  <ThemedLoadingSpinner size={18} uniProps={iconForegroundMutedMapping} />
 );
