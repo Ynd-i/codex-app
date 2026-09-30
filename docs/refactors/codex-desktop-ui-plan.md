@@ -19,15 +19,15 @@ Do not copy whole screens or add another client, transport, or session store.
 
 ## Steps
 
-| Step                             | Status                                        | Acceptance                                                                                                                                                                                       |
-| -------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 0. Upstream baseline             | Complete for local startup                    | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                                          |
-| 1. Window and sidebar appearance | Complete for local macOS development          | Desktop shell and dark palette implemented; native navigation, sidebar toggle, menus, theme changes, window resize/fullscreen/reactivation checked. Scoped visual QA passed.                     |
-| 1a. Upstream integration check   | Merged and rebuilt                            | Merge `309f2c4` includes upstream `4e9a458` (release notes plus a host-startup race fix). No conflicts; server/client rebuild and 11 targeted startup tests passed.                              |
-| 2. Chat navigation               | Core implemented; final UI acceptance pending | Chat rows, shared sidebar/titlebar actions, draft isolation, Back/Forward and current title implemented. Final native visual verification remains.                                               |
-| 3. Transcript and composer       | Core composer implemented; transcript pending | Column, frame, mode/model controls and reasoning popover implemented; isolated provider-control, attachment, send/stop checks pass. Attachment menu, empty state and transcript matching remain. |
-| 4. Supporting panels             | Pending                                       | Adapt Diff, files, terminal, and settings separately using additional reference screenshots.                                                                                                     |
-| 5. Custom distribution           | Pending                                       | Independent package identity and update source; validate packaged launch and updates before distribution.                                                                                        |
+| Step                             | Status                                        | Acceptance                                                                                                                                                                                             |
+| -------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0. Upstream baseline             | Complete for local startup                    | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                                                |
+| 1. Window and sidebar appearance | Complete for local macOS development          | Desktop shell and dark palette implemented; native navigation, sidebar toggle, menus, theme changes, window resize/fullscreen/reactivation checked. Scoped visual QA passed.                           |
+| 1a. Upstream integration check   | Merged and rebuilt                            | Merge `309f2c4` includes upstream `4e9a458` (release notes plus a host-startup race fix). No conflicts; server/client rebuild and 11 targeted startup tests passed.                                    |
+| 2. Chat navigation               | Core implemented; final UI acceptance pending | Chat rows, shared sidebar/titlebar actions, draft isolation, Back/Forward and current title implemented. Final native visual verification remains.                                                     |
+| 3. Transcript and composer       | Core composer implemented; transcript pending | Column, frame, mode/model controls and reasoning popover implemented; isolated provider-control, attachment, send/stop checks pass. Attachment menu, transcript matching and native comparison remain. |
+| 4. Supporting panels             | Pending                                       | Adapt Diff, files, terminal, and settings separately using additional reference screenshots.                                                                                                           |
+| 5. Custom distribution           | Pending                                       | Independent package identity and update source; validate packaged launch and updates before distribution.                                                                                              |
 
 Each slice leaves a runnable app and a small independently revertible commit.
 Update this table and its evidence before moving to the next slice. Local startup
@@ -229,8 +229,20 @@ Root typecheck, lint and translation parity
 passed (36 locale tests). The macOS combobox frame uses the same rounded surface
 for the preferences and model browser.
 
+The macOS new-chat page now centers the existing Paseo mark and a project-aware
+26px heading above the bottom composer. Project, host, isolation and launch controls
+remain in the existing form; their desktop pickers open upward from the bottom
+placement. The layout owns its frame and omits the duplicate inner titlebar on wide
+macOS windows. Other form factors retain the original presentation.
+
+The new-chat renderer case passed in 4.5 seconds (16.1 seconds including setup),
+checking project context, picker visibility, configured model, draft retention at
+700px and 1352px widths, creation through the real isolated daemon, and stopping
+the mock provider. Its screenshot was inspected; typecheck, lint and locale parity
+passed. No creation or draft store was replaced.
+
 This is acceptance of the frame, controls and those simulated-provider interactions.
-The attachment menu, new-chat empty state, transcript spacing, and native comparison
+The attachment menu, transcript spacing, and native comparison
 remain in this phase. Preserve all provider-backed choices while changing their
 presentation.
 
@@ -247,7 +259,9 @@ parity and chat projection/metadata checks passed. The browser regression caught
 both an initial-open history entry and a paused offline mutation; each was fixed
 before a passing rerun. No live-provider or packaged acceptance is implied.
 
-Relevant logs for the next continuation: `/private/tmp/paseo-slider-keys-e2e.log`,
+Relevant logs for the next continuation: `/private/tmp/paseo-new-chat-e2e.log`,
+`/private/tmp/paseo-new-chat-typecheck.log`, `/private/tmp/paseo-new-chat-lint.log`,
+`/private/tmp/paseo-new-chat-i18n.log`, `/private/tmp/paseo-slider-keys-e2e.log`,
 `/private/tmp/paseo-slider-keys-typecheck.log`, `/private/tmp/paseo-slider-keys-lint.log`,
 `/private/tmp/paseo-model-popover-i18n.log`, `/private/tmp/paseo-composer-settings-tests.log`,
 `/private/tmp/paseo-chat-toolbar-recovery.log`, and

@@ -3,6 +3,8 @@ import { pluginSettings } from "./plugin-settings";
 
 export const ko: TranslationResources = {
   desktopChat: {
+    startWork: "어떤 작업을 할까요?",
+    startInProject: "{{project}}에서 어떤 작업을 할까요?",
     resetReasoning: "추론 강도 재설정",
     newChat: "새 채팅",
     actions: "채팅 작업",

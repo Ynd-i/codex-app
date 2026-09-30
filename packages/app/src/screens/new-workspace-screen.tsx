@@ -17,6 +17,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, Folder, FolderPlus, GitBranch, GitPullRequest } from "lucide-react-native";
 import { Composer } from "@/composer";
 import { ComposerDock } from "@/composer/dock";
+import { PaseoLogo } from "@/components/icons/paseo-logo";
+import { getIsElectronMac } from "@/constants/platform";
 import { FileDropZone } from "@/components/file-drop/file-drop-zone";
 import {
   resolveComposerAttachmentSubmitFormat,
@@ -131,6 +133,8 @@ import { captureWorkspaceDraftCleanup } from "./new-workspace/background-handoff
 import { useNewWorkspaceScreenPresence } from "./new-workspace/screen-presence";
 
 const ThemedFolderPlus = withUnistyles(FolderPlus);
+const ThemedPaseoLogo = withUnistyles(PaseoLogo);
+const passiveColorMapping = (theme: Theme) => ({ color: theme.colors.foregroundExtraMuted });
 const foregroundMutedColorMapping = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
 const addProjectIcon = (
   <ThemedFolderPlus size={ICON_SIZE.sm} uniProps={foregroundMutedColorMapping} />
@@ -1424,6 +1428,7 @@ function useNewWorkspaceFormStack(input: NewWorkspaceFormStackInput): ReactEleme
   const { theme } = useUnistyles();
   const { t } = useTranslation();
   const { isCompact, isPending, project, host, isolation, base, launch } = input;
+  const desktopPlacement = getIsElectronMac() ? "top-start" : "bottom-start";
 
   const selectedHostLabel =
     host.allHosts.find((h) => h.serverId === host.selectedServerId)?.label ?? "Host";
@@ -1473,7 +1478,7 @@ function useNewWorkspaceFormStack(input: NewWorkspaceFormStackInput): ReactEleme
         title="Project"
         open={project.openState}
         onOpenChange={project.onOpenChange}
-        desktopPlacement="bottom-start"
+        desktopPlacement={desktopPlacement}
         desktopMinWidth={360}
         anchorRef={project.anchorRef}
         emptyText="No projects available."
@@ -1494,7 +1499,7 @@ function useNewWorkspaceFormStack(input: NewWorkspaceFormStackInput): ReactEleme
         anchorRef={host.anchorRef}
         searchable={false}
         title="Host"
-        desktopPlacement="bottom-start"
+        desktopPlacement={desktopPlacement}
         desktopMinWidth={200}
         hostOptionTestID={newWorkspaceHostOptionTestID}
       >
@@ -1546,7 +1551,7 @@ function useNewWorkspaceFormStack(input: NewWorkspaceFormStackInput): ReactEleme
         title={t("newWorkspace.isolation.label")}
         open={isolation.openState}
         onOpenChange={isolation.onOpenChange}
-        desktopPlacement="bottom-start"
+        desktopPlacement={desktopPlacement}
         anchorRef={isolation.anchorRef}
         renderOption={isolation.renderOption}
       />
@@ -1577,7 +1582,7 @@ function useNewWorkspaceFormStack(input: NewWorkspaceFormStackInput): ReactEleme
         open={base.openState}
         onOpenChange={base.onOpenChange}
         onSearchQueryChange={base.setSearchQuery}
-        desktopPlacement="bottom-start"
+        desktopPlacement={desktopPlacement}
         anchorRef={base.anchorRef}
         emptyText={base.emptyText}
         renderOption={base.renderOption}
@@ -2366,8 +2371,6 @@ export function NewWorkspaceScreen({
     },
   });
 
-  const screenHeaderLeft = useMemo(() => <SidebarMenuToggle />, []);
-
   const composer = isTerminalLaunch ? (
     <Composer
       key="terminal"
@@ -2405,7 +2408,7 @@ export function NewWorkspaceScreen({
       allowEmptySubmit={true}
       submitButtonAccessibilityLabel={t("newWorkspace.create")}
       submitButtonTestID="workspace-create-submit"
-      submitIcon="return"
+      submitIcon={getIsElectronMac() ? "arrow" : "return"}
       isSubmitLoading={isPending}
       waitForForgeAutoAttachOnSubmit
       submitBehavior="preserve-and-lock"
@@ -2427,51 +2430,118 @@ export function NewWorkspaceScreen({
     />
   );
   return (
-    <FileDropZone style={styles.container}>
-      <ScreenHeader left={screenHeaderLeft} borderless />
-      <View style={styles.content}>
-        <TitlebarDragRegion />
-        <NewWorkspaceLayout
-          isCompact={isCompact}
-          title={t("newWorkspace.title")}
-          formStack={formStack}
-        >
-          {composer}
-          {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
-        </NewWorkspaceLayout>
-      </View>
-    </FileDropZone>
+    <NewWorkspaceLayout
+      isCompact={isCompact}
+      project={selectedProject}
+      title={t("newWorkspace.title")}
+      formStack={formStack}
+      errorMessage={errorMessage}
+    >
+      {composer}
+    </NewWorkspaceLayout>
   );
 }
 
 function NewWorkspaceLayout({
   isCompact,
+  project,
   title,
   formStack,
+  errorMessage,
   children,
 }: {
   isCompact: boolean;
+  project: Pick<HostProjectListItem, "projectName"> | null;
   title: string;
   formStack: ReactNode;
+  errorMessage: string | null;
   children: ReactNode;
 }) {
-  const setupFields = (
+  const { t } = useTranslation();
+  const screenHeaderLeft = useMemo(() => <SidebarMenuToggle />, []);
+  const desktopChat = getIsElectronMac() && !isCompact;
+  const projectName = project?.projectName;
+  const composer = (
     <>
-      <View style={styles.composerTitleContainer} pointerEvents="none">
-        <Text style={styles.composerTitle}>{title}</Text>
-      </View>
-      {formStack}
+      {children}
+      {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
     </>
   );
+  let content;
+  if (desktopChat) {
+    content = (
+      <View style={styles.desktopLayout}>
+        <View style={styles.desktopHero} pointerEvents="none">
+          <View aria-hidden>
+            <ThemedPaseoLogo size={56} uniProps={passiveColorMapping} />
+          </View>
+          <Text
+            style={styles.desktopHeroTitle}
+            accessibilityRole="header"
+            testID="desktop-new-chat-hero"
+          >
+            {projectName
+              ? t("desktopChat.startInProject", { project: projectName })
+              : t("desktopChat.startWork")}
+          </Text>
+        </View>
+        <View style={styles.desktopSetupRail}>
+          <View style={styles.desktopSetup}>{formStack}</View>
+        </View>
+        {composer}
+      </View>
+    );
+  } else {
+    const setupFields = (
+      <>
+        <View style={styles.composerTitleContainer} pointerEvents="none">
+          <Text style={styles.composerTitle}>{title}</Text>
+        </View>
+        {formStack}
+      </>
+    );
+    content = (
+      <ComposerDock centered={!isCompact}>
+        {setupFields}
+        {composer}
+      </ComposerDock>
+    );
+  }
   return (
-    <ComposerDock centered={!isCompact}>
-      {setupFields}
-      {children}
-    </ComposerDock>
+    <FileDropZone style={styles.container}>
+      {desktopChat ? null : <ScreenHeader left={screenHeaderLeft} borderless />}
+      <View style={styles.content}>
+        {desktopChat ? null : <TitlebarDragRegion />}
+        {content}
+      </View>
+    </FileDropZone>
   );
 }
 
 const styles = StyleSheet.create((theme) => ({
+  desktopLayout: { flex: 1 },
+  desktopHero: {
+    flex: 1,
+    minHeight: 0,
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: theme.spacing[6],
+    padding: theme.spacing[4],
+    paddingBottom: theme.spacing[4] + theme.spacing[6],
+  },
+  desktopHeroTitle: {
+    maxWidth: theme.contentMaxWidth,
+    textAlign: "center",
+    fontSize: theme.fontSize["4xl"],
+    fontWeight: theme.fontWeight.normal,
+    color: theme.colors.foreground,
+  },
+  desktopSetupRail: {
+    paddingHorizontal: theme.spacing[4] + theme.spacing[3],
+    alignItems: "center",
+  },
+  desktopSetup: { width: "100%", maxWidth: theme.contentMaxWidth - theme.spacing[6] },
   container: {
     flex: 1,
     backgroundColor: theme.colors.surface0,
@@ -2504,6 +2574,15 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: theme.spacing[8],
+    ...(getIsElectronMac()
+      ? {
+          marginBottom: 0,
+          backgroundColor: theme.colors.surface1,
+          borderTopLeftRadius: theme.borderRadius["2xl"],
+          borderTopRightRadius: theme.borderRadius["2xl"],
+          paddingVertical: theme.spacing[2],
+        }
+      : {}),
     // The badge adds its own left padding; offset it so the project icon's left
     // edge lands exactly on the "New workspace" title's left edge. The trailing
     // inset mirrors it so the launch chip stops on the composer's inner content

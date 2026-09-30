@@ -8,11 +8,74 @@ import { getE2EDaemonPort } from "../../app/e2e/support/helpers/daemon-port";
 import { waitForConnectedHost } from "../../app/e2e/support/helpers/hosts";
 import { expectOpenedProject } from "../../app/e2e/support/helpers/project-picker-ui";
 import { getServerId } from "../../app/e2e/support/helpers/server-id";
-import { connectSeedClient } from "../../app/e2e/support/helpers/seed-client";
+import { connectSeedClient, seedWorkspace } from "../../app/e2e/support/helpers/seed-client";
 import { installDesktopRuntime, waitForDirectoryDialog } from "./support/runtime";
 import { seedMockAgentWorkspace, openAgentRoute } from "../../app/e2e/support/helpers/mock-agent";
 import { composerLocator, dropFileOnComposer } from "../../app/e2e/support/helpers/composer";
 import { expectAgentIdle } from "../../app/e2e/support/helpers/agent-stream";
+
+test("desktop new chat retains project selection and creates a chat", async ({
+  page,
+}, testInfo) => {
+  const workspace = await seedWorkspace({ repoPrefix: "desktop-new-chat-" });
+  try {
+    const existing = await workspace.client.createAgent({
+      provider: "mock",
+      cwd: workspace.repoPath,
+      workspaceId: workspace.workspaceId,
+      title: "Existing chat",
+      model: "five-minute-stream",
+      modeId: "load-test",
+    });
+    await installDesktopRuntime(page, {
+      serverId: getServerId(),
+      manageBuiltInDaemon: false,
+      daemonListen: `127.0.0.1:${getE2EDaemonPort()}`,
+    });
+    await page.setViewportSize({ width: 1352, height: 782 });
+    await page.emulateMedia({ colorScheme: "dark" });
+    await openAgentRoute(page, { workspaceId: workspace.workspaceId, agentId: existing.id });
+    await expect(page.getByTestId("desktop-chat-title")).toHaveText("Existing chat");
+    await page.getByText("New chat", { exact: true }).filter({ visible: true }).first().click();
+    await expect(page.getByTestId("desktop-new-chat-hero")).toContainText(
+      workspace.projectDisplayName,
+    );
+    const project = page.getByTestId("new-workspace-project-picker-trigger");
+    await expect(project).toContainText(workspace.projectDisplayName);
+    await project.click();
+    await expect(page.getByRole("textbox", { name: "Search projects" })).toBeInViewport();
+    await page.keyboard.press("Escape");
+    await expect(
+      page.getByTestId("combined-model-selector").filter({ visible: true }),
+    ).toContainText("Ten second stream");
+    await composerLocator(page).focus();
+    await page.mouse.move(850, 400);
+    await page.screenshot({ path: testInfo.outputPath("new-chat.png") });
+    console.info("New chat visual evidence", testInfo.outputPath("new-chat.png"));
+    await composerLocator(page).fill("Keep this draft when resizing.");
+    await page.setViewportSize({ width: 700, height: 782 });
+    await expect(composerLocator(page)).toHaveValue("Keep this draft when resizing.");
+    await page.setViewportSize({ width: 1352, height: 782 });
+    await expect(page.getByTestId("desktop-new-chat-hero")).toBeVisible();
+    await expect(composerLocator(page)).toHaveValue("Keep this draft when resizing.");
+    const prompt = "Create a chat from the desktop composer.";
+    await composerLocator(page).fill(prompt);
+    await page.getByTestId("workspace-create-submit").click();
+    await expect(page.getByTestId("user-message").filter({ hasText: prompt })).toBeVisible();
+    await expect
+      .poll(
+        async () =>
+          (
+            await workspace.client.fetchWorkspaces({ filter: { projectId: workspace.projectId } })
+          ).entries.filter((entry) => entry.id !== workspace.workspaceId).length,
+      )
+      .toBe(1);
+    await page.getByRole("button", { name: "Stop agent", exact: true }).click();
+    await expectAgentIdle(page);
+  } finally {
+    await workspace.cleanup();
+  }
+});
 
 test("desktop composer keeps send and stop reachable with attachments", async ({
   page,

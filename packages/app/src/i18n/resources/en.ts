@@ -1,5 +1,7 @@
 export const en = {
   desktopChat: {
+    startWork: "What should we work on?",
+    startInProject: "What should we work on in {{project}}?",
     resetReasoning: "Reset reasoning intensity",
     newChat: "New chat",
     actions: "Chat actions",

@@ -12,6 +12,7 @@ distribution and full migration acceptance remain pending; see the
 - Added individual chats in Recent, Pinned, and project groups, with shared rename, archive, pinning, and unread actions in the sidebar and current-chat titlebar.
 - Added Back/Forward chat navigation and the current-chat title, preserving independent drafts when switching between sibling chats.
 - Added a combined model and reasoning popover on macOS, with keyboard and pointer control, provider-defined defaults, and the existing searchable model browser.
+- Added a centered, project-aware new-chat welcome on macOS, with project controls above the bottom composer and drafts retained across compact layouts.
 
 ### Changed
 
