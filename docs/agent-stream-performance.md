@@ -59,6 +59,18 @@ So arrival sets a _target_ and the reveal rate is derived from the backlog inste
   stale. A new field on `StreamLayoutItem` must be added to `areLayoutItemsEquivalent`, or sharing
   silently stops.
 
+## Completed-turn disclosure on macOS
+
+`desktop-turn-activity.ts` projects completed activity into collapsible viewport
+rows after the full stream layout is built. Copy and fork continue reading that
+full layout. Replies after the last activity remain visible, as do protected
+notifications, plans and failed/unfinished tools; active turns stay unfolded.
+Header proxy rows retain their source ids and keep their object identity across
+unrelated live deltas. A collapsed header does not count as visible message text:
+chat find uses the activity-aware visibility set and reveal callback to expand
+hidden matches before scrolling. Manual expansion pauses the viewport's existing
+output-following behavior so growing history does not move the reader to the end.
+
 ## Measuring
 
 - **Smoothness (user-perceived):** `packages/app/e2e/browser/agent-stream-smoothness.spec.ts`, gated behind `PASEO_AGENT_STREAM_PERF_E2E=1`. Drives the mock provider's `bursty-stream` model and reports coefficient of variation of characters painted per frame (smoothness) plus p95 gap between visible updates (stalls). Both numbers are needed: a stalled stream is perfectly smooth.

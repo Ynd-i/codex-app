@@ -3,6 +3,8 @@ import { pluginSettings } from "./plugin-settings";
 
 export const ja: TranslationResources = {
   desktopChat: {
+    activity: "アクティビティ",
+    workedFor: "所要時間: {{duration}}",
     startWork: "何をしましょうか？",
     startInProject: "{{project}} で何をしましょうか？",
     resetReasoning: "推論の強度をリセット",

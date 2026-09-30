@@ -68,15 +68,15 @@ scope; it does not remove runtime code or add new provider integrations.
 
 ## Steps
 
-| Step                             | Status                                                 | Acceptance                                                                                                                                                                                             |
-| -------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 0. Upstream baseline             | Complete for local startup                             | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                                                |
-| 1. Window and sidebar appearance | Complete for local macOS development                   | Desktop shell and dark palette implemented; native navigation, sidebar toggle, menus, theme changes, window resize/fullscreen/reactivation checked. Scoped visual QA passed.                           |
-| 1a. Upstream integration check   | Merged and rebuilt                                     | Merge `309f2c4` includes upstream `4e9a458` (release notes plus a host-startup race fix). No conflicts; server/client rebuild and 11 targeted startup tests passed.                                    |
-| 2. Chat navigation               | Default sidebar retained; chrome consolidation pending | Keep upstream workspace navigation. Current-chat titlebar actions, draft isolation and Back/Forward remain in scope. Custom sidebar work is deferred at the user's request.                            |
-| 3. Transcript and composer       | Core composer implemented; transcript pending          | Column, frame, mode/model controls and reasoning popover implemented; isolated provider-control, attachment, send/stop checks pass. Attachment menu, transcript matching and native comparison remain. |
-| 4. Supporting panels             | Toolbar consolidated; panel presentation pending       | Active-workspace actions now share the window titlebar. Continue adapting Diff, files, terminal, and settings using their supplied references.                                                         |
-| 5. Custom distribution           | Pending                                                | Independent package identity and update source; validate packaged launch and updates before distribution.                                                                                              |
+| Step                             | Status                                                 | Acceptance                                                                                                                                                                                 |
+| -------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0. Upstream baseline             | Complete for local startup                             | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                                    |
+| 1. Window and sidebar appearance | Complete for local macOS development                   | Desktop shell and dark palette implemented; native navigation, sidebar toggle, menus, theme changes, window resize/fullscreen/reactivation checked. Scoped visual QA passed.               |
+| 1a. Upstream integration check   | Merged and rebuilt                                     | Merge `309f2c4` includes upstream `4e9a458` (release notes plus a host-startup race fix). No conflicts; server/client rebuild and 11 targeted startup tests passed.                        |
+| 2. Chat navigation               | Default sidebar retained; chrome consolidation pending | Keep upstream workspace navigation. Current-chat titlebar actions, draft isolation and Back/Forward remain in scope. Custom sidebar work is deferred at the user's request.                |
+| 3. Transcript and composer       | Composer and activity verified; visual polish pending  | Column, input/model controls, tool cards and completed-turn activity are implemented and checked in native development. Attachment-menu matching and remaining transcript polish continue. |
+| 4. Supporting panels             | Toolbar consolidated; panel presentation pending       | Active-workspace actions now share the window titlebar. Continue adapting Diff, files, terminal, and settings using their supplied references.                                             |
+| 5. Custom distribution           | Pending                                                | Independent package identity and update source; validate packaged launch and updates before distribution.                                                                                  |
 
 Each slice leaves a runnable app and a small independently revertible commit.
 Update this table and its evidence before moving to the next slice. Local startup
@@ -357,9 +357,39 @@ The [native output card](../qa-evidence/codex-desktop/phase3-native-tool-output.
 was inspected with the existing synthetic chat; it does not represent shell
 execution or a live provider run.
 
-Whole-turn elapsed/activity disclosure is still pending. Preserve the existing
-timeline, copy/fork boundaries and chat-find behavior when adding that layer;
-the current projection groups consecutive tool calls, not whole assistant turns.
+### Completed-turn activity
+
+Wide macOS conversations now show elapsed headers and initially fold the completed
+activity preceding the reply. The protocol has no universal commentary/final
+channel, so the display boundary is the last tool/reasoning item: all subsequent
+assistant blocks remain visible. Notifications, plans, plugin content and failed
+or unfinished tool rows/overview groups remain outside the fold. A response with
+no assistant text after its activity stays fully visible. Active turns, compact
+layouts and other platforms retain their existing presentation.
+
+This filters viewport segments only. The full layout, message identities,
+copy text and fork cursors stay complete; search expands a hidden message before
+scrolling to its match. Completed header identities are retained during live
+text updates, and disclosure state is scoped by host, agent and turn. Expanding
+pauses the viewport's existing automatic-follow behavior to keep the header at
+the reader's position. Completion timestamps remain available on hover.
+
+The initial fold and scroll-position failures were reproduced before their fixes.
+The desktop regression forces partial virtualization and checks running/completed
+states, compact/wide transitions, expansion position, full clipboard text, hidden
+search matches and the real fork-context response. The tool-card flow also passes
+through the expanded activity. All 61 targeted model, boundary, viewport and locale
+unit tests pass, along with root typecheck/lint/format. Logs:
+`/private/tmp/paseo-turn-activity-final-e2e.log`,
+`/private/tmp/paseo-turn-activity-anchor.log`,
+`/private/tmp/paseo-turn-activity-unit.log`,
+`/private/tmp/paseo-turn-activity-typecheck.log` and
+`/private/tmp/paseo-turn-activity-lint.log`.
+
+Native [collapsed](../qa-evidence/codex-desktop/phase3-native-activity-collapsed.jpg)
+and [expanded](../qa-evidence/codex-desktop/phase3-native-activity-expanded.jpg) states
+were inspected in the existing mock conversation. This is simulated-provider and
+local native acceptance, not live-provider, remote-device or packaged acceptance.
 
 ### Voice exclusions
 
@@ -445,10 +475,10 @@ and `/private/tmp/paseo-titlebar-lint.log`. Recheck the live native instance aft
 structural HMR changes; a normal View > Reload refreshed the new portal without
 restarting either daemon.
 
-Inline tool output is now verified as described above. Next, continue the
-whole-turn elapsed/activity presentation and attachment-menu work, then the
-remaining supporting panels and distribution gates. The native mock chat B
-currently has its last Shell output expanded for inspection.
+Inline tool output and completed-turn activity are verified above. Continue the
+attachment-menu work and remaining transcript/panel presentation, then the
+distribution gates. The native mock chat B currently has its activity expanded
+for inspection; its underlying conversation is unchanged.
 
 Latest composer evidence is recorded above; the earlier theme/settings tests pass (81).
 The extended chat-action browser case passed in 56.2 seconds. Earlier navigation

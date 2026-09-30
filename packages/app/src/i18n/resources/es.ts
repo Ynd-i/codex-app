@@ -3,6 +3,8 @@ import { pluginSettings } from "./plugin-settings";
 
 export const es: TranslationResources = {
   desktopChat: {
+    activity: "Actividad",
+    workedFor: "Tiempo: {{duration}}",
     startWork: "¿En qué trabajamos?",
     startInProject: "¿En qué trabajamos en {{project}}?",
     resetReasoning: "Restablecer la intensidad de razonamiento",

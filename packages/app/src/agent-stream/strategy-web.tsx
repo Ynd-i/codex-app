@@ -1152,6 +1152,7 @@ function WebStreamViewport(props: StreamRenderInput & { isMobileBreakpoint: bool
         scheduleStickToBottom();
       },
       scrollToMessage,
+      pauseFollowingOutput: stopFollowingOutputFromUserIntent,
     };
     viewportRef.current = handle;
     return () => {
@@ -1165,6 +1166,7 @@ function WebStreamViewport(props: StreamRenderInput & { isMobileBreakpoint: bool
     forceStickToBottom,
     scheduleStickToBottom,
     scrollToMessage,
+    stopFollowingOutputFromUserIntent,
     viewportRef,
   ]);
 

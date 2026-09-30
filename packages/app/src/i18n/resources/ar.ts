@@ -3,6 +3,8 @@ import { pluginSettings } from "./plugin-settings";
 
 export const ar: TranslationResources = {
   desktopChat: {
+    activity: "النشاط",
+    workedFor: "المدة: {{duration}}",
     startWork: "على ماذا نعمل؟",
     startInProject: "على ماذا نعمل في {{project}}؟",
     resetReasoning: "إعادة ضبط مستوى الاستدلال",

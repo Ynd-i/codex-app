@@ -27,6 +27,7 @@ test("desktop tool rows expand independently of file navigation", async ({ page 
       "(end of synthetic stream)",
       { timeout: 30_000 },
     );
+    await page.getByTestId("desktop-turn-activity").first().click();
     const read = page.getByTestId("tool-call-badge").filter({ hasText: readPath }).first();
     await read.scrollIntoViewIfNeeded();
     await read.hover();

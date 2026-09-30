@@ -3,6 +3,8 @@ import { pluginSettings } from "./plugin-settings";
 
 export const zhCN: TranslationResources = {
   desktopChat: {
+    activity: "活动",
+    workedFor: "用时 {{duration}}",
     startWork: "我们应该做些什么？",
     startInProject: "我们应该在{{project}}中做些什么？",
     resetReasoning: "重置推理强度",

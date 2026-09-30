@@ -63,6 +63,7 @@ import { ToolCallDetailsContent } from "@/components/tool-call-details";
 import { QuestionFormCard } from "@/components/question-form-card";
 import { ToolCallSheetProvider } from "@/components/tool-call-sheet";
 import { createStreamPresentation, getStreamItemMessageId } from "./presentation";
+import { DesktopTurnActivityHeader, useDesktopTurnActivity } from "./desktop-turn-activity-view";
 import { OverviewToolCallGroupView } from "@/tool-calls/detail-level/overview/view";
 import { type AgentStreamRenderModel, buildAgentStreamRenderModel } from "./model";
 import { resolveStreamRenderStrategy } from "./strategy-resolver";
@@ -606,17 +607,22 @@ const AgentStreamViewComponent = forwardRef<AgentStreamViewHandle, AgentStreamVi
     const handleTimelineHistoryLoadError = useCallback(() => {
       toast?.error(t("agentStream.historyLoadFailed"));
     }, [t, toast]);
-    // Chat find and the chat outline address messages, and an assistant message is a
-    // group of block rows, so this is a set of message ids and never of row ids.
-    const visibleMessageIds = useMemo(
-      () =>
-        new Set(
-          [...baseRenderModel.history, ...baseRenderModel.segments.liveHead].map(
-            getStreamItemMessageId,
-          ),
-        ),
-      [baseRenderModel.history, baseRenderModel.segments.liveHead],
-    );
+    // Only viewport rows are collapsed. The full layout/copy/fork inputs stay complete.
+    const {
+      projection: turnActivity,
+      segments: visibleSegments,
+      boundary: visibleBoundary,
+      visibleMessageIds,
+      toggle: toggleTurnActivity,
+      revealLoadedMessage,
+    } = useDesktopTurnActivity({
+      model: baseRenderModel,
+      scope: `${resolvedServerId}:${agentId}`,
+      isMobile,
+      toolGroups: presentation.groupsByHostId,
+      revealLoadedHistory,
+      viewportRef,
+    });
     const chatOutline = useChatOutline({
       agentId,
       serverId: resolvedServerId,
@@ -627,7 +633,7 @@ const AgentStreamViewComponent = forwardRef<AgentStreamViewHandle, AgentStreamVi
       viewportRef,
       onJumpError: handleTimelineHistoryLoadError,
       visibleMessageIds,
-      revealLoadedMessage: revealLoadedHistory,
+      revealLoadedMessage,
     });
 
     useImperativeHandle(
@@ -912,10 +918,20 @@ const AgentStreamViewComponent = forwardRef<AgentStreamViewHandle, AgentStreamVi
 
     const renderStreamItem = useCallback(
       (layoutItem: StreamLayoutItem) => {
-        const content = renderStreamItemContent(layoutItem);
+        const activity = turnActivity.byHostId.get(layoutItem.item.id);
+        const hidden = turnActivity.hiddenItemIds.has(layoutItem.item.id);
+        const body = hidden ? null : renderStreamItemContent(layoutItem);
+        const content = activity ? (
+          <>
+            <DesktopTurnActivityHeader activity={activity} onToggle={toggleTurnActivity} />
+            {body}
+          </>
+        ) : (
+          body
+        );
         return renderStreamItemWithTurnFooter({
           content,
-          layoutItem,
+          layoutItem: activity && hidden ? { ...layoutItem, gapBelow: 0 } : layoutItem,
           strategy: streamRenderStrategy,
           supportsTimelineCursor: supportsAgentForkContextCursor,
           onForkAssistantTurn: readOnly ? undefined : handleForkAssistantTurn,
@@ -925,6 +941,8 @@ const AgentStreamViewComponent = forwardRef<AgentStreamViewHandle, AgentStreamVi
         handleForkAssistantTurn,
         readOnly,
         renderStreamItemContent,
+        turnActivity,
+        toggleTurnActivity,
         streamRenderStrategy,
         supportsAgentForkContextCursor,
       ],
@@ -970,13 +988,14 @@ const AgentStreamViewComponent = forwardRef<AgentStreamViewHandle, AgentStreamVi
     const renderModel = useMemo<AgentStreamRenderModel>(() => {
       return {
         ...baseRenderModel,
-        boundary: baseRenderModel.boundary,
+        segments: visibleSegments,
+        boundary: visibleBoundary,
         auxiliary: {
           pendingPermissions: pendingPermissionsNode,
           turnFooter: turnFooterNode,
         },
       };
-    }, [baseRenderModel, pendingPermissionsNode, turnFooterNode]);
+    }, [baseRenderModel, visibleSegments, visibleBoundary, pendingPermissionsNode, turnFooterNode]);
 
     const emptyStateStyle = useMemo(() => [stylesheet.emptyState, stylesheet.contentWrapper], []);
     const scrollToBottomContainerStyle = useMemo(
@@ -1103,7 +1122,7 @@ const AgentStreamViewComponent = forwardRef<AgentStreamViewHandle, AgentStreamVi
         epoch={timelineEpoch}
         items={findItems}
         viewportRef={viewportRef}
-        revealLoadedMessage={revealLoadedHistory}
+        revealLoadedMessage={revealLoadedMessage}
         visibleMessageIds={visibleMessageIds}
       >
         <ToolCallSheetProvider>
