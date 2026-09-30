@@ -3,6 +3,7 @@ import { pluginSettings } from "./plugin-settings";
 
 export const ru: TranslationResources = {
   desktopChat: {
+    resetReasoning: "Сбросить интенсивность рассуждений",
     newChat: "Новый чат",
     actions: "Действия с чатом",
     markRead: "Отметить как прочитанное",

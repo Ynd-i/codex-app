@@ -3,6 +3,7 @@ import { pluginSettings } from "./plugin-settings";
 
 export const ja: TranslationResources = {
   desktopChat: {
+    resetReasoning: "推論の強度をリセット",
     newChat: "新しいチャット",
     actions: "チャットの操作",
     markRead: "既読にする",

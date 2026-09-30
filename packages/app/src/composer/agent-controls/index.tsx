@@ -95,6 +95,7 @@ import { buildSettingsHostSectionRoute } from "@/utils/host-routes";
 interface AgentControlOption {
   id: string;
   label: string;
+  isDefault?: boolean;
 }
 
 type AgentControlSelector = "provider" | "mode" | "model" | "thinking" | `feature-${string}`;
@@ -268,6 +269,7 @@ function toThinkingControlOptions(options: AgentControlOption[] | undefined): Ag
   return (options ?? []).map((option) => ({
     id: option.id,
     label: formatThinkingOptionLabel(option),
+    isDefault: option.isDefault,
   }));
 }
 
@@ -946,6 +948,26 @@ function DesktopAgentControlsContent(props: DesktopAgentControlsContentProps) {
     () => ({ glyphSize, showCaret: presentation.showCarets }),
     [glyphSize, presentation.showCarets],
   );
+  const desktopThinking = useMemo(
+    () =>
+      getIsElectronMac() && thinkingOptions?.length
+        ? {
+            options: thinkingOptions,
+            selectedId: selectedThinkingOptionId,
+            label: displayThinking,
+            disabled: disabled || !canSelectThinking,
+            onSelect: handleThinkingSelect,
+          }
+        : undefined,
+    [
+      thinkingOptions,
+      selectedThinkingOptionId,
+      displayThinking,
+      disabled,
+      canSelectThinking,
+      handleThinkingSelect,
+    ],
+  );
   const featuresSheetHeader = useMemo<SheetHeader>(
     () => ({ title: t("agentControls.features.title") }),
     [t],
@@ -1008,6 +1030,7 @@ function DesktopAgentControlsContent(props: DesktopAgentControlsContentProps) {
                 serverId={modelSelectorServerId}
                 desktopPlacement="top-start"
                 desktopMinWidth={360}
+                desktopThinking={desktopThinking}
                 toolbar={modelToolbar}
               />
             </View>
@@ -1018,7 +1041,7 @@ function DesktopAgentControlsContent(props: DesktopAgentControlsContentProps) {
         </Tooltip>
       ) : null}
 
-      {thinkingOptions && thinkingOptions.length > 0 ? (
+      {(!desktopChat || !canSelectModel) && thinkingOptions && thinkingOptions.length > 0 ? (
         <>
           <Tooltip delayDuration={0} enabledOnDesktop enabledOnMobile={false}>
             <TooltipTrigger asChild triggerRefProp="ref">
@@ -1610,8 +1633,10 @@ export const AgentControls = memo(function AgentControls({
     return (modelSelection.thinkingOptions ?? []).map((option) => ({
       id: option.id,
       label: formatThinkingOptionLabel(option),
+      isDefault:
+        option.isDefault || option.id === modelSelection.selectedModel?.defaultThinkingOptionId,
     }));
-  }, [modelSelection.thinkingOptions]);
+  }, [modelSelection.thinkingOptions, modelSelection.selectedModel?.defaultThinkingOptionId]);
 
   const agentProvider = agent?.provider;
   const activeModelId = modelSelection.activeModelId;

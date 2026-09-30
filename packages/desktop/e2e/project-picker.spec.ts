@@ -40,6 +40,9 @@ test("desktop composer keeps send and stop reachable with attachments", async ({
     if (!modeBox || !modelBox) throw new Error("Composer controls did not render");
     expect(modeBox.x + modeBox.width).toBeLessThanOrEqual(modelBox.x);
     await model.click();
+    const effort = page.getByTestId("desktop-thinking-range");
+    await expect(effort).toHaveAttribute("aria-valuetext", "Low");
+    await page.getByTestId("desktop-model-browse").click();
     await page.getByRole("textbox", { name: /search model/i }).fill("Ten second stream");
     await page.getByText("Ten second stream", { exact: true }).click();
     await expect
@@ -47,14 +50,54 @@ test("desktop composer keeps send and stop reachable with attachments", async ({
         async () => (await fixture.client.fetchAgent({ agentId: fixture.agentId }))?.agent.model,
       )
       .toBe("ten-second-stream");
-    await page.getByTestId("agent-thinking-selector").click();
-    await page.getByText("High", { exact: true }).click();
+    await model.click();
+    await effort.press("End");
     await expect
       .poll(
         async () =>
           (await fixture.client.fetchAgent({ agentId: fixture.agentId }))?.agent.thinkingOptionId,
       )
       .toBe("high");
+    await expect(effort).toHaveAttribute("aria-valuetext", "High");
+    await page.getByTestId("desktop-thinking-reset").click();
+    await expect
+      .poll(
+        async () =>
+          (await fixture.client.fetchAgent({ agentId: fixture.agentId }))?.agent.thinkingOptionId,
+      )
+      .toBe("low");
+    const sliderBox = await effort.boundingBox();
+    if (!sliderBox) throw new Error("Reasoning slider did not render");
+    await page.mouse.move(sliderBox.x + 8, sliderBox.y + sliderBox.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(sliderBox.x + sliderBox.width - 8, sliderBox.y + sliderBox.height / 2);
+    expect(
+      (await fixture.client.fetchAgent({ agentId: fixture.agentId }))?.agent.thinkingOptionId,
+    ).toBe("low");
+    await page.mouse.up();
+    await expect
+      .poll(
+        async () =>
+          (await fixture.client.fetchAgent({ agentId: fixture.agentId }))?.agent.thinkingOptionId,
+      )
+      .toBe("high");
+    await expect(effort).toHaveAttribute("aria-valuetext", "High");
+    await page.screenshot({ path: testInfo.outputPath("model-effort-popover.png") });
+    await page.getByTestId("desktop-model-browse").click();
+    await page.getByRole("textbox", { name: /search model/i }).fill("Max-only thinking stream");
+    await page.getByText("Max-only thinking stream", { exact: true }).click();
+    await expect(model).toContainText("Max-only thinking stream");
+    await model.click();
+    await expect(effort).toHaveAttribute("aria-valuetext", "Max");
+    await expect(effort).toBeDisabled();
+    await page.getByTestId("desktop-model-browse").click();
+    await page.getByRole("textbox", { name: /search model/i }).fill("Thirty minute stream");
+    await page.getByText("Thirty minute stream", { exact: true }).click();
+    await expect(model).toContainText("Thirty minute stream");
+    await model.click();
+    await expect(page.getByRole("textbox", { name: /search model/i })).toBeVisible();
+    await expect(effort).toHaveCount(0);
+    await page.keyboard.press("Escape");
     await composerLocator(page).fill("Check the attached layout fixture.");
     await dropFileOnComposer(page, {
       name: "layout-fixture.json",
@@ -74,6 +117,7 @@ test("desktop composer keeps send and stop reachable with attachments", async ({
     console.info("Composer visual evidence", {
       wide: testInfo.outputPath("composer-wide.png"),
       narrow: testInfo.outputPath("composer-narrow.png"),
+      modelEffort: testInfo.outputPath("model-effort-popover.png"),
     });
     await send.click();
     const stop = page.getByRole("button", { name: "Stop agent", exact: true });

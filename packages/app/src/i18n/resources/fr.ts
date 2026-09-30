@@ -3,6 +3,7 @@ import { pluginSettings } from "./plugin-settings";
 
 export const fr: TranslationResources = {
   desktopChat: {
+    resetReasoning: "Réinitialiser l’intensité du raisonnement",
     newChat: "Nouvelle conversation",
     actions: "Actions de la conversation",
     markRead: "Marquer comme lu",

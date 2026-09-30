@@ -25,7 +25,7 @@ Do not copy whole screens or add another client, transport, or session store.
 | 1. Window and sidebar appearance | Complete for local macOS development          | Desktop shell and dark palette implemented; native navigation, sidebar toggle, menus, theme changes, window resize/fullscreen/reactivation checked. Scoped visual QA passed.                     |
 | 1a. Upstream integration check   | Merged and rebuilt                            | Merge `309f2c4` includes upstream `4e9a458` (release notes plus a host-startup race fix). No conflicts; server/client rebuild and 11 targeted startup tests passed.                              |
 | 2. Chat navigation               | Core implemented; final UI acceptance pending | Chat rows, shared sidebar/titlebar actions, draft isolation, Back/Forward and current title implemented. Final native visual verification remains.                                               |
-| 3. Transcript and composer       | Composer frame implemented; controls pending  | Desktop column/frame and stop styling implemented; isolated attachment, long-draft, send and stop checks pass. Transcript detail, empty state, model/effort and attachment-menu matching remain. |
+| 3. Transcript and composer       | Core composer implemented; transcript pending | Column, frame, mode/model controls and reasoning popover implemented; isolated provider-control, attachment, send/stop checks pass. Attachment menu, empty state and transcript matching remain. |
 | 4. Supporting panels             | Pending                                       | Adapt Diff, files, terminal, and settings separately using additional reference screenshots.                                                                                                     |
 | 5. Custom distribution           | Pending                                       | Independent package identity and update source; validate packaged launch and updates before distribution.                                                                                        |
 
@@ -211,10 +211,25 @@ ordering, then passed after the change; it also selects Ten second stream and
 High through the UI and reads those exact values back from the isolated daemon.
 Wide and narrow screenshots were inspected after the selection changes.
 
-This is acceptance of the frame, control placement and those simulated-provider
-interactions. The combined model/effort popover, attachment menu, new-chat empty
-state, transcript spacing, and native comparison remain in this phase. Preserve
-all provider-backed choices while changing their presentation.
+Model and reasoning now share a compact popover on macOS. The model action opens
+the existing searchable provider/model browser in the same surface. A native
+range input exposes only the host's declared reasoning options, supports keyboard
+input, and commits pointer changes on release. Reset is available only for a
+declared default. A one-option model has a disabled range; a model without
+reasoning options opens the model browser directly. The existing provider, profile,
+loading and retry behavior remains under the model browser's ownership.
+
+The expanded renderer case passed in 5.1 seconds (18.1 seconds including setup):
+model selection, keyboard adjustment, reset, deferred pointer submission, one/no
+reasoning option, attachment upload, narrow long-draft layout, send and stop.
+The popover screenshot was inspected. Root typecheck, lint and translation parity
+passed (36 locale tests). The macOS combobox frame uses the same rounded surface
+for the preferences and model browser.
+
+This is acceptance of the frame, controls and those simulated-provider interactions.
+The attachment menu, new-chat empty state, transcript spacing, and native comparison
+remain in this phase. Preserve all provider-backed choices while changing their
+presentation.
 
 ## Resume checkpoint
 
@@ -222,20 +237,24 @@ Continue in this checkout on `codex/desktop-ui`; preserve the user's untracked
 `context-images/`. Native inspection is awaiting Mac unlock. The installed pinned
 Playwright Chromium headless runtime now supports isolated renderer tests.
 
-Latest checks: root typecheck and lint pass; the composer browser case passed in
-4.4 seconds (14.9 seconds including setup), and theme/settings tests pass (81).
+Latest composer evidence is recorded above; the earlier theme/settings tests pass (81).
 The extended chat-action browser case passed in 56.2 seconds. Earlier navigation
 model, agent attention (16), locale
 parity and chat projection/metadata checks passed. The browser regression caught
 both an initial-open history entry and a paused offline mutation; each was fixed
 before a passing rerun. No live-provider or packaged acceptance is implied.
 
-Relevant logs for the next continuation: `/private/tmp/paseo-composer-controls-e2e.log`,
-`/private/tmp/paseo-composer-settings-tests.log`, `/private/tmp/paseo-composer-controls-typecheck.log`,
-`/private/tmp/paseo-composer-controls-lint.log`, `/private/tmp/paseo-chat-toolbar-recovery.log`, and
+Relevant logs for the next continuation: `/private/tmp/paseo-model-popover-e2e.log`,
+`/private/tmp/paseo-model-popover-typecheck.log`, `/private/tmp/paseo-model-popover-lint.log`,
+`/private/tmp/paseo-model-popover-i18n.log`, `/private/tmp/paseo-composer-settings-tests.log`,
+`/private/tmp/paseo-chat-toolbar-recovery.log`, and
 `/private/tmp/paseo-upstream-runtime-tests.log`. The development instance uses 8083
 and 6768; reuse it if still running. The ignored `.dev/qa-chat-state.mts` queries
 only the two locally created mock fixtures; A was archived and B remains available.
+
+Unrelated development-runtime WIP appeared during the model-popover slice in
+desktop launch scripts, daemon runtime paths, server environment/supervisor files
+and `docs/development.md`. Preserve its ownership; stage migration files explicitly.
 
 ## Development and validation
 

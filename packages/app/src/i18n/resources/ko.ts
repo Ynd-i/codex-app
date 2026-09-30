@@ -3,6 +3,7 @@ import { pluginSettings } from "./plugin-settings";
 
 export const ko: TranslationResources = {
   desktopChat: {
+    resetReasoning: "추론 강도 재설정",
     newChat: "새 채팅",
     actions: "채팅 작업",
     markRead: "읽음으로 표시",

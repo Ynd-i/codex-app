@@ -10,7 +10,11 @@ import { Combobox, type ComboboxOption, type ComboboxProps } from "@/components/
 import { ModelBrowser, ModelProviderGlyph, useModelBrowser } from "@/components/model-browser";
 import { resolveModelBrowserScrolling } from "@/components/model-browser-view";
 import { useIsCompactFormFactor } from "@/constants/layout";
-import { isNative, isWeb } from "@/constants/platform";
+import { getIsElectronMac, isNative, isWeb } from "@/constants/platform";
+import {
+  DesktopModelPreferences,
+  type DesktopThinkingControl,
+} from "@/components/desktop/desktop-model-preferences";
 import type { ProviderSelectorProvider } from "@/provider-selection/provider-selection";
 import { ICON_SIZE, type Theme } from "@/styles/theme";
 
@@ -50,6 +54,7 @@ interface CombinedModelSelectorProps {
   serverId?: string | null;
   desktopPlacement?: ComboboxProps["desktopPlacement"];
   desktopMinWidth?: number;
+  desktopThinking?: DesktopThinkingControl;
   /**
    * Render the custom trigger as a full-width form field: the outer Pressable
    * becomes a transparent passthrough that stretches its child edge-to-edge and
@@ -63,6 +68,35 @@ interface CombinedModelSelectorProps {
     glyphSize: number;
     showCaret: boolean;
   };
+}
+
+function ModelSelectorLabel({
+  selectedProvider,
+  serverId = null,
+  toolbar,
+  desktopThinking,
+  label,
+}: Pick<
+  CombinedModelSelectorProps,
+  "selectedProvider" | "serverId" | "toolbar" | "desktopThinking"
+> & { label: string }) {
+  return (
+    <>
+      {selectedProvider.trim().length > 0 ? (
+        <View style={toolbar?.glyphSize === 20 ? styles.toolbarGlyph20 : styles.toolbarGlyph16}>
+          <ModelProviderGlyph
+            provider={selectedProvider}
+            serverId={serverId}
+            size={toolbar?.glyphSize ?? ICON_SIZE.md}
+          />
+        </View>
+      ) : null}
+      <Text style={styles.triggerText} numberOfLines={1} ellipsizeMode="tail">
+        {label}
+        {desktopThinking ? ` ${desktopThinking.label}` : ""}
+      </Text>
+    </>
+  );
 }
 
 export function CombinedModelSelector({
@@ -85,6 +119,7 @@ export function CombinedModelSelector({
   serverId = null,
   desktopPlacement,
   desktopMinWidth,
+  desktopThinking,
   triggerFill = false,
   toolbar,
 }: CombinedModelSelectorProps) {
@@ -93,6 +128,7 @@ export function CombinedModelSelector({
   const modelBrowserScrolling = resolveModelBrowserScrolling({ isNative, isCompact });
   const anchorRef = useRef<View>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [showModelBrowser, setShowModelBrowser] = useState(false);
   const [isContentReady, setIsContentReady] = useState(isWeb);
   const browser = useModelBrowser({
     providers,
@@ -107,6 +143,7 @@ export function CombinedModelSelector({
   const handleOpenChange = useCallback(
     (open: boolean) => {
       setIsOpen(open);
+      setShowModelBrowser(false);
       if (open) {
         prepareToOpen();
         onOpen?.();
@@ -141,6 +178,8 @@ export function CombinedModelSelector({
   const handleTriggerPress = useCallback(() => {
     handleOpenChange(!isOpen);
   }, [handleOpenChange, isOpen]);
+  const openModelBrowser = useCallback(() => setShowModelBrowser(true), []);
+  const showPreferences = getIsElectronMac() && Boolean(desktopThinking) && !showModelBrowser;
 
   const triggerStyle = useCallback(
     ({ pressed, hovered }: PressableStateCallbackType & { hovered?: boolean }) => {
@@ -192,24 +231,40 @@ export function CombinedModelSelector({
     [handleOpenChange, onEditProfile],
   );
 
-  const selectorBody = isContentReady ? (
-    <ModelBrowser
-      state={browser}
-      onSelect={handleSelect}
-      onApplyProfile={handleApplyProfile}
-      onEditProfiles={onEditProfiles ? handleEditProfiles : undefined}
-      onCreateProfile={onCreateProfile ? handleCreateProfile : undefined}
-      onEditProfile={onEditProfile ? handleEditProfile : undefined}
-      onRetryProvider={onRetryProvider}
-      isRetryingProvider={isRetryingProvider}
-      scrolling={modelBrowserScrolling}
-    />
-  ) : (
-    <View style={styles.sheetLoadingState}>
-      <ThemedLoadingSpinner size={ICON_SIZE.sm} uniProps={foregroundMutedMapping} />
-      <Text style={styles.sheetLoadingText}>{t("modelSelector.loadingSelector")}</Text>
-    </View>
-  );
+  const presentation = showPreferences
+    ? { desktopMinWidth: 256 }
+    : { desktopMinWidth, desktopFixedHeight: browser.desktopFixedHeight, header: browser.header };
+  let selectorBody;
+  if (showPreferences && desktopThinking) {
+    selectorBody = (
+      <DesktopModelPreferences
+        thinking={desktopThinking}
+        modelLabel={browser.selectedModelLabel}
+        onBrowseModels={openModelBrowser}
+      />
+    );
+  } else if (isContentReady) {
+    selectorBody = (
+      <ModelBrowser
+        state={browser}
+        onSelect={handleSelect}
+        onApplyProfile={handleApplyProfile}
+        onEditProfiles={onEditProfiles ? handleEditProfiles : undefined}
+        onCreateProfile={onCreateProfile ? handleCreateProfile : undefined}
+        onEditProfile={onEditProfile ? handleEditProfile : undefined}
+        onRetryProvider={onRetryProvider}
+        isRetryingProvider={isRetryingProvider}
+        scrolling={modelBrowserScrolling}
+      />
+    );
+  } else {
+    selectorBody = (
+      <View style={styles.sheetLoadingState}>
+        <ThemedLoadingSpinner size={ICON_SIZE.sm} uniProps={foregroundMutedMapping} />
+        <Text style={styles.sheetLoadingText}>{t("modelSelector.loadingSelector")}</Text>
+      </View>
+    );
+  }
 
   return (
     <>
@@ -251,18 +306,13 @@ export function CombinedModelSelector({
           testID="combined-model-selector"
           chevron={toolbar?.showCaret === false ? null : undefined}
         >
-          {selectedProvider.trim().length > 0 ? (
-            <View style={toolbar?.glyphSize === 20 ? styles.toolbarGlyph20 : styles.toolbarGlyph16}>
-              <ModelProviderGlyph
-                provider={selectedProvider}
-                serverId={serverId}
-                size={toolbar?.glyphSize ?? ICON_SIZE.md}
-              />
-            </View>
-          ) : null}
-          <Text style={styles.triggerText} numberOfLines={1} ellipsizeMode="tail">
-            {browser.triggerLabel}
-          </Text>
+          <ModelSelectorLabel
+            selectedProvider={selectedProvider}
+            serverId={serverId}
+            toolbar={toolbar}
+            desktopThinking={desktopThinking}
+            label={browser.triggerLabel}
+          />
         </ComboboxTrigger>
       )}
       <Combobox
@@ -273,11 +323,10 @@ export function CombinedModelSelector({
         onOpenChange={handleOpenChange}
         anchorRef={anchorRef}
         desktopPlacement={desktopPlacement}
-        desktopMinWidth={desktopMinWidth}
+        {...presentation}
         desktopLockWidth
-        desktopFixedHeight={browser.desktopFixedHeight}
         desktopChildrenScrollEnabled={false}
-        header={browser.header}
+        searchable={false}
         mobileChildrenScrollEnabled={!browser.isProviderView || !isNative}
         mobileChildrenContentContainerStyle={styles.mobileBrowserContent}
       >

@@ -3,6 +3,7 @@ import { pluginSettings } from "./plugin-settings";
 
 export const ptBR: TranslationResources = {
   desktopChat: {
+    resetReasoning: "Redefinir intensidade do raciocínio",
     newChat: "Nova conversa",
     actions: "Ações da conversa",
     markRead: "Marcar como lida",

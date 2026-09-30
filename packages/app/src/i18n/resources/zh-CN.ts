@@ -3,6 +3,7 @@ import { pluginSettings } from "./plugin-settings";
 
 export const zhCN: TranslationResources = {
   desktopChat: {
+    resetReasoning: "重置推理强度",
     newChat: "新聊天",
     actions: "聊天操作",
     markRead: "标为已读",

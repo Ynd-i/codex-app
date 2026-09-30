@@ -1,5 +1,6 @@
 export const en = {
   desktopChat: {
+    resetReasoning: "Reset reasoning intensity",
     newChat: "New chat",
     actions: "Chat actions",
     markRead: "Mark as read",

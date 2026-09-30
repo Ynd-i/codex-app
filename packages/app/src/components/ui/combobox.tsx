@@ -51,7 +51,7 @@ import {
   shouldShowCustomComboboxOption,
 } from "./combobox-options";
 import type { ComboboxOptionModel } from "./combobox-options";
-import { isWeb } from "@/constants/platform";
+import { getIsElectronMac, isWeb } from "@/constants/platform";
 import {
   IsolatedBottomSheetModal,
   useIsolatedBottomSheetVisibility,
@@ -1780,10 +1780,10 @@ const styles = StyleSheet.create((theme) => ({
     left: 0,
   },
   desktopContainer: {
-    backgroundColor: theme.colors.surface0,
-    borderRadius: theme.borderRadius.lg,
+    backgroundColor: getIsElectronMac() ? theme.colors.surface2 : theme.colors.surface0,
+    borderRadius: getIsElectronMac() ? theme.borderRadius["2xl"] : theme.borderRadius.lg,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: getIsElectronMac() ? theme.colors.borderAccent : theme.colors.border,
     ...theme.shadow.md,
     maxHeight: 400,
     overflow: "hidden",

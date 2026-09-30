@@ -3,6 +3,7 @@ import { pluginSettings } from "./plugin-settings";
 
 export const ar: TranslationResources = {
   desktopChat: {
+    resetReasoning: "إعادة ضبط مستوى الاستدلال",
     newChat: "محادثة جديدة",
     actions: "إجراءات المحادثة",
     markRead: "وضع علامة كمقروءة",
