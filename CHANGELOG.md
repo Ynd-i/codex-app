@@ -20,6 +20,7 @@ distribution and full migration acceptance remain pending; see the
 
 - Restored Paseo's default workspace sidebar, navigation and footer; deferred the custom chat sidebar and navigation rail at the user's request. New sidebar preferences use the default 320px width, while saved widths remain unchanged.
 - Moved macOS workspace actions into the window titlebar, freeing one header row for chat content. Project/branch details stay in the workspace menu, and editor, scripts, Git and file-panel actions follow the active workspace.
+- Refined macOS panel tabs with rounded selected outlines, more room for titles, and a visible close button on the active tab. Tab measurements reserve that button's space, preserving the existing overflow and resize behavior.
 - Aligned the macOS chat column and composer frame with the reference: a narrower default column, larger corners, tighter padding, and a neutral stop control. Saved content-width preferences still take priority.
 - Moved the macOS composer mode beside attachments and aligned model/reasoning controls to the right, retaining provider-backed selections.
 - Updated macOS selector surfaces to the rounded, raised style used by the reference.

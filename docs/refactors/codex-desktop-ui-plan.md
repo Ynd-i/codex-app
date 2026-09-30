@@ -486,8 +486,31 @@ IPC test boundary, workspace switching, Settings return, Explorer open/close,
 confirmed menu placement, project/branch context and Explorer open/close in the
 [consolidated toolbar](../qa-evidence/codex-desktop/phase4-native-workspace-toolbar.jpg).
 Native editor launch, script execution and Git mutation were not exercised.
-The workspace tab row and each panel's detailed presentation still need their
-own visual work; this is not full panel acceptance.
+
+### Panel tabs
+
+The macOS workspace and Explorer tab rails now follow the reference's rounded
+selected outlines. Workspace tabs allow longer titles, reserve close-control space
+in their existing sizing algorithm, and keep the active close control visible.
+The default workspace sidebar and the existing tab menus, dragging and panel model
+remain unchanged.
+
+The isolated desktop check uses real daemon terminals. It covers active controls,
+terminal switching, Explorer open/close, 1352px/900px resizing and keyboard closing;
+the native confirmation boundary is simulated. The ordinary-browser retained-stream
+regression and all 10 tab-layout tests also pass. The
+[renderer capture](../qa-evidence/codex-desktop/phase4-renderer-panel-tabs.png) was
+visually inspected. Default dark-theme label contrast is 8.27:1 for the selected
+tab and 6.25:1 for an inactive tab. Root typecheck, lint and format pass.
+
+Logs: `/private/tmp/paseo-supporting-panels-final-e2e.log`,
+`/private/tmp/paseo-supporting-panels-browser.log`,
+`/private/tmp/paseo-supporting-panels-layout-unit.log`,
+`/private/tmp/paseo-supporting-panels-typecheck.log` and
+`/private/tmp/paseo-supporting-panels-lint.log`.
+Native tab inspection awaits manual unlock. Integrating panel tabs into the window
+chrome and each panel's detailed presentation still remain; this is not full panel
+acceptance.
 
 ## Phase 5 progress — 2026-09-30
 

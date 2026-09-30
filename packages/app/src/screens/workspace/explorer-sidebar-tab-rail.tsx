@@ -20,6 +20,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { titlebarDragSurfaceStyle } from "@/components/desktop/titlebar-drag-region";
 import { WORKSPACE_SECONDARY_HEADER_HEIGHT } from "@/constants/layout";
+import { getIsElectronMac } from "@/constants/platform";
 import { iconButtonChromeGlyphSize } from "@/components/ui/icon-button-chrome";
 import { HEADER_CONTROL_HEIGHT } from "@/components/ui/control-geometry";
 import {
@@ -140,7 +141,11 @@ function ExplorerSidebarTab({
                 active={item.isActive}
                 size={iconButtonChromeGlyphSize("small")}
                 strokeWidth={1.5}
-                backdrop={resolveExplorerSidebarTabBackdrop()}
+                backdrop={
+                  getIsElectronMac() && item.isActive
+                    ? "surface2"
+                    : resolveExplorerSidebarTabBackdrop()
+                }
               />
               <Text
                 selectable={false}
@@ -419,7 +424,9 @@ const styles = StyleSheet.create((theme) => ({
     height: HEADER_CONTROL_HEIGHT,
     maxWidth: 180,
     paddingHorizontal: theme.spacing[2],
-    borderRadius: theme.borderRadius.md,
+    borderRadius: getIsElectronMac() ? 8 : theme.borderRadius.md,
+    borderWidth: getIsElectronMac() ? 1 : 0,
+    borderColor: "transparent",
     flexDirection: "row",
     alignItems: "center",
     gap: theme.spacing[1],
@@ -429,7 +436,8 @@ const styles = StyleSheet.create((theme) => ({
     backgroundColor: theme.colors.interactionHighlight,
   },
   tabActive: {
-    backgroundColor: theme.colors.interactionHighlight,
+    backgroundColor: getIsElectronMac() ? theme.colors.surface2 : theme.colors.interactionHighlight,
+    borderColor: getIsElectronMac() ? theme.colors.borderAccent : "transparent",
   },
   tabLabel: {
     minWidth: 0,
