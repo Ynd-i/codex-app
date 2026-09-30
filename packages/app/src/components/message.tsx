@@ -1111,19 +1111,23 @@ const expandableBadgeStylesheet = StyleSheet.create((theme) => ({
     marginBottom: theme.spacing[4],
   },
   pressable: {
+    flexDirection: "row",
+    alignItems: "center",
     borderRadius: theme.borderRadius.lg,
     borderWidth: theme.borderWidth[1],
     borderColor: "transparent",
-    paddingHorizontal: theme.spacing[2],
-    paddingVertical: theme.spacing[1],
     overflow: "hidden",
   },
   pressablePressed: {
     opacity: 0.9,
   },
   headerRow: {
+    flex: 1,
+    minWidth: 0,
     flexDirection: "row",
     alignItems: "center",
+    paddingHorizontal: theme.spacing[2],
+    paddingVertical: getIsElectronMac() ? 0 : theme.spacing[1],
   },
   labelRow: {
     flex: 1,
@@ -1180,17 +1184,23 @@ const expandableBadgeStylesheet = StyleSheet.create((theme) => ({
     padding: theme.spacing[1],
     borderRadius: theme.borderRadius.md,
     flexShrink: 0,
+    minWidth: 24,
+    minHeight: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: theme.spacing[2],
   },
-  openFileButtonPlaceholderIcon: {
-    width: 14,
-    height: 14,
-  },
+  openFileButtonHidden: { opacity: 0 },
   detailWrapper: {
-    borderBottomLeftRadius: theme.borderRadius.lg,
-    borderBottomRightRadius: theme.borderRadius.lg,
+    borderTopLeftRadius: getIsElectronMac() ? theme.borderRadius.xl : 0,
+    borderTopRightRadius: getIsElectronMac() ? theme.borderRadius.xl : 0,
+    borderBottomLeftRadius: getIsElectronMac() ? theme.borderRadius.xl : theme.borderRadius.lg,
+    borderBottomRightRadius: getIsElectronMac() ? theme.borderRadius.xl : theme.borderRadius.lg,
     borderWidth: theme.borderWidth[1],
-    borderTopWidth: 0,
-    borderColor: theme.colors.border,
+    borderTopWidth: getIsElectronMac() ? theme.borderWidth[1] : 0,
+    borderColor: getIsElectronMac() ? theme.colors.borderAccent : theme.colors.border,
+    backgroundColor: getIsElectronMac() ? theme.colors.surface1 : undefined,
+    marginTop: getIsElectronMac() ? theme.spacing[1] : 0,
     padding: 0,
     gap: 0,
     flexShrink: 1,
@@ -1199,7 +1209,7 @@ const expandableBadgeStylesheet = StyleSheet.create((theme) => ({
     ...(isWeb ? { cursor: "auto" as const, userSelect: "text" as const } : {}),
   },
   pressableExpanded: {
-    backgroundColor: theme.colors.surface1,
+    backgroundColor: getIsElectronMac() ? "transparent" : theme.colors.surface1,
   },
   pressableExpandedAttached: {
     borderColor: theme.colors.border,
@@ -1208,6 +1218,14 @@ const expandableBadgeStylesheet = StyleSheet.create((theme) => ({
   },
   detailWrapperBorderless: {
     borderWidth: 0,
+    backgroundColor: "transparent",
+    marginTop: 0,
+  },
+  detailTitle: {
+    color: theme.colors.foregroundMuted,
+    fontSize: STREAM_METADATA_FONT_SIZE,
+    paddingHorizontal: theme.spacing[3],
+    paddingTop: theme.spacing[2],
   },
   shimmerOverlay: {
     position: "absolute",
@@ -2365,7 +2383,6 @@ interface ExpandableBadgeWebShimmerOverlayProps {
   secondaryLabel?: string;
   shimmerLabelTextStyle: StyleProp<TextStyle>;
   shimmerSecondaryTextStyle: StyleProp<TextStyle>;
-  showOpenFileButton: boolean;
 }
 
 function ExpandableBadgeWebShimmerOverlay({
@@ -2373,7 +2390,6 @@ function ExpandableBadgeWebShimmerOverlay({
   secondaryLabel,
   shimmerLabelTextStyle,
   shimmerSecondaryTextStyle,
-  showOpenFileButton,
 }: ExpandableBadgeWebShimmerOverlayProps) {
   return (
     <View style={expandableBadgeStylesheet.shimmerOverlay} pointerEvents="none">
@@ -2385,14 +2401,7 @@ function ExpandableBadgeWebShimmerOverlay({
           {secondaryLabel}
         </Text>
       ) : null}
-      {showOpenFileButton ? (
-        <View style={expandableBadgeStylesheet.openFileButton}>
-          <View style={expandableBadgeStylesheet.openFileButtonPlaceholderIcon} />
-        </View>
-      ) : null}
-      {!secondaryLabel && !showOpenFileButton ? (
-        <View style={expandableBadgeStylesheet.spacer} />
-      ) : null}
+      {!secondaryLabel ? <View style={expandableBadgeStylesheet.spacer} /> : null}
     </View>
   );
 }
@@ -2416,11 +2425,6 @@ interface ExpandableBadgeLabelRowProps {
   onLabelRowLayout: (event: LayoutChangeEvent) => void;
   onLabelLayout: (event: LayoutChangeEvent) => void;
   onSecondaryLayout: (event: LayoutChangeEvent) => void;
-  showOpenFileButton: boolean;
-  isOpenFileHovered: boolean;
-  onOpenFilePress: (event: GestureResponderEvent) => void;
-  onOpenFileHoverIn: () => void;
-  onOpenFileHoverOut: () => void;
 }
 
 function ExpandableBadgeLabelRow({
@@ -2442,13 +2446,7 @@ function ExpandableBadgeLabelRow({
   onLabelRowLayout,
   onLabelLayout,
   onSecondaryLayout,
-  showOpenFileButton,
-  isOpenFileHovered,
-  onOpenFilePress,
-  onOpenFileHoverIn,
-  onOpenFileHoverOut,
 }: ExpandableBadgeLabelRowProps) {
-  const { t } = useTranslation();
   return (
     <View
       style={expandableBadgeStylesheet.labelRow}
@@ -2467,30 +2465,12 @@ function ExpandableBadgeLabelRow({
         shouldMeasureWebShimmer={shouldMeasureWebShimmer}
         onSecondaryLayout={onSecondaryLayout}
       />
-      {showOpenFileButton ? (
-        <Pressable
-          onPress={onOpenFilePress}
-          onHoverIn={onOpenFileHoverIn}
-          onHoverOut={onOpenFileHoverOut}
-          accessibilityRole="button"
-          accessibilityLabel={t("message.actions.openFile")}
-          testID="tool-call-open-file"
-          style={expandableBadgeStylesheet.openFileButton}
-          hitSlop={6}
-        >
-          <ThemedFileSymlinkIcon
-            size={14}
-            uniProps={isOpenFileHovered ? foregroundColorMapping : foregroundMutedColorMapping}
-          />
-        </Pressable>
-      ) : null}
       {isWebShimmer ? (
         <ExpandableBadgeWebShimmerOverlay
           label={label}
           secondaryLabel={secondaryLabel}
           shimmerLabelTextStyle={shimmerLabelTextStyle}
           shimmerSecondaryTextStyle={shimmerSecondaryTextStyle}
-          showOpenFileButton={showOpenFileButton}
         />
       ) : null}
       {isNativeShimmer ? (
@@ -2557,7 +2537,58 @@ function renderExpandableBadgeIcon({
   return null;
 }
 
-function renderExpandableBadgeIconSlot({
+function ToolCallFileButton({
+  onOpenFile,
+  rowHovered,
+}: {
+  onOpenFile: () => void;
+  rowHovered: boolean;
+}) {
+  const { t } = useTranslation();
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const hoverIn = useCallback(() => setHovered(true), []);
+  const hoverOut = useCallback(() => setHovered(false), []);
+  const focus = useCallback(() => setFocused(true), []);
+  const blur = useCallback(() => setFocused(false), []);
+  const press = useCallback(
+    (event: GestureResponderEvent) => {
+      event.stopPropagation();
+      onOpenFile();
+    },
+    [onOpenFile],
+  );
+  const style = useMemo(
+    () => [
+      expandableBadgeStylesheet.openFileButton,
+      isWeb && !rowHovered && !focused && expandableBadgeStylesheet.openFileButtonHidden,
+    ],
+    [rowHovered, focused],
+  );
+  // Keep file shortcuts limited to the existing web hover/keyboard surface.
+  if (!isWeb) return null;
+  return (
+    <Pressable
+      onPress={press}
+      onHoverIn={hoverIn}
+      onHoverOut={hoverOut}
+      onFocus={focus}
+      onBlur={blur}
+      accessibilityRole="button"
+      accessibilityLabel={t("message.actions.openFile")}
+      testID="tool-call-open-file"
+      style={style}
+      hitSlop={6}
+    >
+      <ThemedFileSymlinkIcon
+        size={14}
+        uniProps={hovered || focused ? foregroundColorMapping : foregroundMutedColorMapping}
+      />
+    </Pressable>
+  );
+}
+
+function renderExpandableBadgeHeaderIcons({
   showChevron,
   chevronStyle,
   iconNode,
@@ -2565,15 +2596,15 @@ function renderExpandableBadgeIconSlot({
   showChevron: boolean;
   chevronStyle: StyleProp<ViewStyle>;
   iconNode: ReactNode;
-}): ReactNode {
-  if (showChevron) {
-    return (
-      <View style={chevronStyle}>
-        <ThemedChevronRightIcon size={12} uniProps={foregroundColorMapping} />
-      </View>
-    );
-  }
-  return iconNode;
+}): { leading: ReactNode; trailing: ReactNode } {
+  const chevron = showChevron ? (
+    <View style={chevronStyle}>
+      <ThemedChevronRightIcon size={12} uniProps={foregroundColorMapping} />
+    </View>
+  ) : null;
+  return getIsElectronMac()
+    ? { leading: iconNode, trailing: chevron }
+    : { leading: chevron ?? iconNode, trailing: null };
 }
 
 function computeShimmerMetrics(input: {
@@ -2697,7 +2728,6 @@ export const ExpandableBadge = memo(function ExpandableBadge({
 }: ExpandableBadgeProps) {
   const resolvedDisableOuterSpacing = useDisableOuterSpacing(disableOuterSpacing);
   const [isHovered, setIsHovered] = useState(false);
-  const [isOpenFileHovered, setIsOpenFileHovered] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
   const isInteractive = Boolean(onToggle);
   const hasDetailContent = Boolean(renderDetails);
@@ -2716,15 +2746,6 @@ export const ExpandableBadge = memo(function ExpandableBadge({
     () => onDetailHoverChange?.(false),
     [onDetailHoverChange],
   );
-  const handleOpenFilePress = useCallback(
-    (event: GestureResponderEvent) => {
-      event.stopPropagation?.();
-      onOpenFile?.();
-    },
-    [onOpenFile],
-  );
-  const handleOpenFileHoverIn = useCallback(() => setIsOpenFileHovered(true), []);
-  const handleOpenFileHoverOut = useCallback(() => setIsOpenFileHovered(false), []);
 
   const nativeGradientIdRef = useRef(
     `shimmer-gradient-${Math.random().toString(36).substring(2, 9)}`,
@@ -2863,7 +2884,10 @@ export const ExpandableBadge = memo(function ExpandableBadge({
       expandableBadgeStylesheet.pressable,
       isPressed && isInteractive ? expandableBadgeStylesheet.pressablePressed : null,
       isExpanded && expandableBadgeStylesheet.pressableExpanded,
-      isExpanded && !borderlessWhenExpanded && expandableBadgeStylesheet.pressableExpandedAttached,
+      isExpanded &&
+        !borderlessWhenExpanded &&
+        !getIsElectronMac() &&
+        expandableBadgeStylesheet.pressableExpandedAttached,
     ],
     [borderlessWhenExpanded, isExpanded, isInteractive, isPressed],
   );
@@ -2932,7 +2956,7 @@ export const ExpandableBadge = memo(function ExpandableBadge({
 
   const ThemedIcon = useMemo(() => (icon ? withUnistyles(icon) : null), [icon]);
   const iconNode = renderExpandableBadgeIcon({ isError, isActive, ThemedIcon });
-  const iconSlotNode = renderExpandableBadgeIconSlot({
+  const headerIcons = renderExpandableBadgeHeaderIcons({
     showChevron: isInteractive && (isHovered || isExpanded),
     chevronStyle,
     iconNode,
@@ -2954,14 +2978,15 @@ export const ExpandableBadge = memo(function ExpandableBadge({
       onPointerEnter={isWeb ? handleHoverIn : undefined}
       onPointerLeave={isWeb ? handleHoverOut : undefined}
     >
-      <Pressable
-        {...pressHandlers}
-        disabled={!isInteractive}
-        accessibilityState={accessibilityState}
-        style={pressableStyle}
-      >
-        <View style={expandableBadgeStylesheet.headerRow}>
-          <View style={expandableBadgeStylesheet.iconBadge}>{iconSlotNode}</View>
+      <View style={pressableStyle}>
+        <Pressable
+          {...pressHandlers}
+          disabled={!isInteractive}
+          accessibilityState={accessibilityState}
+          aria-expanded={isWeb && isInteractive ? isExpanded : undefined}
+          style={expandableBadgeStylesheet.headerRow}
+        >
+          <View style={expandableBadgeStylesheet.iconBadge}>{headerIcons.leading}</View>
           <ExpandableBadgeLabelRow
             label={label}
             labelStyle={labelStyle}
@@ -2981,14 +3006,11 @@ export const ExpandableBadge = memo(function ExpandableBadge({
             onLabelRowLayout={handleLabelRowLayout}
             onLabelLayout={handleLabelLayout}
             onSecondaryLayout={handleSecondaryLayout}
-            showOpenFileButton={Boolean(onOpenFile && isHovered)}
-            isOpenFileHovered={isOpenFileHovered}
-            onOpenFilePress={handleOpenFilePress}
-            onOpenFileHoverIn={handleOpenFileHoverIn}
-            onOpenFileHoverOut={handleOpenFileHoverOut}
           />
-        </View>
-      </Pressable>
+          {headerIcons.trailing}
+        </Pressable>
+        {onOpenFile ? <ToolCallFileButton onOpenFile={onOpenFile} rowHovered={isHovered} /> : null}
+      </View>
       {detailContent ? (
         <Pressable
           ref={detailWrapperRef}
@@ -3057,7 +3079,7 @@ export const ToolCall = memo(function ToolCall({
   onOpenFilePath,
   defaultExpanded,
   forceInline = false,
-  maxDetailHeight = 400,
+  maxDetailHeight = getIsElectronMac() ? 160 : 400,
 }: ToolCallProps) {
   const { openToolCall } = useToolCallSheet();
   const [isExpanded, setIsExpanded] = useState(defaultExpanded ?? false);
@@ -3157,13 +3179,20 @@ export const ToolCall = memo(function ToolCall({
   const renderDetails = useCallback(() => {
     if (!shouldRenderInline) return null;
     return (
-      <ToolCallDetailsContent
-        toolName={toolName}
-        detail={effectiveDetail}
-        errorText={presentation.errorText}
-        maxHeight={maxDetailHeight}
-        showLoadingSkeleton={presentation.isLoadingDetails}
-      />
+      <>
+        {getIsElectronMac() ? (
+          <Text style={expandableBadgeStylesheet.detailTitle} testID="tool-call-detail-title">
+            {presentation.displayName}
+          </Text>
+        ) : null}
+        <ToolCallDetailsContent
+          toolName={toolName}
+          detail={effectiveDetail}
+          errorText={presentation.errorText}
+          maxHeight={maxDetailHeight}
+          showLoadingSkeleton={presentation.isLoadingDetails}
+        />
+      </>
     );
   }, [
     shouldRenderInline,
@@ -3171,6 +3200,7 @@ export const ToolCall = memo(function ToolCall({
     effectiveDetail,
     presentation.errorText,
     presentation.isLoadingDetails,
+    presentation.displayName,
     maxDetailHeight,
   ]);
 

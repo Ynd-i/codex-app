@@ -331,6 +331,36 @@ The attachment menu, assistant turn presentation, and supporting-panel consolida
 remain in this phase. Preserve all provider-backed choices while changing their
 presentation.
 
+### Inline tool output
+
+The supplied expanded-tool and shell-output references now guide the macOS tool
+rows: compact vertical spacing, persistent tool icons, trailing disclosure
+chevrons and a separate rounded output card. Inline details have a heading and
+a 160px scroll bound by default; their complete content remains available.
+Existing explicit grouped-tool bounds and non-macOS card styling are retained.
+
+The shared file-open action is a sibling of the expansion control, fixing an
+observed nested-button warning. Keyboard focus reveals that action even without
+hover, and file navigation leaves the tool's expansion state unchanged. The
+expansion control also exposes `aria-expanded` on web.
+
+The isolated desktop test first reproduced the nested-button issue, then verified
+keyboard expansion/collapse, visible detail text, keyboard file navigation and
+return, and the shell command plus its final output line. The existing ordinary
+browser test for a tool-group heading transitioning into its loading animation
+also passes. Root typecheck, lint and format pass. Logs:
+`/private/tmp/paseo-tool-card-final-e2e.log`,
+`/private/tmp/paseo-tool-shimmer-final-e2e.log`,
+`/private/tmp/paseo-tool-card-typecheck.log` and
+`/private/tmp/paseo-tool-card-lint.log`.
+The [native output card](../qa-evidence/codex-desktop/phase3-native-tool-output.jpg)
+was inspected with the existing synthetic chat; it does not represent shell
+execution or a live provider run.
+
+Whole-turn elapsed/activity disclosure is still pending. Preserve the existing
+timeline, copy/fork boundaries and chat-find behavior when adding that layer;
+the current projection groups consecutive tool calls, not whole assistant turns.
+
 ### Voice exclusions
 
 The custom macOS desktop now hides both composer microphone controls and the
@@ -414,6 +444,11 @@ Continue from the consolidated workspace toolbar. Its focused checks are in
 and `/private/tmp/paseo-titlebar-lint.log`. Recheck the live native instance after
 structural HMR changes; a normal View > Reload refreshed the new portal without
 restarting either daemon.
+
+Inline tool output is now verified as described above. Next, continue the
+whole-turn elapsed/activity presentation and attachment-menu work, then the
+remaining supporting panels and distribution gates. The native mock chat B
+currently has its last Shell output expanded for inspection.
 
 Latest composer evidence is recorded above; the earlier theme/settings tests pass (81).
 The extended chat-action browser case passed in 56.2 seconds. Earlier navigation
