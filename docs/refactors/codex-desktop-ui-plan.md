@@ -544,6 +544,17 @@ close controls were visible with Explorer open; Explorer was then closed again.
 Integrating panel tabs into the window chrome and each panel's detailed
 presentation still remain; this is not full panel acceptance.
 
+On October 1, Explorer tabs gained their own macOS close control. A fixed 20px
+slot keeps hover from moving titles. The button appears on selection, hover or
+keyboard focus; choosing it does not activate or drag the tab. The final renderer
+case verifies keyboard close, menu reopening with a new instance ID, inactive-tab
+focus/hover and pointer close, stable geometry, and both retained terminals.
+The [capture](../qa-evidence/codex-desktop/explorer-tab-close.png) was inspected.
+The web hover boundary uses a native div because nested Pressables steal hover;
+native platforms retain their original handlers. Root checks and the targeted
+renderer case pass in `/private/tmp/paseo-final-panels-e2e.log`. The new close
+control has not yet been exercised in the real Electron window.
+
 ### Browser toolbar — 2026-10-01
 
 The macOS toolbar uses the supplied 2× browser references: a 48px row, 32px

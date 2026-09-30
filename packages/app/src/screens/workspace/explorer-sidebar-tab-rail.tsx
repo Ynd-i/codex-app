@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState, type ComponentType, type ReactNode } from "react";
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { ArrowLeftToLine, Plus, X } from "lucide-react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
@@ -20,7 +20,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { titlebarDragSurfaceStyle } from "@/components/desktop/titlebar-drag-region";
 import { WORKSPACE_SECONDARY_HEADER_HEIGHT } from "@/constants/layout";
-import { getIsElectronMac } from "@/constants/platform";
+import { getIsElectronMac, isWeb } from "@/constants/platform";
 import { iconButtonChromeGlyphSize } from "@/components/ui/icon-button-chrome";
 import { HEADER_CONTROL_HEIGHT } from "@/components/ui/control-geometry";
 import {
@@ -46,8 +46,14 @@ import {
 
 const TAB_GAP = 4;
 const TAB_DROP_INDICATOR_WIDTH = 4;
+const TAB_HOVER_FRAME_STYLE = { position: "relative" } as const;
 
 const mutedColorMapping = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
+const foregroundColorMapping = (theme: Theme) => ({ color: theme.colors.foreground });
+
+function stopClosePropagation(event: { stopPropagation?: () => void }) {
+  event.stopPropagation?.();
+}
 
 interface ExplorerSidebarTabRailProps {
   paneId: string;
@@ -93,6 +99,8 @@ function ExplorerSidebarTab({
 }) {
   const { t } = useTranslation();
   const [hovered, setHovered] = useState(false);
+  const [closeFocused, setCloseFocused] = useState(false);
+  const showCloseControl = item.isActive || hovered || closeFocused || item.isClosingTab;
   const handlePress = useCallback(
     () => onNavigateTab(item.tab.tabId),
     [item.tab.tabId, onNavigateTab],
@@ -102,6 +110,15 @@ function ExplorerSidebarTab({
   const handleClose = useCallback(() => {
     void onCloseTab(item.tab.tabId);
   }, [item.tab.tabId, onCloseTab]);
+  const handleClosePress = useCallback(
+    (event: { stopPropagation?: () => void }) => {
+      event.stopPropagation?.();
+      handleClose();
+    },
+    [handleClose],
+  );
+  const handleCloseFocus = useCallback(() => setCloseFocused(true), []);
+  const handleCloseBlur = useCallback(() => setCloseFocused(false), []);
   const handleMoveToMain = useCallback(
     () => onMoveTabToMain(item.tab.tabId),
     [item.tab.tabId, onMoveTabToMain],
@@ -114,72 +131,119 @@ function ExplorerSidebarTab({
   const closeLeading = useMemo(() => <ThemedX size={14} uniProps={mutedColorMapping} />, []);
   const accessibilityState = useMemo(() => ({ selected: item.isActive }), [item.isActive]);
   const renderPresentation = useCallback(
-    (presentation: WorkspaceTabPresentation) => (
-      <ContextMenu>
-        <Tooltip delayDuration={300} enabledOnDesktop enabledOnMobile={false}>
-          <TooltipTrigger asChild triggerRefProp="triggerRef">
-            <ContextMenuTrigger
-              {...(dragHandleProps?.attributes as object | undefined)}
-              {...(dragHandleProps?.listeners as object | undefined)}
-              triggerRef={dragHandleProps?.setActivatorNodeRef as never}
-              testID={`explorer-sidebar-tab-${item.tab.tabId}`}
-              accessibilityRole="button"
-              accessibilityLabel={presentation.tooltip}
-              accessibilityState={accessibilityState}
-              onPress={handlePress}
-              onHoverIn={handleHoverIn}
-              onHoverOut={handleHoverOut}
+    (presentation: WorkspaceTabPresentation) => {
+      const content = (
+        <ContextMenu>
+          <Tooltip delayDuration={300} enabledOnDesktop enabledOnMobile={false}>
+            <TooltipTrigger asChild triggerRefProp="triggerRef">
+              <ContextMenuTrigger
+                {...(dragHandleProps?.attributes as object | undefined)}
+                {...(dragHandleProps?.listeners as object | undefined)}
+                triggerRef={dragHandleProps?.setActivatorNodeRef as never}
+                testID={`explorer-sidebar-tab-${item.tab.tabId}`}
+                accessibilityRole="button"
+                accessibilityLabel={presentation.tooltip}
+                accessibilityState={accessibilityState}
+                aria-selected={item.isActive}
+                onPress={handlePress}
+                onHoverIn={isWeb ? undefined : handleHoverIn}
+                onHoverOut={isWeb ? undefined : handleHoverOut}
+                style={[
+                  styles.tab,
+                  hovered ? styles.tabHovered : null,
+                  item.isActive ? styles.tabActive : null,
+                  isDragging ? styles.tabDragging : null,
+                ]}
+              >
+                <WorkspaceTabIcon
+                  presentation={presentation}
+                  active={item.isActive}
+                  size={iconButtonChromeGlyphSize("small")}
+                  strokeWidth={1.5}
+                  backdrop={
+                    getIsElectronMac() && item.isActive
+                      ? "surface2"
+                      : resolveExplorerSidebarTabBackdrop()
+                  }
+                />
+                <Text
+                  selectable={false}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                  style={[styles.tabLabel, item.isActive ? styles.tabLabelActive : null]}
+                >
+                  {presentation.label}
+                </Text>
+              </ContextMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" align="center" offset={8}>
+              <Text style={styles.tooltipText}>{presentation.tooltip}</Text>
+            </TooltipContent>
+          </Tooltip>
+          {getIsElectronMac() ? (
+            <View
+              pointerEvents={showCloseControl ? "box-none" : "none"}
               style={[
-                styles.tab,
-                hovered ? styles.tabHovered : null,
-                item.isActive ? styles.tabActive : null,
-                isDragging ? styles.tabDragging : null,
+                styles.tabCloseOverlay,
+                showCloseControl ? styles.tabCloseShown : styles.tabCloseHidden,
               ]}
             >
-              <WorkspaceTabIcon
-                presentation={presentation}
-                active={item.isActive}
-                size={iconButtonChromeGlyphSize("small")}
-                strokeWidth={1.5}
-                backdrop={
-                  getIsElectronMac() && item.isActive
-                    ? "surface2"
-                    : resolveExplorerSidebarTabBackdrop()
-                }
-              />
-              <Text
-                selectable={false}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-                style={[styles.tabLabel, item.isActive ? styles.tabLabelActive : null]}
+              <Pressable
+                {...({ onMouseDown: stopClosePropagation } as object)}
+                onPointerDown={stopClosePropagation}
+                onPressIn={stopClosePropagation}
+                onPress={handleClosePress}
+                onFocus={handleCloseFocus}
+                onBlur={handleCloseBlur}
+                testID={`explorer-sidebar-tab-close-${item.tab.tabId}`}
+                accessibilityRole="button"
+                accessibilityLabel={t("workspace.tabs.menu.close")}
+                disabled={item.isClosingTab}
+                style={styles.tabCloseButton}
               >
-                {presentation.label}
-              </Text>
-            </ContextMenuTrigger>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" align="center" offset={8}>
-            <Text style={styles.tooltipText}>{presentation.tooltip}</Text>
-          </TooltipContent>
-        </Tooltip>
-        <ContextMenuContent align="start" minWidth={180}>
-          {canMoveToMain ? (
-            <ContextMenuItem leading={moveToMainLeading} onSelect={handleMoveToMain}>
-              {t("workspace.tabs.menu.moveToMain")}
-            </ContextMenuItem>
+                {({ hovered: closeHovered, pressed }) => (
+                  <ThemedX
+                    size={12}
+                    uniProps={closeHovered || pressed ? foregroundColorMapping : mutedColorMapping}
+                  />
+                )}
+              </Pressable>
+            </View>
           ) : null}
-          {canMoveToMain ? <ContextMenuSeparator /> : null}
-          <ContextMenuItem leading={closeLeading} onSelect={handleClose}>
-            {t("workspace.tabs.menu.close")}
-          </ContextMenuItem>
-        </ContextMenuContent>
-      </ContextMenu>
-    ),
+          <ContextMenuContent align="start" minWidth={180}>
+            {canMoveToMain ? (
+              <ContextMenuItem leading={moveToMainLeading} onSelect={handleMoveToMain}>
+                {t("workspace.tabs.menu.moveToMain")}
+              </ContextMenuItem>
+            ) : null}
+            {canMoveToMain ? <ContextMenuSeparator /> : null}
+            <ContextMenuItem leading={closeLeading} onSelect={handleClose}>
+              {t("workspace.tabs.menu.close")}
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
+      );
+      return isWeb ? (
+        <div
+          style={TAB_HOVER_FRAME_STYLE}
+          onMouseEnter={handleHoverIn}
+          onMouseLeave={handleHoverOut}
+        >
+          {content}
+        </div>
+      ) : (
+        content
+      );
+    },
     [
       accessibilityState,
       dragHandleProps,
       handleHoverIn,
       handleHoverOut,
       handleClose,
+      handleClosePress,
+      handleCloseFocus,
+      handleCloseBlur,
       handleMoveToMain,
       handlePress,
       hovered,
@@ -188,6 +252,7 @@ function ExplorerSidebarTab({
       canMoveToMain,
       closeLeading,
       moveToMainLeading,
+      showCloseControl,
       t,
     ],
   );
@@ -424,6 +489,7 @@ const styles = StyleSheet.create((theme) => ({
     height: HEADER_CONTROL_HEIGHT,
     maxWidth: 180,
     paddingHorizontal: theme.spacing[2],
+    paddingRight: getIsElectronMac() ? theme.spacing[2] + 20 : theme.spacing[2],
     borderRadius: getIsElectronMac() ? 8 : theme.borderRadius.md,
     borderWidth: getIsElectronMac() ? 1 : 0,
     borderColor: "transparent",
@@ -452,6 +518,26 @@ const styles = StyleSheet.create((theme) => ({
   },
   tabDragging: {
     opacity: 0.3,
+  },
+  tabCloseOverlay: {
+    position: "absolute",
+    top: 0,
+    right: 4,
+    bottom: 0,
+    justifyContent: "center",
+  },
+  tabCloseShown: {
+    opacity: 1,
+  },
+  tabCloseHidden: {
+    opacity: 0,
+  },
+  tabCloseButton: {
+    width: 18,
+    height: 18,
+    borderRadius: theme.borderRadius.sm,
+    alignItems: "center",
+    justifyContent: "center",
   },
   dropIndicator: {
     position: "absolute",

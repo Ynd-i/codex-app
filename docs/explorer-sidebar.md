@@ -41,7 +41,9 @@ The persisted layout still contains the Explorer pane so tabs survive reloads. T
 that pane from the workspace split tree and docks it separately. Persisted identifiers retain the
 literal `"explorer"` pane id and `explorerPaneIdByWorkspace` key for compatibility.
 
-The tab rail has no inline add or close controls. Its context menu opens a New Tab launcher and
+On macOS, the tab rail shows an inline close control on the selected tab and on
+hover or keyboard focus. Other platforms retain the context-menu close action.
+The rail has no inline add control. Its context menu opens a New Tab launcher and
 toggles Files, Changes, and Explorer-compatible workspace-scoped plugin panels from the shared
 launch catalog. Individual tab menus close instances or move compatible tabs to main. Explorer tabs
 can be reordered, but the dock cannot be split. Selecting an Explorer tab does not change workspace

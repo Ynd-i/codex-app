@@ -23,6 +23,7 @@ distribution and full migration acceptance remain pending; see the
 - Restored the separate macOS icon navigation rail after the sidebar clarification. It remains available when the workspace list is collapsed and uses the existing Home, History, Schedules, Help and Settings actions.
 - Moved macOS workspace actions into the window titlebar, freeing one header row for chat content. Project/branch details stay in the workspace menu, and editor, scripts, Git and file-panel actions follow the active workspace.
 - Refined macOS panel tabs with rounded selected outlines, more room for titles, and a visible close button on the active tab. Tab measurements reserve that button's space, preserving the existing overflow and resize behavior.
+- Added macOS Explorer tab close controls that appear on selection, hover or keyboard focus, with stable title spacing and the existing close confirmations.
 - Aligned the macOS browser toolbar with rounded navigation, address and tool groups while preserving the existing browser controls and other desktop platforms.
 - Aligned the macOS chat column and composer frame with the reference: a narrower default column, larger corners, tighter padding, and a neutral stop control. Saved content-width preferences still take priority.
 - Moved the macOS composer mode beside attachments and aligned model/reasoning controls to the right, retaining provider-backed selections.
