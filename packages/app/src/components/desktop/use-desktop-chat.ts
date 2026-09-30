@@ -3,7 +3,6 @@ import { useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@/contexts/toast-context";
 import { resolveFocusedChatTarget } from "@/composer/focused-chat-target";
-import type { AggregatedAgent } from "@/hooks/use-aggregated-agents";
 import { getHostRuntimeStore } from "@/runtime/host-runtime";
 import { useActiveWorkspaceSelection } from "@/stores/navigation-active-workspace-store";
 import { useWorkspaceFields } from "@/stores/session-store-hooks";
@@ -13,7 +12,11 @@ import {
   useWorkspaceLayoutStore,
   type WorkspaceLayout,
 } from "@/stores/workspace-layout-store";
-import { updateDesktopChat, type DesktopChatAction } from "./desktop-chat-actions";
+import {
+  updateDesktopChat,
+  type DesktopChatAction,
+  type DesktopChatTarget,
+} from "./desktop-chat-actions";
 
 function focusedAgentId(layout: WorkspaceLayout | undefined): string | null {
   if (!layout) return null;
@@ -49,15 +52,17 @@ export function useDesktopChatMutation() {
   const { t } = useTranslation();
   const toast = useToast();
   const mutation = useMutation({
+    // The daemon client owns connection errors/timeouts; don't pause the rename dialog offline.
+    networkMode: "always",
     mutationFn: async ({
       agent,
       action,
     }: {
-      agent: AggregatedAgent;
+      agent: DesktopChatTarget;
       action: DesktopChatAction;
     }) => {
       const client = getHostRuntimeStore().getClient(agent.serverId);
-      if (!client) throw new Error(t("common.errors.daemonClientUnavailable"));
+      if (!client?.isConnected) throw new Error(t("common.errors.daemonClientUnavailable"));
       const workspaceKey = `${agent.serverId}:${agent.workspaceId}`;
       const layout = useWorkspaceLayoutStore.getState();
       // Match the upstream mark-unread flow, but only unfocus the selected chat.
@@ -77,7 +82,7 @@ export function useDesktopChatMutation() {
   });
   const mutateAsync = mutation.mutateAsync;
   const update = useCallback(
-    (agent: AggregatedAgent, action: DesktopChatAction) => mutateAsync({ agent, action }),
+    (agent: DesktopChatTarget, action: DesktopChatAction) => mutateAsync({ agent, action }),
     [mutateAsync],
   );
   return { update, pendingAgent: mutation.isPending ? mutation.variables?.agent : null };

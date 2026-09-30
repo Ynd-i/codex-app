@@ -1,16 +1,10 @@
 import { memo, useCallback, useMemo, useState } from "react";
 import { router } from "expo-router";
 import {
-  Archive,
-  Circle,
-  CircleCheck,
   ChevronDown,
   ChevronRight,
   FolderOpen,
   MoreHorizontal,
-  Pencil,
-  Pin,
-  PinOff,
   Plus,
   Search,
   Settings2,
@@ -20,45 +14,33 @@ import { useTranslation } from "react-i18next";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { AgentStatusDot } from "@/components/agent-status-dot";
 import { HeaderToggleButton } from "@/components/headers/header-toggle-button";
-import { AdaptiveRenameModal } from "@/components/rename-modal";
 import { SidebarDisplayPreferencesMenu } from "@/components/sidebar/display-preferences/menu";
 import { SidebarGroupToggleRow } from "@/components/sidebar/sidebar-group-toggle-row";
 import { useSidebarModel } from "@/components/sidebar/sidebar-model";
 import { useLimitedSidebarGroup } from "@/components/sidebar/use-limited-sidebar-group";
 import { Button } from "@/components/ui/button";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
+import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from "@/components/ui/context-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useToast } from "@/contexts/toast-context";
 import { useAggregatedAgents, type AggregatedAgent } from "@/hooks/use-aggregated-agents";
-import { useArchiveAgent } from "@/hooks/use-archive-agent";
 import type { SidebarWorkspacePlacement } from "@/hooks/use-sidebar-workspaces-list";
 import { openProjectSettings } from "@/navigation/settings-navigation";
 import { useKeyboardShortcutsStore } from "@/stores/keyboard-shortcuts-store";
 import { navigateToWorkspace } from "@/stores/navigation-active-workspace-store";
 import { useSidebarCollapsedSectionsStore } from "@/stores/sidebar-collapsed-sections-store";
 import type { Theme } from "@/styles/theme";
-import { confirmDialog } from "@/utils/confirm-dialog";
 import { buildNewWorkspaceRoute } from "@/utils/host-routes";
 import { navigateToAgent } from "@/utils/navigate-to-agent";
 import {
   buildDesktopChatSidebar,
   desktopChatKey,
-  desktopChatPinnedAt,
-  isDesktopChatUnread,
   type DesktopChatProject,
 } from "./desktop-chat-model";
-import { useActiveDesktopChat, useDesktopChatMutation } from "./use-desktop-chat";
+import { useActiveDesktopChat } from "./use-desktop-chat";
+import { DesktopChatMenuItems, useDesktopChatMenu } from "./desktop-chat-menu";
 
 const SearchIcon = withUnistyles(Search);
 const FolderIcon = withUnistyles(FolderOpen);
@@ -67,21 +49,8 @@ const RightIcon = withUnistyles(ChevronRight);
 const MoreIcon = withUnistyles(MoreHorizontal);
 const PlusIcon = withUnistyles(Plus);
 const SettingsIcon = withUnistyles(Settings2);
-const ArchiveIcon = withUnistyles(Archive);
-const RenameIcon = withUnistyles(Pencil);
-const PinIcon = withUnistyles(Pin);
-const UnpinIcon = withUnistyles(PinOff);
-const ReadIcon = withUnistyles(CircleCheck);
-const UnreadIcon = withUnistyles(Circle);
 const Progress = withUnistyles(ActivityIndicator);
 const mutedIcon = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
-const renameLeading = <RenameIcon size={16} uniProps={mutedIcon} />;
-const pinLeading = <PinIcon size={16} uniProps={mutedIcon} />;
-const unpinLeading = <UnpinIcon size={16} uniProps={mutedIcon} />;
-const archiveLeading = <ArchiveIcon size={16} uniProps={mutedIcon} />;
-const readLeading = <ReadIcon size={16} uniProps={mutedIcon} />;
-const unreadLeading = <UnreadIcon size={16} uniProps={mutedIcon} />;
-
 function openSearch() {
   useKeyboardShortcutsStore.getState().setCommandCenterOpen(true);
 }
@@ -108,48 +77,6 @@ export function DesktopChatSidebarHeader() {
   );
 }
 
-interface ChatMenuProps {
-  context?: boolean;
-  pinned: boolean;
-  unread: boolean;
-  disabled: boolean;
-  onPin: () => void;
-  onRead: () => void;
-  onRename: () => void;
-  onArchive: () => void;
-}
-
-function ChatMenuItems({
-  context,
-  pinned,
-  unread,
-  disabled,
-  onPin,
-  onRead,
-  onRename,
-  onArchive,
-}: ChatMenuProps) {
-  const { t } = useTranslation();
-  const Item = context ? ContextMenuItem : DropdownMenuItem;
-  return (
-    <>
-      <Item onSelect={onRename} disabled={disabled} leading={renameLeading}>
-        {t("renameModal.rename")}
-      </Item>
-      <Item onSelect={onPin} disabled={disabled} leading={pinned ? unpinLeading : pinLeading}>
-        {t(pinned ? "sidebar.workspace.actions.unpin" : "sidebar.workspace.actions.pin")}
-      </Item>
-      <Item onSelect={onArchive} disabled={disabled} destructive leading={archiveLeading}>
-        {t("agentList.archiveSheet.archive")}
-      </Item>
-      <DropdownMenuSeparator />
-      <Item onSelect={onRead} disabled={disabled} leading={unread ? readLeading : unreadLeading}>
-        {t(unread ? "desktopChat.markRead" : "desktopChat.markUnread")}
-      </Item>
-    </>
-  );
-}
-
 const ChatRow = memo(function ChatRow({
   agent,
   selectedKey,
@@ -160,71 +87,24 @@ const ChatRow = memo(function ChatRow({
   indented?: boolean;
 }) {
   const { t } = useTranslation();
-  const toast = useToast();
-  const { update, pendingAgent } = useDesktopChatMutation();
-  const { archiveAgent, isArchivingAgent } = useArchiveAgent();
+  const { busy, unread, markRead, menuProps, renameModal } = useDesktopChatMenu(agent);
   const [hovered, setHovered] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [contextOpen, setContextOpen] = useState(false);
-  const [renaming, setRenaming] = useState(false);
   const key = desktopChatKey(agent);
   const selected = selectedKey === key;
-  const pinned = desktopChatPinnedAt(agent) !== null;
-  const unread = isDesktopChatUnread(agent);
-  const busy =
-    pendingAgent !== null || isArchivingAgent({ serverId: agent.serverId, agentId: agent.id });
   const title = agent.title || t("agentList.fallbackTitle");
   const enter = useCallback(() => setHovered(true), []);
   const leave = useCallback(() => setHovered(false), []);
   const open = useCallback(() => {
-    if (unread) void update(agent, { kind: "read" }).catch(() => {});
+    if (unread) markRead();
     navigateToAgent({
       serverId: agent.serverId,
       agentId: agent.id,
       workspaceId: agent.workspaceId,
       pin: true,
     });
-  }, [agent, unread, update]);
-  const togglePin = useCallback(() => {
-    void update(
-      agent,
-      pinned ? { kind: "unpin" } : { kind: "pin", pinnedAt: new Date().toISOString() },
-    ).catch(() => {});
-  }, [agent, pinned, update]);
-  const toggleRead = useCallback(() => {
-    void update(agent, { kind: unread ? "read" : "unread" }).catch(() => {});
-  }, [agent, unread, update]);
-  const rename = useCallback(() => setRenaming(true), []);
-  const closeRename = useCallback(() => setRenaming(false), []);
-  const submitRename = useCallback(
-    (value: string) => update(agent, { kind: "rename", title: value }),
-    [agent, update],
-  );
-  const archive = useCallback(() => {
-    void (async () => {
-      if (
-        agent.turn.phase === "open" &&
-        !(await confirmDialog({
-          title: t("workspace.tabs.confirmations.archiveRunningAgentTitle"),
-          message: t("workspace.tabs.confirmations.archiveRunningAgentMessage"),
-          confirmLabel: t("agentList.archiveSheet.archive"),
-          cancelLabel: t("common.actions.cancel"),
-          destructive: true,
-        }))
-      )
-        return;
-      await archiveAgent({ serverId: agent.serverId, agentId: agent.id });
-    })().catch((error) => toast.error(error instanceof Error ? error.message : String(error)));
-  }, [agent, archiveAgent, t, toast]);
-  const menuProps = {
-    pinned,
-    unread,
-    disabled: busy,
-    onPin: togglePin,
-    onRead: toggleRead,
-    onRename: rename,
-    onArchive: archive,
-  };
+  }, [agent, unread, markRead]);
   const accessibilityState = useMemo(() => ({ selected, busy }), [selected, busy]);
 
   return (
@@ -276,23 +156,16 @@ const ChatRow = memo(function ChatRow({
                 <MoreIcon size={16} uniProps={mutedIcon} />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" width={210}>
-                <ChatMenuItems {...menuProps} />
+                <DesktopChatMenuItems {...menuProps} />
               </DropdownMenuContent>
             </DropdownMenu>
           </View>
         </ContextMenuTrigger>
         <ContextMenuContent width={210}>
-          <ChatMenuItems {...menuProps} context />
+          <DesktopChatMenuItems {...menuProps} context />
         </ContextMenuContent>
       </ContextMenu>
-      <AdaptiveRenameModal
-        visible={renaming}
-        title={t("renameModal.rename")}
-        initialValue={agent.title ?? ""}
-        onClose={closeRename}
-        onSubmit={submitRename}
-        testID={`desktop-chat-rename-${key}`}
-      />
+      {renameModal}
     </>
   );
 });

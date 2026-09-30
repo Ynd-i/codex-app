@@ -16,6 +16,8 @@ import { composerLocator } from "../../app/e2e/support/helpers/composer";
 test("desktop chat navigation preserves sibling drafts and scopes pinning", async ({
   page,
 }, testInfo) => {
+  // Allow the real host liveness check to detect a dropped browser connection.
+  test.setTimeout(120_000);
   const fixture = await seedMockAgentWorkspace({
     repoPrefix: "desktop-chat-navigation-",
     title: "First chat",
@@ -52,6 +54,31 @@ test("desktop chat navigation preserves sibling drafts and scopes pinning", asyn
     await expect(composerLocator(page)).toHaveValue("Draft stays with first chat");
     await page.getByTestId("desktop-shell-forward").click();
     await expect(title).toHaveText("Second chat");
+    const toolbarMenu = page.getByTestId("desktop-chat-toolbar-menu");
+    await expect(toolbarMenu).toBeVisible({ timeout: 5_000 });
+    await toolbarMenu.click();
+    await page.getByText("Rename", { exact: true }).click();
+    const renameId = `desktop-chat-rename-${serverId}:${second.id}`;
+    await page.getByTestId(`${renameId}-input`).fill("Renamed second chat");
+    await page.context().setOffline(true);
+    const attachButton = page.getByTestId("message-input-attach-button").filter({ visible: true });
+    await expect(attachButton).toBeDisabled({ timeout: 75_000 });
+    await page.getByTestId(`${renameId}-submit`).click();
+    await expect(page.getByTestId(`${renameId}-error`)).toHaveText("Daemon client unavailable");
+    await expect(page.getByTestId(`${renameId}-input`)).toHaveValue("Renamed second chat");
+    await expect(page.getByTestId(`${renameId}-submit`)).toBeEnabled();
+    expect((await fixture.client.fetchAgent({ agentId: second.id }))?.agent.title).toBe(
+      "Second chat",
+    );
+    await page.context().setOffline(false);
+    await expect(attachButton).toBeEnabled({ timeout: 30_000 });
+    await expect(title).toHaveText("Second chat");
+    await page.getByTestId(`${renameId}-submit`).click();
+    await expect(title).toHaveText("Renamed second chat", { timeout: 20_000 });
+    await expect(page.getByTestId(`${renameId}-input`)).toHaveCount(0, { timeout: 15_000 });
+    expect((await fixture.client.fetchAgent({ agentId: fixture.agentId }))?.agent.title).toBe(
+      "First chat",
+    );
     await secondRow.hover();
     await page.getByTestId(`desktop-chat-menu-${serverId}:${second.id}`).first().click();
     await page.getByText("Pin to top", { exact: true }).click();
@@ -78,12 +105,23 @@ test("desktop chat navigation preserves sibling drafts and scopes pinning", asyn
     await firstRow.click();
     await expect(title).toHaveText("First chat");
     await expect(composerLocator(page)).toHaveValue("Draft stays with first chat");
+    await secondRow.click();
+    await toolbarMenu.click();
+    await page.getByText("Archive", { exact: true }).click();
+    await expect(secondRow).toHaveCount(0);
+    await firstRow.click();
+    await expect(title).toHaveText("First chat");
+    await expect(composerLocator(page)).toHaveValue("Draft stays with first chat");
+    expect((await fixture.client.fetchAgent({ agentId: fixture.agentId }))?.agent.archivedAt).toBe(
+      null,
+    );
   } catch (error) {
     await page
       .screenshot({ path: testInfo.outputPath("before-cleanup.png") })
       .catch(() => undefined);
     throw error;
   } finally {
+    await page.context().setOffline(false);
     await fixture.cleanup();
   }
 });

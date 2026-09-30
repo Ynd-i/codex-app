@@ -2,6 +2,18 @@ import type { DaemonClient } from "@getpaseo/client/internal/daemon-client";
 import type { AggregatedAgent } from "@/hooks/use-aggregated-agents";
 import { DESKTOP_CHAT_PINNED_AT, DESKTOP_CHAT_UNREAD } from "./desktop-chat-model";
 
+export type DesktopChatTarget = Pick<
+  AggregatedAgent,
+  | "serverId"
+  | "workspaceId"
+  | "id"
+  | "title"
+  | "labels"
+  | "requiresAttention"
+  | "attentionReason"
+  | "turn"
+>;
+
 export type DesktopChatAction =
   | { kind: "pin"; pinnedAt: string }
   | { kind: "unpin" | "read" | "unread" }

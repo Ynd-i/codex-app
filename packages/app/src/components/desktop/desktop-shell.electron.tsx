@@ -34,6 +34,7 @@ import {
 import { TitlebarDragRegion } from "./titlebar-drag-region";
 import type { Theme } from "@/styles/theme";
 import { DesktopChatShortcuts } from "./desktop-chat-shortcuts";
+import { DesktopChatToolbar } from "./desktop-chat-toolbar";
 import { useDesktopNavigationHistory } from "./use-desktop-navigation-history";
 
 export const usesDesktopShell = getIsElectronMac();
@@ -181,6 +182,12 @@ export function DesktopShell({
             </Text>
           ) : null}
         </View>
+        {navigation.chat ? (
+          <DesktopChatToolbar
+            serverId={navigation.chat.serverId}
+            agentId={navigation.chat.agentId}
+          />
+        ) : null}
         {devLabel ? (
           <Text style={styles.devLabel} testID="dev-build-label" numberOfLines={1}>
             {devLabel}

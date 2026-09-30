@@ -9,8 +9,12 @@ distribution and full migration acceptance remain pending; see the
 ### Added
 
 - Added a Codex-style macOS titlebar, navigation rail, rounded content frame, and dark palette while retaining the existing themes and providers.
-- Added individual chats in Recent, Pinned, and project groups, with chat-scoped rename, archive, pinning, and unread actions.
+- Added individual chats in Recent, Pinned, and project groups, with shared rename, archive, pinning, and unread actions in the sidebar and current-chat titlebar.
 - Added Back/Forward chat navigation and the current-chat title, preserving independent drafts when switching between sibling chats.
+
+### Fixed
+
+- Fixed chat metadata changes remaining paused indefinitely while offline; connection errors and timeouts now return control to the user without discarding a rename draft.
 
 ## 0.10.2 - 2026-09-30
 
