@@ -2262,6 +2262,10 @@ export const ru: TranslationResources = {
         interfaceSize: "Размер интерфейса",
         interfaceSizeHint: "Используется для навигации, элементов управления и подписей",
         interfaceSizeAccessibility: "Размер шрифта интерфейса",
+        contentFont: "Шрифт содержимого",
+        contentFontHint:
+          "Для текста чата, Markdown и поля ввода. Оставьте пустым, чтобы использовать шрифт интерфейса",
+        contentFontAccessibility: "Семейство шрифта содержимого",
         contentSize: "Размер содержимого",
         contentSizeHint: "Используется для текста чата и отображаемого Markdown",
         contentSizeAccessibility: "Размер шрифта содержимого",

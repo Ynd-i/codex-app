@@ -2257,6 +2257,10 @@ export const ptBR: TranslationResources = {
         interfaceSize: "Tamanho da interface",
         interfaceSizeHint: "Usado na navegação, nos controles e nos rótulos",
         interfaceSizeAccessibility: "Tamanho da fonte da interface",
+        contentFont: "Fonte do conteúdo",
+        contentFontHint:
+          "Usada no chat, no Markdown e na caixa de entrada. Deixe em branco para usar a fonte da interface",
+        contentFontAccessibility: "Família de fontes do conteúdo",
         contentSize: "Tamanho do conteúdo",
         contentSizeHint: "Usado no texto do chat e no Markdown renderizado",
         contentSizeAccessibility: "Tamanho da fonte do conteúdo",

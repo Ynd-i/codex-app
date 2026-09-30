@@ -8,6 +8,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import { CODE_SURFACE_DATASET } from "@/styles/code-surface";
+import { CONTENT_SURFACE_DATASET } from "@/styles/content-surface";
 import { markdownCopyDataSet, type MarkdownCopyInlineTag } from "@/assistant-selection-copy/markup";
 
 interface MarkdownTextSpanProps {
@@ -40,9 +41,9 @@ export function MarkdownTextSpan({
       return { ...CODE_SURFACE_DATASET, ...markdownCopyDataSet[copyTag] };
     }
     if (copyTag) {
-      return markdownCopyDataSet[copyTag];
+      return { ...CONTENT_SURFACE_DATASET, ...markdownCopyDataSet[copyTag] };
     }
-    return monoSurface ? CODE_SURFACE_DATASET : undefined;
+    return monoSurface ? CODE_SURFACE_DATASET : CONTENT_SURFACE_DATASET;
   }, [copyTag, monoSurface]);
 
   return (

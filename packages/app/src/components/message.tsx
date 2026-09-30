@@ -45,6 +45,7 @@ import {
 } from "lucide-react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { ICON_SIZE, type Theme } from "@/styles/theme";
+import { CONTENT_SURFACE_DATASET } from "@/styles/content-surface";
 import { useIsCompactFormFactor } from "@/constants/layout";
 import Animated, {
   Easing,
@@ -356,6 +357,7 @@ const userMessageStylesheet = StyleSheet.create((theme) => ({
   },
   text: {
     color: theme.colors.foreground,
+    fontFamily: theme.fontFamily.content,
     fontSize: theme.fontSize.content,
     ...(isWeb
       ? {
@@ -422,6 +424,11 @@ function UserMessageImagePill({ image, onOpen, accessibilityLabel }: UserMessage
 }
 
 const MESSAGE_TEXT_DATASET = { messageText: "true" };
+const USER_MESSAGE_TEXT_DATASET = { ...MESSAGE_TEXT_DATASET, ...CONTENT_SURFACE_DATASET };
+const CONTENT_MARKDOWN_LIST_MARKER_DATASET = {
+  ...CONTENT_SURFACE_DATASET,
+  ...markdownCopyDataSet.listMarker,
+};
 
 export const UserMessage = memo(function UserMessage({
   serverId,
@@ -542,7 +549,7 @@ export const UserMessage = memo(function UserMessage({
             </View>
           ) : null}
           {hasText ? (
-            <Text selectable style={userMessageStylesheet.text} dataSet={MESSAGE_TEXT_DATASET}>
+            <Text selectable style={userMessageStylesheet.text} dataSet={USER_MESSAGE_TEXT_DATASET}>
               {message}
             </Text>
           ) : null}
@@ -1895,7 +1902,7 @@ export const AssistantMessage = memo(function AssistantMessage({
 
         return (
           <View key={node.key} style={styles.list_item} dataSet={markdownCopyDataSet.li}>
-            <Text style={iconStyle} dataSet={markdownCopyDataSet.listMarker}>
+            <Text style={iconStyle} dataSet={CONTENT_MARKDOWN_LIST_MARKER_DATASET}>
               {marker}
             </Text>
             <MarkdownListItemContent contentStyle={contentStyle}>
@@ -2064,7 +2071,7 @@ const speakMessageStylesheet = StyleSheet.create((theme) => ({
     color: theme.colors.foregroundMuted,
   },
   text: {
-    fontFamily: theme.fontFamily.ui,
+    fontFamily: theme.fontFamily.content,
     fontSize: theme.fontSize.content,
     lineHeight: Math.round(theme.fontSize.content * 1.4),
     color: theme.colors.foreground,
@@ -2092,7 +2099,9 @@ export const SpeakMessage = memo(function SpeakMessage({
         <ThemedMicVocal size={12} uniProps={foregroundMutedColorMapping} />
         <Text style={speakMessageStylesheet.headerLabel}>{t("message.speak.header")}</Text>
       </View>
-      <Text style={speakMessageStylesheet.text}>{message}</Text>
+      <Text dataSet={CONTENT_SURFACE_DATASET} style={speakMessageStylesheet.text}>
+        {message}
+      </Text>
     </View>
   );
 });

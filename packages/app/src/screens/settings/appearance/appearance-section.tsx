@@ -47,7 +47,7 @@ import {
   THEME_SWATCHES,
   type Theme,
 } from "@/styles/theme";
-import { isNative } from "@/constants/platform";
+import { getIsElectronMac, isNative } from "@/constants/platform";
 import type { PluginThemeOption } from "@/plugins/themes";
 import { settingsStyles } from "@/styles/settings";
 import { AppearancePreview } from "./appearance-preview";
@@ -73,6 +73,7 @@ function getThemeLabel(t: TFunction, value: BuiltInThemePreference): string {
 // Platform default stacks can be the bare native tokens ("normal"/"monospace");
 // those read as a bug, so show a human label in the placeholder instead.
 const BARE_DEFAULT_STACKS: ReadonlySet<string> = new Set(["normal", "monospace"]);
+const APPEARANCE_INPUT_HEIGHT = getIsElectronMac() ? 40 : 36;
 
 function resolveDefaultStackPlaceholder(t: TFunction, stack: string): string {
   return BARE_DEFAULT_STACKS.has(stack) ? t("settings.appearance.fonts.systemDefault") : stack;
@@ -484,6 +485,7 @@ export function AppearanceSection() {
   const monoFontPlaceholder = resolveDefaultStackPlaceholder(t, DEFAULT_MONO_FONT_STACK);
 
   const [uiFontDraft, setUiFontDraft] = useState(settings.uiFontFamily);
+  const [contentFontDraft, setContentFontDraft] = useState(settings.contentFontFamily);
   const [monoFontDraft, setMonoFontDraft] = useState(settings.monoFontFamily);
   const [uiBaseSizeDraft, setUiBaseSizeDraft] = useState(String(settings.uiBaseFontSize));
   const [contentSizeDraft, setContentSizeDraft] = useState(String(settings.contentFontSize));
@@ -541,6 +543,21 @@ export function AppearanceSection() {
       }
     },
     [settings.uiFontFamily, updateSettings],
+  );
+
+  const commitContentFontFamily = useCallback(
+    (value: string) => {
+      const sanitized = sanitizeFontFamily(value);
+      if (sanitized === null) {
+        setContentFontDraft(settings.contentFontFamily);
+        return;
+      }
+      setContentFontDraft(sanitized);
+      if (sanitized !== settings.contentFontFamily) {
+        void updateSettings({ contentFontFamily: sanitized });
+      }
+    },
+    [settings.contentFontFamily, updateSettings],
   );
 
   const commitMonoFontFamily = useCallback(
@@ -655,6 +672,19 @@ export function AppearanceSection() {
             onChangeDraft={handleUiBaseSizeChange}
             onCommit={commitUiBaseSize}
           />
+          {showInterfaceFontFamilyRow ? (
+            <FontFamilyRow
+              title={t("settings.appearance.fonts.contentFont")}
+              hint={t("settings.appearance.fonts.contentFontHint")}
+              accessibilityLabel={t("settings.appearance.fonts.contentFontAccessibility")}
+              placeholder={settings.uiFontFamily || uiFontPlaceholder}
+              value={settings.contentFontFamily}
+              draft={contentFontDraft}
+              withBorder
+              onChangeDraft={setContentFontDraft}
+              onCommit={commitContentFontFamily}
+            />
+          ) : null}
           <FontSizeRow
             title={t("settings.appearance.fonts.contentSize")}
             hint={t("settings.appearance.fonts.contentSizeHint")}
@@ -728,7 +758,7 @@ const styles = StyleSheet.create((theme) => ({
     flexGrow: 1,
     flexShrink: 1,
     maxWidth: 280,
-    minHeight: 36,
+    minHeight: APPEARANCE_INPUT_HEIGHT,
     paddingVertical: theme.spacing[2],
     paddingHorizontal: theme.spacing[3],
     borderRadius: theme.borderRadius.md,
@@ -746,7 +776,7 @@ const styles = StyleSheet.create((theme) => ({
   },
   sizeInput: {
     width: 64,
-    minHeight: 36,
+    minHeight: APPEARANCE_INPUT_HEIGHT,
     paddingVertical: theme.spacing[2],
     paddingHorizontal: theme.spacing[3],
     borderRadius: theme.borderRadius.md,
@@ -759,7 +789,7 @@ const styles = StyleSheet.create((theme) => ({
   },
   widthInput: {
     width: 80,
-    minHeight: 36,
+    minHeight: APPEARANCE_INPUT_HEIGHT,
     paddingVertical: theme.spacing[2],
     paddingHorizontal: theme.spacing[3],
     borderRadius: theme.borderRadius.md,

@@ -16,6 +16,7 @@ distribution and full migration acceptance remain pending; see the
 - Added elapsed headers and collapsible activity for completed macOS chat turns. Replies stay visible, search reveals hidden matches, and copying or forking retains the full turn. Expanding keeps the reader's position.
 - Added a local macOS custom-package profile with its own identity, isolated GUI daemon defaults, and disabled automatic updates. The packaged smoke checks the custom identity and rejected update installation.
 - Added macOS usage overview cards with explicit used/remaining allowances, live reset countdowns and localized labels across all supported languages. Existing provider data and refresh behavior are retained.
+- Added an independent content font in Appearance for conversation text, Markdown and the composer. Leaving it empty follows the interface font; code retains its monospace font.
 
 ### Changed
 

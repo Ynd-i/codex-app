@@ -24,7 +24,7 @@ type ThemeUpdater = (theme: FakeTheme) => FakeTheme;
 // fake of this shape through `unknown` to ThemeUpdater's param is test-only.
 interface FakeTheme {
   colorScheme: "light" | "dark";
-  fontFamily: { ui: string; mono: string };
+  fontFamily: { ui: string; content: string; mono: string };
   fontSize: {
     code: number;
     content: number;
@@ -44,7 +44,7 @@ interface FakeTheme {
 function makeFakeTheme(): FakeTheme {
   return {
     colorScheme: "dark",
-    fontFamily: { ui: "seed-ui-stack", mono: "seed-mono-stack" },
+    fontFamily: { ui: "seed-ui-stack", content: "seed-content-stack", mono: "seed-mono-stack" },
     fontSize: {
       code: 12,
       content: 15,
@@ -65,6 +65,7 @@ function makeFakeTheme(): FakeTheme {
 function makeInput(overrides: Partial<AppearanceInput> = {}): AppearanceInput {
   return {
     uiFontFamily: "",
+    contentFontFamily: "",
     monoFontFamily: "",
     uiBaseFontSize: 14,
     contentFontSize: 15,
@@ -121,6 +122,35 @@ describe("applyAppearance", () => {
     applyAppearance(makeInput({ uiFontFamily: "  Menlo  " }));
 
     expect(runCapturedUpdater().fontFamily.ui).toBe("Menlo");
+  });
+
+  it("applies the content font independently and falls back to the selected UI font", () => {
+    applyAppearance(
+      makeInput({
+        uiFontFamily: "  Avenir  ",
+        contentFontFamily: "  Charter  ",
+        monoFontFamily: "  Menlo  ",
+      }),
+    );
+    expect(runCapturedUpdater().fontFamily).toEqual({
+      ui: "Avenir",
+      content: "Charter",
+      mono: "Menlo",
+    });
+
+    updateTheme.mockClear();
+    applyAppearance(
+      makeInput({
+        uiFontFamily: "Avenir",
+        contentFontFamily: "",
+        monoFontFamily: "Menlo",
+      }),
+    );
+    expect(runCapturedUpdater().fontFamily).toEqual({
+      ui: "Avenir",
+      content: "Avenir",
+      mono: "Menlo",
+    });
   });
 
   it("scales the whole UI ramp proportionally while preserving ratios", () => {

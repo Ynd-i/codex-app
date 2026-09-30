@@ -2279,6 +2279,10 @@ export const fr: TranslationResources = {
         interfaceSize: "Taille de l'interface",
         interfaceSizeHint: "Utilisée pour la navigation, les contrôles et les libellés",
         interfaceSizeAccessibility: "Taille de police de l'interface",
+        contentFont: "Police du contenu",
+        contentFontHint:
+          "Utilisée pour le chat, Markdown et la zone de saisie. Laissez vide pour utiliser la police de l’interface",
+        contentFontAccessibility: "Famille de police du contenu",
         contentSize: "Taille du contenu",
         contentSizeHint: "Utilisée pour le texte du chat et le Markdown rendu",
         contentSizeAccessibility: "Taille de police du contenu",

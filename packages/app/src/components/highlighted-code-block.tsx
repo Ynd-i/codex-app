@@ -129,7 +129,10 @@ interface TokenSpanProps {
 
 const TokenSpan = React.memo(function TokenSpan({ token }: TokenSpanProps) {
   return (
-    <MarkdownTextSpan style={token.style ? syntaxTokenStyleFor(token.style) : undefined}>
+    <MarkdownTextSpan
+      monoSurface
+      style={token.style ? syntaxTokenStyleFor(token.style) : undefined}
+    >
       {token.text}
     </MarkdownTextSpan>
   );
@@ -140,7 +143,7 @@ interface CodeTextSpanProps {
 }
 
 const CodeTextSpan = React.memo(function CodeTextSpan({ text }: CodeTextSpanProps) {
-  return <MarkdownTextSpan>{text}</MarkdownTextSpan>;
+  return <MarkdownTextSpan monoSurface>{text}</MarkdownTextSpan>;
 });
 
 interface SplitStyles {

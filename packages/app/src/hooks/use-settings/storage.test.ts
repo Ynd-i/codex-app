@@ -69,6 +69,7 @@ describe("loadAppSettingsFromStorage", () => {
     const result = await loadAppSettingsFromStorage(deps);
 
     expect(result.theme).toBe("dark");
+    expect(result.contentFontFamily).toBe("");
     expect(result.sendBehavior).toBe(DEFAULT_CLIENT_SETTINGS.sendBehavior);
     expect(result.sidebarRowItems.host).toBe(false);
     expect(JSON.parse(deps.storage.entries.get(APP_SETTINGS_KEY) ?? "null")).toEqual(stored);
@@ -880,11 +881,16 @@ describe("appearance settings", () => {
   it("trims an accepted font family", async () => {
     const deps = makeDeps({
       storage: createInMemoryKeyValueStorage({
-        [APP_SETTINGS_KEY]: JSON.stringify({ uiFontFamily: "  Menlo  " }),
+        [APP_SETTINGS_KEY]: JSON.stringify({
+          uiFontFamily: "  Menlo  ",
+          contentFontFamily: "  Charter  ",
+        }),
       }),
     });
 
-    expect((await loadAppSettingsFromStorage(deps)).uiFontFamily).toBe("Menlo");
+    const settings = await loadAppSettingsFromStorage(deps);
+    expect(settings.uiFontFamily).toBe("Menlo");
+    expect(settings.contentFontFamily).toBe("Charter");
   });
 
   it("keeps an explicit empty font family as the default sentinel", async () => {

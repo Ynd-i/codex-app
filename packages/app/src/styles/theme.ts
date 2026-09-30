@@ -628,9 +628,9 @@ export const OPACITY = {
   100: 1,
 } as const;
 
-// Platform default font stacks — copied verbatim from constants/theme.ts `Fonts`
-// (sans -> ui, mono -> mono). These seed the dynamic `fontFamily` theme token and
-// are the fallback an empty user-supplied family resolves to at apply time.
+// Platform default font stacks — copied verbatim from constants/theme.ts `Fonts`.
+// These seed the dynamic `fontFamily` theme token and the UI stack is also the
+// fallback for an empty content-family preference.
 export const DEFAULT_UI_FONT_STACK: string = Platform.select({
   ios: "system-ui",
   default: "normal",
@@ -653,7 +653,7 @@ export const DEFAULT_CONTENT_MAX_WIDTH = getIsElectronMac() ? 736 : 820;
 interface CommonTheme {
   spacing: typeof SPACING;
   fontSize: Record<keyof typeof FONT_SIZE, number>;
-  fontFamily: { ui: string; mono: string };
+  fontFamily: { ui: string; content: string; mono: string };
   lineHeight: Record<keyof typeof LINE_HEIGHT, number>;
   contentMaxWidth: number;
   iconSize: typeof ICON_SIZE;
@@ -666,7 +666,11 @@ interface CommonTheme {
 const commonTheme: CommonTheme = {
   spacing: SPACING,
   fontSize: FONT_SIZE,
-  fontFamily: { ui: DEFAULT_UI_FONT_STACK, mono: DEFAULT_MONO_FONT_STACK },
+  fontFamily: {
+    ui: DEFAULT_UI_FONT_STACK,
+    content: DEFAULT_UI_FONT_STACK,
+    mono: DEFAULT_MONO_FONT_STACK,
+  },
   lineHeight: LINE_HEIGHT,
   contentMaxWidth: DEFAULT_CONTENT_MAX_WIDTH,
   iconSize: ICON_SIZE,

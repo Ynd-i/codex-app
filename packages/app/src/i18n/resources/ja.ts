@@ -2242,6 +2242,10 @@ export const ja: TranslationResources = {
         interfaceSize: "インターフェースサイズ",
         interfaceSizeHint: "ナビゲーション、コントロール、ラベルに使用されます",
         interfaceSizeAccessibility: "インターフェースのフォントサイズ",
+        contentFont: "本文のフォント",
+        contentFontHint:
+          "チャット本文、Markdown、入力欄に使用します。空欄の場合はインターフェースのフォントを使用します",
+        contentFontAccessibility: "本文のフォントファミリー",
         contentSize: "コンテンツサイズ",
         contentSizeHint: "チャットテキストとレンダリングされた Markdown に使用されます",
         contentSizeAccessibility: "コンテンツのフォントサイズ",

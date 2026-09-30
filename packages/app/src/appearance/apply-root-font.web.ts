@@ -1,34 +1,40 @@
-// Apply the interface (UI) font app-wide on web.
+// Apply the interface (UI) and content fonts app-wide on web.
 //
 // react-native-web stamps a hardcoded default font onto every text element, so a
 // plain `body { font-family }` never cascades in — the element already has its own
-// font. Instead we inject ONE rule that points all text at a CSS variable and set
-// that variable live. The selector is high-specificity (1,2,0) so it deterministically
-// beats both RN-web's base font and Unistyles' generated classes (0,1,0) — no reliance
-// on stylesheet order. Code/diff/terminal surfaces carry `data-pmono` (and have their
-// subtree excluded via `:not([data-pmono] *)`) so they keep their monospace font.
+// font. High-specificity rules point unmarked text at the UI variable and
+// `data-pcontent` text at the content variable. Both beat RN-web and Unistyles
+// classes without relying on stylesheet order. Code/diff/terminal surfaces carry
+// `data-pmono`; they and their subtrees are excluded from both rules.
 const STYLE_ID = "paseo-ui-font";
-const RULE =
-  ":is(#root, #overlay-root) *:not([data-pmono]):not([data-pmono] *){font-family:var(--paseo-ui-font);}";
+const ROOTS = ":is(#root, #overlay-root)";
+const NOT_MONO = ":not([data-pmono]):not([data-pmono] *)";
+const UI_RULE = `${ROOTS} *${NOT_MONO}:not([data-pcontent]):not([data-pcontent] *){font-family:var(--paseo-ui-font);}`;
+const CONTENT_RULE = `${ROOTS} [data-pcontent]${NOT_MONO},${ROOTS} [data-pcontent]${NOT_MONO} *${NOT_MONO}{font-family:var(--paseo-content-font);}`;
+const RULE = `${UI_RULE}${CONTENT_RULE}`;
 
-export function applyRootUiFont(uiFontStack: string): void {
-  if (typeof document === "undefined") return;
-  // Strip anything that could break out of the CSS value; commas/quotes/spaces in a
-  // font stack are fine.
-  const value = uiFontStack
+function sanitizeFontStack(fontStack: string): string {
+  return fontStack
     .replace(/[<>{}();]/g, "")
     .replace(/[\r\n]/g, " ")
     .trim();
-  if (value.length === 0) return;
+}
 
-  document.documentElement.style.setProperty("--paseo-ui-font", value);
+export function applyRootFonts(uiFontStack: string, contentFontStack: string): void {
+  if (typeof document === "undefined") return;
+  const ui = sanitizeFontStack(uiFontStack);
+  if (ui.length === 0) return;
+  const content = sanitizeFontStack(contentFontStack) || ui;
 
-  // The rule itself is static (references the variable); inject it once.
+  document.documentElement.style.setProperty("--paseo-ui-font", ui);
+  document.documentElement.style.setProperty("--paseo-content-font", content);
+
+  // Keep one rule element and refresh its static selectors during hot reload.
   let style = document.getElementById(STYLE_ID);
   if (!style) {
     style = document.createElement("style");
     style.id = STYLE_ID;
-    style.textContent = RULE;
     document.head.appendChild(style);
   }
+  if (style.textContent !== RULE) style.textContent = RULE;
 }

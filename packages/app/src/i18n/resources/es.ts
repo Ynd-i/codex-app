@@ -2276,6 +2276,10 @@ export const es: TranslationResources = {
         interfaceSize: "Tamaño de interfaz",
         interfaceSizeHint: "Se usa en la navegación, los controles y las etiquetas",
         interfaceSizeAccessibility: "Tamaño de fuente de interfaz",
+        contentFont: "Fuente del contenido",
+        contentFontHint:
+          "Se usa en el chat, Markdown y el cuadro de entrada. Déjalo vacío para usar la fuente de interfaz",
+        contentFontAccessibility: "Familia de fuentes del contenido",
         contentSize: "Tamaño de contenido",
         contentSizeHint: "Se usa en el texto del chat y el Markdown renderizado",
         contentSizeAccessibility: "Tamaño de fuente de contenido",

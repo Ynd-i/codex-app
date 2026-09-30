@@ -30,6 +30,7 @@ import { getMarkdownListMarker, getMarkdownListSpacing } from "@/utils/markdown-
 import { markdownNodeContainsType } from "@/utils/markdown-ast";
 import { createMarkdownParser } from "@/utils/markdown-parser";
 import { createCompactMarkdownStyles, createMarkdownStyles } from "@/styles/markdown-styles";
+import { CONTENT_SURFACE_DATASET } from "@/styles/content-surface";
 import type { Theme } from "@/styles/theme";
 import { openExternalUrl } from "@/utils/open-external-url";
 import { isNative } from "@/constants/platform";
@@ -309,7 +310,9 @@ function MarkdownFlowImage({
     }
     return (
       <View style={detailsStyles.flowImageFallback}>
-        <Text style={detailsStyles.flowImageFallbackText}>{part.alt}</Text>
+        <Text dataSet={CONTENT_SURFACE_DATASET} style={detailsStyles.flowImageFallbackText}>
+          {part.alt}
+        </Text>
       </View>
     );
   }
@@ -668,7 +671,9 @@ export function createSharedMarkdownRules(): RenderRules {
 
       return (
         <View key={node.key} style={styles.list_item}>
-          <Text style={iconStyle}>{marker}</Text>
+          <Text dataSet={CONTENT_SURFACE_DATASET} style={iconStyle}>
+            {marker}
+          </Text>
           <MarkdownListItemContent contentStyle={contentStyle}>{children}</MarkdownListItemContent>
         </View>
       );

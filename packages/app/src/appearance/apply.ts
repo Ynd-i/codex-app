@@ -7,12 +7,13 @@ import {
   REGISTERED_THEMES,
   type Theme,
 } from "@/styles/theme";
-import { applyRootUiFont } from "./apply-root-font";
+import { applyRootFonts } from "./apply-root-font";
 
 const ALL_THEME_KEYS = Object.keys(REGISTERED_THEMES) as (keyof typeof REGISTERED_THEMES)[];
 
 export interface AppearanceInput {
   uiFontFamily: string; // "" -> default stack
+  contentFontFamily: string; // "" -> selected UI font
   monoFontFamily: string; // "" -> default stack
   uiBaseFontSize: number; // already clamped
   contentFontSize: number; // already clamped
@@ -62,6 +63,7 @@ function scaleFontSize(
  */
 export function applyAppearance(input: AppearanceInput): void {
   const ui = input.uiFontFamily.trim() || DEFAULT_UI_FONT_STACK;
+  const content = input.contentFontFamily.trim() || ui;
   const mono = input.monoFontFamily.trim() || DEFAULT_MONO_FONT_STACK;
   const diffLineHeight = Math.round(input.codeFontSize * 1.5); // couple to code size
   const activeTheme = UnistylesRuntime.themeName;
@@ -74,7 +76,7 @@ export function applyAppearance(input: AppearanceInput): void {
 
   for (const key of themeKeys) {
     UnistylesRuntime.updateTheme(key, (t) => {
-      const fontFamily = { ui, mono };
+      const fontFamily = { ui, content, mono };
       const fontSize = scaleFontSize(
         input.uiBaseFontSize,
         input.contentFontSize,
@@ -102,7 +104,7 @@ export function applyAppearance(input: AppearanceInput): void {
     });
   }
 
-  // Web: apply the UI font app-wide (RN-web stamps a default font on every text
-  // element, so it can't be done through the theme alone). No-op on native.
-  applyRootUiFont(ui);
+  // Web: RN-web stamps a default font on each text element, so apply UI/content
+  // stacks through the scoped root rules as well as the theme. No-op on native.
+  applyRootFonts(ui, content);
 }

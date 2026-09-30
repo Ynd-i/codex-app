@@ -451,6 +451,24 @@ Plugin-specific resource selection has not been exercised in this slice.
 Maintenance sleep coincided with fixture setup timeouts. The passing renderer run
 used a temporary `caffeinate -i` wrapper; it changes no persistent power or lock settings.
 
+### Content typography — 2026-10-01
+
+Appearance now exposes a content-font preference independently of interface and
+code fonts. Empty values inherit the existing interface font, including older
+saved settings; no font files are bundled or downloaded. User text, assistant
+Markdown and the composer use the content font. UI controls and code keep their
+own font roles. The existing root UI-font CSS needed a separate content scope;
+changing the theme token alone was insufficient in the actual renderer.
+
+The font/settings unit checks pass (108), as do all 36 locale parity checks and
+root format/lint/typecheck. The isolated desktop case sets Georgia through
+Appearance, checks user/assistant/composer text and unchanged navigation, then
+clears the preference and verifies the UI-font fallback. It passes alongside the
+two sidebar cases in `/private/tmp/paseo-content-motion-e2e.log`.
+The [typography capture](../qa-evidence/codex-desktop/transcript-content-font.png)
+predates the latest single-chat main-area correction; it verifies typography,
+not acceptance of the older visible main tab strip.
+
 ### Voice exclusions
 
 The custom macOS desktop now hides both composer microphone controls and the

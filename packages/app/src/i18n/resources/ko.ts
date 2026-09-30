@@ -2233,6 +2233,10 @@ export const ko: TranslationResources = {
         interfaceSize: "인터페이스 크기",
         interfaceSizeHint: "탐색, 컨트롤 및 레이블에 사용됩니다",
         interfaceSizeAccessibility: "인터페이스 글꼴 크기",
+        contentFont: "본문 글꼴",
+        contentFontHint:
+          "채팅 본문, Markdown 및 입력창에 사용됩니다. 비워 두면 인터페이스 글꼴을 사용합니다",
+        contentFontAccessibility: "본문 글꼴 모음",
         contentSize: "콘텐츠 크기",
         contentSizeHint: "채팅 텍스트와 렌더링된 Markdown에 사용됩니다",
         contentSizeAccessibility: "콘텐츠 글꼴 크기",

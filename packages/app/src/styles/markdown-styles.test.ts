@@ -3,6 +3,22 @@ import { createCompactMarkdownStyles, createMarkdownStyles } from "./markdown-st
 import { darkTheme } from "./theme";
 
 describe("createMarkdownStyles", () => {
+  it("uses the content font for prose while code remains monospace", () => {
+    const theme = {
+      ...darkTheme,
+      fontFamily: { ...darkTheme.fontFamily, content: "Charter" },
+    };
+    const styles = createMarkdownStyles(theme);
+
+    expect(styles.body.fontFamily).toBe("Charter");
+    expect(styles.text.fontFamily).toBe("Charter");
+    expect(styles.bullet_list_icon.fontFamily).toBe("Charter");
+    expect(styles.ordered_list_icon.fontFamily).toBe("Charter");
+    expect(styles.code_inline.fontFamily).toBe(theme.fontFamily.mono);
+    expect(styles.code_block.fontFamily).toBe(theme.fontFamily.mono);
+    expect(styles.fence.fontFamily).toBe(theme.fontFamily.mono);
+  });
+
   it("uses the content size for conversation prose and list markers", () => {
     const styles = createMarkdownStyles(darkTheme);
     const proseLineHeight = Math.round(darkTheme.fontSize.content * 1.4);

@@ -22,6 +22,8 @@ import {
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { ICON_SIZE, type Theme } from "@/styles/theme";
+import { CONTENT_SURFACE_DATASET } from "@/styles/content-surface";
+import { CODE_SURFACE_DATASET } from "@/styles/code-surface";
 import { ArrowUp, Mic, MicOff, CornerDownLeft, Plus, Square } from "lucide-react-native";
 import { useDictation } from "@/hooks/use-dictation";
 import { DictationOverlay } from "@/components/dictation-controls";
@@ -86,7 +88,8 @@ import {
 } from "./state";
 
 const DEFAULT_SEND_KEYS: ShortcutKey[][] = [["Enter"]];
-const COMPOSER_INPUT_DATASET = { composerInput: "" } as const;
+const COMPOSER_INPUT_DATASET = { composerInput: "", ...CONTENT_SURFACE_DATASET } as const;
+const TERMINAL_INPUT_DATASET = { composerInput: "", ...CODE_SURFACE_DATASET } as const;
 
 export interface AttachmentMenuItem {
   id: string;
@@ -669,6 +672,7 @@ function FocusHint({
 
 interface ComposerTextSurfaceProps {
   readOnly: boolean;
+  monospace: boolean;
   value: string;
   textInputRef: React.Ref<ComposerTextInputHandle>;
   textInputStyle: EditingTextInputProps["style"];
@@ -699,7 +703,11 @@ function ComposerTextSurface(props: ComposerTextSurfaceProps): React.ReactElemen
   if (props.readOnly) {
     return (
       <View style={styles.textInputScrollWrapper}>
-        <Text style={props.readOnlyTextStyle} testID="composer-readonly-content">
+        <Text
+          dataSet={props.monospace ? CODE_SURFACE_DATASET : CONTENT_SURFACE_DATASET}
+          style={props.readOnlyTextStyle}
+          testID="composer-readonly-content"
+        >
           {props.value}
         </Text>
       </View>
@@ -709,7 +717,7 @@ function ComposerTextSurface(props: ComposerTextSurfaceProps): React.ReactElemen
     <View style={styles.textInputScrollWrapper}>
       <ComposerTextInput
         ref={props.textInputRef}
-        dataSet={COMPOSER_INPUT_DATASET}
+        dataSet={props.monospace ? TERMINAL_INPUT_DATASET : COMPOSER_INPUT_DATASET}
         initialValue={props.value}
         onChangeText={props.onChangeText}
         placeholder={props.placeholder}
@@ -1845,6 +1853,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
           <RenderProfile id="ComposerTextSurface">
             <ComposerTextSurface
               readOnly={readOnly}
+              monospace={mode.isMonospace}
               value={value}
               textInputRef={textInputRef}
               textInputStyle={textInputStyle}
@@ -2005,6 +2014,7 @@ const styles = StyleSheet.create((theme: Theme) => ({
     flexShrink: 1,
     width: "100%",
     color: theme.colors.foreground,
+    fontFamily: theme.fontFamily.content,
     fontSize: theme.fontSize.content,
     fontWeight: theme.fontWeight.normal,
     // No lineHeight on native. React Native applies it as a span over the text, and an

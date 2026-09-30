@@ -2346,6 +2346,10 @@ export const en = {
         interfaceSize: "Interface size",
         interfaceSizeHint: "Used for navigation, controls, and labels",
         interfaceSizeAccessibility: "Interface font size",
+        contentFont: "Content font",
+        contentFontHint:
+          "Used for chat text, Markdown and the composer. Leave empty to use the interface font",
+        contentFontAccessibility: "Content font family",
         contentSize: "Content size",
         contentSizeHint: "Used for chat text and rendered Markdown",
         contentSizeAccessibility: "Content font size",

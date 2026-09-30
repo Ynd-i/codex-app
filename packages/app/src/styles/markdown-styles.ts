@@ -31,6 +31,7 @@ export function createMarkdownStyles(theme: Theme) {
     body: {
       ...webSelectableTextStyle,
       color: theme.colors.foreground,
+      fontFamily: theme.fontFamily.content,
       fontSize: theme.fontSize.content,
       // Prose line-height scales with the content size, not the
       // code-size-coupled lineHeight.diff token used by code/diff surfaces.
@@ -42,6 +43,7 @@ export function createMarkdownStyles(theme: Theme) {
 
     text: {
       ...webSelectableTextStyle,
+      fontFamily: theme.fontFamily.content,
       flexShrink: 1,
       minWidth: 0,
       overflowWrap: "anywhere" as const,
@@ -293,6 +295,7 @@ export function createMarkdownStyles(theme: Theme) {
     bullet_list_icon: {
       ...webSelectableTextStyle,
       color: theme.colors.foregroundMuted,
+      fontFamily: theme.fontFamily.content,
       marginRight: 4,
       fontSize: theme.fontSize.content,
       lineHeight: Math.round(theme.fontSize.content * 1.4),
@@ -301,6 +304,7 @@ export function createMarkdownStyles(theme: Theme) {
     ordered_list_icon: {
       ...webSelectableTextStyle,
       color: theme.colors.foregroundMuted,
+      fontFamily: theme.fontFamily.content,
       marginRight: 4,
       fontSize: theme.fontSize.content,
       fontWeight: theme.fontWeight.normal,

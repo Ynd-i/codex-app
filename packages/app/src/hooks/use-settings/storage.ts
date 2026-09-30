@@ -78,6 +78,7 @@ export interface AppSettings {
   terminalScrollbackLines: number;
   useLegacyTerminalRenderer: boolean;
   uiFontFamily: string; // "" = platform default UI stack
+  contentFontFamily: string; // "" = use the selected UI font
   monoFontFamily: string; // "" = platform default mono stack
   uiBaseFontSize: number; // clamped px, platform default 14 or 15
   contentFontSize: number; // clamped px, platform default 15 or 16
@@ -134,6 +135,7 @@ export const DEFAULT_CLIENT_SETTINGS: AppSettings = {
   terminalScrollbackLines: DEFAULT_TERMINAL_SCROLLBACK_LINES,
   useLegacyTerminalRenderer: false,
   uiFontFamily: "",
+  contentFontFamily: "",
   monoFontFamily: "",
   uiBaseFontSize: DEFAULT_UI_BASE_FONT_SIZE,
   contentFontSize: DEFAULT_CONTENT_FONT_SIZE,
@@ -213,6 +215,7 @@ const StoredAppSettingsSchema = z
     ).catch(DEFAULT_TERMINAL_SCROLLBACK_LINES),
     useLegacyTerminalRenderer: z.boolean().catch(false),
     uiFontFamily: sanitizedFontFamily().catch(""),
+    contentFontFamily: sanitizedFontFamily().catch(""),
     monoFontFamily: sanitizedFontFamily().catch(""),
     uiBaseFontSize: clampedNumber(MIN_UI_BASE_FONT_SIZE, MAX_UI_BASE_FONT_SIZE)
       .optional()
