@@ -1,5 +1,6 @@
 import { test, expect } from "../../app/e2e/support/fixtures";
-import { gotoAppShell } from "../../app/e2e/support/helpers/app";
+import { gotoAppShell, openSettings } from "../../app/e2e/support/helpers/app";
+import { openSettingsSection } from "../../app/e2e/support/helpers/settings";
 import {
   expectNewWorkspaceForAddedProject,
   openAddProjectFlow,
@@ -107,6 +108,10 @@ test("desktop composer keeps send and stop reachable with attachments", async ({
     await page.emulateMedia({ colorScheme: "dark" });
     await openAgentRoute(page, fixture);
     await expect(page.getByTestId("desktop-chat-title")).toHaveText("Composer layout check");
+    await expect(page.getByRole("button", { name: "Start dictation", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Enable Voice mode", exact: true })).toHaveCount(
+      0,
+    );
     const mode = page.getByTestId("mode-control").filter({ visible: true });
     const model = page.getByTestId("combined-model-selector").filter({ visible: true });
     await expect(mode).toBeVisible();
@@ -204,6 +209,19 @@ test("desktop composer keeps send and stop reachable with attachments", async ({
     await expect(attachment).toHaveCount(0);
     await stop.click();
     await expectAgentIdle(page);
+    await composerLocator(page).fill("Keep typing without voice shortcuts.");
+    await composerLocator(page).press("Meta+d");
+    await composerLocator(page).press("Meta+Shift+d");
+    await expect(composerLocator(page)).toHaveValue("Keep typing without voice shortcuts.");
+    await openSettings(page);
+    await openSettingsSection(page, "shortcuts");
+    await expect(page.getByTestId("shortcut-actions-focus-message-input")).toBeVisible();
+    for (const action of ["voice-toggle", "dictation-toggle", "voice-mute-toggle"]) {
+      await expect(page.getByTestId(`shortcut-actions-${action}`)).toHaveCount(0);
+    }
+    await openSettingsSection(page, "diagnostics");
+    await expect(page.getByTestId("app-diagnostic-row")).toBeVisible();
+    await expect(page.getByText("Test audio", { exact: true })).toHaveCount(0);
   } finally {
     await fixture.cleanup();
   }

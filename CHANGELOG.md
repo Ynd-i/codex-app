@@ -20,6 +20,7 @@ distribution and full migration acceptance remain pending; see the
 - Moved the macOS composer mode beside attachments and aligned model/reasoning controls to the right, retaining provider-backed selections.
 - Updated macOS selector surfaces to the rounded, raised style used by the reference.
 - Matched macOS user-message bubbles to the reference with a 70% width limit, darker fill, and even rounded corners.
+- Removed voice mode, dictation, their shortcut entries, and audio diagnostics from the custom macOS desktop, in line with the agreed scope. Other platforms and the voice backend remain available.
 
 ### Fixed
 

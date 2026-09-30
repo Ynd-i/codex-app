@@ -133,7 +133,7 @@ import {
 } from "@/utils/host-routes";
 import { useLastWorkspaceSelection } from "@/stores/navigation-active-workspace-store";
 import { returnFromSettings, type SettingsView } from "@/navigation/settings-navigation";
-import { isNative, isWeb } from "@/constants/platform";
+import { getIsElectronMac, isNative, isWeb } from "@/constants/platform";
 
 // ---------------------------------------------------------------------------
 // View model
@@ -421,24 +421,26 @@ function DiagnosticsSection({
             {t("settings.diagnostics.app.run")}
           </Button>
         </View>
-        <View style={settingsStyles.row}>
-          <View style={settingsStyles.rowContent}>
-            <Text style={settingsStyles.rowTitle}>{t("settings.diagnostics.testAudio")}</Text>
-            {playbackTestResult ? (
-              <Text style={settingsStyles.rowHint}>{playbackTestResult}</Text>
-            ) : null}
+        {!getIsElectronMac() ? (
+          <View style={settingsStyles.row}>
+            <View style={settingsStyles.rowContent}>
+              <Text style={settingsStyles.rowTitle}>{t("settings.diagnostics.testAudio")}</Text>
+              {playbackTestResult ? (
+                <Text style={settingsStyles.rowHint}>{playbackTestResult}</Text>
+              ) : null}
+            </View>
+            <Button
+              variant="secondary"
+              size="sm"
+              onPress={handlePlayPress}
+              disabled={!voiceAudioEngine || isPlaybackTestRunning}
+            >
+              {isPlaybackTestRunning
+                ? t("settings.diagnostics.playing")
+                : t("settings.diagnostics.playTest")}
+            </Button>
           </View>
-          <Button
-            variant="secondary"
-            size="sm"
-            onPress={handlePlayPress}
-            disabled={!voiceAudioEngine || isPlaybackTestRunning}
-          >
-            {isPlaybackTestRunning
-              ? t("settings.diagnostics.playing")
-              : t("settings.diagnostics.playTest")}
-          </Button>
-        </View>
+        ) : null}
       </View>
     </SettingsSection>
   );

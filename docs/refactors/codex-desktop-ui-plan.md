@@ -323,6 +323,28 @@ The attachment menu, assistant turn presentation, and supporting-panel consolida
 remain in this phase. Preserve all provider-backed choices while changing their
 presentation.
 
+### Voice exclusions
+
+The custom macOS desktop now hides both composer microphone controls and the
+audio playback diagnostic. The shared shortcut platform guard excludes voice,
+dictation, confirm and mute bindings from execution and from shortcut settings,
+help and hints, including saved overrides. Browser and non-macOS desktop bindings
+remain unchanged; no voice service or protocol was removed.
+
+The keyboard platform/override regression was reproduced before the change and
+all 132 focused shortcut tests pass. The renderer regression first caught the
+remaining microphone, then passed with model selection, uploads, send/stop, draft
+retention and the shortcut/diagnostic settings checks. Root typecheck, lint and
+format passed. Logs: `/private/tmp/paseo-voice-shortcuts-tests.log`,
+`/private/tmp/paseo-voice-settings-e2e.log`, `/private/tmp/paseo-voice-typecheck.log`
+and `/private/tmp/paseo-voice-lint.log`.
+
+Native inspection confirmed the empty composer has neither voice control and
+Diagnostics has no playback test. The
+[native shortcut input section](../qa-evidence/codex-desktop/phase3-native-keyboard-input.jpg)
+contains focus, mode and interrupt actions only. This checks the excluded entry
+points, not microphone hardware or voice backend behavior.
+
 ## Resume checkpoint
 
 Continue in this checkout on `codex/desktop-ui`; preserve the user's untracked
