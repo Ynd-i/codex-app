@@ -51,6 +51,7 @@ import {
 import type { AttachmentMetadata, BrowserElementAttachment } from "@/attachments/types";
 import { persistAttachmentFromDataUrl } from "@/attachments/service";
 import { WORKSPACE_SECONDARY_HEADER_HEIGHT } from "@/constants/layout";
+import { getIsElectronMac } from "@/constants/platform";
 import { getOverlayRoot } from "@/lib/overlay-root";
 import {
   getDesktopHost,
@@ -536,7 +537,11 @@ function DeviceSizeMenu({
     <DropdownMenu>
       <Tooltip delayDuration={0} enabledOnDesktop enabledOnMobile={false}>
         <TooltipTrigger asChild>
-          <DropdownMenuTrigger accessibilityLabel={label} style={triggerStyle}>
+          <DropdownMenuTrigger
+            accessibilityRole="button"
+            accessibilityLabel={label}
+            style={triggerStyle}
+          >
             <View style={styles.deviceTrigger}>
               <SelectedIcon size={16} uniProps={deviceMutedIconMapping} />
               <ThemedChevronDown size={12} uniProps={deviceMutedIconMapping} />
@@ -596,6 +601,7 @@ export function BrowserPane({
 }) {
   const { theme } = useUnistyles();
   const { t } = useTranslation();
+  const macToolbar = getIsElectronMac();
   const browser = useBrowserStore((state) => state.browsersById[browserId] ?? null);
   const updateBrowser = useBrowserStore((state) => state.updateBrowser);
   const setBrowserViewport = useBrowserStore((state) => state.setBrowserViewport);
@@ -1328,42 +1334,42 @@ export function BrowserPane({
 
   const baseIconButtonStyle = useCallback(
     ({ hovered, pressed }: { hovered?: boolean; pressed?: boolean }) => [
-      styles.iconButton,
-      (hovered || pressed) && styles.iconButtonHovered,
+      styles.iconButton(macToolbar),
+      (hovered || pressed) && styles.iconButtonHovered(macToolbar),
     ],
-    [],
+    [macToolbar],
   );
   const backIconButtonStyle = useCallback(
     ({ hovered, pressed }: { hovered?: boolean; pressed?: boolean }) => [
-      styles.iconButton,
-      (hovered || pressed) && styles.iconButtonHovered,
+      styles.iconButton(macToolbar),
+      (hovered || pressed) && styles.iconButtonHovered(macToolbar),
       !browser?.canGoBack && styles.iconButtonDisabled,
     ],
-    [browser?.canGoBack],
+    [browser?.canGoBack, macToolbar],
   );
   const forwardIconButtonStyle = useCallback(
     ({ hovered, pressed }: { hovered?: boolean; pressed?: boolean }) => [
-      styles.iconButton,
-      (hovered || pressed) && styles.iconButtonHovered,
+      styles.iconButton(macToolbar),
+      (hovered || pressed) && styles.iconButtonHovered(macToolbar),
       !browser?.canGoForward && styles.iconButtonDisabled,
     ],
-    [browser?.canGoForward],
+    [browser?.canGoForward, macToolbar],
   );
   const annotateIconButtonStyle = useCallback(
     ({ hovered, pressed }: { hovered?: boolean; pressed?: boolean }) => [
-      styles.iconButton,
+      styles.iconButton(macToolbar),
       selectorMode === "annotate" && styles.selectorActiveButton,
-      (hovered || pressed) && styles.iconButtonHovered,
+      (hovered || pressed) && styles.iconButtonHovered(macToolbar),
     ],
-    [selectorMode],
+    [selectorMode, macToolbar],
   );
   const screenshotIconButtonStyle = useCallback(
     ({ hovered, pressed }: { hovered?: boolean; pressed?: boolean }) => [
-      styles.iconButton,
+      styles.iconButton(macToolbar),
       selectorMode === "screenshot" && styles.selectorActiveButton,
-      (hovered || pressed) && styles.iconButtonHovered,
+      (hovered || pressed) && styles.iconButtonHovered(macToolbar),
     ],
-    [selectorMode],
+    [selectorMode, macToolbar],
   );
 
   const selectedDeviceSizeId = useMemo(
@@ -1434,8 +1440,8 @@ export function BrowserPane({
 
   return (
     <View style={styles.container}>
-      <View style={styles.chromeRow}>
-        <View style={styles.chromeLeft}>
+      <View style={styles.chromeRow(macToolbar)}>
+        <View style={styles.chromeLeft(macToolbar)}>
           <ToolbarButton
             label={t("workspace.browser.controls.back")}
             disabled={!browser?.canGoBack}
@@ -1452,6 +1458,7 @@ export function BrowserPane({
           >
             <ArrowRight size={16} color={theme.colors.foregroundMuted} />
           </ToolbarButton>
+          {macToolbar ? <View style={styles.navigationSeparator} /> : null}
           <ToolbarButton
             label={
               browser?.isLoading
@@ -1464,7 +1471,7 @@ export function BrowserPane({
             <RotateCw size={16} color={theme.colors.foregroundMuted} />
           </ToolbarButton>
         </View>
-        <View style={styles.urlBarWrap}>
+        <View style={styles.urlBarWrap(macToolbar)}>
           <TextInput
             accessibilityLabel={t("workspace.browser.controls.browserUrl")}
             autoCapitalize="none"
@@ -1479,7 +1486,7 @@ export function BrowserPane({
             initialValue={draftUrl}
           />
         </View>
-        <View style={styles.chromeRight}>
+        <View style={styles.chromeRight(macToolbar)}>
           <DeviceSizeMenu
             selectedId={selectedDeviceSizeId}
             onSelect={handleSelectDeviceSize}
@@ -1688,56 +1695,65 @@ const styles = StyleSheet.create((theme) => ({
     minHeight: 0,
     backgroundColor: theme.colors.surface0,
   },
-  chromeRow: {
-    height: WORKSPACE_SECONDARY_HEADER_HEIGHT,
+  chromeRow: (macToolbar: boolean) => ({
+    height: macToolbar ? 48 : WORKSPACE_SECONDARY_HEADER_HEIGHT,
     flexDirection: "row",
     alignItems: "center",
-    gap: theme.spacing[2],
+    gap: macToolbar ? 10 : theme.spacing[2],
     paddingHorizontal: theme.spacing[2],
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
     backgroundColor: theme.colors.surface0,
-  },
-  chromeLeft: {
+  }),
+  chromeLeft: (macToolbar: boolean) => ({
     flexDirection: "row",
     alignItems: "center",
-    gap: theme.spacing[1],
+    gap: macToolbar ? 0 : theme.spacing[1],
     flexShrink: 0,
+    borderRadius: macToolbar ? 16 : 0,
+    backgroundColor: macToolbar ? theme.colors.surface2 : "transparent",
+  }),
+  navigationSeparator: {
+    width: 1,
+    height: 16,
+    backgroundColor: theme.colors.borderAccent,
   },
-  chromeRight: {
+  chromeRight: (macToolbar: boolean) => ({
     flexDirection: "row",
     alignItems: "center",
-    gap: theme.spacing[1],
+    gap: macToolbar ? 0 : theme.spacing[1],
     flexShrink: 0,
-  },
-  iconButton: {
-    width: 28,
-    height: 28,
-    borderRadius: theme.borderRadius.md,
+    borderRadius: macToolbar ? 16 : 0,
+    backgroundColor: macToolbar ? theme.colors.surface2 : "transparent",
+  }),
+  iconButton: (macToolbar: boolean) => ({
+    width: macToolbar ? 32 : 28,
+    height: macToolbar ? 32 : 28,
+    borderRadius: macToolbar ? 16 : theme.borderRadius.md,
     alignItems: "center",
     justifyContent: "center",
-  },
+  }),
   selectorActiveButton: {
     backgroundColor: `${String(theme.colors.accent)}20`,
   },
-  iconButtonHovered: {
-    backgroundColor: theme.colors.surface2,
-  },
+  iconButtonHovered: (macToolbar: boolean) => ({
+    backgroundColor: macToolbar ? theme.colors.interactionHighlight : theme.colors.surface2,
+  }),
   iconButtonDisabled: {
     opacity: 0.45,
   },
-  urlBarWrap: {
+  urlBarWrap: (macToolbar: boolean) => ({
     flex: 1,
     minWidth: 0,
-    height: 28,
-    borderRadius: theme.borderRadius.md,
-    paddingHorizontal: theme.spacing[2],
+    height: macToolbar ? 32 : 28,
+    borderRadius: macToolbar ? 16 : theme.borderRadius.md,
+    paddingHorizontal: macToolbar ? theme.spacing[3] : theme.spacing[2],
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: theme.colors.surface1,
+    backgroundColor: macToolbar ? theme.colors.surface2 : theme.colors.surface1,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
+    borderColor: macToolbar ? "transparent" : theme.colors.border,
+  }),
   urlInput: {
     flex: 1,
     minWidth: 0,

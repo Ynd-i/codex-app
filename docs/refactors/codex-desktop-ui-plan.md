@@ -544,6 +544,21 @@ close controls were visible with Explorer open; Explorer was then closed again.
 Integrating panel tabs into the window chrome and each panel's detailed
 presentation still remain; this is not full panel acceptance.
 
+### Browser toolbar — 2026-10-01
+
+The macOS toolbar uses the supplied 2× browser references: a 48px row, 32px
+controls/address field, 16px corners and 10px group gaps. Existing navigation and
+four browser tools remain available. Other desktop platforms keep their previous
+dimensions. The device-size menu now exposes its button role.
+
+The [renderer capture](../qa-evidence/codex-desktop/browser-toolbar-rounded.png)
+was inspected. The isolated case verifies address/controls through 1352/900/700px
+layouts and the URL keyboard shortcut; its profile bridge is simulated, so this
+does not establish actual webview navigation or native acceptance. The reference's
+overflow menu, focused-address treatment and new-tab content remain to be aligned.
+Root format, lint and typecheck pass; the final two panel/browser renderer cases
+pass in `/private/tmp/paseo-final-panels-e2e.log`.
+
 ### Usage data foundation
 
 The existing usage-source contract already supplies provider/account labels, quota
