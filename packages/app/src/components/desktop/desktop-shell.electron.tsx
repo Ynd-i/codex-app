@@ -1,13 +1,29 @@
-import { createContext, useContext, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useMemo,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
-import { ArrowLeft, ArrowRight } from "lucide-react-native";
+import { router, usePathname } from "expo-router";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CalendarClock,
+  History,
+  House,
+  Settings,
+} from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { Text, useWindowDimensions, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { WindowSidebarMenuToggle } from "@/components/headers/menu-header";
 import { HeaderToggleButton } from "@/components/headers/header-toggle-button";
+import { SidebarHelpMenu } from "@/components/sidebar/sidebar-help-menu";
 import { getIsElectronMac } from "@/constants/platform";
-import { useIsCompactFormFactor } from "@/constants/layout";
+import { SETTINGS_DESKTOP_SPLIT_MIN_WIDTH, useIsCompactFormFactor } from "@/constants/layout";
 import {
   WindowChromeRegion,
   WindowChromeSafeArea,
@@ -23,14 +39,124 @@ import { TitlebarDragRegion } from "./titlebar-drag-region";
 import type { Theme } from "@/styles/theme";
 import { DesktopChatToolbar } from "./desktop-chat-toolbar";
 import { useDesktopNavigationHistory } from "./use-desktop-navigation-history";
+import {
+  buildOpenProjectRoute,
+  buildSchedulesRoute,
+  buildSessionsRoute,
+  buildSettingsRoute,
+} from "@/utils/host-routes";
 
 export const usesDesktopShell = getIsElectronMac();
-export const desktopShellInset = usesDesktopShell ? 6 : 0;
+export const desktopShellInset = usesDesktopShell ? 56 : 0;
+
+function canShowNavigationRail(chromeEnabled: boolean, pathname: string, width: number): boolean {
+  return (
+    chromeEnabled ||
+    (pathname.startsWith("/settings") &&
+      width >= SETTINGS_DESKTOP_SPLIT_MIN_WIDTH + desktopShellInset)
+  );
+}
 
 const BackIcon = withUnistyles(ArrowLeft);
 const ForwardIcon = withUnistyles(ArrowRight);
+const HomeIcon = withUnistyles(House);
+const HistoryIcon = withUnistyles(History);
+const SchedulesIcon = withUnistyles(CalendarClock);
+const SettingsIcon = withUnistyles(Settings);
 const iconProps = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
 const devLabel = process.env.EXPO_PUBLIC_PASEO_DEV_BUILD_LABEL?.trim();
+
+function openHome() {
+  router.navigate(buildOpenProjectRoute());
+}
+function openHistory() {
+  router.navigate(buildSessionsRoute());
+}
+function openSchedules() {
+  router.navigate(buildSchedulesRoute());
+}
+function openSettings() {
+  router.navigate(buildSettingsRoute());
+}
+
+function RailButton({
+  label,
+  testID,
+  onPress,
+  active,
+  children,
+}: {
+  label: string;
+  testID: string;
+  onPress: () => void;
+  active: boolean;
+  children: ReactNode;
+}) {
+  const style = useMemo(() => [styles.railButton, active && styles.railActive], [active]);
+  const accessibilityState = useMemo(() => ({ selected: active }), [active]);
+  return (
+    <HeaderToggleButton
+      onPress={onPress}
+      tooltipLabel={label}
+      accessibilityLabel={label}
+      accessibilityRole="button"
+      accessible
+      accessibilityState={accessibilityState}
+      tooltipKeys={[]}
+      tooltipSide="right"
+      style={style}
+      testID={testID}
+    >
+      {children}
+    </HeaderToggleButton>
+  );
+}
+
+function DesktopNavigationRail({ pathname }: { pathname: string }) {
+  const { t } = useTranslation();
+  return (
+    <View style={styles.rail} testID="desktop-shell-rail">
+      <RailButton
+        onPress={openHome}
+        label="Paseo"
+        active={
+          !pathname.includes("/settings") &&
+          !pathname.includes("/sessions") &&
+          !pathname.includes("/schedules")
+        }
+        testID="desktop-shell-home"
+      >
+        <HomeIcon size={20} uniProps={iconProps} />
+      </RailButton>
+      <RailButton
+        onPress={openHistory}
+        label={t("sidebar.sections.sessions")}
+        active={pathname.includes("/sessions")}
+        testID="desktop-shell-history"
+      >
+        <HistoryIcon size={20} uniProps={iconProps} />
+      </RailButton>
+      <RailButton
+        onPress={openSchedules}
+        label={t("sidebar.sections.schedules")}
+        active={pathname.includes("/schedules")}
+        testID="desktop-shell-schedules"
+      >
+        <SchedulesIcon size={20} uniProps={iconProps} />
+      </RailButton>
+      <View style={styles.railSpacer} />
+      <SidebarHelpMenu />
+      <RailButton
+        onPress={openSettings}
+        label={t("sidebar.actions.settings")}
+        active={pathname.includes("/settings")}
+        testID="desktop-shell-settings"
+      >
+        <SettingsIcon size={20} uniProps={iconProps} />
+      </RailButton>
+    </View>
+  );
+}
 
 const WorkspaceToolbarHostContext = createContext<HTMLDivElement | null>(null);
 const workspaceToolbarHostStyle: CSSProperties = {
@@ -57,6 +183,7 @@ export function DesktopShell({
 }) {
   const { t } = useTranslation();
   const [toolbarHost, setToolbarHost] = useState<HTMLDivElement | null>(null);
+  const pathname = usePathname();
   const navigation = useDesktopNavigationHistory();
   const selection = useActiveWorkspaceSelection();
   const workspaceTitle = useWorkspaceFields(
@@ -79,11 +206,12 @@ export function DesktopShell({
   });
   const isCompact = useIsCompactFormFactor();
   const { width } = useWindowDimensions();
+  const showRail = !isCompact && canShowNavigationRail(chromeEnabled, pathname, width);
   const controlsWidth =
     Math.max(
       190,
       sidebarOpen && chromeEnabled && !isCompact
-        ? 1 +
+        ? (showRail ? 51 : 1) +
             resolveDesktopSidebarWidth({
               requestedWidth: sidebarWidth,
               viewportWidth: width - desktopShellInset,
@@ -156,6 +284,7 @@ export function DesktopShell({
           ) : null}
         </WindowChromeSafeArea>
         <View style={styles.body}>
+          {showRail ? <DesktopNavigationRail pathname={pathname} /> : null}
           <View style={styles.content} testID="desktop-shell-content">
             <WindowChromeRegion corners="none">{children}</WindowChromeRegion>
           </View>
@@ -192,6 +321,10 @@ const styles = StyleSheet.create((theme) => ({
     paddingLeft: 12,
   },
   body: { flex: 1, flexDirection: "row", paddingRight: 4, paddingBottom: 4 },
+  rail: { width: 50, alignItems: "center", paddingTop: 8, paddingBottom: 8, gap: 8 },
+  railButton: { width: 36, height: 36, borderRadius: 10 },
+  railActive: { backgroundColor: theme.colors.surface3 },
+  railSpacer: { flex: 1 },
   content: {
     flex: 1,
     minWidth: 0,

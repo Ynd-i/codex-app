@@ -7,13 +7,14 @@ using the original dark-theme screenshots and the user's `context-images/`. Keep
 providers and remote connections. Model names, modes, permissions, and reasoning
 controls come from the selected host and provider.
 
-**Sidebar scope change — 2026-09-30:** the user does not want the new sidebar
-design. Keep Paseo's default workspace sidebar for now, including its navigation
-rows, project/workspace groups, footer, resizing and workspace pin shortcut.
-The custom chat-row sidebar and navigation rail are outside the current migration
-scope. Restore the default 320px width for new preferences and retain saved
-widths. Earlier sidebar screenshots and phase-2 results below are historical;
-they do not override this decision. Other desktop migration work continues.
+**Sidebar and navigation rail scope — 2026-10-01:** keep Paseo's default workspace
+sidebar, including its navigation rows, project/workspace groups, footer, resizing
+and workspace pin shortcut. The user clarified that the separate thin icon rail
+should be restored. Keep that rail independent of the workspace sidebar toggle;
+hide it in compact layouts and constrained settings windows. The custom chat-row
+sidebar remains outside the current scope. Keep the default 320px width for new
+preferences and retain saved widths. Earlier sidebar screenshots and phase-2
+results below are historical; this clarification governs the current layout.
 
 The upstream baseline is `getpaseo/paseo` commit `53ee9cd` on `main`. Work lives on
 `codex/desktop-ui`. This document owns the steps, decisions, progress, and evidence.
@@ -586,8 +587,8 @@ must resume after manual unlock. Reuse the live development
 instance after checking its status. The pinned Playwright runtime supports
 isolated renderer tests.
 
-Preserve the default sidebar per the latest scope change. Do not resume the
-custom sidebar or navigation rail without a new request.
+Keep the independent navigation rail and the default workspace sidebar per the
+October 1 clarification. The custom chat-row sidebar remains deferred.
 
 Continue from the consolidated workspace toolbar. Its focused checks are in
 `/private/tmp/paseo-titlebar-final-e2e.log`, `/private/tmp/paseo-titlebar-typecheck.log`

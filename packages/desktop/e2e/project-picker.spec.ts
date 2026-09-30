@@ -41,7 +41,7 @@ test("desktop new chat retains project selection and creates a chat", async ({
       `sidebar-workspace-row-${getServerId()}:${workspace.workspaceId}`,
     );
     await expect(workspaceRow).toBeVisible();
-    await expect(page.getByTestId("desktop-shell-rail")).toHaveCount(0);
+    await expect(page.getByTestId("desktop-shell-rail")).toBeVisible();
     await page.getByTestId("sidebar-global-new-workspace").click();
     await expect(page.getByTestId("desktop-new-chat-hero")).toContainText(
       workspace.projectDisplayName,
@@ -60,6 +60,7 @@ test("desktop new chat retains project selection and creates a chat", async ({
     console.info("New chat visual evidence", testInfo.outputPath("new-chat.png"));
     await composerLocator(page).fill("Keep this draft when resizing.");
     await page.setViewportSize({ width: 700, height: 782 });
+    await expect(page.getByTestId("desktop-shell-rail")).toHaveCount(0);
     await expect(composerLocator(page)).toHaveValue("Keep this draft when resizing.");
     await page.setViewportSize({ width: 1352, height: 782 });
     await expect(page.getByTestId("desktop-new-chat-hero")).toBeVisible();
@@ -90,6 +91,16 @@ test("desktop new chat retains project selection and creates a chat", async ({
     await page.mouse.move(850, 450);
     await page.screenshot({ path: testInfo.outputPath("first-message.png") });
     console.info("Transcript visual evidence", testInfo.outputPath("first-message.png"));
+    await page.getByTestId("desktop-shell-history").click();
+    await expect(page).toHaveURL(/\/sessions(?:[/?]|$)/);
+    await page.getByTestId("desktop-shell-schedules").click();
+    await expect(page).toHaveURL(/\/schedules(?:[/?]|$)/);
+    await page.getByTestId("desktop-shell-settings").click();
+    await expect(page).toHaveURL(/\/settings(?:[/?]|$)/);
+    await expect(page.getByTestId("desktop-shell-rail")).toBeVisible();
+    await page.getByTestId("desktop-shell-home").click();
+    await expect(page).toHaveURL(/\/open-project(?:[/?]|$)/);
+    await expect(workspaceRow).toBeVisible();
   } finally {
     await workspace.cleanup();
   }
