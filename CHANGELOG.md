@@ -15,6 +15,7 @@ distribution and full migration acceptance remain pending; see the
 ### Changed
 
 - Aligned the macOS chat column and composer frame with the reference: a narrower default column, larger corners, tighter padding, and a neutral stop control. Saved content-width preferences still take priority.
+- Moved the macOS composer mode beside attachments and aligned model/reasoning controls to the right, retaining provider-backed selections.
 
 ### Fixed
 

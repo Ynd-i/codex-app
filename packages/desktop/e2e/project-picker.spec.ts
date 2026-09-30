@@ -32,6 +32,29 @@ test("desktop composer keeps send and stop reachable with attachments", async ({
     await page.emulateMedia({ colorScheme: "dark" });
     await openAgentRoute(page, fixture);
     await expect(page.getByTestId("desktop-chat-title")).toHaveText("Composer layout check");
+    const mode = page.getByTestId("mode-control").filter({ visible: true });
+    const model = page.getByTestId("combined-model-selector").filter({ visible: true });
+    await expect(mode).toBeVisible();
+    await expect(model).toContainText("Five minute stream");
+    const [modeBox, modelBox] = await Promise.all([mode.boundingBox(), model.boundingBox()]);
+    if (!modeBox || !modelBox) throw new Error("Composer controls did not render");
+    expect(modeBox.x + modeBox.width).toBeLessThanOrEqual(modelBox.x);
+    await model.click();
+    await page.getByRole("textbox", { name: /search model/i }).fill("Ten second stream");
+    await page.getByText("Ten second stream", { exact: true }).click();
+    await expect
+      .poll(
+        async () => (await fixture.client.fetchAgent({ agentId: fixture.agentId }))?.agent.model,
+      )
+      .toBe("ten-second-stream");
+    await page.getByTestId("agent-thinking-selector").click();
+    await page.getByText("High", { exact: true }).click();
+    await expect
+      .poll(
+        async () =>
+          (await fixture.client.fetchAgent({ agentId: fixture.agentId }))?.agent.thinkingOptionId,
+      )
+      .toBe("high");
     await composerLocator(page).fill("Check the attached layout fixture.");
     await dropFileOnComposer(page, {
       name: "layout-fixture.json",

@@ -205,10 +205,16 @@ the viewport, sends the message and stops the run. Screenshots at 1352 × 782 an
 900 × 680 were inspected; the test prints their artifact paths. Root typecheck,
 lint and the two theme/settings regression files passed (81 unit tests).
 
-This is acceptance of the frame and those simulated-provider interactions.
-Model/effort grouping, mode placement, the attachment menu, new-chat empty state,
-transcript spacing, and native comparison remain in this phase. Preserve all
-provider-backed choices while changing their presentation.
+The mode control now sits beside attachments, with model and reasoning controls
+aligned to the right. The renderer regression first failed against the old
+ordering, then passed after the change; it also selects Ten second stream and
+High through the UI and reads those exact values back from the isolated daemon.
+Wide and narrow screenshots were inspected after the selection changes.
+
+This is acceptance of the frame, control placement and those simulated-provider
+interactions. The combined model/effort popover, attachment menu, new-chat empty
+state, transcript spacing, and native comparison remain in this phase. Preserve
+all provider-backed choices while changing their presentation.
 
 ## Resume checkpoint
 
@@ -217,16 +223,16 @@ Continue in this checkout on `codex/desktop-ui`; preserve the user's untracked
 Playwright Chromium headless runtime now supports isolated renderer tests.
 
 Latest checks: root typecheck and lint pass; the composer browser case passed in
-4.0 seconds (14.2 seconds including setup), and theme/settings tests pass (81).
+4.4 seconds (14.9 seconds including setup), and theme/settings tests pass (81).
 The extended chat-action browser case passed in 56.2 seconds. Earlier navigation
 model, agent attention (16), locale
 parity and chat projection/metadata checks passed. The browser regression caught
 both an initial-open history entry and a paused offline mutation; each was fixed
 before a passing rerun. No live-provider or packaged acceptance is implied.
 
-Relevant logs for the next continuation: `/private/tmp/paseo-composer-frame-e2e.log`,
-`/private/tmp/paseo-composer-settings-tests.log`, `/private/tmp/paseo-composer-typecheck.log`,
-`/private/tmp/paseo-composer-lint.log`, `/private/tmp/paseo-chat-toolbar-recovery.log`, and
+Relevant logs for the next continuation: `/private/tmp/paseo-composer-controls-e2e.log`,
+`/private/tmp/paseo-composer-settings-tests.log`, `/private/tmp/paseo-composer-controls-typecheck.log`,
+`/private/tmp/paseo-composer-controls-lint.log`, `/private/tmp/paseo-chat-toolbar-recovery.log`, and
 `/private/tmp/paseo-upstream-runtime-tests.log`. The development instance uses 8083
 and 6768; reuse it if still running. The ignored `.dev/qa-chat-state.mts` queries
 only the two locally created mock fixtures; A was archived and B remains available.

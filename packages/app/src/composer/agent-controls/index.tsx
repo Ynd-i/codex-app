@@ -69,7 +69,7 @@ import {
   type AgentControlCommandCenterSource,
 } from "@/command-center/agent-control-registration";
 import { useComposerKeyboardScope } from "@/composer/keyboard-scope";
-import { isNative } from "@/constants/platform";
+import { getIsElectronMac, isNative } from "@/constants/platform";
 import {
   resolveComposerControlDensity,
   resolveComposerControlPresentation,
@@ -951,8 +951,13 @@ function DesktopAgentControlsContent(props: DesktopAgentControlsContentProps) {
     [t],
   );
   const handleOpenFeatures = useCallback(() => handleOpenSheet("features"), [handleOpenSheet]);
+  const desktopChat = getIsElectronMac();
+  const modeButton = modeControl ? (
+    <AgentModeControl {...modeControl} onClose={onDropdownClose} />
+  ) : null;
   return (
     <>
+      {desktopChat ? modeButton : null}
       {providerOptions && providerOptions.length > 0 ? (
         <>
           <ComboboxTrigger
@@ -1053,7 +1058,7 @@ function DesktopAgentControlsContent(props: DesktopAgentControlsContentProps) {
         </>
       ) : null}
 
-      {modeControl ? <AgentModeControl {...modeControl} onClose={onDropdownClose} /> : null}
+      {desktopChat ? null : modeButton}
 
       {presentation.aggregateFeatures && features?.length ? (
         <>
@@ -1953,6 +1958,7 @@ const styles = StyleSheet.create((theme) => ({
   modelControl: {
     minWidth: 0,
     flexShrink: 1,
+    marginLeft: getIsElectronMac() ? "auto" : 0,
   },
   toolbarCaret: {
     width: 14,
