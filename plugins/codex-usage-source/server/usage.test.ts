@@ -95,7 +95,33 @@ test("coerces credit balance and marks a 96 percent window dangerous", async () 
       expect.objectContaining({ id: "weekly", tone: "danger" }),
     ]),
   );
-  expect(report.balances).toEqual([expect.objectContaining({ remaining: 0, tone: "danger" })]);
+  expect(report.balances).toEqual([
+    expect.objectContaining({ remaining: 0, unit: "credits", tone: "danger" }),
+  ]);
+});
+
+test("labels quotas by their reported duration while preserving stable window IDs", async () => {
+  const report = await fetchUsage(
+    { accessToken: "fixture-supplied" },
+    async () =>
+      new Response(
+        JSON.stringify({
+          rate_limit: {
+            primary_window: { used_percent: 75, limit_window_seconds: 604800 },
+            secondary_window: { used_percent: 20, limit_window_seconds: 18000 },
+          },
+          code_review_rate_limit: {
+            primary_window: { used_percent: 10, limit_window_seconds: 86400 },
+          },
+        }),
+        { status: 200 },
+      ),
+  );
+  expect(report.windows).toEqual([
+    expect.objectContaining({ id: "session", label: "Weekly", usedPct: 75, headline: true }),
+    expect.objectContaining({ id: "weekly", label: "5h", usedPct: 20 }),
+    expect.objectContaining({ id: "code_review", label: "Code review (Daily)", usedPct: 10 }),
+  ]);
 });
 
 test("HTML usage body is unavailable", async () => {
@@ -104,6 +130,42 @@ test("HTML usage body is unavailable", async () => {
     async () => new Response("<html>Login</html>", { status: 200 }),
   );
   expect(report.status).toBe("unavailable");
+});
+
+test("preserves missing usage and reset data without inventing zero usage or credits", async () => {
+  const report = await fetchUsage(
+    { accessToken: "fixture-supplied" },
+    async () =>
+      new Response(
+        JSON.stringify({
+          rate_limit: {
+            primary_window: { used_percent: null, reset_at: null },
+            secondary_window: {},
+          },
+          code_review_rate_limit: { primary_window: { used_percent: 0 } },
+          credits: { balance: null },
+        }),
+        { status: 200 },
+      ),
+  );
+  expect(report.windows).toEqual([
+    expect.objectContaining({
+      id: "session",
+      usedPct: null,
+      remainingPct: null,
+      resetsAt: null,
+      tone: "default",
+    }),
+    expect.objectContaining({
+      id: "weekly",
+      usedPct: null,
+      remainingPct: null,
+      resetsAt: null,
+      tone: "default",
+    }),
+    expect.objectContaining({ id: "code_review", usedPct: 0, remainingPct: 100, tone: "ok" }),
+  ]);
+  expect(report.balances).toEqual([]);
 });
 
 test("401 leaves auth.json byte for byte unchanged and makes no refresh request", async () => {

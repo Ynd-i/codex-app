@@ -10,6 +10,48 @@ function twoHoursAgo(): string {
 }
 
 test.describe("usage screen", () => {
+  test("distinguishes an unknown allowance from zero usage in accessible meters", async ({
+    page,
+  }) => {
+    const serverId = getServerId();
+    await installUsageReportsFixture(page, {
+      lists: [
+        [
+          {
+            id: "allowance:test",
+            account: {},
+            fetchedAt: new Date().toISOString(),
+            sourceId: "allowance",
+            sourceLabel: "Allowance test",
+            report: {
+              status: "available",
+              windows: [
+                { id: "zero", label: "Unused allowance", usedPct: 0 },
+                { id: "remaining", label: "Remaining allowance", remainingPct: 40 },
+                { id: "unknown", label: "Unreported allowance" },
+              ],
+            },
+          },
+        ],
+      ],
+    });
+    await gotoAppShell(page);
+    await page.locator('[data-testid="sidebar-usage"]:visible').first().click();
+    const group = page.getByTestId(`usage-host-${serverId}`);
+    await expect(group.getByText("Unreported allowance", { exact: true })).toBeVisible();
+    await expect(group.getByRole("progressbar")).toHaveCount(2);
+    await expect(
+      group.getByRole("progressbar", { name: "Unused allowance", exact: true }),
+    ).toHaveAttribute("aria-valuenow", "0");
+    await expect(
+      group.getByRole("progressbar", { name: "Remaining allowance", exact: true }),
+    ).toHaveAttribute("aria-valuenow", "60");
+    await expect(
+      group.getByRole("progressbar", { name: "Unreported allowance", exact: true }),
+    ).toHaveCount(0);
+    await expect(group.getByText("—", { exact: true })).toBeVisible();
+  });
+
   test("opens from the sidebar and groups reports under their host", async ({ page }) => {
     test.setTimeout(120_000);
     const serverId = getServerId();

@@ -512,6 +512,41 @@ Native tab inspection awaits manual unlock. Integrating panel tabs into the wind
 chrome and each panel's detailed presentation still remain; this is not full panel
 acceptance.
 
+### Usage data foundation
+
+The existing usage-source contract already supplies provider/account labels, quota
+windows, reset timestamps, balances and details. Keep presentation on this contract.
+It exposes no history or manual-reset operation; those controls need a supported
+source capability before they can be shown.
+
+Unknown quota percentages now retain their unavailable marker without an empty
+meter. Real zero usage remains a zero-valued meter. Known meters expose min/max/current
+values in browser ARIA and native accessibility props. The two targeted browser
+checks cover unknown/zero/remaining-only readings and per-report refresh. Report
+values are simulated at the usage RPC boundary in these checks.
+
+A read-only development-host query found an available Codex source and an unavailable
+Claude source. A separate read through the Codex adapter confirmed a primary window
+of 604800 seconds. The adapter had labeled every primary window Session and mapped
+absent/null percentages to zero. It now uses reported durations, keeps unknown
+percentages/reset times/balances null, and preserves its existing window IDs.
+Credit balances use the credit unit described in
+[OpenAI's usage-credit guidance](https://help.openai.com/en/articles/12642688).
+The same read-only source probe now returns Weekly and credits; credentials and
+account identifiers were omitted from its evidence.
+
+All 10 Codex usage-adapter tests pass. No credential refresh, purchase, manual reset
+or provider agent turn was performed. This direct-source verification does not imply
+that the already-running daemon or the previously built custom bundle contains the
+latest adapter; rebuild them during the next runtime acceptance slice.
+The desktop usage layout and localization remain to be adapted from the references.
+
+Logs: `/private/tmp/paseo-usage-meter-final-e2e.log`,
+`/private/tmp/paseo-codex-usage-values-green.log`,
+`/private/tmp/paseo-live-usage-read.log`,
+`/private/tmp/paseo-codex-usage-final-probe.log`,
+`/private/tmp/paseo-usage-meter-typecheck.log` and `/private/tmp/paseo-usage-meter-lint.log`.
+
 ## Phase 5 progress — 2026-09-30
 
 The local custom-package profile and update guard are implemented. A renamed

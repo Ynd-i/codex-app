@@ -31,6 +31,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Fixed
 
+- Kept missing quota readings and credit balances unavailable instead of treating them as zero. Known usage meters now expose their values to assistive technology.
+- Corrected Codex quota labels using the API's reported window duration and retained credit balances in credits, including accounts whose primary limit spans a week.
 - Localized the file-upload label in Chinese, Spanish, French and Arabic.
 - Separated tool expansion from the file-open button, removing nested buttons and making file navigation reachable by keyboard without changing expansion state. Expandable tool rows now expose their expanded state on web.
 - Fixed chat metadata changes remaining paused indefinitely while offline; connection errors and timeouts now return control to the user without discarding a rename draft.

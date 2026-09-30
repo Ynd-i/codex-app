@@ -24,6 +24,7 @@ export function UsageWindowBar({ window }: { window: UsageWindow }) {
   const tone = window.tone ?? deriveTone(usedPct);
 
   const fillWidth = clampPct(usedPct ?? 0);
+  const accessibilityValue = useMemo(() => ({ min: 0, max: 100, now: fillWidth }), [fillWidth]);
   const fillStyle = useMemo<StyleProp<ViewStyle>>(
     () => [styles.fill, fillToneStyle(tone), { width: `${fillWidth}%` }],
     [fillWidth, tone],
@@ -47,9 +48,19 @@ export function UsageWindowBar({ window }: { window: UsageWindow }) {
           ) : null}
         </Text>
       </View>
-      <View style={styles.track}>
-        <View style={fillStyle} />
-      </View>
+      {usedPct != null ? (
+        <View
+          style={styles.track}
+          accessibilityRole="progressbar"
+          accessibilityLabel={window.label}
+          accessibilityValue={accessibilityValue}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={fillWidth}
+        >
+          <View style={fillStyle} />
+        </View>
+      ) : null}
     </View>
   );
 }
