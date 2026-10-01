@@ -860,6 +860,7 @@ export function ToolCallDetailsContent({
 
 const styles = StyleSheet.create((theme) => {
   const insets = getCodeInsets(theme);
+  const codeLineHeight = Math.round(theme.fontSize.code * 1.5);
 
   return {
     paddedContainer: {
@@ -988,7 +989,7 @@ const styles = StyleSheet.create((theme) => {
       fontFamily: theme.fontFamily.mono,
       fontSize: theme.fontSize.code,
       color: theme.colors.foreground,
-      lineHeight: 18,
+      lineHeight: codeLineHeight,
       ...(isWeb
         ? {
             whiteSpace: "pre",
@@ -1003,7 +1004,7 @@ const styles = StyleSheet.create((theme) => {
       fontFamily: theme.fontFamily.mono,
       fontSize: theme.fontSize.code,
       color: theme.colors.foregroundMuted,
-      lineHeight: 18,
+      lineHeight: codeLineHeight,
       marginBottom: theme.spacing[2],
     },
     subAgentActions: {
@@ -1019,13 +1020,13 @@ const styles = StyleSheet.create((theme) => {
       fontFamily: theme.fontFamily.mono,
       fontSize: theme.fontSize.code,
       color: theme.colors.foregroundMuted,
-      lineHeight: 18,
+      lineHeight: codeLineHeight,
     },
     subAgentActionSummary: {
       fontFamily: theme.fontFamily.mono,
       fontSize: theme.fontSize.code,
       color: theme.colors.foreground,
-      lineHeight: 18,
+      lineHeight: codeLineHeight,
     },
     jsonScroll: {
       borderWidth: theme.borderWidth[1],

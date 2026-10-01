@@ -100,6 +100,56 @@ export async function runAgentDeepLinksRegression({
   await expect(composer).toHaveValue(draft);
   expect((await appState()).windows).toEqual(initial.windows);
   await page.screenshot({ path: path.join(artifactDir, "agent-link-preserved-draft.png") });
+
+  await page.keyboard.press("Meta+,");
+  await page
+    .getByTestId("settings-sidebar")
+    .getByRole("button", { name: "Appearance", exact: true })
+    .click();
+  const modes = page.getByTestId("appearance-theme-modes");
+  await expect(modes).toBeVisible();
+  await modes.getByRole("button", { name: "Dark", exact: true }).click();
+  await expect(modes.getByRole("button", { name: "Dark", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.getByLabel("Theme: Dark", { exact: true })).toBeVisible();
+  await page.screenshot({ path: path.join(artifactDir, "packaged-appearance-modes.png") });
+  // Exercise overflow through a real saved appearance preference, without rewriting the timeline.
+  const codeSize = page.getByRole("textbox", { name: "Code font size", exact: true });
+  await codeSize.fill("22");
+  await codeSize.press("Tab");
+  await page.getByTestId("settings-back-to-workspace").click();
+  await expectChat("A");
+  await expect(composer).toHaveValue(draft);
+  await page.getByTestId("workspace-explorer-toggle").click();
+  await expect(page.getByTestId("assistant-message").last()).toContainText(
+    "(end of synthetic stream)",
+    { timeout: 30_000 },
+  );
+  await page.getByTestId("desktop-turn-activity").first().click();
+  const shell = page
+    .getByTestId("tool-call-badge")
+    .filter({ hasText: "node scripts/simulate-stream-burst.mjs" })
+    .first();
+  await shell.scrollIntoViewIfNeeded();
+  await shell.getByRole("button").first().click();
+  const prompt = shell
+    .getByTestId("shell-output-horizontal-scroll")
+    .getByText("$", { exact: true });
+  await expect(prompt).toHaveCSS("font-size", "22px");
+  await expect(prompt).toHaveCSS("line-height", "33px");
+  const card = shell.getByTestId("tool-call-detail-surface");
+  await expect(card).toHaveCSS("mask-image", /linear-gradient.*25px/);
+  await page.screenshot({ path: path.join(artifactDir, "packaged-shell-overflow.png") });
+  await shell.getByTestId("shell-output-scroll").evaluate((node) => {
+    node.scrollTop = node.scrollHeight;
+    node.dispatchEvent(new Event("scroll"));
+  });
+  await expect(card).toHaveCSS("mask-image", "none");
+  await expect(shell).toContainText("[burst] drag-end isDragging=false");
+  await expect(composer).toHaveValue(draft);
+  await page.screenshot({ path: path.join(artifactDir, "packaged-shell-final-line.png") });
   await page.evaluate(() => window.__stopAgentLinkEvents());
   return {
     serverId,
@@ -113,6 +163,8 @@ export async function runAgentDeepLinksRegression({
     draftPreserved: true,
     packagedChatSearch: true,
     packagedFilesDock: true,
+    packagedAppearanceModes: true,
+    packagedShellOverflow: true,
     invalidUrlRejected: true,
     osProtocolDispatch: "not tested",
   };
