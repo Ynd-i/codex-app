@@ -126,9 +126,42 @@ test("labels quotas by their reported duration while preserving stable window ID
       ),
   );
   expect(report.windows).toEqual([
-    expect.objectContaining({ id: "session", label: "Weekly", usedPct: 75, remainingPct: 25 }),
-    expect.objectContaining({ id: "weekly", label: "5h", usedPct: 20 }),
-    expect.objectContaining({ id: "code_review", label: "Code review (Daily)", usedPct: 10 }),
+    expect.objectContaining({
+      id: "session",
+      label: "Weekly",
+      shortLabel: "wk",
+      summary: true,
+      usedPct: 75,
+      remainingPct: 25,
+    }),
+    expect.objectContaining({ id: "weekly", label: "5h", shortLabel: "5h", summary: true }),
+    expect.objectContaining({
+      id: "code_review",
+      label: "Code review (Daily)",
+      shortLabel: "day",
+    }),
+  ]);
+});
+
+test("summarizes the session and weekly windows by default, not code review", async () => {
+  const report = await fetchUsage(
+    {},
+    async () =>
+      new Response(
+        JSON.stringify({
+          rate_limit: {
+            primary_window: { used_percent: 12 },
+            secondary_window: { used_percent: 40 },
+          },
+          code_review_rate_limit: { primary_window: { used_percent: 5 } },
+        }),
+        { status: 200 },
+      ),
+  );
+  expect(report.windows.map((window) => [window.id, window.summary ?? false])).toEqual([
+    ["session", true],
+    ["weekly", true],
+    ["code_review", false],
   ]);
 });
 

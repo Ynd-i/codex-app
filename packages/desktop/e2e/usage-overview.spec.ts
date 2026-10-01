@@ -120,7 +120,8 @@ test("desktop usage keeps provider data through refresh failures and language ch
   await expect(alpha.getByRole("progressbar")).toHaveCount(1);
   // The upstream preference defaults to used; explicitly choose the Mac remaining view.
   await expect(alpha.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "31");
-  await screen.getByTestId("usage-display-remaining").click();
+  await screen.getByTestId("usage-options-menu").click();
+  await page.getByTestId("usage-display-remaining").filter({ visible: true }).click();
   await expect(alpha.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "69");
   await alpha.getByTestId("usage-refresh").click();
   await expect(alpha.getByTestId("usage-refresh-error")).toBeVisible();
@@ -135,8 +136,12 @@ test("desktop usage keeps provider data through refresh failures and language ch
   await clickSettingsBackToWorkspace(page);
   await page.getByTestId("sidebar-usage").filter({ visible: true }).first().click();
   await expect(screen.getByTestId("page-title")).toHaveText("使用情况");
-  await expect(screen.getByTestId("usage-display-used")).toHaveText("已用");
-  await expect(screen.getByTestId("usage-display-remaining")).toHaveText("剩余");
+  await screen.getByTestId("usage-options-menu").click();
+  await expect(page.getByTestId("usage-display-used").filter({ visible: true })).toHaveText("已用");
+  await expect(page.getByTestId("usage-display-remaining").filter({ visible: true })).toHaveText(
+    "剩余",
+  );
+  await page.keyboard.press("Escape");
   await expect(alpha.getByText("剩余 48%", { exact: true })).toBeVisible();
   await expect(alpha.getByText("剩余 1,250", { exact: true })).toBeVisible();
   await expect(
@@ -151,6 +156,7 @@ test("desktop usage keeps provider data through refresh failures and language ch
   await expect(
     alpha.getByRole("progressbar", { name: "Weekly allowance", exact: true }),
   ).toHaveAttribute("aria-valuenow", "48");
+  await page.getByTestId("usage-options-menu").filter({ visible: true }).click();
   await page.getByTestId("usage-display-used").filter({ visible: true }).click();
   await expect(alpha.getByText(/^52% · /)).toBeVisible();
   await expect(

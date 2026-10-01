@@ -3,6 +3,9 @@ import { pluginSettings } from "./plugin-settings";
 
 export const ptBR: TranslationResources = {
   usage: {
+    options: "Opções de uso",
+    displayAs: "Mostrar",
+    showInSidebar: "Mostrar na barra lateral",
     hostUnavailableNamed: "Conecte-se a {{host}} para ver o uso",
     hostUpgradeRequiredNamed: "Atualize {{host}} para ver o uso",
     pin: "Fixar",
@@ -72,6 +75,7 @@ export const ptBR: TranslationResources = {
     total: "{{total}} correspondências",
   },
   common: {
+    bottomSheetBackdrop: "Fundo do painel inferior",
     back: "Voltar",
     loading: "Carregando...",
     actions: {

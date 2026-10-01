@@ -32,13 +32,13 @@ import {
   setSidebarNavItemVisible,
 } from "../support/helpers/sidebar-nav-settings";
 
-test("fixed footer line keeps the labeled Add project button and four icons", async ({ page }) => {
+test("fixed footer line keeps its five icons, Help and Settings at the end", async ({ page }) => {
   test.setTimeout(120_000);
   await installUsageReportsFixture(page, { lists: [() => claudeAndCodexReports()] });
   await seedSidebarFooterPreferences(page, [{ key: "add-project", visible: false }]);
   await page.setViewportSize({ width: 1440, height: 900 });
   await gotoAppShell(page);
-  await expectPinnedUsage(page, ["31%", "7%"]);
+  await expectPinnedUsage(page, ["31% 5h", "54% wk", "7% 5h", "12% wk"]);
   await expectFooterIconRow(page);
   await expectFooterSeparator(page, true);
   await footerScreenshot(page, "footer-desktop-with-rows");
@@ -134,10 +134,10 @@ test.describe("Sidebar items in Appearance settings", () => {
       await openSidebarNavSettings(page);
       await setSidebarNavItemVisible(page, "history", false);
       await expectStoredSidebarNav(page, [
-        { key: "new-workspace", visible: true },
-        { key: "schedules", visible: true },
+        { key: "new-workspace" },
+        { key: "schedules" },
         { key: "history", visible: false },
-        { key: "search", visible: true },
+        { key: "search" },
       ]);
 
       await leaveSettings(page);
@@ -183,6 +183,34 @@ test.describe("Sidebar footer rows in Appearance settings", () => {
 
   test.afterEach(async () => {
     await cleanup();
+  });
+
+  test("compact footer edits preserve responsive Usage defaults across reload", async ({
+    page,
+  }) => {
+    await installUsageReportsFixture(page, { lists: [() => claudeAndCodexReports()] });
+    await seedSidebarFooterPreferences(page, []);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await gotoAppShell(page);
+    await openSidebarNavSettings(page);
+    const usage = page
+      .getByTestId("sidebar-nav-section-footer")
+      .getByTestId("sidebar-nav-toggle-usage");
+    await expect(usage).toHaveAttribute("aria-checked", "true");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(usage).toHaveAttribute("aria-checked", "false");
+    await moveFooterItemUp(page, syncKey);
+    await setFooterItemVisible(page, syncKey, false);
+    await expect(usage).toHaveAttribute("aria-checked", "false");
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await expect(usage).toHaveAttribute("aria-checked", "true");
+    await page.reload();
+    await expect(page).toHaveURL(/\/settings\/sidebar$/);
+    await expect(usage).toHaveAttribute("aria-checked", "true");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(usage).toHaveAttribute("aria-checked", "false");
+    await setFooterItemVisible(page, "usage", true);
+    await expect(usage).toHaveAttribute("aria-checked", "true");
   });
 
   test("owner reorders and hides footer rows; the icon row stays fixed", async ({ page }) => {

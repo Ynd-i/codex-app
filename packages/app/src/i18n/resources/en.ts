@@ -1,5 +1,8 @@
 export const en = {
   usage: {
+    options: "Usage options",
+    displayAs: "Show",
+    showInSidebar: "Show in sidebar",
     hostUnavailableNamed: "Connect to {{host}} to see usage",
     hostUpgradeRequiredNamed: "Update {{host}} to see usage",
     pin: "Pin",
@@ -67,6 +70,7 @@ export const en = {
     total: "{{total}} matches",
   },
   common: {
+    bottomSheetBackdrop: "Bottom sheet backdrop",
     back: "Back",
     loading: "Loading...",
     actions: {

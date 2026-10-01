@@ -70,16 +70,20 @@ function quotaPeriodLabel(seconds: number | null | undefined): string | null {
 }
 
 function usageWindow(
-  id: string,
-  label: string,
+  spec: { id: string; label: string; shortLabel: string; summary?: boolean },
   value: z.infer<typeof windowSchema> | null | undefined,
 ): UsageWindow | null {
   if (!value) return null;
   const usedPct = value.used_percent;
   const period = quotaPeriodLabel(value.limit_window_seconds);
+  let shortPeriod = period;
+  if (period === "Weekly") shortPeriod = "wk";
+  else if (period === "Daily") shortPeriod = "day";
   return windowFromUsedPct({
-    id,
-    label: period && id === "code_review" ? `${label} (${period})` : (period ?? label),
+    ...spec,
+    label:
+      period && spec.id === "code_review" ? `${spec.label} (${period})` : (period ?? spec.label),
+    shortLabel: shortPeriod ?? spec.shortLabel,
     utilizationPct: usedPct,
     resetsAt: value.reset_at != null ? new Date(value.reset_at * 1000).toISOString() : null,
     tone: toneFromUsedPct(usedPct),
@@ -109,9 +113,18 @@ export async function fetchUsage(
   if (text.trim().startsWith("<")) return { status: "unavailable", windows: [] };
   const usage = responseSchema.parse(JSON.parse(text));
   const windows = [
-    usageWindow("session", "Primary limit", usage.rate_limit?.primary_window),
-    usageWindow("weekly", "Secondary limit", usage.rate_limit?.secondary_window),
-    usageWindow("code_review", "Code review", usage.code_review_rate_limit?.primary_window),
+    usageWindow(
+      { id: "session", label: "Session", shortLabel: "5h", summary: true },
+      usage.rate_limit?.primary_window,
+    ),
+    usageWindow(
+      { id: "weekly", label: "Weekly", shortLabel: "wk", summary: true },
+      usage.rate_limit?.secondary_window,
+    ),
+    usageWindow(
+      { id: "code_review", label: "Code review", shortLabel: "review" },
+      usage.code_review_rate_limit?.primary_window,
+    ),
   ].filter((window): window is UsageWindow => window !== null);
   const balance = usage.credits?.balance;
   return {

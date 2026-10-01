@@ -5,7 +5,7 @@ export type SidebarSection = PluginSidebarSection;
 
 /**
  * Each section's built-in items in their default order. The footer's bottom line
- * (Add project and the Hosts, Import session, Help and support, Settings icons) is fixed.
+ * (Add project and the Hosts, Help and support, Settings icons) is fixed.
  */
 export const BUILTIN_SIDEBAR_ITEM_IDS = {
   header: ["new-workspace", "history", "search", "schedules"],
@@ -16,10 +16,10 @@ export type BuiltinSidebarItemId<Section extends SidebarSection = SidebarSection
   (typeof BUILTIN_SIDEBAR_ITEM_IDS)[Section][number];
 export type BuiltinSidebarNavId = BuiltinSidebarItemId<"header">;
 
-/** Persisted shape. Array order is the display order. */
+/** Persisted order and explicit visibility overrides; omitted visibility follows layout defaults. */
 export interface SidebarNavPreference {
   key: string;
-  visible: boolean;
+  visible?: boolean;
 }
 
 export interface BuiltinSidebarNavItem<Section extends SidebarSection = SidebarSection> {
@@ -69,6 +69,16 @@ export function builtinSidebarNavShortcutAction(id: BuiltinSidebarItemId): strin
   return BUILTIN_SHORTCUT_ACTIONS[id];
 }
 
+/**
+ * Builtins that start hidden on compact layouts, until the user turns them on. A phone's footer
+ * has no room to spare for the Usage summary.
+ */
+const HIDDEN_BY_DEFAULT_ON_COMPACT: ReadonlySet<BuiltinSidebarItemId> = new Set(["usage"]);
+
+function builtinVisibleByDefault(id: BuiltinSidebarItemId, compact: boolean): boolean {
+  return !(compact && HIDDEN_BY_DEFAULT_ON_COMPACT.has(id));
+}
+
 export function pluginSidebarNavKey(
   group: Pick<PluginSidebarGroup, "pluginId" | "contributionId">,
 ): string {
@@ -85,6 +95,8 @@ function isBuiltinSidebarItemId<Section extends SidebarSection>(
 
 export function resolveSidebarNavItems<Section extends SidebarSection>(input: {
   section: Section;
+  /** Compact layouts start some builtins hidden; a stored preference always wins. */
+  compact: boolean;
   pluginGroups: readonly PluginSidebarGroup[];
   preferences: readonly SidebarNavPreference[];
 }): SidebarNavItem<Section>[] {
@@ -101,21 +113,31 @@ export function resolveSidebarNavItems<Section extends SidebarSection>(input: {
     const group = groupsByKey.get(preference.key);
     if (group) {
       placed.add(preference.key);
-      items.push({ kind: "plugin", key: preference.key, group, visible: preference.visible });
+      items.push({
+        kind: "plugin",
+        key: preference.key,
+        group,
+        visible: preference.visible ?? true,
+      });
     } else if (isBuiltinSidebarItemId(input.section, preference.key)) {
       placed.add(preference.key);
       items.push({
         kind: "builtin",
         key: preference.key,
         id: preference.key,
-        visible: preference.visible,
+        visible: preference.visible ?? builtinVisibleByDefault(preference.key, input.compact),
       });
     }
   }
 
   for (const id of builtinIds) {
     if (placed.has(id)) continue;
-    items.push({ kind: "builtin", key: id, id, visible: true });
+    items.push({
+      kind: "builtin",
+      key: id,
+      id,
+      visible: builtinVisibleByDefault(id, input.compact),
+    });
   }
   for (const [key, group] of groupsByKey) {
     if (placed.has(key)) continue;
@@ -132,7 +154,11 @@ function toPreferences(
   items: readonly SidebarNavItem[],
   previous: readonly SidebarNavPreference[],
 ): SidebarNavPreference[] {
-  const remaining = items.map(({ key, visible }) => ({ key, visible }));
+  // Saving order must not turn the current layout's defaults into explicit choices.
+  const remaining = items.map(({ key }) => {
+    const preference = previous.find((entry) => entry.key === key);
+    return preference ? { ...preference } : { key };
+  });
   const availableKeys = new Set(remaining.map((preference) => preference.key));
   const preferences: SidebarNavPreference[] = [];
   const seenPrevious = new Set<string>();
@@ -147,7 +173,7 @@ function toPreferences(
       continue;
     }
 
-    preferences.push({ key: preference.key, visible: preference.visible });
+    preferences.push({ ...preference });
   }
 
   preferences.push(...remaining);
@@ -160,10 +186,11 @@ export function setSidebarNavItemVisible(input: {
   visible: boolean;
   previous: readonly SidebarNavPreference[];
 }): SidebarNavPreference[] {
-  const items = input.items.map((item) =>
-    item.key === input.key ? { ...item, visible: input.visible } : item,
-  );
-  return toPreferences(items, input.previous);
+  const preferences = toPreferences(input.items, input.previous);
+  if (!input.items.some((item) => item.key === input.key)) return preferences;
+  const target = preferences.find((preference) => preference.key === input.key);
+  if (target) target.visible = input.visible;
+  return preferences;
 }
 
 export function moveSidebarNavItem(input: {

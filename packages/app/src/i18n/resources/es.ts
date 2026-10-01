@@ -3,6 +3,9 @@ import { pluginSettings } from "./plugin-settings";
 
 export const es: TranslationResources = {
   usage: {
+    options: "Opciones de uso",
+    displayAs: "Mostrar",
+    showInSidebar: "Mostrar en la barra lateral",
     hostUnavailableNamed: "Conéctate a {{host}} para ver el uso",
     hostUpgradeRequiredNamed: "Actualiza {{host}} para ver el uso",
     pin: "Fijar",
@@ -72,6 +75,7 @@ export const es: TranslationResources = {
     total: "{{total}} coincidencias",
   },
   common: {
+    bottomSheetBackdrop: "Fondo del panel inferior",
     back: "Atrás",
     loading: "Cargando...",
     actions: {

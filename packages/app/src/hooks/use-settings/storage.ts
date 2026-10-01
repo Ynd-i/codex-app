@@ -268,8 +268,12 @@ const StoredAppSettingsSchema = z
       .enum(["iconAndText", "icon", "none"])
       .optional()
       .catch(DEFAULT_SIDEBAR_CHECKS_DISPLAY),
-    sidebarNavItems: z.array(z.object({ key: z.string(), visible: z.boolean() })).catch([]),
-    sidebarFooterItems: z.array(z.object({ key: z.string(), visible: z.boolean() })).catch([]),
+    sidebarNavItems: z
+      .array(z.object({ key: z.string(), visible: z.boolean().optional() }))
+      .catch([]),
+    sidebarFooterItems: z
+      .array(z.object({ key: z.string(), visible: z.boolean().optional() }))
+      .catch([]),
     usage: UsagePreferencesSchema,
     autoExpandReasoning: z.boolean().catch(false),
     toolCallDetailLevel: z

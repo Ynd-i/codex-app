@@ -87,7 +87,7 @@ scope; it does not remove runtime code or add new provider integrations.
 | -------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 0. Upstream baseline             | Complete for local startup                            | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                                      |
 | 1. Window and sidebar appearance | Frame and Appearance controls checked                 | Window frame, navigation, Advanced collapse and motion selection have native evidence. Scoped reset passes isolated renderer and packaged checks; full reference matching remains.           |
-| 1a. Upstream integration check   | Refreshed and verified                                | Upstream `4893629` integrated in isolation; 13 conflicts resolved. Provider, usage, navigation and custom desktop checks pass; protected daemon processes stay running.                      |
+| 1a. Upstream integration check   | Refreshed and verified                                | Upstream `e10f6d2` integrated in isolation; provider, usage, sheet, navigation and custom desktop checks pass. Protected daemons are not restarted.                                          |
 | 2. Chat navigation               | Single-chat layout verified locally                   | Main tabs removed; tools route right with saved state retained. Default sidebar, current-chat actions, draft isolation and Back/Forward remain. Custom chat sidebar stays deferred.          |
 | 3. Transcript and composer       | Composer and activity verified; visual polish pending | Column, input/model controls, tool cards and completed-turn activity are checked in native development. Attachment-menu renderer checks pass; native follow-up and transcript polish remain. |
 | 4. Supporting panels             | Right tools and shared titlebar verified locally      | Terminal, browser, file and diff routing pass. Internal file tree and responsive browser controls pass; detailed panel styling and native tool acceptance remain.                            |
@@ -105,12 +105,12 @@ Do not treat a missing screenshot as a reason to stop unrelated implementation.
 Use this plan for status and the root changelog for user-visible changes; do not
 create another task ledger.
 
-| Track                  | Ordered slices                                                                                                                                                                                   | Completion evidence                                                                                                                                                     |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Chat and composer      | Align transcript width, type and spacing; align composer and attachment previews; adapt provider-backed model/effort controls.                                                                   | Targeted action regressions; isolated renderer checks for sibling drafts, navigation, send/stop and attachments; native comparison against the matching supplied state. |
-| Supporting UI          | Inspect the supplied browser and settings states; adapt existing panels one at a time; then tool output, waiting approval and populated diff when their references are available.                | Existing panel navigation and keyboard behavior retained; empty, loading and error states checked; each visual state has its own evidence.                              |
-| Upstream compatibility | Keep presentation in desktop overrides; review each upstream merge; rebuild affected workspace dependencies before checking consumers.                                                           | Small revertible commits, no unintended backend/protocol changes, targeted tests for changed upstream behavior. Last accepted upstream parent: `4893629`.               |
-| Distribution           | Inspect existing identity and updater configuration; prevent a custom package from installing official Paseo bundles; prepare a separate identity/channel; build and validate the local package. | Packaged launch and update behavior accepted separately from development. A release destination, signing identity and any publication are resolved before distribution. |
+| Track                  | Ordered slices                                                                                                                                                                                   | Completion evidence                                                                                                                                                                      |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Chat and composer      | Align transcript width, type and spacing; align composer and attachment previews; adapt provider-backed model/effort controls.                                                                   | Targeted action regressions; isolated renderer checks for sibling drafts, navigation, send/stop and attachments; native comparison against the matching supplied state.                  |
+| Supporting UI          | Inspect the supplied browser and settings states; adapt existing panels one at a time; then tool output, waiting approval and populated diff when their references are available.                | Existing panel navigation and keyboard behavior retained; empty, loading and error states checked; each visual state has its own evidence.                                               |
+| Upstream compatibility | Keep presentation in desktop overrides; review each upstream merge; rebuild affected workspace dependencies before checking consumers.                                                           | Small revertible commits, no unintended backend/protocol changes, targeted tests for changed upstream behavior. Latest source integration: `e10f6d2`; package refresh is recorded below. |
+| Distribution           | Inspect existing identity and updater configuration; prevent a custom package from installing official Paseo bundles; prepare a separate identity/channel; build and validate the local package. | Packaged launch and update behavior accepted separately from development. A release destination, signing identity and any publication are resolved before distribution.                  |
 
 For each slice: inspect its source and reference, make the smallest change, run
 focused checks plus root typecheck/lint/format, review the diff, update the relevant
@@ -2066,6 +2066,63 @@ Logs: `/private/tmp/paseo-question-rich-verified.log`, `/private/tmp/paseo-quest
 `/private/tmp/paseo-question-rich-units-final.log`,
 `/private/tmp/paseo-question-fixture-units.log`, and
 `/private/tmp/paseo-question-rich-{format,lint-final,typecheck-final}.log`.
+
+### Upstream refresh to e10f6d2 — 2026-10-01
+
+Fetched ten new upstream commits after `4893629`, through `e10f6d2`, including the
+0.11.0-beta.1 release metadata. Fourteen conflicts were resolved in the isolated
+checkout. The custom Unreleased changelog remains above the original upstream
+release notes. npm offline install regenerated/validated dependency state from
+source manifests; lockfile contents were not hand-edited.
+
+The merge adopts upstream usage summary/short-label metadata, grouped sidebar
+meters and Options menus. Mac overview still shows both used and remaining values,
+keeps unknown allowance unknown, and retains localized live reset timing. Menu
+sheet sizing/backdrops use the new shared stack, while custom submenu keyboard
+focus remains intact. The import-session entry is available from New chat while
+preserving the Mac welcome/composer layout and draft; non-Mac layouts follow the
+upstream placement. Codex usage normalization retains null handling and actual
+window-duration labels alongside the new metadata. Production provider changes
+otherwise follow upstream: failed Codex images, Claude history diagnostics, grouped
+Pi subagent completion, skill deduplication and plugin main-only resolution.
+
+Validation: server/workspace build, root typecheck/lint/format, 192 focused app
+checks and 448 backend/protocol/plugin checks pass (one skipped). Ten browser
+cases cover stacked sheets, sidebar preferences and usage menus. Mac Copy
+menu, single-chat/right-tool routing and both usage regressions pass; final import
+and usage checks pass together (three cases, 26.2s). The import-entry fixture
+disables real providers so opening the sheet does not scan personal histories.
+Wide Escape and compact Close-button behavior both preserve the draft.
+
+Read-only review caught an upstream responsive-default persistence bug: moving
+or hiding a footer plugin at compact width stored the derived hidden Usage state
+as an explicit desktop preference. Order-only entries now omit visibility;
+only explicit visibility choices are persisted, with prior boolean preferences
+preserved. Missing visibility follows the current layout default after JSON/storage
+round trips. Four model cases and a browser compact/edit/widen/reload/explicit-choice
+case cover it; the five sidebar cases pass together (26.8s). A footer geometry
+check now waits for the viewport transition to settle before asserting icon gaps.
+
+A skill-controller fixture still injected into the removed dedicated Codex root;
+it now writes the active agents/Claude roots and expects no Codex copy. Its safety
+confirmation assertion is retained, and the complete backend group passes after
+that correction. A sandboxed attempt hit a file-watch limit before its assertion;
+the final permitted isolated run is the acceptance evidence. The original compact
+import close check incorrectly used desktop Escape; final coverage uses the
+compact sheet's explicit Close control. No production safety rule was weakened.
+
+[New-chat import entry](../qa-evidence/codex-desktop/upstream-e10-import.png) and
+[localized usage overview](../qa-evidence/codex-desktop/upstream-e10-usage.png)
+record the merged renderer. Logs: `/private/tmp/paseo-upstream-e10-install.log`,
+`/private/tmp/paseo-upstream-e10-build.log`,
+`/private/tmp/paseo-upstream-e10-app-final.log`,
+`/private/tmp/paseo-upstream-e10-backend-final.log`,
+`/private/tmp/paseo-upstream-e10-browser.log`,
+`/private/tmp/paseo-upstream-e10-sidebar-final.log`,
+`/private/tmp/paseo-upstream-e10-final.log`, and
+`/private/tmp/paseo-upstream-e10-{format-final,lint-final,typecheck-final}.log`.
+This does not establish real-provider runs, Windows/device or Nix/distribution
+acceptance. The Custom package is refreshed after the merge commit.
 
 ### Recording references — 2026-09-30
 

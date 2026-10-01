@@ -2,6 +2,15 @@ import { i18n } from "@/i18n/i18next";
 
 // Preserve the sidebar copy contract while resolving the current language at render time.
 export const usageCopy = {
+  get options() {
+    return i18n.t("usage.options");
+  },
+  get displayAs() {
+    return i18n.t("usage.displayAs");
+  },
+  get showInSidebar() {
+    return i18n.t("usage.showInSidebar");
+  },
   get title() {
     return i18n.t("usage.title");
   },

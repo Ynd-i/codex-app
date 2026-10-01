@@ -3,24 +3,12 @@ import { useMemo } from "react";
 import { Pressable, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { clampPct, formatDisplayPct, formatPct, formatUsageDeadline } from "./format";
-import { displayPercent, usageWindowRowLabel, usedPercent } from "./model";
+import { displayPercent, usageWindowRowLabel } from "./model";
 import type { UsageDisplayAs } from "./preferences";
 import { UsageDeadline } from "./deadline";
-import { deriveTone } from "./tone";
+import { windowTone } from "./tone";
+import { UsageMeter } from "./meter";
 import type { UsageTone, UsageWindow } from "./types";
-
-function fillToneStyle(tone: UsageTone) {
-  switch (tone) {
-    case "ok":
-      return styles.fillOk;
-    case "warning":
-      return styles.fillWarning;
-    case "danger":
-      return styles.fillDanger;
-    default:
-      return styles.fillDefault;
-  }
-}
 
 // Pinned rows carry the pinned surface; hovering an unpinned row previews it at half strength,
 // so a hover never reads as the selection. Pinned rows do not react to hover.
@@ -48,16 +36,10 @@ export function UsageWindowBar({
   pinTestID: string;
 }) {
   const { t } = useTranslation();
-  const usedPct = usedPercent(window);
   const shownPct = displayPercent(window, displayAs);
-  const tone = window.tone ?? deriveTone(usedPct);
+  const tone = windowTone(window);
 
   const fillWidth = clampPct(shownPct ?? 0);
-  const fillStyle = useMemo<StyleProp<ViewStyle>>(
-    () => [styles.fill, fillToneStyle(tone), { width: `${fillWidth}%` }],
-    [fillWidth, tone],
-  );
-
   const isAtRisk = window.runsOutAt != null && window.shortfallPct != null;
   const deadline = isAtRisk ? window.runsOutAt : window.resetsAt;
   const deadlineKind = isAtRisk ? "runOut" : "reset";
@@ -105,7 +87,7 @@ export function UsageWindowBar({
           deadline={deadline}
           deadlineKind={deadlineKind}
           isAtRisk={isAtRisk}
-          fillStyle={fillStyle}
+          tone={tone}
           overview={overview}
           complement={complement}
           shownPct={shownPct}
@@ -123,7 +105,7 @@ function WindowRowContent({
   deadline,
   deadlineKind,
   isAtRisk,
-  fillStyle,
+  tone,
   overview,
   complement,
   shownPct,
@@ -135,7 +117,7 @@ function WindowRowContent({
   deadline: string | null | undefined;
   deadlineKind: "reset" | "runOut";
   isAtRisk: boolean;
-  fillStyle: StyleProp<ViewStyle>;
+  tone: UsageTone;
   overview: boolean;
   complement: string | null;
   shownPct: number | null;
@@ -165,18 +147,13 @@ function WindowRowContent({
         </View>
       ) : null}
       {shownPct != null ? (
-        <View
-          style={styles.track(overview)}
-          accessibilityRole="progressbar"
+        <UsageMeter
+          percent={shownPct}
+          tone={tone}
+          style={styles.meter(overview)}
           accessibilityLabel={label}
           accessibilityValue={accessibilityValue}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={accessibilityValue.now}
-          aria-valuetext={value}
-        >
-          <View style={fillStyle} />
-        </View>
+        />
       ) : null}
     </>
   );
@@ -234,26 +211,5 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.statusDanger,
     fontWeight: theme.fontWeight.normal,
   },
-  track: (overview: boolean) => ({
-    height: overview ? 6 : 4,
-    borderRadius: 2,
-    backgroundColor: theme.colors.surface3,
-    overflow: "hidden",
-  }),
-  fill: {
-    height: "100%",
-    borderRadius: 2,
-  },
-  fillDefault: {
-    backgroundColor: theme.colors.foregroundMuted,
-  },
-  fillOk: {
-    backgroundColor: theme.colors.statusSuccess,
-  },
-  fillWarning: {
-    backgroundColor: theme.colors.statusWarning,
-  },
-  fillDanger: {
-    backgroundColor: theme.colors.statusDanger,
-  },
+  meter: (overview: boolean) => ({ height: overview ? 6 : 4 }),
 }));

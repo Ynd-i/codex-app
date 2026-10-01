@@ -49,13 +49,17 @@ export function formatUsageDeadline(
   return t(kind === "reset" ? "usage.resetsIn" : "usage.runsOutIn", { duration });
 }
 
-export function formatAmount(value: number, unit: UsageBalanceUnit): string {
+export function formatAmount(
+  value: number,
+  unit: UsageBalanceUnit,
+  locale: string = i18n.resolvedLanguage ?? i18n.language,
+): string {
   switch (unit) {
     case "usd":
-      return value.toLocaleString(i18n.resolvedLanguage, { style: "currency", currency: "USD" });
+      return new Intl.NumberFormat(locale, { style: "currency", currency: "USD" }).format(value);
     case "tokens":
       return formatTokenCount(value);
     default:
-      return value.toLocaleString(i18n.resolvedLanguage);
+      return new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(value);
   }
 }

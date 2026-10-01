@@ -3,6 +3,9 @@ import { pluginSettings } from "./plugin-settings";
 
 export const zhCN: TranslationResources = {
   usage: {
+    options: "用量选项",
+    displayAs: "显示",
+    showInSidebar: "在侧栏显示",
     hostUnavailableNamed: "连接到 {{host}} 以查看用量",
     hostUpgradeRequiredNamed: "更新 {{host}} 以查看用量",
     pin: "固定",
@@ -71,6 +74,7 @@ export const zhCN: TranslationResources = {
     total: "{{total}} 个匹配项",
   },
   common: {
+    bottomSheetBackdrop: "底部面板背景",
     back: "返回",
     loading: "加载中...",
     actions: {

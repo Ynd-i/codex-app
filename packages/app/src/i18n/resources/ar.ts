@@ -3,6 +3,9 @@ import { pluginSettings } from "./plugin-settings";
 
 export const ar: TranslationResources = {
   usage: {
+    options: "خيارات الاستخدام",
+    displayAs: "عرض",
+    showInSidebar: "إظهار في الشريط الجانبي",
     hostUnavailableNamed: "اتصل بـ {{host}} لعرض الاستخدام",
     hostUpgradeRequiredNamed: "حدّث {{host}} لعرض الاستخدام",
     pin: "تثبيت",
@@ -71,6 +74,7 @@ export const ar: TranslationResources = {
     total: "{{total}} تطابقات",
   },
   common: {
+    bottomSheetBackdrop: "خلفية اللوحة السفلية",
     back: "خلف",
     loading: "تحميل...",
     actions: {

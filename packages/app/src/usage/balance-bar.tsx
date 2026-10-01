@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
+import { useTranslation } from "react-i18next";
 import { Text, View, type StyleProp, type ViewStyle } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { clampPct, formatAmount } from "./format";
@@ -12,22 +12,23 @@ interface ResolvedBalance {
   usedPct: number | null;
 }
 
-function resolveBalance(balance: UsageBalance, t: TFunction): ResolvedBalance {
+function resolveBalance(balance: UsageBalance, locale: string, t: TFunction): ResolvedBalance {
   const { used, remaining, limit, unit } = balance;
+  const format = (value: number) => formatAmount(value, unit, locale);
   if (limit != null && limit > 0) {
     const usedAmount = used ?? (remaining != null ? limit - remaining : null);
     const usedPct = usedAmount != null ? (usedAmount / limit) * 100 : null;
-    const usedText = usedAmount != null ? formatAmount(usedAmount, unit) : "—";
-    return { amountText: `${usedText} / ${formatAmount(limit, unit)}`, usedPct };
+    const usedText = usedAmount != null ? format(usedAmount) : "—";
+    return { amountText: `${usedText} / ${format(limit)}`, usedPct };
   }
   if (remaining != null) {
     return {
-      amountText: t("usage.remainingBalance", { amount: formatAmount(remaining, unit) }),
+      amountText: t("usage.remainingBalance", { amount: format(remaining) }),
       usedPct: null,
     };
   }
   if (used != null) {
-    return { amountText: formatAmount(used, unit), usedPct: null };
+    return { amountText: format(used), usedPct: null };
   }
   return { amountText: "—", usedPct: null };
 }
@@ -46,8 +47,8 @@ function fillToneStyle(tone: UsageTone) {
 }
 
 export function UsageBalanceBar({ balance }: { balance: UsageBalance }) {
-  const { t } = useTranslation();
-  const { amountText, usedPct } = resolveBalance(balance, t);
+  const { t, i18n } = useTranslation();
+  const { amountText, usedPct } = resolveBalance(balance, i18n.language, t);
   const tone = balance.tone ?? "default";
 
   const fillStyle = useMemo<StyleProp<ViewStyle>>(

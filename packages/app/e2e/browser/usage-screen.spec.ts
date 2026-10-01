@@ -270,7 +270,7 @@ test.describe("usage screen", () => {
       });
 
       // Nothing picked and no workspace open: the first host.
-      await expectPinnedUsage(page, ["31%"]);
+      await expectPinnedUsage(page, ["31% Weekly"]);
       await usageItem(page).click();
       await expect(page.getByTestId(`usage-host-${primaryServerId}`)).toBeVisible();
 
@@ -281,7 +281,7 @@ test.describe("usage screen", () => {
       ).toBeVisible({ timeout: 30_000 });
       await expect(hostFilter(page)).toContainText("Secondary box");
       await qaScreenshot(page, "usage-screen-picked-host");
-      await expectPinnedUsage(page, ["12%"]);
+      await expectPinnedUsage(page, ["12% Weekly"]);
 
       // The e2e seed resets the host list on every load, so reopening re-adds the second host.
       await addConnectedHostAndReload(page, {
@@ -289,7 +289,7 @@ test.describe("usage screen", () => {
         label: "Secondary box",
         port: secondary.port,
       });
-      await expectPinnedUsage(page, ["12%"]);
+      await expectPinnedUsage(page, ["12% Weekly"]);
       await expect(
         page.getByTestId(`usage-host-${secondary.serverId}`).getByText("12%"),
       ).toBeVisible({ timeout: 30_000 });

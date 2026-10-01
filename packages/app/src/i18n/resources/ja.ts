@@ -3,6 +3,9 @@ import { pluginSettings } from "./plugin-settings";
 
 export const ja: TranslationResources = {
   usage: {
+    options: "使用状況のオプション",
+    displayAs: "表示",
+    showInSidebar: "サイドバーに表示",
     hostUnavailableNamed: "使用量を確認するには {{host}} に接続してください",
     hostUpgradeRequiredNamed: "使用量を確認するには {{host}} を更新してください",
     pin: "固定",
@@ -72,6 +75,7 @@ export const ja: TranslationResources = {
     total: "{{total}} 件の一致",
   },
   common: {
+    bottomSheetBackdrop: "ボトムシートの背景",
     back: "戻る",
     loading: "読み込み中...",
     actions: {

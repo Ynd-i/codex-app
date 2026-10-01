@@ -3,6 +3,9 @@ import { pluginSettings } from "./plugin-settings";
 
 export const fr: TranslationResources = {
   usage: {
+    options: "Options d’utilisation",
+    displayAs: "Afficher",
+    showInSidebar: "Afficher dans la barre latérale",
     hostUnavailableNamed: "Connectez-vous à {{host}} pour consulter l’utilisation",
     hostUpgradeRequiredNamed: "Mettez à jour {{host}} pour consulter l’utilisation",
     pin: "Épingler",
@@ -72,6 +75,7 @@ export const fr: TranslationResources = {
     total: "{{total}} résultats",
   },
   common: {
+    bottomSheetBackdrop: "Arrière-plan du panneau inférieur",
     back: "Dos",
     loading: "Chargement...",
     actions: {

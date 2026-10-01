@@ -3,6 +3,9 @@ import { pluginSettings } from "./plugin-settings";
 
 export const ko: TranslationResources = {
   usage: {
+    options: "사용량 옵션",
+    displayAs: "표시",
+    showInSidebar: "사이드바에 표시",
     hostUnavailableNamed: "사용량을 보려면 {{host}}에 연결하세요",
     hostUpgradeRequiredNamed: "사용량을 보려면 {{host}}를 업데이트하세요",
     pin: "고정",
@@ -71,6 +74,7 @@ export const ko: TranslationResources = {
     total: "일치 항목 {{total}}개",
   },
   common: {
+    bottomSheetBackdrop: "하단 시트 배경",
     back: "뒤로",
     loading: "불러오는 중...",
     actions: {

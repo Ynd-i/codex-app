@@ -124,6 +124,8 @@ import {
 } from "./new-workspace-initial-context";
 import { buildNewWorkspaceProjectIconTargets } from "./new-workspace/project-icon-targets";
 import { useNewWorkspaceProjectPicker } from "./new-workspace/project-picker";
+import { ImportSessionButton } from "./new-workspace/import-session-button";
+import { useImportSession } from "@/hooks/use-import-session";
 import {
   buildTerminalsQueryKey,
   type ListTerminalsPayload,
@@ -2371,6 +2373,7 @@ export function NewWorkspaceScreen({
     },
   });
 
+  const importSession = useImportSession({ serverId: selectedServerId });
   const composer = isTerminalLaunch ? (
     <Composer
       key="terminal"
@@ -2430,15 +2433,19 @@ export function NewWorkspaceScreen({
     />
   );
   return (
-    <NewWorkspaceLayout
-      isCompact={isCompact}
-      project={selectedProject}
-      title={t("newWorkspace.title")}
-      formStack={formStack}
-      errorMessage={errorMessage}
-    >
-      {composer}
-    </NewWorkspaceLayout>
+    <>
+      <NewWorkspaceLayout
+        isCompact={isCompact}
+        project={selectedProject}
+        title={t("newWorkspace.title")}
+        formStack={formStack}
+        errorMessage={errorMessage}
+        onImportSession={importSession.open}
+      >
+        {composer}
+      </NewWorkspaceLayout>
+      {importSession.sheet}
+    </>
   );
 }
 
@@ -2448,6 +2455,7 @@ function NewWorkspaceLayout({
   title,
   formStack,
   errorMessage,
+  onImportSession,
   children,
 }: {
   isCompact: boolean;
@@ -2455,12 +2463,14 @@ function NewWorkspaceLayout({
   title: string;
   formStack: ReactNode;
   errorMessage: string | null;
+  onImportSession: () => void;
   children: ReactNode;
 }) {
   const { t } = useTranslation();
   const screenHeaderLeft = useMemo(() => <SidebarMenuToggle />, []);
   const desktopChat = getIsElectronMac() && !isCompact;
   const projectName = project?.projectName;
+  const importSessionButton = <ImportSessionButton compact={isCompact} onPress={onImportSession} />;
   const composer = (
     <>
       {children}
@@ -2489,11 +2499,13 @@ function NewWorkspaceLayout({
           <View style={styles.desktopSetup}>{formStack}</View>
         </View>
         {composer}
+        <View style={styles.desktopImportRow}>{importSessionButton}</View>
       </View>
     );
   } else {
     const setupFields = (
       <>
+        {isCompact ? <View style={styles.compactTopActions}>{importSessionButton}</View> : null}
         <View style={styles.composerTitleContainer} pointerEvents="none">
           <Text style={styles.composerTitle}>{title}</Text>
         </View>
@@ -2503,7 +2515,10 @@ function NewWorkspaceLayout({
     content = (
       <ComposerDock centered={!isCompact}>
         {setupFields}
-        {composer}
+        <>
+          {composer}
+          {isCompact ? null : importSessionButton}
+        </>
       </ComposerDock>
     );
   }
@@ -2520,6 +2535,12 @@ function NewWorkspaceLayout({
 
 const styles = StyleSheet.create((theme) => ({
   desktopLayout: { flex: 1 },
+  desktopImportRow: {
+    width: "100%",
+    maxWidth: theme.contentMaxWidth + 32,
+    alignSelf: "center",
+    paddingBottom: theme.spacing[4],
+  },
   desktopHero: {
     flex: 1,
     minHeight: 0,
@@ -2551,6 +2572,12 @@ const styles = StyleSheet.create((theme) => ({
     position: "relative",
     flex: 1,
   },
+  // Takes the free space above the setup fields, so its button sits at the top of the screen.
+  // The inset puts the ghost button's icon on the setup rows' icon rail.
+  compactTopActions: {
+    flex: 1,
+    paddingHorizontal: theme.spacing[3],
+  },
   composerTitleContainer: {
     marginBottom: theme.spacing[8],
     paddingLeft: theme.spacing[6],
@@ -2573,7 +2600,7 @@ const styles = StyleSheet.create((theme) => ({
   formStackDesktop: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: theme.spacing[8],
+    marginBottom: theme.spacing[4],
     ...(getIsElectronMac()
       ? {
           marginBottom: 0,

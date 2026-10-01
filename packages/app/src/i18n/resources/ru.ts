@@ -3,6 +3,9 @@ import { pluginSettings } from "./plugin-settings";
 
 export const ru: TranslationResources = {
   usage: {
+    options: "Параметры использования",
+    displayAs: "Показывать",
+    showInSidebar: "Показывать на боковой панели",
     hostUnavailableNamed: "Подключитесь к {{host}}, чтобы посмотреть использование",
     hostUpgradeRequiredNamed: "Обновите {{host}}, чтобы посмотреть использование",
     pin: "Закрепить",
@@ -72,6 +75,7 @@ export const ru: TranslationResources = {
     total: "Совпадений: {{total}}",
   },
   common: {
+    bottomSheetBackdrop: "Фон нижней панели",
     back: "Назад",
     loading: "Загрузка...",
     actions: {

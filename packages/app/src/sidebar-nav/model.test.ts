@@ -34,6 +34,7 @@ describe("resolveSidebarNavItems", () => {
   it("yields builtins then plugins, all visible, when nothing is stored", () => {
     const items = resolveSidebarNavItems({
       section: "header",
+      compact: false,
       pluginGroups: [kanban, notes],
       preferences: [],
     });
@@ -58,6 +59,7 @@ describe("resolveSidebarNavItems", () => {
   it("keeps the stored order and appends newly available items as visible", () => {
     const items = resolveSidebarNavItems({
       section: "header",
+      compact: false,
       pluginGroups: [notes, kanban],
       preferences: [
         { key: kanbanKey, visible: false },
@@ -79,6 +81,7 @@ describe("resolveSidebarNavItems", () => {
   it("skips keys that are unknown or not currently available", () => {
     const items = resolveSidebarNavItems({
       section: "header",
+      compact: false,
       pluginGroups: [],
       preferences: [
         { key: notesKey, visible: false },
@@ -98,6 +101,7 @@ describe("resolveSidebarNavItems", () => {
   it("lets the first of duplicate keys win", () => {
     const items = resolveSidebarNavItems({
       section: "header",
+      compact: false,
       pluginGroups: [],
       preferences: [
         { key: "history", visible: false },
@@ -114,10 +118,140 @@ describe("resolveSidebarNavItems", () => {
   });
 });
 
+describe("resolveSidebarNavItems on compact layouts", () => {
+  it("hides the Usage item until it is turned on", () => {
+    const resolve = (compact: boolean, preferences: SidebarNavPreference[]) =>
+      summarize(
+        resolveSidebarNavItems({ section: "footer", compact, pluginGroups: [], preferences }),
+      );
+
+    expect(resolve(true, [])).toEqual([{ key: "usage", visible: false }]);
+    expect(resolve(false, [])).toEqual([{ key: "usage", visible: true }]);
+    expect(resolve(true, [{ key: "usage", visible: true }])).toEqual([
+      { key: "usage", visible: true },
+    ]);
+  });
+});
+
+describe("responsive defaults after saving preferences", () => {
+  const resolve = (compact: boolean, preferences: SidebarNavPreference[]) =>
+    resolveSidebarNavItems({ section: "footer", compact, pluginGroups: [kanban], preferences });
+  const roundTrip = (preferences: SidebarNavPreference[]): SidebarNavPreference[] =>
+    JSON.parse(JSON.stringify(preferences));
+
+  it("keeps Usage responsive after moving a footer plugin on compact", () => {
+    const next = roundTrip(
+      moveSidebarNavItem({
+        items: resolve(true, []),
+        key: kanbanKey,
+        direction: "up",
+        previous: [],
+      }),
+    );
+    expect(next).toEqual([{ key: kanbanKey }, { key: "usage" }]);
+    expect(summarize(resolve(true, next))).toEqual([
+      { key: kanbanKey, visible: true },
+      { key: "usage", visible: false },
+    ]);
+    expect(summarize(resolve(false, next))).toEqual([
+      { key: kanbanKey, visible: true },
+      { key: "usage", visible: true },
+    ]);
+  });
+
+  it("does not freeze Usage defaults when hiding another item on either layout", () => {
+    for (const compact of [true, false]) {
+      const next = roundTrip(
+        setSidebarNavItemVisible({
+          items: resolve(compact, []),
+          key: kanbanKey,
+          visible: false,
+          previous: [],
+        }),
+      );
+      expect(next).toEqual([{ key: "usage" }, { key: kanbanKey, visible: false }]);
+      expect(summarize(resolve(true, next))).toEqual([
+        { key: "usage", visible: false },
+        { key: kanbanKey, visible: false },
+      ]);
+      expect(summarize(resolve(false, next))).toEqual([
+        { key: "usage", visible: true },
+        { key: kanbanKey, visible: false },
+      ]);
+    }
+  });
+
+  it("preserves an explicit Usage choice through unrelated changes on both layouts", () => {
+    for (const visible of [true, false]) {
+      let previous = roundTrip(
+        setSidebarNavItemVisible({
+          items: resolve(true, []),
+          key: "usage",
+          visible,
+          previous: [],
+        }),
+      );
+      previous = roundTrip(
+        moveSidebarNavItem({
+          items: resolve(true, previous),
+          key: "usage",
+          direction: "down",
+          previous,
+        }),
+      );
+      previous = roundTrip(
+        setSidebarNavItemVisible({
+          items: resolve(true, previous),
+          key: kanbanKey,
+          visible: false,
+          previous,
+        }),
+      );
+      for (const compact of [true, false]) {
+        expect(resolve(compact, previous).find((item) => item.key === "usage")?.visible).toBe(
+          visible,
+        );
+      }
+    }
+  });
+
+  it("retains absent plugins and first explicit overrides while defaults stay unset", () => {
+    const previous: SidebarNavPreference[] = [
+      { key: notesKey },
+      { key: "usage", visible: false },
+      { key: "usage", visible: true },
+    ];
+    const next = roundTrip(
+      moveSidebarNavItem({
+        items: resolve(true, previous),
+        key: kanbanKey,
+        direction: "up",
+        previous,
+      }),
+    );
+    expect(next).toEqual([{ key: notesKey }, { key: kanbanKey }, { key: "usage", visible: false }]);
+    expect(
+      summarize(
+        resolveSidebarNavItems({
+          section: "footer",
+          compact: false,
+          pluginGroups: [notes, kanban],
+          preferences: next,
+        }),
+      ),
+    ).toEqual([
+      { key: notesKey, visible: true },
+      { key: kanbanKey, visible: true },
+      { key: "usage", visible: false },
+    ]);
+  });
+});
+
 describe("setSidebarNavItemVisible", () => {
   it("toggles one item and writes the full resolved order", () => {
     const items = resolveSidebarNavItems({
       section: "header",
+      compact: false,
       pluginGroups: [kanban],
       preferences: [],
     });
@@ -125,11 +259,11 @@ describe("setSidebarNavItemVisible", () => {
     const next = setSidebarNavItemVisible({ items, key: "search", visible: false, previous: [] });
 
     expect(next).toEqual([
-      { key: "new-workspace", visible: true },
-      { key: "history", visible: true },
+      { key: "new-workspace" },
+      { key: "history" },
       { key: "search", visible: false },
-      { key: "schedules", visible: true },
-      { key: kanbanKey, visible: true },
+      { key: "schedules" },
+      { key: kanbanKey },
     ]);
   });
 
@@ -140,6 +274,7 @@ describe("setSidebarNavItemVisible", () => {
     ];
     const items = resolveSidebarNavItems({
       section: "header",
+      compact: false,
       pluginGroups: [],
       preferences: previous,
     });
@@ -149,9 +284,9 @@ describe("setSidebarNavItemVisible", () => {
     expect(next).toEqual([
       { key: notesKey, visible: false },
       { key: "history", visible: false },
-      { key: "new-workspace", visible: true },
-      { key: "search", visible: true },
-      { key: "schedules", visible: true },
+      { key: "new-workspace" },
+      { key: "search" },
+      { key: "schedules" },
     ]);
   });
 
@@ -165,6 +300,7 @@ describe("setSidebarNavItemVisible", () => {
     ];
     const items = resolveSidebarNavItems({
       section: "header",
+      compact: false,
       pluginGroups: [],
       preferences: previous,
     });
@@ -180,23 +316,34 @@ describe("setSidebarNavItemVisible", () => {
     ]);
     expect(
       summarize(
-        resolveSidebarNavItems({ section: "header", pluginGroups: [notes], preferences: next }),
+        resolveSidebarNavItems({
+          section: "header",
+          compact: false,
+          pluginGroups: [notes],
+          preferences: next,
+        }),
       ),
     ).toEqual(next);
   });
 
   it("returns the normalized list unchanged for an unknown key", () => {
-    const items = resolveSidebarNavItems({ section: "header", pluginGroups: [], preferences: [] });
+    const items = resolveSidebarNavItems({
+      section: "header",
+      compact: false,
+      pluginGroups: [],
+      preferences: [],
+    });
 
     const next = setSidebarNavItemVisible({ items, key: "bogus", visible: false, previous: [] });
 
-    expect(next).toEqual(summarize(items));
+    expect(next).toEqual(items.map(({ key }) => ({ key })));
   });
 });
 
 describe("moveSidebarNavItem", () => {
   const items = resolveSidebarNavItems({
     section: "header",
+    compact: false,
     pluginGroups: [kanban],
     preferences: [],
   });
@@ -234,14 +381,14 @@ describe("moveSidebarNavItem", () => {
     });
     const last = moveSidebarNavItem({ items, key: kanbanKey, direction: "down", previous: [] });
 
-    expect(first).toEqual(summarize(items));
-    expect(last).toEqual(summarize(items));
+    expect(first).toEqual(items.map(({ key }) => ({ key })));
+    expect(last).toEqual(items.map(({ key }) => ({ key })));
   });
 
   it("returns the normalized list unchanged for an unknown key", () => {
     const next = moveSidebarNavItem({ items, key: "bogus", direction: "down", previous: [] });
 
-    expect(next).toEqual(summarize(items));
+    expect(next).toEqual(items.map(({ key }) => ({ key })));
   });
 
   it("drops duplicate carried-over keys", () => {
@@ -274,6 +421,7 @@ describe("footer section", () => {
   it("resolves the Usage item first, then plugin rows", () => {
     const items = resolveSidebarNavItems({
       section: "footer",
+      compact: false,
       pluginGroups: [sync],
       preferences: [],
     });
@@ -287,6 +435,7 @@ describe("footer section", () => {
   it("ignores header built-ins stored in footer preferences", () => {
     const items = resolveSidebarNavItems({
       section: "footer",
+      compact: false,
       pluginGroups: [],
       preferences: [{ key: "history", visible: false }],
     });
@@ -297,6 +446,7 @@ describe("footer section", () => {
   it("ignores the footer icon buttons, which are fixed and not items", () => {
     const items = resolveSidebarNavItems({
       section: "footer",
+      compact: false,
       pluginGroups: [sync],
       preferences: [
         { key: "add-project", visible: false },
@@ -319,6 +469,7 @@ describe("footer section", () => {
     const previous: SidebarNavPreference[] = [notesPreference];
     const items = resolveSidebarNavItems({
       section: "footer",
+      compact: false,
       pluginGroups: [sync],
       preferences: previous,
     });
@@ -327,6 +478,7 @@ describe("footer section", () => {
     const hidden = setSidebarNavItemVisible({
       items: resolveSidebarNavItems({
         section: "footer",
+        compact: false,
         pluginGroups: [sync],
         preferences: moved,
       }),
@@ -335,10 +487,6 @@ describe("footer section", () => {
       previous: moved,
     });
 
-    expect(hidden).toEqual([
-      notesPreference,
-      { key: syncKey, visible: true },
-      { key: "usage", visible: false },
-    ]);
+    expect(hidden).toEqual([notesPreference, { key: syncKey }, { key: "usage", visible: false }]);
   });
 });
