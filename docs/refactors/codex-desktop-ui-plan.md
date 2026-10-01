@@ -967,6 +967,40 @@ Logs: `/private/tmp/paseo-usage-overview-unit.log`,
 `/private/tmp/paseo-usage-overview-browser.log` and
 `/private/tmp/paseo-rail-geometry-e2e.log`.
 
+### Pairing and local relay acceptance — 2026-10-01
+
+All 11 desktop pairing UI cases pass against isolated hosts: consent/decline,
+security link opening, home/settings entry points, selected-host offers,
+disconnection errors, live enable/reload, rejected launch overrides, failed
+transport startup, live config updates and outdated-host capability handling.
+These exercise offer UI through a simulated desktop bridge, not QR consumption
+or a physical remote device.
+
+The existing relay-deployment case also passes against the real local Elixir
+relay at `3fc41c96c8c63f3a7109e832899cc57d473c4531`, with its pinned Erlang 29.0.3
+and Elixir 1.20.2-otp-29 installed through mise. The relay checkout is
+`/Users/yndi/dev/projects/codex-app/paseo-relay`; its source remains unchanged.
+A fresh daemon-browser export serves the client. The test uses a temporary daemon
+and Mock stream, forbids direct daemon WebSocket fallback, and restarts only the
+relay. In the final run, the reconnect notice appeared after 86ms, the relay was
+ready in 428ms and reconnection completed in 4596ms. Output paused while
+disconnected, running state remained visible, and non-empty output continued
+beyond the initial catch-up update without user action. These are one-run local measurements, not production latency bounds.
+
+The test setup now uses the selected PATH toolchain, shares the existing protected
+port allocator and rejects missing executables promptly. Seven helper regressions
+pass, including non-network tests proving that requests to both protected ports
+abort before HTTP forwarding. This caught a wildcard-handler ordering gap and
+keeps the test itself away from 6767/6768. Neither protected daemon was restarted.
+External network/TLS, physical-device pairing and a real provider remain separate
+acceptance gates. See [the local relay procedure](../testing.md#local-relay-recovery).
+
+Logs: `/private/tmp/paseo-pair-device-migration.log` (11 cases),
+`/private/tmp/paseo-relay-reconnect-continuing.log` (final actual relay case),
+`/private/tmp/paseo-relay-http-guard-{red,unit}.log`,
+`/private/tmp/paseo-relay-mock-type-{unit,typecheck}.log`, and
+`/private/tmp/paseo-relay-final-{format,lint,typecheck}.log`.
+
 ## Phase 5 progress — 2026-09-30
 
 The local custom-package profile and update guard are implemented. A renamed

@@ -167,6 +167,30 @@ injected through the test process's own debugger; OS dispatch and coexistence wi
 official app remain separate acceptance checks. Screenshots and logs stay in the
 specified private artifact directory.
 
+### Local relay recovery
+
+The `relay-deployment` project uses the sibling `paseo-relay` checkout, or
+`PASEO_RELAY_CHECKOUT`. Install that checkout's pinned Erlang/Elixir versions and
+its production Mix dependencies first. Put their `mix` and `erl` on PATH; mise
+install paths and asdf shims both work. The test owns a temporary daemon home and
+restarts only its local relay. It excludes 6767/6768 and blocks browser sockets
+that could bypass the relay through the test daemon's direct port.
+
+After building server dependencies, run the current browser export and one case:
+
+```sh
+npm run build:daemon-web-ui
+E2E_FORK_PASEO_HOME_FROM= PASEO_RELAY_CHECKOUT=/path/to/paseo-relay \
+npm exec --workspace=@getpaseo/app -- playwright test \
+  --project=relay-deployment --workers=1 \
+  e2e/browser/relay-deployment-reconnect.real.spec.ts
+```
+
+This uses the daemon-served browser client and Mock stream, not a real provider,
+external relay, TLS deployment or mobile device. Its browser export is not an
+Electron export; rebuild with the custom desktop command before making a new
+custom package from the same checkout.
+
 ## Test organization
 
 - Collocate tests with implementation: `thing.ts` + `thing.test.ts`
@@ -215,7 +239,7 @@ Test suites in this repo are heavy. Running them in bulk freezes the machine, es
 - Global setup accepts Metro as ready only when `/status` returns `packager-status:running`, then fetches the document's scripts so the cold bundle compilation finishes before Playwright's per-test timeout starts. A generic TCP listener is not sufficient readiness evidence. The browser suite uses direct local daemon connections and does not start a relay.
 - The app Playwright harness boots on Windows as well as POSIX. Spawn Node entrypoints through `process.execPath`, not `npx` or `node_modules/.bin` shims: Node refuses to spawn `.cmd` or `.bat` without `shell: true`, and shell mode concatenates argv without escaping and sends kill signals to `cmd.exe` instead of the real child.
 - Teardown kills the process tree, because a Windows signal reaches only the direct child and leaves forked workers holding the listening port.
-- The `asdf`-backed local Elixir relay stays POSIX-only, so the `relay-deployment` Playwright project is unavailable on Windows.
+- The PATH-managed local Elixir relay stays POSIX-only, so the `relay-deployment` Playwright project is unavailable on Windows.
 
 ## Pull-request test routing
 

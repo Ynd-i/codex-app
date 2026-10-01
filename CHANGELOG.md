@@ -23,6 +23,7 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- Local relay checks now use PATH-managed Elixir, avoid protected daemon ports, and block direct WebSocket fallbacks.
 - Matched the macOS chat placeholder text and default dark color to the reference, preserving explicit caller and terminal prompts, other themes and custom fonts.
 - Matched the macOS terminal content background and inset to the reference while retaining live terminal sessions, resizing and custom fonts.
 - Integrated upstream through `4893629`, retaining runtime model/thinking reporting, provider options and approvals, and configurable sidebar usage alongside the custom desktop presentation.
