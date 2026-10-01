@@ -1613,7 +1613,15 @@ Appearance captures were inspected in the private artifact directory
 `/private/tmp/paseo-settings-return-final-{format,lint}.log`. The first concurrent
 typecheck raced the dependency build; the final check was run after build completion.
 
-The latest Custom refresh was built from `c57b7da` on 0.11.0-beta.1 after
+The latest Custom refresh was built from `7d50fed` on 0.11.0-beta.1 after
+upstream merge `34d9f5f`. Startup/CLI/terminal smoke and the native interaction
+runner pass, including plain replies without empty activity headers, visible
+completion times, column/spacing checks, question submission and retained drafts.
+Logs: `/private/tmp/paseo-plain-turn-package-build.log` and
+`/private/tmp/paseo-plain-turn-package.log`; artifacts:
+`/private/tmp/paseo-plain-turn-package-{smoke,qa}`.
+
+The preceding Custom refresh was built from `c57b7da` on 0.11.0-beta.1 after
 upstream merge `34d9f5f`. Startup/CLI/terminal smoke and the native interaction
 runner pass, including chat/composer edge alignment, prose spacing, code wrapping,
 question submission and retained drafts. Logs:
@@ -2210,6 +2218,13 @@ plus activity disclosure, search, copy and fork boundaries. Timing swaps retain
 the same control bounds. [Plain reply](../qa-evidence/codex-desktop/plain-reply.png)
 was inspected at 1352×782. Logs:
 `/private/tmp/paseo-plain-turn-{red,units,final}.log`.
+
+Implementation `7d50fed` passes root format/lint/typecheck and normal hooks. Its
+refreshed Custom package passes smoke and the native interaction runner, including
+plain-reply timing and question submission. The
+[native footer capture](../qa-evidence/codex-desktop/packaged-turn-timing.png) was
+inspected. The bundle retains the existing backend and the harness uses only its
+isolated Mock host; protected daemons were not restarted.
 
 ### Upstream refresh to e10f6d2 — 2026-10-01
 
