@@ -660,10 +660,13 @@ interface CommonTheme {
   /** Null preserves each code surface's authored default. */
   codeFontWeight: FontWeightSetting;
   contentFontWeight: FontWeightSetting;
+  uiFontWeight: FontWeightSetting;
   lineHeight: Record<keyof typeof LINE_HEIGHT, number>;
   contentMaxWidth: number;
   iconSize: typeof ICON_SIZE;
-  fontWeight: typeof FONT_WEIGHT;
+  fontWeight: Omit<typeof FONT_WEIGHT, "normal"> & {
+    normal: NonNullable<FontWeightSetting> | "normal";
+  };
   borderRadius: typeof BORDER_RADIUS;
   borderWidth: typeof BORDER_WIDTH;
   opacity: typeof OPACITY;
@@ -679,6 +682,7 @@ const commonTheme: CommonTheme = {
   },
   codeFontWeight: null,
   contentFontWeight: null,
+  uiFontWeight: null,
   lineHeight: LINE_HEIGHT,
   contentMaxWidth: DEFAULT_CONTENT_MAX_WIDTH,
   iconSize: ICON_SIZE,

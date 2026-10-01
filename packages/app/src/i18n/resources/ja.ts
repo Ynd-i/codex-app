@@ -2321,6 +2321,8 @@ export const ja: TranslationResources = {
         codeFontHint:
           "コード、差分、ターミナル出力で使用されます。システムデフォルトにするには空のままにしてください",
         codeFontAccessibility: "コードフォントファミリー",
+        interfaceStyle: "インターフェースのフォントスタイル",
+        interfaceWeightAccessibility: "インターフェースフォントの太さ：{{value}}",
         contentWeightAccessibility: "コンテンツフォントの太さ：{{value}}",
         codeWeightAccessibility: "コードフォントの太さ：{{value}}",
         weightOptions: {

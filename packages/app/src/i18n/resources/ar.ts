@@ -2300,6 +2300,8 @@ export const ar: TranslationResources = {
         codeFontHint:
           "تستخدم في الكود والاختلافات والمخرجات الطرفية. اتركه فارغًا للإعداد الافتراضي للنظام",
         codeFontAccessibility: "عائلة خطوط الكود",
+        interfaceStyle: "نمط خط الواجهة",
+        interfaceWeightAccessibility: "سُمك خط الواجهة: {{value}}",
         contentWeightAccessibility: "سُمك خط المحتوى: {{value}}",
         codeWeightAccessibility: "سُمك خط الكود: {{value}}",
         weightOptions: {

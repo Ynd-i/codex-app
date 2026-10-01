@@ -5,6 +5,7 @@ import {
   DEFAULT_UI_FONT_STACK,
   DEFAULT_MONO_FONT_STACK,
   FONT_SIZE,
+  FONT_WEIGHT,
   REGISTERED_THEMES,
   type Theme,
 } from "@/styles/theme";
@@ -21,6 +22,7 @@ export interface AppearanceInput {
   codeFontSize: number; // already clamped
   codeFontWeight: Theme["codeFontWeight"];
   contentFontWeight: Theme["contentFontWeight"];
+  uiFontWeight: Theme["uiFontWeight"];
   contentMaxWidth: number; // already clamped, default resolved
   syntaxTheme: SyntaxThemeId;
 }
@@ -70,6 +72,7 @@ export function applyAppearance(input: AppearanceInput): void {
   const mono = input.monoFontFamily.trim() || DEFAULT_MONO_FONT_STACK;
   const codeFontWeight = getIsElectronMac() ? input.codeFontWeight : null;
   const contentFontWeight = getIsElectronMac() ? input.contentFontWeight : null;
+  const uiFontWeight = getIsElectronMac() ? input.uiFontWeight : null;
   const diffLineHeight = Math.round(input.codeFontSize * 1.5); // couple to code size
   const activeTheme = UnistylesRuntime.themeName;
   // Unistyles web emits after each registry patch. Updating the mounted theme
@@ -87,6 +90,7 @@ export function applyAppearance(input: AppearanceInput): void {
         input.contentFontSize,
         input.codeFontSize,
       );
+      const fontWeight = { ...FONT_WEIGHT, normal: uiFontWeight ?? FONT_WEIGHT.normal };
       const lineHeight = { ...t.lineHeight, diff: diffLineHeight };
       if (t.colorScheme === "light") {
         return {
@@ -94,6 +98,8 @@ export function applyAppearance(input: AppearanceInput): void {
           fontFamily,
           codeFontWeight,
           contentFontWeight,
+          uiFontWeight,
+          fontWeight,
           fontSize,
           lineHeight,
           contentMaxWidth: input.contentMaxWidth,
@@ -105,6 +111,8 @@ export function applyAppearance(input: AppearanceInput): void {
         fontFamily,
         codeFontWeight,
         contentFontWeight,
+        uiFontWeight,
+        fontWeight,
         fontSize,
         lineHeight,
         contentMaxWidth: input.contentMaxWidth,
@@ -115,5 +123,5 @@ export function applyAppearance(input: AppearanceInput): void {
 
   // Web: RN-web stamps a default font on each text element, so apply UI/content
   // stacks through the scoped root rules as well as the theme. No-op on native.
-  applyRootFonts(ui, content);
+  applyRootFonts(ui, content, uiFontWeight);
 }

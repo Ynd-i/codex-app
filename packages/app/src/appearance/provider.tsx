@@ -77,6 +77,7 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
       codeFontSize: settings.codeFontSize,
       codeFontWeight: settings.codeFontWeight,
       contentFontWeight: settings.contentFontWeight,
+      uiFontWeight: settings.uiFontWeight,
       contentMaxWidth: resolveContentMaxWidth({ contentMaxWidth: settings.contentMaxWidth }),
       syntaxTheme: settings.syntaxTheme,
     });
@@ -93,6 +94,7 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
     settings.codeFontSize,
     settings.codeFontWeight,
     settings.contentFontWeight,
+    settings.uiFontWeight,
     settings.contentMaxWidth,
     settings.syntaxTheme,
   ]);

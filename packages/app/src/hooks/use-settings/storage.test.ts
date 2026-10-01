@@ -47,7 +47,7 @@ function makeDeps(
 }
 
 describe("loadAppSettingsFromStorage", () => {
-  it.each(["codeFontWeight", "contentFontWeight"] as const)(
+  it.each(["codeFontWeight", "contentFontWeight", "uiFontWeight"] as const)(
     "round-trips %s with safe defaults independently of platform",
     async (field) => {
       for (const value of [undefined, "heavy", 500, false]) {

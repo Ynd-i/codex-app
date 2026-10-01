@@ -317,7 +317,7 @@ export function createMarkdownStyles(theme: Theme) {
       fontFamily: theme.fontFamily.content,
       marginRight: 4,
       fontSize: theme.fontSize.content,
-      fontWeight: theme.contentFontWeight ?? theme.fontWeight.normal,
+      fontWeight: theme.contentFontWeight ?? "normal",
       lineHeight: Math.round(theme.fontSize.content * 1.4),
       minWidth: 12,
     },

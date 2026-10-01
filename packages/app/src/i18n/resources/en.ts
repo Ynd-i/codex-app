@@ -2425,6 +2425,8 @@ export const en = {
         codeFontHint:
           "Used in code, diffs, and the terminal output. Leave empty for the system default",
         codeFontAccessibility: "Code font family",
+        interfaceStyle: "Interface font style",
+        interfaceWeightAccessibility: "Interface font weight: {{value}}",
         contentWeightAccessibility: "Content font weight: {{value}}",
         codeWeightAccessibility: "Code font weight: {{value}}",
         weightOptions: {

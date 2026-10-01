@@ -192,11 +192,22 @@ export async function runAgentDeepLinksRegression({
   await codeSize.press("Tab");
   await expect.poll(() => previousCodeSize.evaluate((node) => node.isConnected)).toBe(false);
   await previousCodeSize.dispose();
+  await page.getByLabel(/^Interface font weight:/).click();
+  await page.getByRole("menuitem", { name: "SemiBold", exact: true }).click();
+  // Production strips the readable RN-web class names. Check the actual default Text rule.
+  await expect(page.getByText("Interface font style", { exact: true })).toHaveCSS(
+    "font-weight",
+    "600",
+  );
   await page.getByLabel(/^Code font weight:/).click();
   await page.getByRole("menuitem", { name: "Medium", exact: true }).click();
   await expect(page.getByLabel("Code font weight: Medium", { exact: true })).toBeVisible();
   await page.getByTestId("settings-back-to-workspace").filter({ visible: true }).click();
   await expectChat("A");
+  await page.reload();
+  await expectChat("A");
+  await expect(title).toHaveCSS("font-weight", "600");
+  await expect(composer).toHaveCSS("font-weight", "400");
   await expect(composer).toHaveValue(draft);
   await page.getByTestId("workspace-explorer-toggle").click();
   await expect(page.getByTestId("assistant-message").last()).toContainText(

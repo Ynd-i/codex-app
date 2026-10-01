@@ -481,7 +481,7 @@ function FontWeight({
   value,
   onChange,
 }: {
-  kind: "code" | "content";
+  kind: "code" | "content" | "interface";
   value: AppSettings["codeFontWeight"];
   onChange: (value: AppSettings["codeFontWeight"]) => void;
 }) {
@@ -705,6 +705,7 @@ function SyntaxRow({ value, onChange }: SyntaxRowProps) {
 
 const ADVANCED_DEFAULTS = {
   uiBaseFontSize: DEFAULT_APP_SETTINGS.uiBaseFontSize,
+  uiFontWeight: DEFAULT_APP_SETTINGS.uiFontWeight,
   contentFontSize: DEFAULT_APP_SETTINGS.contentFontSize,
   contentFontWeight: DEFAULT_APP_SETTINGS.contentFontWeight,
   codeFontSize: DEFAULT_APP_SETTINGS.codeFontSize,
@@ -896,6 +897,15 @@ export function AppearanceSection() {
     [settings.contentFontFamily, updateSettings],
   );
 
+  const changeInterfaceFontWeight = useCallback(
+    (uiFontWeight: AppSettings["uiFontWeight"]) => {
+      void updateSettings({ uiFontWeight }).catch(() =>
+        toast.error(t("common.errors.unableToSave")),
+      );
+    },
+    [t, toast, updateSettings],
+  );
+
   const changeContentFontWeight = useCallback(
     (contentFontWeight: AppSettings["contentFontWeight"]) => {
       void updateSettings({ contentFontWeight }).catch(() =>
@@ -1011,7 +1021,7 @@ export function AppearanceSection() {
       placeholder={settings.uiFontFamily || uiFontPlaceholder}
       value={settings.contentFontFamily}
       draft={contentFontDraft}
-      withBorder={!showThemeModes}
+      withBorder
       onChangeDraft={setContentFontDraft}
       onCommit={commitContentFontFamily}
     >
@@ -1152,6 +1162,18 @@ export function AppearanceSection() {
           {motionCard}
           <View style={settingsStyles.section}>
             <View style={settingsStyles.card}>
+              <View style={settingsStyles.row}>
+                <View style={settingsStyles.rowContent}>
+                  <Text style={settingsStyles.rowTitle}>
+                    {t("settings.appearance.fonts.interfaceStyle")}
+                  </Text>
+                </View>
+                <FontWeight
+                  kind="interface"
+                  value={settings.uiFontWeight}
+                  onChange={changeInterfaceFontWeight}
+                />
+              </View>
               {contentFont}
               {codeFont}
             </View>

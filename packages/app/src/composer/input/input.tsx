@@ -2019,7 +2019,7 @@ const styles = StyleSheet.create((theme: Theme) => ({
     color: theme.colors.foreground,
     fontFamily: theme.fontFamily.content,
     fontSize: theme.fontSize.content,
-    fontWeight: theme.contentFontWeight ?? theme.fontWeight.normal,
+    fontWeight: theme.contentFontWeight ?? "normal",
     // No lineHeight on native. React Native applies it as a span over the text, and an
     // empty trailing line is laid out from the font's own metrics on some devices, so
     // the input jumps when the first character lands on a new line. The font's natural

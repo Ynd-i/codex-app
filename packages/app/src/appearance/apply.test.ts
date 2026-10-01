@@ -74,6 +74,7 @@ function makeInput(overrides: Partial<AppearanceInput> = {}): AppearanceInput {
     codeFontSize: 12,
     codeFontWeight: null,
     contentFontWeight: null,
+    uiFontWeight: null,
     contentMaxWidth: 820,
     syntaxTheme: "one",
     ...overrides,
@@ -100,7 +101,7 @@ describe("applyAppearance", () => {
     expect(updateTheme.mock.calls.map((call) => call[0])).toEqual([...ALL_THEME_KEYS]);
   });
 
-  it.each(["codeFontWeight", "contentFontWeight"] as const)(
+  it.each(["codeFontWeight", "contentFontWeight", "uiFontWeight"] as const)(
     "applies %s only on Mac without changing other typography or plugin colors",
     (field) => {
       vi.spyOn(platform, "getIsElectronMac").mockReturnValue(true);
