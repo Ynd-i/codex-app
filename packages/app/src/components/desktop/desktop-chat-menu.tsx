@@ -10,6 +10,7 @@ import {
   DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/contexts/toast-context";
+import { getIsElectronMac } from "@/constants/platform";
 import { useArchiveAgent } from "@/hooks/use-archive-agent";
 import type { Theme } from "@/styles/theme";
 import { confirmDialog } from "@/utils/confirm-dialog";
@@ -64,7 +65,12 @@ export function DesktopChatMenuItems({
       <Item onSelect={onPin} disabled={disabled} leading={pinned ? unpinLeading : pinLeading}>
         {t(pinned ? "sidebar.workspace.actions.unpin" : "sidebar.workspace.actions.pin")}
       </Item>
-      <Item onSelect={onArchive} disabled={disabled} destructive leading={archiveLeading}>
+      <Item
+        onSelect={onArchive}
+        disabled={disabled}
+        destructive={!getIsElectronMac()}
+        leading={archiveLeading}
+      >
         {t("agentList.archiveSheet.archive")}
       </Item>
       <DropdownMenuSeparator />

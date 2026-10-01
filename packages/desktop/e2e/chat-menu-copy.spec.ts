@@ -50,6 +50,10 @@ test("macOS chat Copy menu uses the current agent and disables unavailable resum
       "opacity",
       "1",
     );
+    const renameColor = await page
+      .getByText("Rename", { exact: true })
+      .evaluate((node) => getComputedStyle(node).color);
+    await expect(page.getByText("Archive", { exact: true })).toHaveCSS("color", renameColor);
     await page.screenshot({ path: testInfo.outputPath("chat-copy-menu.png") });
     await copy.click();
     await expect(
