@@ -42,6 +42,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- Extended the real Custom package regression to cover styled text, code wrapping, question submission and retained drafts across reload and chat navigation.
+
 - Matched Mac font-family fields to compact reference capsules and replaced raw default font stacks with the existing localized System default hint; custom font input and other platforms retain their behavior.
 
 - Integrated upstream through `e10f6d2` (0.11.0-beta.1), retaining the custom Mac layout and usage overview while adopting usage options, stacked-sheet behavior, session import entry, provider fixes and skill deduplication.

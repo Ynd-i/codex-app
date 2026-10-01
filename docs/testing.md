@@ -181,8 +181,14 @@ controls to select Dark and save the maximum code size of 22px, checks 33px Shel
 line spacing and verifies that scrolling to the last line removes the fade.
 The flow checks the motion option and Copy submenu, then opens and cancels the
 actual project editor and verifies return to the original chat and draft.
-These preference changes apply only to the temporary test user data. It keeps the single-instance lock enabled
-inside private user data and does not invoke OS handler registration. The `open-url` event is
+The runner then resets typography and verifies styled quotes, code wrap/scroll
+and a question submission in the packaged renderer, including draft retention
+across reload and chat changes. These chats use the local Mock provider. The native
+check leaves the system clipboard intact; exact copied text is checked by
+`rich-text-reference.spec.ts` in the browser suite.
+These preference changes apply only to the temporary test user data. The runner
+keeps the single-instance lock enabled inside private user data and does not
+invoke OS handler registration. The `open-url` event is
 injected through the test process's own debugger; OS dispatch and coexistence with the
 official app remain separate acceptance checks. Screenshots and logs stay in the
 specified private artifact directory.

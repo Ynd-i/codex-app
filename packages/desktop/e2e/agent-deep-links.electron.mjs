@@ -1,6 +1,12 @@
 import path from "node:path";
 import { expect } from "playwright/test";
 
+const longCode = 'const message = "' + "long code content ".repeat(14) + '";';
+export const styledResponse =
+  "例如，带格式的回复会显示成这样：\n\n> 这是一段引用文字。\n\n这部分是**加粗**，这部分是*斜体*，这部分是~~删除线~~，这里是`行内代码`。\n\n- 项目一\n- 项目二\n\n```\n这是一段代码或纯文本\n```\n\n```ts\n" +
+  longCode +
+  "\n```\n";
+
 /** Runs against the harness's packaged Custom process; no OS protocol registration is involved. */
 export async function runAgentDeepLinksRegression({
   page,
@@ -8,6 +14,7 @@ export async function runAgentDeepLinksRegression({
   workspaceId,
   agentA,
   agentB,
+  styledAgent,
   userData,
   artifactDir,
   evaluateMain,
@@ -258,7 +265,82 @@ export async function runAgentDeepLinksRegression({
   await page.screenshot({ path: path.join(artifactDir, "packaged-project-edit.png") });
   await projectModal.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(projectModal).toBeHidden();
+  await page
+    .getByTestId("settings-sidebar")
+    .getByRole("button", { name: "Appearance", exact: true })
+    .click();
+  await page.getByTestId("appearance-advanced-reset").click();
+  await expect(page.getByRole("textbox", { name: "Code font size", exact: true })).toHaveValue(
+    "12",
+  );
   await page.getByTestId("settings-back-to-workspace").filter({ visible: true }).click();
+  await expectChat("A");
+  await expect(composer).toHaveValue(draft);
+  // Check the production renderer with its native preload, preserving chat A's draft.
+  await evaluateMain(openUrl(link(styledAgent)));
+  await expect(title).toHaveText("Styled response");
+  const timeline = page.getByTestId("agent-chat-scroll").filter({ visible: true }).first();
+  await timeline.hover();
+  await page.mouse.wheel(0, -10000);
+  await expect.poll(() => timeline.evaluate((node) => node.scrollTop)).toBe(0);
+  const assistant = page.getByTestId("assistant-message").filter({ visible: true });
+  const quote = assistant.locator('[data-paseo-markdown-tag="blockquote"]');
+  await expect(quote).toContainText("这是一段引用文字。");
+  await expect(quote).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(quote).toHaveCSS("border-left-width", "3px");
+  await expect(assistant.getByText("斜体", { exact: true })).toHaveCSS("font-style", "italic");
+  await expect(assistant.getByText("删除线", { exact: true })).toHaveCSS(
+    "text-decoration-line",
+    "line-through",
+  );
+  const plain = assistant
+    .locator('[data-paseo-markdown-tag="pre"]')
+    .filter({ hasText: "这是一段代码或纯文本" });
+  await expect(plain.getByText("Plain text", { exact: true })).toBeVisible();
+  await expect(plain).toHaveCSS("border-radius", "20px");
+  const typed = assistant
+    .locator('[data-paseo-markdown-tag="pre"]')
+    .filter({ hasText: "const message" });
+  const code = typed.locator('[data-paseo-markdown-tag="code"]').first();
+  await expect(code).toHaveCSS("white-space", "pre-wrap");
+  await typed.getByRole("button", { name: "Scroll long lines", exact: true }).click();
+  await expect(code).toHaveCSS("white-space", "pre");
+  await expect
+    .poll(() =>
+      typed
+        .getByTestId("markdown-code-scroll")
+        .evaluate((node) => node.scrollWidth > node.clientWidth),
+    )
+    .toBe(true);
+  await typed.getByRole("button", { name: "Wrap long lines", exact: true }).click();
+  await expect(code).toHaveCSS("white-space", "pre-wrap");
+  await expect(typed.getByRole("button", { name: "Copy code", exact: true })).toBeEnabled();
+  // Actual clipboard contents are covered by the browser suite; keep the system clipboard intact.
+  await page.screenshot({ path: path.join(artifactDir, "packaged-styled-text.png") });
+
+  await evaluateMain(openUrl(link(agentB)));
+  await expectChat("B");
+  await composer.fill("Emit synthetic question: single choice.");
+  await composer.press("Enter");
+  const question = page.getByTestId("desktop-permission-dock").getByTestId("question-form-card");
+  await expect(question).toBeVisible();
+  const questionDraft = "Keep my draft while answering.";
+  await composer.fill(questionDraft);
+  await expect(composer).toBeEditable();
+  const send = question.getByTestId("question-form-primary-action");
+  await expect(send).toBeDisabled();
+  const choice = question.getByRole("radio", { name: "Use the existing component", exact: true });
+  await expect(choice).toHaveAttribute("aria-checked", "false");
+  await page.screenshot({ path: path.join(artifactDir, "packaged-question-pending.png") });
+  await choice.click();
+  await send.click();
+  await expect(question).toHaveCount(0);
+  await expect(composer).toHaveValue(questionDraft);
+  await page.reload();
+  await expectChat("B");
+  await expect(composer).toHaveValue(questionDraft);
+  await expect(question).toHaveCount(0);
+  await evaluateMain(openUrl(link(agentA)));
   await expectChat("A");
   await expect(composer).toHaveValue(draft);
   return {
@@ -284,6 +366,8 @@ export async function runAgentDeepLinksRegression({
     packagedCopyMenu: true,
     packagedSubmenuKeyboard: true,
     packagedProjectEditor: true,
+    packagedStyledText: true,
+    packagedQuestionSubmission: true,
     invalidUrlRejected: true,
     osProtocolDispatch: "not tested",
   };

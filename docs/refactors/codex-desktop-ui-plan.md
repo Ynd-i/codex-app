@@ -2090,13 +2090,37 @@ a stale bounding box. Root format/lint/typecheck pass. No real provider was invo
 Implementation commits: `dbdfffd` (rich text) and `cae17e9` (questions); normal
 format/lint/typecheck hooks pass. The refreshed Custom package passes real
 renderer/preload, custom identity/update guard, isolated daemon, bundled CLI and
-terminal smoke. This proves package startup; renderer cases separately prove
+terminal smoke. The subsequent native package regression below also checks
 question and rich-text interactions. Read-only review found no new question/permission
 protocol or draft regression.
 Logs: `/private/tmp/paseo-question-rich-verified.log`, `/private/tmp/paseo-question-final.log`,
 `/private/tmp/paseo-question-rich-units-final.log`,
 `/private/tmp/paseo-question-fixture-units.log`, and
 `/private/tmp/paseo-question-rich-{format,lint-final,typecheck-final}.log`.
+
+#### Native packaged conversation checks
+
+The real Custom Electron regression now opens a third Mock chat containing the
+styled reference text. It checks transparent quotes, their 3px border, italic and
+strikethrough text, rounded code blocks, language headers and working wrap/scroll
+controls. A separate Mock chat exercises the actual question card: no initial
+selection, disabled Send until answered, submission, retained editable draft,
+reload without a pending question and return to another chat's original draft.
+All traffic goes through the isolated daemon and packaged preload. The production
+bundle is the existing `694c3e5` build; this slice changes the test harness only.
+
+The complete runner passes with exit 0, including its existing custom-link,
+settings, file/browser dock and shell checks. Log:
+`/private/tmp/paseo-native-conversation-verified.log`; report and captures:
+`/private/tmp/paseo-native-conversation-verified-qa/`.
+[Packaged styled text](../qa-evidence/codex-desktop/packaged-styled-text.png) and
+[packaged question](../qa-evidence/codex-desktop/packaged-question-pending.png)
+were inspected. These 1200×783 CSS viewport captures prove native interaction
+and rendering, not full pixel equality with the 1352×782 reference. Paragraph
+spacing still appears wider than the reference and needs a matched-state check.
+Clipboard writes remain covered by the browser test; this native run only checks
+the Copy button's availability and leaves the system clipboard intact. No real
+provider turn, external service, OS protocol dispatch or production daemon is involved.
 
 ### Upstream refresh to e10f6d2 — 2026-10-01
 

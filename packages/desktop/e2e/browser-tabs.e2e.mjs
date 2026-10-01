@@ -15,7 +15,7 @@ import { chromium } from "playwright";
 import { expect } from "playwright/test";
 import { runAppearanceFontSizeRegression } from "./appearance-font-size.electron.mjs";
 import { runSettingsMemoryRegression } from "./settings-memory.electron.mjs";
-import { runAgentDeepLinksRegression } from "./agent-deep-links.electron.mjs";
+import { runAgentDeepLinksRegression, styledResponse } from "./agent-deep-links.electron.mjs";
 
 import { seedPluginLinks, runPluginLinksRegression } from "./plugin-links.electron.mjs";
 
@@ -289,6 +289,7 @@ async function createCallerAgent(
   {
     title = "Browser desktop browser E2E caller",
     initialPrompt = "Remain available while the browser bridge regression runs.",
+    features,
   } = {},
 ) {
   const transport = new StreamableHTTPClientTransport(
@@ -303,7 +304,7 @@ async function createCallerAgent(
         workspace: { kind: "existing", workspaceId: workspaceIds[0] },
         title,
         provider: "mock/ten-second-stream",
-        settings: { modeId: "load-test" },
+        settings: { modeId: "load-test", features },
         initialPrompt,
         background: true,
       },
@@ -1311,6 +1312,11 @@ async function main() {
         title: "Deep link chat B",
         initialPrompt: "Synthetic deep link fixture B.",
       });
+      const styledAgent = await createCallerAgent(daemonPort, {
+        title: "Styled response",
+        initialPrompt: "Show styled text.",
+        features: { mockAssistantResponse: styledResponse },
+      });
       const desktopEnv = {
         ...commonEnv,
         PASEO_ELECTRON_USER_DATA_DIR: userData,
@@ -1341,6 +1347,7 @@ async function main() {
           workspaceId: workspaceIds[0],
           agentA,
           agentB,
+          styledAgent,
           userData,
           artifactDir,
           evaluateMain: (expression) => evaluateMain(inspectorPort, expression),
