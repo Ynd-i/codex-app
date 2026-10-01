@@ -1507,11 +1507,11 @@ Appearance captures were inspected in the private artifact directory
 `/private/tmp/paseo-settings-return-final-{format,lint}.log`. The first concurrent
 typecheck raced the dependency build; the final check was run after build completion.
 
-The latest Custom refresh was built from `b81718f` after the Diff dock and code-paint renderer
+The latest Custom refresh was built from `86f3551` after the Diff dock, paint and comparison-base renderer
 checks passed. Its real renderer/preload, custom identity/update guard, isolated
 daemon startup, bundled CLI and terminal smoke pass. Log:
-`/private/tmp/paseo-diff-paint-package-build.log`; artifacts:
-`/private/tmp/paseo-diff-paint-package-qa`. This smoke establishes package startup;
+`/private/tmp/paseo-diff-base-package-build.log`; artifacts:
+`/private/tmp/paseo-diff-base-package-qa`. This smoke establishes package startup;
 the populated Diff interaction evidence is the isolated renderer case below.
 
 The preceding Custom refresh matched production source `5b5083b`, including code
@@ -1719,8 +1719,8 @@ the synthetic renderer captures are 1352×782 (@1x), at the same CSS viewport.
 This establishes the dock/tree layout and interaction slice, not full pixel parity:
 the fixture has two small changes, while the reference is scrolled into a large
 diff. Intraline highlights, diff hunk treatments and large-diff notices still need
-state-matched refinement. The current branch control retains Paseo checkout
-semantics; a comparison-base picker must not be fabricated from that control.
+state-matched refinement. Standalone Mac Diff now has the query-only comparison
+picker described below; the Changes view retains its original checkout switcher.
 Refresh likewise retains its own operation instead of impersonating reference
 search. The user's default workspace sidebar remains intentionally retained.
 
@@ -1766,6 +1766,53 @@ large-diff pagination, hunk-expansion or per-character highlight fidelity.
 Implementation commit: `b81718f`; normal commit hooks pass. The refreshed Custom
 package also passes renderer/preload, custom identity/update guard, isolated
 daemon, CLI and terminal smoke. The read-only review found no material issue.
+
+#### Comparison base
+
+Standalone Mac Diff shows current branch → comparison base. Choosing a ref updates
+the existing diff subscription; it never checks out, stashes or edits files. The
+existing suggestion API's local/origin provenance is retained so equal short names
+map to different fully qualified refs. Older or incomplete host metadata goes
+through the existing read-only branch validation API. Failed validation retains
+the prior choice, and stale asynchronous results cannot override a newer choice
+or changed client/checkout. Suggestions retain the existing 200-result limit.
+
+Selection shares the existing workspace comparison state across Diff and Changes.
+Custom bases expire on dirty-state, current-branch or default-base transitions;
+ordinary mode selection keeps its original dirty-state-only lifetime. Push and
+fetch status paths use the same snapshot normalization. Query, base-review draft
+and review attachment refs are aligned; uncommitted drafts retain their original
+default-ref identity when switching comparison branches. This is ephemeral state,
+consistent with the existing comparison mode, not a new persisted preference.
+
+Paseo-owned worktrees keep their backend-enforced fixed base: the picker is disabled
+with an explanation. The Changes commit-history API still uses the workspace base;
+when a custom comparison differs, that existing history is explicitly labelled
+with its own base. No backend, protocol or provider behavior was changed.
+
+The [local base](../qa-evidence/codex-desktop/diff-local-base.png),
+[remote base](../qa-evidence/codex-desktop/diff-remote-base.png), and
+[fixed worktree](../qa-evidence/codex-desktop/diff-fixed-worktree-base.png) captures
+were inspected at 1352×782. Three renderer cases pass (29.7s): different local/origin
+refs produce the expected different file sets; HEAD, current branch, working files
+and stash remain unchanged; refresh retains the comparison; Changes agrees with
+Diff; uncommitted review comments and chat drafts survive switching; a real isolated
+Paseo worktree disables the picker and explains why. The existing Diff tree, color,
+theme and weight case also passes. The initial tooltip check hovered the row's
+middle, not its disabled button; correcting that locator required no product change.
+
+State/option/cache regressions reproduced and fixed default-branch duplication,
+detached-HEAD candidates, refetch expiry and legacy mode lifetime. Sixty-three
+focused state/cache/option/locale tests pass; the expanded five-case options test
+passes again with incomplete provenance coverage. Root format/lint/typecheck pass.
+Logs: `/private/tmp/paseo-diff-base-{state,snapshot,options,refetch,legacy-lifetime,partial}-red.log`,
+`/private/tmp/paseo-diff-base-units-complete.log`, `/private/tmp/paseo-diff-base-partial-green.log`,
+`/private/tmp/paseo-diff-base-renderer-complete.log`, and
+`/private/tmp/paseo-diff-base-{format,lint,typecheck}-complete.log`.
+Implementation commit: `86f3551`; normal commit hooks and the refreshed Custom
+package startup/CLI/terminal smoke pass. Read-only review identified the refetch
+expiry bug before commit; a final review confirmed its fix and asynchronous
+selection guards. No remaining material correctness finding was reported.
 
 ### Recording references — 2026-09-30
 
