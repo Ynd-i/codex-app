@@ -105,12 +105,12 @@ Do not treat a missing screenshot as a reason to stop unrelated implementation.
 Use this plan for status and the root changelog for user-visible changes; do not
 create another task ledger.
 
-| Track                  | Ordered slices                                                                                                                                                                                   | Completion evidence                                                                                                                                                                      |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Chat and composer      | Align transcript width, type and spacing; align composer and attachment previews; adapt provider-backed model/effort controls.                                                                   | Targeted action regressions; isolated renderer checks for sibling drafts, navigation, send/stop and attachments; native comparison against the matching supplied state.                  |
-| Supporting UI          | Inspect the supplied browser and settings states; adapt existing panels one at a time; then tool output, waiting approval and populated diff when their references are available.                | Existing panel navigation and keyboard behavior retained; empty, loading and error states checked; each visual state has its own evidence.                                               |
-| Upstream compatibility | Keep presentation in desktop overrides; review each upstream merge; rebuild affected workspace dependencies before checking consumers.                                                           | Small revertible commits, no unintended backend/protocol changes, targeted tests for changed upstream behavior. Latest source integration: `e10f6d2`; package refresh is recorded below. |
-| Distribution           | Inspect existing identity and updater configuration; prevent a custom package from installing official Paseo bundles; prepare a separate identity/channel; build and validate the local package. | Packaged launch and update behavior accepted separately from development. A release destination, signing identity and any publication are resolved before distribution.                  |
+| Track                  | Ordered slices                                                                                                                                                                                   | Completion evidence                                                                                                                                                                         |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Chat and composer      | Align transcript width, type and spacing; align composer and attachment previews; adapt provider-backed model/effort controls.                                                                   | Targeted action regressions; isolated renderer checks for sibling drafts, navigation, send/stop and attachments; native comparison against the matching supplied state.                     |
+| Supporting UI          | Inspect the supplied browser and settings states; adapt existing panels one at a time; then tool output, waiting approval and populated diff when their references are available.                | Existing panel navigation and keyboard behavior retained; empty, loading and error states checked; each visual state has its own evidence.                                                  |
+| Upstream compatibility | Keep presentation in desktop overrides; review each upstream merge; rebuild affected workspace dependencies before checking consumers.                                                           | Small revertible commits, no unintended backend/protocol changes, targeted tests for changed upstream behavior. Last accepted upstream parent: `e10f6d2`; Custom package checks pass below. |
+| Distribution           | Inspect existing identity and updater configuration; prevent a custom package from installing official Paseo bundles; prepare a separate identity/channel; build and validate the local package. | Packaged launch and update behavior accepted separately from development. A release destination, signing identity and any publication are resolved before distribution.                     |
 
 For each slice: inspect its source and reference, make the smallest change, run
 focused checks plus root typecheck/lint/format, review the diff, update the relevant
@@ -1589,14 +1589,15 @@ Appearance captures were inspected in the private artifact directory
 `/private/tmp/paseo-settings-return-final-{format,lint}.log`. The first concurrent
 typecheck raced the dependency build; the final check was run after build completion.
 
-The latest Custom refresh was built from `56377ae`, including interface/content
-weight, fixed question cards, styled quotes/code blocks, tool approvals and
-preceding Diff changes. Real renderer/preload, custom
+The latest Custom refresh was built from merge `34d9f5f` on 0.11.0-beta.1,
+including upstream `e10f6d2` and all custom interface/content weights, question
+cards, styled text, tool approvals and Diff changes. Real renderer/preload, custom
 identity/update guard, isolated daemon, bundled CLI and terminal smoke pass.
-Log: `/private/tmp/paseo-ui-weight-package-build.log`; artifacts:
-`/private/tmp/paseo-ui-weight-package-smoke`. The deeper real-package interface/
-code-weight and reload checks pass in `/private/tmp/paseo-ui-weight-package-verified.log`
-with artifacts at `/private/tmp/paseo-ui-weight-package-final-qa`. This smoke establishes package startup;
+Log: `/private/tmp/paseo-upstream-e10-package-build.log`; artifacts:
+`/private/tmp/paseo-upstream-e10-package-smoke`. The deeper real-package menu,
+font-weight, reload, file/browser and deep-link checks pass in
+`/private/tmp/paseo-upstream-e10-package-final.log`, with artifacts at
+`/private/tmp/paseo-upstream-e10-package-qa`. This smoke establishes package startup;
 approval and populated Diff interactions have separate isolated renderer evidence below.
 
 The preceding Custom refresh matched production source `5b5083b`, including code
@@ -2122,7 +2123,11 @@ record the merged renderer. Logs: `/private/tmp/paseo-upstream-e10-install.log`,
 `/private/tmp/paseo-upstream-e10-final.log`, and
 `/private/tmp/paseo-upstream-e10-{format-final,lint-final,typecheck-final}.log`.
 This does not establish real-provider runs, Windows/device or Nix/distribution
-acceptance. The Custom package is refreshed after the merge commit.
+acceptance. Merge commit `34d9f5f` has parents `f9a281b` and `e10f6d2`; normal
+format/lint/typecheck hooks pass. Its refreshed Custom package passes real
+renderer/preload, isolated daemon, CLI/terminal, identity/update protection and
+the deeper desktop menu/font/reload/file/browser/deep-link checks. Protected
+daemons were not restarted. Package logs and artifacts are listed above.
 
 ### Recording references — 2026-09-30
 
