@@ -1507,11 +1507,11 @@ Appearance captures were inspected in the private artifact directory
 `/private/tmp/paseo-settings-return-final-{format,lint}.log`. The first concurrent
 typecheck raced the dependency build; the final check was run after build completion.
 
-The latest Custom refresh was built from `86f3551` after the Diff dock, paint and comparison-base renderer
+The latest Custom refresh was built from `e367355` after the Diff dock, paint, comparison-base and intraline renderer
 checks passed. Its real renderer/preload, custom identity/update guard, isolated
 daemon startup, bundled CLI and terminal smoke pass. Log:
-`/private/tmp/paseo-diff-base-package-build.log`; artifacts:
-`/private/tmp/paseo-diff-base-package-qa`. This smoke establishes package startup;
+`/private/tmp/paseo-intraline-package-build.log`; artifacts:
+`/private/tmp/paseo-intraline-package-qa`. This smoke establishes package startup;
 the populated Diff interaction evidence is the isolated renderer case below.
 
 The preceding Custom refresh matched production source `5b5083b`, including code
@@ -1718,7 +1718,7 @@ were compared with the supplied reference pair. Source PNGs are 2704×1564 (@2x)
 the synthetic renderer captures are 1352×782 (@1x), at the same CSS viewport.
 This establishes the dock/tree layout and interaction slice, not full pixel parity:
 the fixture has two small changes, while the reference is scrolled into a large
-diff. Intraline highlights, diff hunk treatments and large-diff notices still need
+diff. Diff hunk treatments and large-diff notices still need
 state-matched refinement. Standalone Mac Diff now has the query-only comparison
 picker described below; the Changes view retains its original checkout switcher.
 Refresh likewise retains its own operation instead of impersonating reference
@@ -1762,10 +1762,47 @@ Logs: `/private/tmp/paseo-diff-paint-palette-{red,green,final}.log`,
 `/private/tmp/paseo-diff-paint-canvas-{red,green}.log`,
 `/private/tmp/paseo-diff-paint-final-{format,lint,typecheck,unit}.log`, and
 `/private/tmp/paseo-diff-paint-renderer.log`. The small fixture does not establish
-large-diff pagination, hunk-expansion or per-character highlight fidelity.
+large-diff pagination or hunk-expansion fidelity.
 Implementation commit: `b81718f`; normal commit hooks pass. The refreshed Custom
 package also passes renderer/preload, custom identity/update guard, isolated
 daemon, CLI and terminal smoke. The read-only review found no material issue.
+
+#### Intraline highlights
+
+Default-dark Mac diffs now mark changed grapheme ranges with the sampled stronger
+addition/deletion backgrounds `#33633b`/`#774130`. Unified and split views reuse
+the same existing line pairing. The source content and line identity remain
+unchanged; range offsets are UTF-16, matching existing selection and review geometry.
+Backgrounds use measured fragment widths and the existing code viewport clip,
+including horizontal offset and wrapped fragments, without entering review space.
+
+The app explicitly depends on the repository's already-used `diff` 8.0.3 runtime
+version. [Its documented diffArrays/edit-distance limit](https://github.com/kpdecker/jsdiff/tree/v8.0.3#universal-options)
+is used with the existing grapheme-break library, rather than another custom diff
+algorithm. npm generated the dependency/lock update. Lines over 8192 UTF-16 units
+or beyond 256 grapheme edits retain their row tint; fine-grained minified-line
+diffs would need worker computation before raising that render-thread budget.
+
+Ranges are prepared only in the materialization window. Wrapped rows still get
+their required height measurement outside that window, but not intraline work;
+the first implementation coupled these two operations, and the new wrapped/unwrapped
+unified/split regression reproduced and fixed it. Reused measured rows fill missing
+ranges when scrolled into view. Completed empty ranges are retained to avoid repeats.
+
+Seventy-two focused range/model/paint/selection/cache/palette tests pass. Three
+renderer cases pass (29.7s), and the affected Diff case passes again after the lazy
+wrap fix (21.0s), including eight actual pixel colors, layout/wrap changes, retained
+canvas/drafts, and Light/Claude/Dark boundaries. The refreshed open/closed-tree
+captures above were compared with the reference; their shorter synthetic lines
+make the individual highlights visible. Root format, lint and typecheck pass.
+Logs: `/private/tmp/paseo-intraline-{model,paint,wrap}-red.log`,
+`/private/tmp/paseo-intraline-wrap-green.log`, `/private/tmp/paseo-intraline-bound-green.log`,
+`/private/tmp/paseo-intraline-renderer{,-final}.log`, and
+`/private/tmp/paseo-intraline-{format,lint,typecheck}-final.log`.
+Implementation commit: `e367355`; normal commit hooks pass. The refreshed Custom
+package passes real renderer/preload startup, custom identity/update guard,
+isolated daemon, bundled CLI and terminal smoke, including the new dependency.
+Read-only review found no material issue in the final lazy/cache handling.
 
 #### Comparison base
 
