@@ -5,6 +5,11 @@ import { composerLocator } from "../../app/e2e/support/helpers/composer";
 import { getServerId } from "../../app/e2e/support/helpers/server-id";
 import { getE2EDaemonPort } from "../../app/e2e/support/helpers/daemon-port";
 import { installDesktopRuntime } from "./support/runtime";
+import { openSettings } from "../../app/e2e/support/helpers/app";
+import {
+  openSettingsSection,
+  clickSettingsBackToWorkspace,
+} from "../../app/e2e/support/helpers/settings";
 
 test("macOS diff keeps its canvas and chat while the right file tree toggles", async ({
   page,
@@ -42,6 +47,26 @@ test("macOS diff keeps its canvas and chat while the right file tree toggles", a
     const diff = page.getByTestId("working-diff-panel").filter({ visible: true });
     const canvas = diff.getByTestId("git-diff-canvas");
     await expect(canvas).toBeVisible();
+    await expect(canvas).toHaveCSS("font-weight", "600");
+    const referenceColors = ["#00c853", "#ff5f38", "#334a34", "#55392e", "#122013", "#28150e"];
+    const paintedColors = () =>
+      canvas.evaluate((node, wanted) => {
+        const element = node as HTMLCanvasElement;
+        const context = element.getContext("2d");
+        if (!context) throw new Error("Missing canvas context");
+        const { data } = context.getImageData(0, 0, element.width, element.height);
+        const found = new Set<string>();
+        for (let index = 0; index < data.length; index += 4) {
+          found.add(
+            "#" +
+              [data[index], data[index + 1], data[index + 2]]
+                .map((value) => value.toString(16).padStart(2, "0"))
+                .join(""),
+          );
+        }
+        return wanted.filter((color) => found.has(color));
+      }, referenceColors);
+    await expect.poll(paintedColors).toEqual(referenceColors);
     const toggle = diff.getByTestId("changes-toggle-tree");
     await expect(toggle).toBeVisible();
     await expect(diff.getByTestId("commits-section-header")).toHaveCount(0);
@@ -91,6 +116,14 @@ test("macOS diff keeps its canvas and chat while the right file tree toggles", a
     await page.reload();
     await expect(toggle).toBeVisible();
     await expect(tree).toHaveCount(0);
+    for (const theme of ["Light", "Claude", "Dark"]) {
+      await openSettings(page);
+      await openSettingsSection(page, "appearance");
+      await page.getByLabel(/^Theme:/).click();
+      await page.getByRole("menuitem", { name: theme, exact: true }).click();
+      await clickSettingsBackToWorkspace(page);
+      await expect.poll(paintedColors).toEqual(theme === "Dark" ? referenceColors : []);
+    }
   } finally {
     await fixture.cleanup();
   }

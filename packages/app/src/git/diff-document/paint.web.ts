@@ -284,7 +284,30 @@ function paintLine(
         input.row.reviewHeight,
       );
     }
-    if (!cell) return;
+    const bodyHeight = input.row.height - input.row.reviewHeight;
+    if (!cell) {
+      if (input.palette.emptyStripe) {
+        paintEmptyStripes(
+          input.context,
+          x,
+          input.y,
+          columnWidth,
+          bodyHeight,
+          input.row.top,
+          input.palette.emptyStripe,
+        );
+      }
+      return;
+    }
+    paintChangedGutter(
+      input.context,
+      cell,
+      input.palette,
+      x,
+      input.y,
+      file.gutterWidth,
+      bodyHeight,
+    );
     input.context.fillStyle = input.palette.border;
     input.context.fillRect(x + file.gutterWidth, input.y, 1, reviewDividerHeight(input.row.height));
     if (cell.lineNumber !== null) {
@@ -308,6 +331,50 @@ function paintLine(
     paintCellText({ ...input, cell, x: x + file.gutterWidth + CODE_LEFT_PADDING });
     input.context.restore();
   });
+}
+
+function paintChangedGutter(
+  context: CanvasRenderingContext2D,
+  cell: DiffCell,
+  palette: DiffPalette,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+): void {
+  if (cell.type !== "add" && cell.type !== "remove") return;
+  const background =
+    cell.type === "add" ? palette.additionGutterBackground : palette.deletionGutterBackground;
+  if (!background) return;
+  context.fillStyle = background;
+  context.fillRect(x, y, width, height);
+  context.fillStyle = cell.type === "add" ? palette.addition : palette.deletion;
+  context.fillRect(x, y, 4, height);
+}
+
+function paintEmptyStripes(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  documentTop: number,
+  color: string,
+): void {
+  context.save();
+  context.beginPath();
+  context.rect(x, y, width, height);
+  context.clip();
+  context.strokeStyle = color;
+  context.lineWidth = 1;
+  context.beginPath();
+  // Anchor the pattern to document coordinates so adjacent rows and scroll paints agree.
+  for (let offset = -(documentTop % 8) - height; offset < width; offset += 8) {
+    context.moveTo(x + offset, y + height);
+    context.lineTo(x + offset + height, y);
+  }
+  context.stroke();
+  context.restore();
 }
 
 function paintCellText(

@@ -28,6 +28,81 @@ describe("web diff typography", () => {
 });
 
 describe("web diff text shaping", () => {
+  it("paints changed gutters and clips empty-side stripes above inline reviews", () => {
+    const fills: Array<[string, number, number, number, number]> = [];
+    const clips: number[][] = [];
+    const strokes: string[] = [];
+    const context = {
+      fillStyle: "",
+      strokeStyle: "",
+      font: "",
+      textBaseline: "alphabetic",
+      lineWidth: 1,
+      setTransform() {},
+      clearRect() {},
+      save() {},
+      restore() {},
+      beginPath() {},
+      clip() {},
+      fillText() {},
+      moveTo() {},
+      lineTo() {},
+      fillRect(x: number, y: number, width: number, height: number) {
+        fills.push([this.fillStyle, x, y, width, height]);
+      },
+      rect(...bounds: number[]) {
+        clips.push(bounds);
+      },
+      stroke() {
+        strokes.push(this.strokeStyle);
+      },
+    };
+    const base = createSelectionModel("split");
+    const first = base.rows[0] as DiffLineRow;
+    const decorated: DiffDocumentModel = {
+      ...base,
+      rows: [
+        first,
+        {
+          ...first,
+          index: 1,
+          top: 18,
+          height: 28,
+          reviewHeight: 10,
+          cells: [null, selectionCell("new")],
+        },
+      ],
+      files: [{ ...base.files[0]!, bodyHeight: 46, bottom: 46, rowEnd: 2 }],
+      height: 46,
+    };
+    paintWebViewport({
+      context: context as unknown as CanvasRenderingContext2D,
+      model: decorated,
+      palette: {
+        ...palette,
+        additionGutterBackground: "green-gutter",
+        deletionGutterBackground: "red-gutter",
+        emptyStripe: "stripe",
+      },
+      typography: { family: "monospace", size: 12, lineHeight: 18 },
+      headerTypography,
+      measureText: { measure: () => 6 },
+      scrollTop: 0,
+      viewportWidth: 200,
+      viewportHeight: 60,
+      horizontalOffsets: new Map(),
+      selection: null,
+      activeHeaderPath: null,
+      devicePixelRatio: 1,
+    });
+    expect(fills).toContainEqual(["red-gutter", 0, 0, 20, 18]);
+    expect(fills).toContainEqual(["red", 0, 0, 4, 18]);
+    expect(fills).toContainEqual(["green-gutter", 100, 18, 20, 18]);
+    expect(fills).toContainEqual(["green", 100, 18, 4, 18]);
+    expect(strokes).toContain("stripe");
+    expect(clips).toContainEqual([0, 18, 100, 18]);
+  });
+
   it("matches the 30px file-header alignment rails exactly", () => {
     const fills: Array<{ color: string; x: number; y: number; width: number; height: number }> = [];
     const labels: Array<{ text: string; x: number; y: number; color: string; font: string }> = [];

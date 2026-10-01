@@ -32,6 +32,7 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- Matched macOS default-dark Diff row/gutter colors and empty-side hatching to the supplied reference; default Diff code weight now follows the Mac editor's semibold style while explicit weights remain authoritative.
 - Centered the macOS browser's empty address hint while retaining left-aligned URL editing and caret behavior.
 - Matched the default macOS dark reasoning control to the reference's coral accent, preserving other theme palettes and provider choices.
 - Matched macOS Appearance size fields to the compact reference shape while retaining larger-font sizing and other theme palettes.
