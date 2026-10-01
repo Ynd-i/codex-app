@@ -8,9 +8,11 @@ distribution and full migration acceptance remain pending; see the
 
 ### Added
 
+- Added a fixed macOS question card above the editable composer, with numbered choices and provider-defined answering/dismiss behavior, plus code-block language headers and working wrap/copy controls.
+
 - Added independent macOS content font weight controls, live preview and Advanced reset, preserving chat drafts, stronger emphasis and separate code/UI typography.
 
-- Added a macOS tool-approval card at the composer position, retaining drafts, provider-defined permission choices, scoped keyboard shortcuts and manual retry after connection failure; plans and questions keep their existing inline flow.
+- Added a macOS tool-approval card at the composer position, retaining drafts, provider-defined permission choices, scoped keyboard shortcuts and manual retry after connection failure; plans keep their existing inline flow.
 
 - Added grapheme-safe intraline highlights to macOS default-dark diffs, preserving original source/selection data and deferring computation outside the visible materialization window.
 - Added a query-only comparison-base picker to macOS Diff tabs, distinguishing local and origin refs while preserving checkout state, review drafts and fixed worktree bases.
@@ -37,6 +39,8 @@ distribution and full migration acceptance remain pending; see the
 - Added an independent content font in Appearance for conversation text, Markdown and the composer. Leaving it empty follows the interface font; code retains its monospace font.
 
 ### Changed
+
+- Matched macOS Markdown quotes to the supplied transparent, narrow-bar reference while retaining paragraph spacing inside multi-paragraph quotes and preserving other platforms.
 
 - Matched macOS default-dark Diff row/gutter colors and empty-side hatching to the supplied reference; default Diff code weight now follows the Mac editor's semibold style while explicit weights remain authoritative.
 - Centered the macOS browser's empty address hint while retaining left-aligned URL editing and caret behavior.

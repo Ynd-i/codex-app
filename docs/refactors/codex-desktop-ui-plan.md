@@ -1546,11 +1546,12 @@ Appearance captures were inspected in the private artifact directory
 `/private/tmp/paseo-settings-return-final-{format,lint}.log`. The first concurrent
 typecheck raced the dependency build; the final check was run after build completion.
 
-The latest Custom refresh was built from `72c4163`, including content weight,
-the pending tool approval dock and preceding Diff changes. Real renderer/preload, custom
+The latest Custom refresh was built from `cae17e9`, including fixed question
+cards, styled quotes/code blocks, content weight, tool approvals and preceding
+Diff changes. Real renderer/preload, custom
 identity/update guard, isolated daemon, bundled CLI and terminal smoke pass.
-Log: `/private/tmp/paseo-content-weight-package-build.log`; artifacts:
-`/private/tmp/paseo-content-weight-package-qa`. This smoke establishes package startup;
+Log: `/private/tmp/paseo-question-rich-package-build.log`; artifacts:
+`/private/tmp/paseo-question-rich-package-qa`. This smoke establishes package startup;
 approval and populated Diff interactions have separate isolated renderer evidence below.
 
 The preceding Custom refresh matched production source `5b5083b`, including code
@@ -1746,7 +1747,7 @@ left bar, bold/italic/strikethrough spans, inline code, compact bullet spacing a
 a rounded plain-text code block with a language header and copy/wrap actions.
 The directory now contains 80 originals; the preceding 79 remain unchanged.
 This is additional evidence for transcript polish, not proof that those surfaces
-already match. Quote and code-block chrome are explicit follow-up work.
+already match. The question and rich-text implementation below addresses these surfaces.
 
 ### Diff dock and file filter — 2026-10-01
 
@@ -1915,7 +1916,9 @@ Computer Use card's 20px corners, neutral surface, split action row and filled
 primary action. Command details remain visible through the existing tool renderer.
 The original composer stays mounted and hidden while a tool request is pending;
 its draft returns after resolution. The timeline shows a waiting indicator.
-Plans and questions retain their inline presentation and usable composer.
+Plans retain their inline presentation and usable composer. Questions were inline
+in this first slice; the later user-question reference and implementation below
+supersede that placement while preserving the editable composer.
 
 The provider remains authoritative for action IDs, labels and permission scopes.
 Only an explicitly unique primary action receives Enter; a unique denial receives
@@ -1959,7 +1962,65 @@ backend unchanged. This slice covers pending requests and restoration only. The 
 expanded denial record is deferred outside the frontend-only scope: the manager
 only broadcasts resolutions and persists timeline items, while the client removes
 the resolved pending request. No local-only approval history was invented.
-Question-card and rich-text visual parity and distribution acceptance remain open work.
+The question-card and rich-text implementation below addresses the newly supplied
+references. Remaining font/interface polish and distribution acceptance stay open.
+
+### User questions and styled responses — 2026-10-01
+
+Mac user questions now share the existing permission dock above the ordinary
+composer. Unlike tool approvals, questions keep the composer editable and retain
+its draft. Reading earlier messages does not scroll the pending question away.
+The single-chat main area and existing tool dock remain unchanged. Plans and
+archived/no-composer requests still use their existing inline path.
+
+The card follows the new question reference: 20px corners, neutral dark surface,
+question title/close control, numbered single-choice rows, selected-row arrow,
+free-text entry and compact action buttons. Multi-select retains checkbox
+semantics, and multi-question navigation remains available. The initial choice
+is not silently selected. Answer encoding, automatic advance after single-choice,
+required-answer validation and provider dismissal labels remain authoritative.
+Only the existing empty-answer dismissal fallback says Skip; other dismissal
+paths retain their original semantics. Production providers/protocols are unchanged.
+Two Mock-only question fixtures cover single choice and multiple choices plus text.
+
+Mac styled responses now show a transparent quote with a 3px left bar, trimming
+only the last paragraph's bottom margin within the quote. Code blocks reuse the
+existing highlighter and copier, adding a language/plain-text header and a live
+wrap/horizontal-scroll toggle. The header is excluded from selection-copy markup.
+Copy code retains the original trailing-newline policy; Copy turn retains the
+canonical Markdown. Code/UI/content font roles remain independent. Other platforms
+keep their original quote fill and code-block presentation.
+
+Reference pixels were sampled after sRGB conversion: code surface `#454543` and
+quote bar `#5d5d5a`. Dark overrides are scoped to the Mac reference palette; other
+themes retain semantic colors. [Styled response](../qa-evidence/codex-desktop/styled-text.png),
+[single question](../qa-evidence/codex-desktop/question-single-choice-pending.png),
+[multiple questions](../qa-evidence/codex-desktop/question-pending-wide.png) and
+[narrow questions](../qa-evidence/codex-desktop/question-pending-narrow.png) were inspected.
+The screenshot's default highlighted option is represented only by hover/focus
+or an actual selection, without adding a provider default.
+
+Eight renderer cases pass (36.7s), covering real local question-answer messages,
+multiple-choice/free-text encoding, dismissal, draft retention, fixed-card scroll,
+wide/narrow layouts, existing tool approval actions, plan steering, Mac quote/code
+styles, wrap geometry and exact code/Markdown copying. The Windows frontend branch
+retains its original presentation; this is simulated renderer coverage, not VM
+acceptance. The final Mac/narrow and Windows question checks pass again after the footer
+refactor and narrow-button alignment (two cases, 18.4s). Fifty-four
+question-core/Markdown/locale checks and two focused Mock
+fixture tests pass. A pre-existing narrow-layout test sampled an element during
+responsive remount; it now polls the actual final button bounds instead of using
+a stale bounding box. Root format/lint/typecheck pass. No real provider was invoked.
+Implementation commits: `dbdfffd` (rich text) and `cae17e9` (questions); normal
+format/lint/typecheck hooks pass. The refreshed Custom package passes real
+renderer/preload, custom identity/update guard, isolated daemon, bundled CLI and
+terminal smoke. This proves package startup; renderer cases separately prove
+question and rich-text interactions. Read-only review found no new question/permission
+protocol or draft regression.
+Logs: `/private/tmp/paseo-question-rich-verified.log`, `/private/tmp/paseo-question-final.log`,
+`/private/tmp/paseo-question-rich-units-final.log`,
+`/private/tmp/paseo-question-fixture-units.log`, and
+`/private/tmp/paseo-question-rich-{format,lint-final,typecheck-final}.log`.
 
 ### Recording references — 2026-09-30
 
