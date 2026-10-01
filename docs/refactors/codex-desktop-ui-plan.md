@@ -1613,7 +1613,15 @@ Appearance captures were inspected in the private artifact directory
 `/private/tmp/paseo-settings-return-final-{format,lint}.log`. The first concurrent
 typecheck raced the dependency build; the final check was run after build completion.
 
-The latest Custom refresh was built from `7d50fed` on 0.11.0-beta.1 after
+The latest Custom refresh was built from `20f5874` on 0.11.0-beta.1 after
+upstream merge `34d9f5f`. Startup/CLI/terminal smoke and the native interaction
+runner pass, including the 82px code-card assertion, wrap/scroll controls, reply
+timing, column alignment, question submission and retained drafts.
+Logs: `/private/tmp/paseo-code-density-package-build.log` and
+`/private/tmp/paseo-code-density-package.log`; artifacts:
+`/private/tmp/paseo-code-density-package-{smoke,qa}`.
+
+The preceding Custom refresh was built from `7d50fed` on 0.11.0-beta.1 after
 upstream merge `34d9f5f`. Startup/CLI/terminal smoke and the native interaction
 runner pass, including plain replies without empty activity headers, visible
 completion times, column/spacing checks, question submission and retained drafts.
@@ -2242,6 +2250,11 @@ tests pass. [Updated density](../qa-evidence/codex-desktop/code-list-density.png
 was inspected. Logs: `/private/tmp/paseo-code-density-{red,green,units}.log`.
 Non-Mac density is unchanged. Paragraph/list/fence boundaries still share the
 stream's generic gap, so this does not claim full cross-block spacing parity.
+
+Implementation `20f5874` passes root format/lint/typecheck and normal hooks.
+Its rebuilt Custom package passes smoke and the native regression, including
+the 82px card assertion. The [native capture](../qa-evidence/codex-desktop/packaged-code-density.png)
+was inspected. This slice changes frontend presentation only.
 
 ### Upstream refresh to e10f6d2 — 2026-10-01
 
