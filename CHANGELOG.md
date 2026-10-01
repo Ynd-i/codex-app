@@ -23,6 +23,7 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- Matched the macOS chat placeholder text and default dark color to the reference, preserving explicit caller and terminal prompts, other themes and custom fonts.
 - Matched the macOS terminal content background and inset to the reference while retaining live terminal sessions, resizing and custom fonts.
 - Integrated upstream through `4893629`, retaining runtime model/thinking reporting, provider options and approvals, and configurable sidebar usage alongside the custom desktop presentation.
 - Matched the macOS browser address field's focused surface to the reference. Escape restores the committed URL without navigating; clicking or using the address shortcut selects the full URL.

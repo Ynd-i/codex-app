@@ -160,6 +160,7 @@ export const ru: TranslationResources = {
   },
   composer: {
     placeholders: {
+      chat: "Спросите о чём угодно",
       desktop: "Напишите агенту сообщение, отметьте @files или используйте /commands и /skills.",
       mobile: "Сообщение,@files,/commands",
       fallback: "Сообщение...",

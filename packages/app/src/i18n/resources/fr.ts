@@ -162,6 +162,7 @@ export const fr: TranslationResources = {
   },
   composer: {
     placeholders: {
+      chat: "Posez toutes vos questions",
       desktop: "Envoyez un message à l'agent, marquez@filesou utilisez/commandset/skills",
       mobile: "Message,@files,/commands",
       fallback: "Message...",

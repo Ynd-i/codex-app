@@ -68,8 +68,9 @@ import {
   type EditingTextInputProps,
 } from "@/components/ui/text-input";
 
-const ComposerTextInput = withUnistyles(EditingTextInput, (theme) => ({
-  placeholderTextColor: theme.colors.surface4,
+const ComposerTextInput = withUnistyles(EditingTextInput, (theme, rt) => ({
+  placeholderTextColor:
+    getIsElectronMac() && rt.themeName === "dark" ? "#848481" : theme.colors.surface4,
 }));
 import {
   resolveSendTooltipLabel,

@@ -159,6 +159,7 @@ export const zhCN: TranslationResources = {
   },
   composer: {
     placeholders: {
+      chat: "随心输入",
       desktop: "给 Agent 发消息，标记 @files，或使用 /commands 和 /skills",
       mobile: "发消息，@files，/commands",
       fallback: "输入消息...",

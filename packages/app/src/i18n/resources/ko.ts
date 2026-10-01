@@ -159,6 +159,7 @@ export const ko: TranslationResources = {
   },
   composer: {
     placeholders: {
+      chat: "무엇이든 물어보세요",
       desktop: "에이전트에게 메시지를 보내거나 @files 태그, /commands, /skills를 사용하세요",
       mobile: "메시지, @files, /commands",
       fallback: "메시지...",

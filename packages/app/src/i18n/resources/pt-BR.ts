@@ -160,6 +160,7 @@ export const ptBR: TranslationResources = {
   },
   composer: {
     placeholders: {
+      chat: "Pergunte o que quiser",
       desktop: "Envie uma mensagem ao agente, marque @files ou use /commands e /skills",
       mobile: "Mensagem, @files, /commands",
       fallback: "Mensagem...",

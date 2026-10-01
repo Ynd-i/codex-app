@@ -160,6 +160,7 @@ export const ja: TranslationResources = {
   },
   composer: {
     placeholders: {
+      chat: "なんでも聞いてください",
       desktop: "エージェントにメッセージ、@ファイル、/コマンドや/スキルを入力",
       mobile: "メッセージ、@ファイル、/コマンド",
       fallback: "メッセージ...",

@@ -130,3 +130,85 @@ test("macOS composer hides its focus hint while retaining shortcut and narrow dr
     await fixture.cleanup();
   }
 });
+
+test("macOS composer placeholder follows the default dark override through theme changes", async ({
+  page,
+}, testInfo) => {
+  const fixture = await seedMockAgentWorkspace({
+    repoPrefix: "composer-placeholder-",
+    title: "Placeholder theme verification",
+  });
+  try {
+    await installDesktopRuntime(page, {
+      serverId: getServerId(),
+      manageBuiltInDaemon: false,
+      daemonListen: `127.0.0.1:${getE2EDaemonPort()}`,
+    });
+    await installUsageReportsFixture(page, { lists: [[]] });
+    await page.setViewportSize({ width: 1352, height: 781 });
+    await page.emulateMedia({ colorScheme: "dark" });
+    await openAgentRoute(page, fixture);
+    const input = composerLocator(page);
+    const placeholderColor = () =>
+      input.evaluate((node) => getComputedStyle(node, "::placeholder").color);
+    await expect(input).toHaveValue("");
+    await expect(input).toHaveAttribute("placeholder", "Ask anything");
+    await expect.poll(placeholderColor).toBe("rgb(132, 132, 129)");
+    await page.getByTestId("workspace-explorer-toggle").click();
+    await page.getByTestId("explorer-sidebar-tab-files").click();
+    await expect(
+      page.getByTestId("file-explorer-tree-scroll").filter({ visible: true }),
+    ).toBeVisible();
+    await page.mouse.move(500, 300);
+    await page.screenshot({ path: testInfo.outputPath("composer-placeholder-dark-wide.png") });
+    await page.setViewportSize({ width: 900, height: 781 });
+    await expect(input).toBeInViewport();
+    await expect.poll(placeholderColor).toBe("rgb(132, 132, 129)");
+    await page.screenshot({ path: testInfo.outputPath("composer-placeholder-dark-narrow.png") });
+    await page.setViewportSize({ width: 1352, height: 781 });
+
+    await openSettings(page);
+    await openSettingsSection(page, "appearance");
+    const font = page.getByRole("textbox", { name: "Content font family", exact: true });
+    await font.fill("Georgia");
+    await font.press("Tab");
+    await clickSettingsBackToWorkspace(page);
+    await expect(input).toHaveCSS("font-family", "Georgia");
+    // Non-default colors are the existing surface4 tokens in styles/theme.ts.
+    for (const [theme, color] of [
+      ["Light", "rgb(212, 212, 216)"],
+      ["Pure black", "rgb(45, 45, 45)"],
+      ["Dark", "rgb(132, 132, 129)"],
+      ["Pure black", "rgb(45, 45, 45)"],
+      ["Dark", "rgb(132, 132, 129)"],
+    ]) {
+      await openSettings(page);
+      await openSettingsSection(page, "appearance");
+      await page.getByLabel(/^Theme:/).click();
+      await page.getByRole("menuitem", { name: theme, exact: true }).click();
+      await clickSettingsBackToWorkspace(page);
+      await expect.poll(placeholderColor).toBe(color);
+      await expect(input).toHaveValue("");
+      await expect(input).toHaveCSS("font-family", "Georgia");
+    }
+    await openSettings(page);
+    await openSettingsSection(page, "general");
+    await page.getByRole("button", { name: "System", exact: true }).click();
+    await page
+      .getByRole("menuitem", { name: "简体中文 - Simplified Chinese", exact: true })
+      .click();
+    await clickSettingsBackToWorkspace(page);
+    const chineseInput = page
+      .getByTestId("message-input-root")
+      .filter({ visible: true })
+      .getByRole("textbox");
+    await expect(chineseInput).toHaveAttribute("placeholder", "随心输入");
+    await expect(chineseInput).toHaveValue("");
+    await expect(chineseInput).toHaveCSS("font-family", "Georgia");
+    await expect
+      .poll(() => chineseInput.evaluate((node) => getComputedStyle(node, "::placeholder").color))
+      .toBe("rgb(132, 132, 129)");
+  } finally {
+    await fixture.cleanup();
+  }
+});

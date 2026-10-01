@@ -155,6 +155,7 @@ export const en = {
   },
   composer: {
     placeholders: {
+      chat: "Ask anything",
       desktop: "Message the agent, tag @files, or use /commands and /skills",
       mobile: "Message, @files, /commands",
       fallback: "Message...",

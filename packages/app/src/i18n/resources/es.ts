@@ -160,6 +160,7 @@ export const es: TranslationResources = {
   },
   composer: {
     placeholders: {
+      chat: "Pregunta lo que quieras",
       desktop: "Envíe un mensaje al agente, etiquete@fileso use/commandsy/skills",
       mobile: "Mensaje,@files,/commands",
       fallback: "Mensaje...",

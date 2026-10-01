@@ -228,6 +228,9 @@ function resolveMessagePlaceholder(
   if (inputMode === "terminal") {
     return t("composer.placeholders.terminal");
   }
+  if (getIsElectronMac()) {
+    return t("composer.placeholders.chat");
+  }
   return isDesktopWebBreakpoint
     ? t("composer.placeholders.desktop")
     : t("composer.placeholders.mobile");

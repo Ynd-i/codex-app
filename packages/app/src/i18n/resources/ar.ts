@@ -159,6 +159,7 @@ export const ar: TranslationResources = {
   },
   composer: {
     placeholders: {
+      chat: "اسأل عن أي شيء",
       desktop: "أرسل رسالة إلى الوكيل أو ضع علامة على @files أو استخدم /commands و /skills",
       mobile: "الرسالة، @files ، /commands",
       fallback: "رسالة...",

@@ -348,10 +348,21 @@ label before the change, then passed with Meta+L focus, input/send bounds and dr
 retention across 900/1352px. The [empty narrow composer capture](../qa-evidence/codex-desktop/composer-empty-narrow.png)
 was inspected with a loaded Files dock. Logs:
 `/private/tmp/paseo-composer-focus-hint-{red,verified,lint,typecheck}.log`.
-This frontend change postdates the latest packaged bundle. A further reference
-comparison should address the placeholder contrast: the supplied projectless
-capture has a dominant placeholder RGB of 132/132/129, while the current Mac
-surface4 token used for it is 96/96/94.
+The default Mac dark placeholder now matches the sampled reference RGB
+132/132/129 (`#848481`), replacing the too-dark surface4 value. Mac chat uses
+“随心输入” / “Ask anything”, with translations for all nine supported languages.
+Explicit caller text and terminal prompts still take precedence. The renderer
+regression went red separately for color and copy, then passed with real UI
+switches through Light, Pure black and Dark, preserving each other palette and a
+custom Georgia content font. Switching to Chinese confirms the reference text.
+All 36 locale-resource checks pass. The [wide](../qa-evidence/codex-desktop/composer-placeholder-dark-wide.png)
+and [narrow](../qa-evidence/codex-desktop/composer-placeholder-dark-narrow.png)
+empty composer captures were inspected. This accepts the composer text/color
+slice, not whole-window equality. These frontend changes postdate the latest
+packaged bundle. Logs: `/private/tmp/paseo-composer-placeholder-red.log`,
+`/private/tmp/paseo-composer-placeholder-copy-{red,verified}.log`,
+`/private/tmp/paseo-composer-copy-locales.log`, and
+`/private/tmp/paseo-composer-placeholder-final-{lint,typecheck}.log`.
 
 A new case in the existing desktop renderer suite passed with a real isolated
 daemon and the Mock Load Test provider. It uploads a JSON attachment, preserves a
