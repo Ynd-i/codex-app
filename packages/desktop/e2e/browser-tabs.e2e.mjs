@@ -12,6 +12,7 @@ import { fileURLToPath } from "node:url";
 import { experimental_createMCPClient } from "ai";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { chromium } from "playwright";
+import { expect } from "playwright/test";
 import { runAppearanceFontSizeRegression } from "./appearance-font-size.electron.mjs";
 import { runSettingsMemoryRegression } from "./settings-memory.electron.mjs";
 import { runAgentDeepLinksRegression } from "./agent-deep-links.electron.mjs";
@@ -202,11 +203,15 @@ async function waitForDesktopStatus(page) {
 }
 
 async function startTargetPage() {
-  const server = createServer((_request, response) => {
+  const server = createServer((request, response) => {
+    const requestUrl = new URL(request.url ?? "/", "http://127.0.0.1");
+    const pageName = { "/one": "one", "/two": "two" }[requestUrl.pathname] ?? "target";
+    const title = pageName === "target" ? "Desktop browser target" : `Desktop browser ${pageName}`;
+    const heading = pageName === "target" ? "Bridge target" : `Navigation page ${pageName}`;
     response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
     response.end(`<!doctype html>
       <html>
-        <head><title>Desktop browser target</title>
+        <head><title>${title}</title>
           <style>body { min-height: 100vh; background: rgb(255, 0, 0); }</style>
           <script>
             window.frameCount = 0;
@@ -215,6 +220,7 @@ async function startTargetPage() {
           </script>
         </head>
         <body>
+          ${pageName === "target" ? "" : `<h1>${heading}</h1>`}
           <button id="bridge-target" onclick="this.textContent = 'Clicked'">Bridge target</button>
           <label for="typing-target">Typing target</label>
           <input id="typing-target" />
@@ -458,6 +464,44 @@ async function selectElementAndReadAnnotationPaint({ page, client, browserId, ar
   return receivesInput && !openPixels.equals(closedPixels);
 }
 
+async function waitForGuestLocation(client, browserId, pathname) {
+  let lastLocation = null;
+  await expect
+    .poll(
+      async () => {
+        try {
+          const evaluated = await callBrowserTool(client, "browser_evaluate", {
+            browserId,
+            function:
+              "() => ({ href: location.href, pathname: location.pathname, title: document.title })",
+          });
+          lastLocation = JSON.parse(evaluated.resultJson);
+          return lastLocation?.pathname ?? null;
+        } catch (error) {
+          lastLocation = { error: String(error) };
+          return null;
+        }
+      },
+      { timeout: timeoutMs },
+    )
+    .toBe(pathname);
+  return lastLocation;
+}
+
+async function ensureExplorerSidebarOpen(page) {
+  const sidebar = page.getByTestId("workspace-explorer-sidebar").filter({ visible: true });
+  if ((await sidebar.count()) === 0) {
+    await page.getByTestId("workspace-explorer-toggle").click();
+  }
+  await sidebar.waitFor({ state: "visible", timeout: timeoutMs });
+}
+
+async function assertNoVisibleMainTabs(page) {
+  await expect(page.getByTestId("workspace-tabs-row").filter({ visible: true })).toHaveCount(0, {
+    timeout: timeoutMs,
+  });
+}
+
 function recordViewportMismatch(failures, label, actual, expected) {
   if (actual.width === expected.width && actual.height === expected.height) {
     return;
@@ -505,6 +549,14 @@ async function setWindowHidden(inspectorPort, hidden) {
   await evaluateMain(
     inspectorPort,
     `(() => { const win = process.mainModule.require('electron').BrowserWindow.getAllWindows().find(win => win.webContents.getURL().includes('localhost:')); win.${hidden ? "hide" : "show"}(); if (win.isVisible() !== ${!hidden}) throw new Error('Window visibility did not change'); })()`,
+  );
+}
+
+async function openAgentViaDeepLink(inspectorPort, target) {
+  const url = `paseo://h/${encodeURIComponent(target.serverId)}/agent/${encodeURIComponent(target.agentId)}`;
+  await evaluateMain(
+    inspectorPort,
+    `process.mainModule.require('electron').app.emit('open-url', { preventDefault() {} }, ${JSON.stringify(url)})`,
   );
 }
 
@@ -1033,6 +1085,105 @@ async function runRegression({
   };
 }
 
+async function runWebviewNavigationRegression({ page, client, serverId, targetUrl, artifactDir }) {
+  const workspaceId = workspaceIds[0];
+  const originalWorkspaceRow = page.getByTestId(`sidebar-workspace-row-${serverId}:${workspaceId}`);
+  await originalWorkspaceRow.waitFor({ state: "visible", timeout: timeoutMs });
+  await assertNoVisibleMainTabs(page);
+
+  const originalDeck = page.getByTestId(`workspace-deck-entry-${serverId}:${workspaceId}`);
+  await originalDeck.waitFor({ state: "visible", timeout: timeoutMs });
+  await expect(page.getByTestId("desktop-chat-title")).toHaveText("Browser navigation-only chat");
+  const composer = page
+    .getByRole("textbox", { name: "Message agent...", exact: true })
+    .filter({ visible: true });
+  await composer.waitFor({ state: "visible", timeout: timeoutMs });
+  const draft = "Keep the main chat draft during real browser navigation.";
+  await composer.fill(draft);
+
+  const oneUrl = new URL("/one", targetUrl).toString();
+  const twoUrl = new URL("/two", targetUrl).toString();
+  const created = await callBrowserTool(client, "browser_new_tab", { url: oneUrl });
+  const browserId = created.browserId;
+  assert(typeof browserId === "string", "browser_new_tab returned no browserId");
+
+  await ensureExplorerSidebarOpen(page);
+  await assertNoVisibleMainTabs(page);
+  assert(
+    (await originalDeck.getByTestId(`workspace-tab-browser_${browserId}`).count()) === 0,
+    "Browser tab appeared in the removed main workspace tab row",
+  );
+
+  const toolbar = page.getByTestId("desktop-explorer-toolbar");
+  const browserTab = toolbar.getByTestId(`explorer-sidebar-tab-browser_${browserId}`);
+  await browserTab.waitFor({ state: "visible", timeout: timeoutMs });
+  await browserTab.click();
+  assert(
+    (await browserTab.getAttribute("aria-selected")) === "true",
+    "Explorer browser tab did not become selected",
+  );
+
+  await originalDeck
+    .getByTestId(`browser-webview-clip-${browserId}`)
+    .waitFor({ state: "visible", timeout: timeoutMs });
+  await waitForGuestLocation(client, browserId, "/one");
+  const firstGuest = await readGuest(page, browserId);
+  assert(firstGuest, "Browser guest was not attached for real navigation");
+
+  const address = originalDeck
+    .getByRole("textbox", { name: "Browser URL", exact: true })
+    .filter({ visible: true });
+  await address.waitFor({ state: "visible", timeout: timeoutMs });
+  await address.fill(twoUrl);
+  await address.press("Enter");
+  const afterSubmit = await waitForGuestLocation(client, browserId, "/two");
+  assert(afterSubmit.href === twoUrl, `Submitted URL mismatch: ${JSON.stringify(afterSubmit)}`);
+  await page.screenshot({ path: path.join(artifactDir, "browser-navigation-webview.png") });
+
+  const backButton = originalDeck.getByRole("button", { name: "Back", exact: true }).last();
+  await expect(backButton).toBeEnabled({ timeout: timeoutMs });
+  await backButton.click();
+  await waitForGuestLocation(client, browserId, "/one");
+
+  const forwardButton = originalDeck.getByRole("button", { name: "Forward", exact: true }).last();
+  await expect(forwardButton).toBeEnabled({ timeout: timeoutMs });
+  await forwardButton.click();
+  await waitForGuestLocation(client, browserId, "/two");
+
+  await assertNoVisibleMainTabs(page);
+  assert(
+    (await composer.inputValue()) === draft,
+    `Main chat draft changed while navigating browser: ${await composer.inputValue()}`,
+  );
+  assert(
+    (await readGuest(page, browserId))?.webContentsId === firstGuest.webContentsId,
+    "Browser navigation replaced the resident guest WebContents",
+  );
+
+  await toolbar.getByTestId(`explorer-sidebar-tab-close-browser_${browserId}`).click();
+  await expect.poll(async () => (await readGuest(page, browserId)) === null).toBe(true);
+  await expect(browserTab).toHaveCount(0, { timeout: timeoutMs });
+  const listed = await callBrowserTool(client, "browser_list_tabs");
+  assert(
+    !listed.tabs.some((tab) => tab.browserId === browserId),
+    "browser_list_tabs still returned the closed browser tab",
+  );
+  assert(
+    (await composer.inputValue()) === draft,
+    `Main chat draft changed after closing browser: ${await composer.inputValue()}`,
+  );
+
+  return {
+    browserId,
+    webContentsId: firstGuest.webContentsId,
+    submittedUrl: twoUrl,
+    backForward: "passed",
+    closeCleanup: "passed",
+    draftPreserved: true,
+    mainTabsHidden: true,
+  };
+}
+
 function agentLinksExecutable() {
   if (process.env.PASEO_DESKTOP_AGENT_LINKS_ONLY !== "1") return null;
   const executable = process.env.PASEO_DESKTOP_AGENT_LINKS_EXECUTABLE;
@@ -1044,9 +1195,33 @@ function agentLinksExecutable() {
   return executable;
 }
 
+function desktopTestEnvironment(runtimeDir, agentLinksOnly, browserNavigationOnly) {
+  assert(!(agentLinksOnly && browserNavigationOnly), "Choose only one desktop regression mode");
+  if (browserNavigationOnly) {
+    assert(
+      process.platform === "darwin",
+      "Desktop browser navigation-only regression requires macOS",
+    );
+  }
+  if (!agentLinksOnly && !browserNavigationOnly) return process.env;
+  return {
+    ...Object.fromEntries(
+      Object.entries(process.env).filter(([key]) =>
+        ["PATH", "TMPDIR", "TMP", "TEMP", "LANG", "LC_ALL", "SHELL"].includes(key),
+      ),
+    ),
+    HOME: runtimeDir,
+    USERPROFILE: runtimeDir,
+    PASEO_SERVER_ID: agentLinksOnly ? "agent-links-host" : "browser-navigation-host",
+    PASEO_DISABLE_SINGLE_INSTANCE_LOCK: "0",
+  };
+}
+
 async function main() {
   const customExecutable = agentLinksExecutable();
   const agentLinksOnly = customExecutable !== null;
+  const browserNavigationOnly = process.env.PASEO_DESKTOP_BROWSER_NAVIGATION_ONLY === "1";
+  const fullBrowserSuite = !(agentLinksOnly || browserNavigationOnly);
   const artifactDir =
     process.env.PASEO_DESKTOP_BROWSER_E2E_ARTIFACT_DIR ??
     fs.mkdtempSync(path.join(os.tmpdir(), "paseo-desktop-browser-e2e-artifacts-"));
@@ -1077,9 +1252,11 @@ async function main() {
   const listen = `127.0.0.1:${daemonPort}`;
   seedPaseoHome(paseoHome, listen, workspaceRoot);
   const target = agentLinksOnly ? null : await startTargetPage();
-  if (target) seedPluginLinks(paseoHome, workspaceIds[0], target.url, workspaceIds[1]);
+  if (fullBrowserSuite) {
+    seedPluginLinks(paseoHome, workspaceIds[0], target.url, workspaceIds[1]);
+  }
   const remoteHome = path.join(runtimeDir, "remote-home");
-  if (!agentLinksOnly)
+  if (fullBrowserSuite)
     seedPaseoHome(
       remoteHome,
       `127.0.0.1:${remotePort}`,
@@ -1100,23 +1277,8 @@ async function main() {
       '#!/bin/sh\nprintf "%s\\n" "$1" >> "$PASEO_TEST_EXTERNAL_OPEN_LOG"\n',
       { mode: 0o755 },
     );
-    const baseEnv = agentLinksOnly
-      ? Object.fromEntries(
-          Object.entries(process.env).filter(([key]) =>
-            ["PATH", "TMPDIR", "TMP", "TEMP", "LANG", "LC_ALL", "SHELL"].includes(key),
-          ),
-        )
-      : process.env;
     const commonEnv = {
-      ...baseEnv,
-      ...(agentLinksOnly
-        ? {
-            HOME: runtimeDir,
-            USERPROFILE: runtimeDir,
-            PASEO_SERVER_ID: "agent-links-host",
-            PASEO_DISABLE_SINGLE_INSTANCE_LOCK: "0",
-          }
-        : {}),
+      ...desktopTestEnvironment(runtimeDir, agentLinksOnly, browserNavigationOnly),
       PATH: `${openerDirectory}${path.delimiter}${process.env.PATH}`,
       PASEO_TEST_EXTERNAL_OPEN_LOG: externalOpenLog,
       PASEO_HOME: paseoHome,
@@ -1204,6 +1366,64 @@ async function main() {
           .catch(() => {});
         throw error;
       }
+      return;
+    }
+
+    if (browserNavigationOnly) {
+      assert(target, "Navigation-only regression needs a local target page");
+      const desktop = spawnLogged(
+        "browser-navigation-desktop",
+        process.execPath,
+        [devRunner, `--inspect=127.0.0.1:${inspectorPort}`, "--lang=en-US"],
+        {
+          cwd: rootDir,
+          env: {
+            ...commonEnv,
+            EXPO_PORT: String(expoPort),
+            EXPO_DEV_URL: `http://localhost:${expoPort}`,
+            PASEO_ELECTRON_REMOTE_DEBUGGING_PORT: String(cdpPort),
+            PASEO_ELECTRON_USER_DATA_DIR: userData,
+            PASEO_ELECTRON_FLAGS: `--remote-debugging-address=127.0.0.1 --remote-debugging-port=${cdpPort}`,
+          },
+        },
+        artifactDir,
+      );
+      children.push(desktop.child);
+      await waitForPort(cdpPort, "Electron CDP", desktop);
+      await waitForPort(inspectorPort, "Electron inspector", desktop);
+
+      browser = await chromium.connectOverCDP(`http://127.0.0.1:${cdpPort}`);
+      const page = await waitForAppPage(browser, expoPort);
+      const status = await waitForDesktopStatus(page);
+      assert(
+        status.serverId === "browser-navigation-host",
+        "Navigation test attached to the wrong host",
+      );
+      const callerAgentId = await createCallerAgent(daemonPort, {
+        title: "Browser navigation-only chat",
+        initialPrompt: "Synthetic local browser navigation fixture.",
+      });
+      await openAgentViaDeepLink(inspectorPort, {
+        serverId: status.serverId,
+        agentId: callerAgentId,
+      });
+      const transport = new StreamableHTTPClientTransport(
+        new URL(
+          `http://127.0.0.1:${daemonPort}/mcp/agents?callerAgentId=${encodeURIComponent(callerAgentId)}`,
+        ),
+      );
+      client = await experimental_createMCPClient({ transport });
+      const navigation = await runWebviewNavigationRegression({
+        page,
+        client,
+        serverId: status.serverId,
+        targetUrl: target.url,
+        artifactDir,
+      });
+      writeJson(path.join(artifactDir, "result.json"), { navigation, callerAgentId });
+      console.log(
+        `Desktop browser navigation-only passed: ${navigation.browserId} navigated /one -> /two -> back -> forward and cleaned up.`,
+      );
       return;
     }
 
