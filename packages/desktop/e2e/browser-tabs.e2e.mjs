@@ -14,6 +14,7 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import { chromium } from "playwright";
 import { runAppearanceFontSizeRegression } from "./appearance-font-size.electron.mjs";
 import { runSettingsMemoryRegression } from "./settings-memory.electron.mjs";
+import { runAgentDeepLinksRegression } from "./agent-deep-links.electron.mjs";
 
 import { seedPluginLinks, runPluginLinksRegression } from "./plugin-links.electron.mjs";
 
@@ -166,7 +167,12 @@ async function waitForAppPage(browser, expoPort) {
   while (Date.now() < deadline) {
     for (const context of browser.contexts()) {
       for (const page of context.pages()) {
-        if (page.url().includes(`localhost:${expoPort}`)) return page;
+        if (
+          expoPort === null
+            ? page.url().startsWith("paseo://app/")
+            : page.url().includes(`localhost:${expoPort}`)
+        )
+          return page;
       }
     }
     await delay(250);
@@ -272,7 +278,13 @@ async function waitForGuestActiveElement(client, browserId, elementId) {
   return false;
 }
 
-async function createCallerAgent(daemonPort) {
+async function createCallerAgent(
+  daemonPort,
+  {
+    title = "Browser desktop browser E2E caller",
+    initialPrompt = "Remain available while the browser bridge regression runs.",
+  } = {},
+) {
   const transport = new StreamableHTTPClientTransport(
     new URL(`http://127.0.0.1:${daemonPort}/mcp/agents`),
   );
@@ -283,10 +295,10 @@ async function createCallerAgent(daemonPort) {
       args: {
         relationship: { kind: "detached" },
         workspace: { kind: "existing", workspaceId: workspaceIds[0] },
-        title: "Browser desktop browser E2E caller",
+        title,
         provider: "mock/ten-second-stream",
         settings: { modeId: "load-test" },
-        initialPrompt: "Remain available while the browser bridge regression runs.",
+        initialPrompt,
         background: true,
       },
     });
@@ -455,17 +467,17 @@ function recordViewportMismatch(failures, label, actual, expected) {
   );
 }
 
-async function setWindowHidden(inspectorPort, hidden) {
+async function evaluateMain(inspectorPort, expression) {
   const [target] = await (await fetch(`http://127.0.0.1:${inspectorPort}/json/list`)).json();
   const socket = new WebSocket(target.webSocketDebuggerUrl);
   try {
-    await new Promise((resolve, reject) => {
+    return await new Promise((resolve, reject) => {
       socket.addEventListener("error", reject, { once: true });
       socket.addEventListener("message", ({ data }) => {
         const response = JSON.parse(data);
         if (response.id !== 1) return;
         if (response.error || response.result?.exceptionDetails) reject(new Error(data));
-        else resolve();
+        else resolve(response.result?.result?.value);
       });
       socket.addEventListener(
         "open",
@@ -475,7 +487,9 @@ async function setWindowHidden(inspectorPort, hidden) {
               id: 1,
               method: "Runtime.evaluate",
               params: {
-                expression: `(() => { const win = process.mainModule.require('electron').BrowserWindow.getAllWindows().find(win => win.webContents.getURL().includes('localhost:')); win.${hidden ? "hide" : "show"}(); if (win.isVisible() !== ${!hidden}) throw new Error('Window visibility did not change'); })()`,
+                expression,
+                returnByValue: true,
+                awaitPromise: true,
               },
             }),
           ),
@@ -485,6 +499,13 @@ async function setWindowHidden(inspectorPort, hidden) {
   } finally {
     socket.close();
   }
+}
+
+async function setWindowHidden(inspectorPort, hidden) {
+  await evaluateMain(
+    inspectorPort,
+    `(() => { const win = process.mainModule.require('electron').BrowserWindow.getAllWindows().find(win => win.webContents.getURL().includes('localhost:')); win.${hidden ? "hide" : "show"}(); if (win.isVisible() !== ${!hidden}) throw new Error('Window visibility did not change'); })()`,
+  );
 }
 
 async function verifyHiddenBrowserScreenshots({
@@ -1012,7 +1033,20 @@ async function runRegression({
   };
 }
 
+function agentLinksExecutable() {
+  if (process.env.PASEO_DESKTOP_AGENT_LINKS_ONLY !== "1") return null;
+  const executable = process.env.PASEO_DESKTOP_AGENT_LINKS_EXECUTABLE;
+  assert(process.platform === "darwin", "Custom agent-link regression requires macOS");
+  assert(
+    executable && path.isAbsolute(executable),
+    "Set an absolute PASEO_DESKTOP_AGENT_LINKS_EXECUTABLE for the already-built Custom bundle",
+  );
+  return executable;
+}
+
 async function main() {
+  const customExecutable = agentLinksExecutable();
+  const agentLinksOnly = customExecutable !== null;
   const artifactDir =
     process.env.PASEO_DESKTOP_BROWSER_E2E_ARTIFACT_DIR ??
     fs.mkdtempSync(path.join(os.tmpdir(), "paseo-desktop-browser-e2e-artifacts-"));
@@ -1030,12 +1064,27 @@ async function main() {
     reservePort(),
     reservePort(),
   ]);
+  assert(
+    [daemonPort, expoPort, cdpPort, inspectorPort, remotePort].every(
+      (port) => port !== 6767 && port !== 6768,
+    ),
+    "Reserved a protected daemon port",
+  );
+  assert(
+    new Set([daemonPort, expoPort, cdpPort, inspectorPort, remotePort]).size === 5,
+    "Reserved duplicate test ports",
+  );
   const listen = `127.0.0.1:${daemonPort}`;
   seedPaseoHome(paseoHome, listen, workspaceRoot);
-  const target = await startTargetPage();
-  seedPluginLinks(paseoHome, workspaceIds[0], target.url, workspaceIds[1]);
+  const target = agentLinksOnly ? null : await startTargetPage();
+  if (target) seedPluginLinks(paseoHome, workspaceIds[0], target.url, workspaceIds[1]);
   const remoteHome = path.join(runtimeDir, "remote-home");
-  seedPaseoHome(remoteHome, `127.0.0.1:${remotePort}`, path.join(runtimeDir, "remote-workspaces"));
+  if (!agentLinksOnly)
+    seedPaseoHome(
+      remoteHome,
+      `127.0.0.1:${remotePort}`,
+      path.join(runtimeDir, "remote-workspaces"),
+    );
   const children = [];
   let browser = null;
   let client = null;
@@ -1051,8 +1100,23 @@ async function main() {
       '#!/bin/sh\nprintf "%s\\n" "$1" >> "$PASEO_TEST_EXTERNAL_OPEN_LOG"\n',
       { mode: 0o755 },
     );
+    const baseEnv = agentLinksOnly
+      ? Object.fromEntries(
+          Object.entries(process.env).filter(([key]) =>
+            ["PATH", "TMPDIR", "TMP", "TEMP", "LANG", "LC_ALL", "SHELL"].includes(key),
+          ),
+        )
+      : process.env;
     const commonEnv = {
-      ...process.env,
+      ...baseEnv,
+      ...(agentLinksOnly
+        ? {
+            HOME: runtimeDir,
+            USERPROFILE: runtimeDir,
+            PASEO_SERVER_ID: "agent-links-host",
+            PASEO_DISABLE_SINGLE_INSTANCE_LOCK: "0",
+          }
+        : {}),
       PATH: `${openerDirectory}${path.delimiter}${process.env.PATH}`,
       PASEO_TEST_EXTERNAL_OPEN_LOG: externalOpenLog,
       PASEO_HOME: paseoHome,
@@ -1074,6 +1138,74 @@ async function main() {
     );
     children.push(daemon.child);
     await waitForPort(daemonPort, "daemon", daemon);
+
+    if (agentLinksOnly) {
+      const serverId = "agent-links-host";
+      const agentA = await createCallerAgent(daemonPort, {
+        title: "Deep link chat A",
+        initialPrompt: "Synthetic deep link fixture A.",
+      });
+      const agentB = await createCallerAgent(daemonPort, {
+        title: "Deep link chat B",
+        initialPrompt: "Synthetic deep link fixture B.",
+      });
+      const desktopEnv = {
+        ...commonEnv,
+        PASEO_ELECTRON_USER_DATA_DIR: userData,
+        PASEO_ELECTRON_FLAGS: `--remote-debugging-address=127.0.0.1 --remote-debugging-port=${cdpPort}`,
+      };
+      const desktop = spawnLogged(
+        "agent-links-desktop",
+        customExecutable,
+        [
+          `--inspect=127.0.0.1:${inspectorPort}`,
+          "--lang=en-US",
+          `paseo-custom://h/${serverId}/agent/${encodeURIComponent(agentA)}`,
+        ],
+        { cwd: rootDir, env: desktopEnv },
+        artifactDir,
+      );
+      children.push(desktop.child);
+      await waitForPort(cdpPort, "Custom Electron CDP", desktop);
+      await waitForPort(inspectorPort, "Custom Electron inspector", desktop);
+      browser = await chromium.connectOverCDP(`http://127.0.0.1:${cdpPort}`);
+      const page = await waitForAppPage(browser, null);
+      const status = await waitForDesktopStatus(page);
+      assert(status.serverId === serverId, "Custom desktop attached to the wrong host");
+      try {
+        const report = await runAgentDeepLinksRegression({
+          page,
+          serverId,
+          workspaceId: workspaceIds[0],
+          agentA,
+          agentB,
+          userData,
+          artifactDir,
+          evaluateMain: (expression) => evaluateMain(inspectorPort, expression),
+          launchSecondInstance: (url) => {
+            const second = spawnLogged(
+              "agent-links-second-instance",
+              customExecutable,
+              ["--lang=en-US", url],
+              { cwd: rootDir, env: { ...desktopEnv, PASEO_ELECTRON_FLAGS: "" } },
+              artifactDir,
+            );
+            children.push(second.child);
+            return second.child;
+          },
+        });
+        writeJson(path.join(artifactDir, "result.json"), report);
+        console.log(
+          "Custom agent links passed: cold argv, real second instance, open-url handler, draft preservation and invalid URL rejection.",
+        );
+      } catch (error) {
+        await page
+          .screenshot({ path: path.join(artifactDir, "agent-links-failure.png") })
+          .catch(() => {});
+        throw error;
+      }
+      return;
+    }
 
     const remoteDaemon = spawnLogged(
       "remote-daemon",
@@ -1185,7 +1317,7 @@ async function main() {
     await client?.close().catch(() => undefined);
     await browser?.close().catch(() => undefined);
     for (const child of children.toReversed()) stopProcess(child);
-    await closeServer(target.server);
+    if (target) await closeServer(target.server);
     await delay(1_000);
     try {
       fs.rmSync(runtimeDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });

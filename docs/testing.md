@@ -148,6 +148,25 @@ Run it locally with the same command owned by the Ubuntu `desktop-tests` require
 npm run test:e2e:browser-tabs --workspace=@getpaseo/desktop
 ```
 
+The same runner has a macOS-only agent-link mode for an already-built **Paseo Custom**
+bundle. It starts a private Mock host and its own Electron instances, without rebuilding
+the bundle or running the browser suite:
+
+```bash
+PASEO_DESKTOP_AGENT_LINKS_ONLY=1 \
+PASEO_DESKTOP_AGENT_LINKS_EXECUTABLE="$PWD/packages/desktop/release-custom/mac-arm64/Paseo Custom.app/Contents/MacOS/Paseo Custom" \
+PASEO_DESKTOP_BROWSER_E2E_ARTIFACT_DIR=/tmp/paseo-custom-agent-links \
+node packages/desktop/e2e/browser-tabs.e2e.mjs
+```
+
+This verifies custom-link cold argv, a real secondary process handing its URL to the
+existing window, the Electron `open-url` handler, preservation of another chat's
+unsent draft, and rejection of invalid URLs. It keeps the single-instance lock enabled
+inside private user data and does not invoke OS handler registration. The `open-url` event is
+injected through the test process's own debugger; OS dispatch and coexistence with the
+official app remain separate acceptance checks. Screenshots and logs stay in the
+specified private artifact directory.
+
 ## Test organization
 
 - Collocate tests with implementation: `thing.ts` + `thing.test.ts`

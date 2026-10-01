@@ -1011,9 +1011,22 @@ navigation/packaging checks passed; all 13 packaging checks passed again with th
 stronger resolved-config and schema regression. Root lint, typecheck and formatting
 pass; commit hooks run again before promotion.
 
-This is bundle/startup acceptance, not installation or OS-handler coexistence.
-Actual OS dispatch to an installed app, cold/warm agent navigation, signed
-notarized distribution, live-provider turns and remote pairing remain pending.
+A separate real-Electron regression against that Custom bundle now verifies cold
+argv navigation to chat A, a real secondary process handing chat B to the same
+window, and the `open-url` event returning to A with its unsent draft intact. It
+checks the exact host/workspace and selected chat, one retained webContents ID,
+secondary exit code 0, and no main tab strip or main plus button throughout. An
+invalid URL must produce no preload navigation event; a following valid same-chat
+event acts as the delivery barrier. The [restored-draft capture](../qa-evidence/codex-desktop/custom-agent-link-preserved-draft.png)
+was inspected. This uses an isolated Mock host and temporary user data, not a
+live provider. The event is injected into that test process, so it proves the
+Electron event path rather than macOS URL dispatch. The existing browser harness
+owns this selective mode; see [the runnable command](../testing.md#desktop-browser-regression).
+Log: `/private/tmp/paseo-custom-agent-links.log`; private artifacts and result are
+in `/private/tmp/paseo-custom-agent-links-qa`.
+
+Installation, actual OS dispatch/handler coexistence, signed notarized
+distribution, live-provider turns and remote pairing remain pending.
 Neither protected 6767/6768 daemon was restarted. Logs:
 `/private/tmp/paseo-custom-links-{unit,schemes-red,package-build}.log`,
 `/private/tmp/paseo-terminal-links-custom-build.log` (the rejected mixed-scheme
