@@ -73,9 +73,12 @@ export type ActionStatus = "idle" | "pending" | "success";
  * It also carries the page's depth, so the two presentations cannot disagree about what a page is.
  */
 export function MenuPage({ depth, children }: PropsWithChildren<{ depth: number }>): ReactElement {
+  const pageDataSet = useMemo(() => ({ menuDepth: String(depth) }), [depth]);
   return (
     <MenuDepthProvider value={depth}>
-      <View style={styles.page}>{children}</View>
+      <View style={styles.page} dataSet={pageDataSet}>
+        {children}
+      </View>
     </MenuDepthProvider>
   );
 }

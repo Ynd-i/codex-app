@@ -5,6 +5,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
   type ComponentProps,
   type ReactElement,
   type ReactNode,
@@ -20,6 +21,7 @@ import {
   useIsolatedBottomSheetVisibility,
   type ContextBridge,
 } from "@/components/ui/isolated-bottom-sheet-modal";
+import { isWeb } from "@/constants/platform";
 import { SPACING, type Theme } from "@/styles/theme";
 import { useRetainedPanelActive } from "@/components/retained-panel";
 import { useMenuContext, MenuContextProvider } from "./menu-context";
@@ -144,6 +146,7 @@ export function MenuSurface(props: MenuSurfaceProps): ReactElement | null {
 
 function useSubAnchors(): {
   value: MenuSurfaceContextValue;
+  clearHoverTimers: () => void;
   getAnchor: (id: string) => React.RefObject<View | null> | null;
 } {
   const anchors = useRef(new Map<string, React.RefObject<View | null>>());
@@ -194,7 +197,7 @@ function useSubAnchors(): {
 
   const getAnchor = useCallback((id: string) => anchors.current.get(id) ?? null, []);
 
-  return { value, getAnchor };
+  return { value, getAnchor, clearHoverTimers: clearTimers };
 }
 
 function MenuPopoverSurface({
@@ -217,9 +220,39 @@ function MenuPopoverSurface({
   keyboardFocusScope,
 }: MenuSurfaceProps): ReactElement | null {
   const menu = useMenuContext("MenuSurface");
-  const { value: surfaceValue, getAnchor } = useSubAnchors();
+  const { value: surfaceValue, getAnchor, clearHoverTimers } = useSubAnchors();
 
+  const [keyboardSub, setKeyboardSub] = useState<string | null>(null);
+  useEffect(() => {
+    if (!menu.open) setKeyboardSub(null);
+  }, [menu.open]);
   const handleClose = useCallback(() => menu.setOpen(false), [menu]);
+  const handleSubmenuKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      if (!isWeb || !(event.target instanceof HTMLElement)) return false;
+      const target = event.target;
+      const depth = Number(target.closest<HTMLElement>("[data-menu-depth]")?.dataset.menuDepth);
+      if (event.key === "ArrowLeft" && depth > 0) {
+        clearHoverTimers();
+        const anchor = getAnchor(menu.path[depth - 1]!)?.current;
+        menu.closeSub(depth - 1);
+        setKeyboardSub(null);
+        if (anchor instanceof HTMLElement) {
+          anchor.querySelector<HTMLElement>('[data-menu-item="true"]')?.focus();
+        }
+        return true;
+      }
+      if (!["ArrowRight", "Enter", " "].includes(event.key)) return false;
+      const item = target.closest<HTMLElement>('[data-menu-item="true"]');
+      const id = item?.closest<HTMLElement>("[data-menu-sub-id]")?.dataset.menuSubId;
+      if (!id || item?.dataset.menuDisabled === "true") return false;
+      clearHoverTimers();
+      setKeyboardSub(id);
+      menu.openSub({ id, depth });
+      return true;
+    },
+    [getAnchor, menu, clearHoverTimers],
+  );
 
   // Every open page in the path gets its own flyout, so a submenu of a submenu simply stacks.
   const openPages = useMemo(
@@ -241,6 +274,7 @@ function MenuPopoverSurface({
       ...surfaceValue,
       hoverOpen: (sub) => {
         if (pages.find((page) => page.id === sub.id)?.hoverIntent === false) return;
+        setKeyboardSub(null);
         surfaceValue.hoverOpen(sub);
       },
       hoverClose: (depth) => {
@@ -252,7 +286,12 @@ function MenuPopoverSurface({
 
   return (
     <MenuSurfaceContext.Provider value={hoverValue}>
-      <MenuOverlay visible={menu.open} onClose={handleClose} restoreFocusRef={menu.triggerRef}>
+      <MenuOverlay
+        visible={menu.open}
+        onClose={handleClose}
+        restoreFocusRef={menu.triggerRef}
+        onSubmenuKeyDown={handleSubmenuKeyDown}
+      >
         <>
           <AnchoredSurface
             open={menu.open}
@@ -280,6 +319,7 @@ function MenuPopoverSurface({
             <MenuFlyout
               key={page.id}
               page={page}
+              autoFocus={keyboardSub === page.id}
               depth={depth}
               anchorRef={getAnchor(page.id)}
               minWidth={minWidth}
@@ -301,6 +341,7 @@ function MenuPopoverSurface({
  */
 function MenuFlyout({
   page,
+  autoFocus,
   depth,
   anchorRef,
   minWidth,
@@ -309,6 +350,7 @@ function MenuFlyout({
   testID,
 }: {
   page: MenuPageDefinition;
+  autoFocus: boolean;
   depth: number;
   anchorRef: React.RefObject<View | null> | null;
   minWidth?: number;
@@ -336,6 +378,7 @@ function MenuFlyout({
       maxHeight={maxHeight}
       scrollable={scrollable}
       backdrop={false}
+      autoFocus={autoFocus}
       revision={page.id}
       onPointerEnter={cancelHoverClose}
       onPointerLeave={handleHoverOut}

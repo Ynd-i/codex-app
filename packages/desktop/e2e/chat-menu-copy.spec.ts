@@ -55,7 +55,46 @@ test("macOS chat Copy menu uses the current agent and disables unavailable resum
       .evaluate((node) => getComputedStyle(node).color);
     await expect(page.getByText("Archive", { exact: true })).toHaveCSS("color", renameColor);
     await page.screenshot({ path: testInfo.outputPath("chat-copy-menu.png") });
-    await copy.click();
+    const copyAgentId = page.getByRole("menuitem", { name: "Copy agent id", exact: true });
+    await page.mouse.move(10, 10);
+    await copy.focus();
+    for (const key of ["ArrowRight", "Enter", "Space"]) {
+      await page.keyboard.press(key);
+      await expect(copyAgentId).toBeVisible();
+      await expect(copyAgentId).toBeFocused();
+      await page.keyboard.press("ArrowDown");
+      await expect(copyAgentId).toBeFocused();
+      await page.keyboard.press("ArrowLeft");
+      await expect(copyAgentId).toBeHidden();
+      await expect(copy).toBeFocused();
+    }
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.keyboard.press("Escape");
+    await page.getByTestId("desktop-chat-toolbar-menu").click();
+    await expect(copy).toBeInViewport();
+    await expect(page.getByRole("menuitem", { name: "Rename", exact: true })).toBeFocused();
+    await copy.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(copyAgentId).toBeFocused();
+    await page.keyboard.press("ArrowLeft");
+    await expect(copy).toBeFocused();
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await copy.hover();
+    await page.keyboard.press("ArrowRight");
+    await expect(copyAgentId).toBeFocused();
+    await page.keyboard.press("ArrowLeft");
+    await expect(copyAgentId).toBeHidden();
+    await expect(copy).toBeFocused();
+    // A pending hover-open must not reopen the flyout after returning to its parent.
+    await page.waitForTimeout(150);
+    await expect(copyAgentId).toBeHidden();
+    await page.mouse.move(10, 10);
+    await page.waitForTimeout(300);
+    await copy.hover();
+    await expect(copyAgentId).toBeVisible();
+    await expect(copy).toBeFocused();
+    await page.keyboard.press("ArrowRight");
+    await expect(copyAgentId).toBeFocused();
     await expect(
       page.getByRole("menuitem", { name: "Copy resume command", exact: true }),
     ).toBeDisabled();
@@ -64,6 +103,22 @@ test("macOS chat Copy menu uses the current agent and disables unavailable resum
         has: page.getByRole("menuitem", { name: "Copy agent id", exact: true }),
       }),
     ).toHaveCSS("opacity", "1");
+    const unavailableResume = page.getByRole("menuitem", {
+      name: "Copy resume command",
+      exact: true,
+    });
+    await unavailableResume.evaluate((node: HTMLElement) => node.focus());
+    if (await unavailableResume.evaluate((node) => node === document.activeElement)) {
+      await page.keyboard.press("Enter");
+      await page.keyboard.press("Space");
+    }
+    await expect(copyAgentId).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => (window as unknown as { __chatMenuCopied: string[] }).__chatMenuCopied,
+      ),
+    ).toEqual([]);
+    await copyAgentId.focus();
     const parentBox = await page
       .locator('[data-menu-surface="true"]')
       .filter({ has: copy })

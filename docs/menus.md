@@ -86,6 +86,15 @@ Opening a submenu truncates the path to the depth of the trigger that opened it.
 sliding the pointer across a row of triggers would stack up every flyout it passed instead of
 swapping between them.
 
+## Keyboard navigation
+
+Popover pages support ArrowRight, Enter and Space to enter a submenu and focus its
+first enabled item. ArrowLeft closes that page and returns focus to its parent
+trigger. Hover opens without moving keyboard focus. Keyboard navigation cancels
+pending hover timers so a previous pointer position cannot reopen a closed page.
+Text fields keep their editing keys. Focus waits for an entering surface to become
+visible; a placed Reanimated surface can still be hidden during its first frame.
+
 ## A page that takes input
 
 A menu page can hold a small form — `MenuTextField` is the field for it, drawn as a row's own

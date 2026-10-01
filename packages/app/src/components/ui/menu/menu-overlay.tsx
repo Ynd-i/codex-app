@@ -262,6 +262,8 @@ export interface AnchoredSurfaceProps {
   revision?: string | number;
   /** A submenu sits inside its parent's overlay and must not paint a second backdrop. */
   backdrop?: boolean;
+  /** Flyouts entered by hover must not take keyboard focus. */
+  autoFocus?: boolean;
   /**
    * Hover tracking for the surface box, per docs/hover.md: plain View, pointer events, never
    * a Pressable. Web-only by nature, which is all a flyout needs.
@@ -297,6 +299,7 @@ export function AnchoredSurface({
   scrollable = false,
   revision,
   backdrop = true,
+  autoFocus,
   onPointerEnter,
   onPointerLeave,
   testID,
@@ -340,15 +343,37 @@ export function AnchoredSurface({
   const placed = position !== null;
 
   useEffect(() => {
-    if (!isWeb || !open || !placed || typeof document === "undefined") return undefined;
-    const frame = requestAnimationFrame(() => {
-      document
-        .getElementById(surfaceNativeID)
+    if (!isWeb || !open || !placed || autoFocus === false || typeof document === "undefined")
+      return undefined;
+    let surface: HTMLElement | null = null;
+    let focusOrigin: Element | null = null;
+    const focusFirstItem = () => {
+      surface
         ?.querySelector<HTMLElement>('[data-menu-item="true"]:not([data-menu-disabled="true"])')
         ?.focus();
+    };
+    const handleAnimationEnd = (event: AnimationEvent) => {
+      if (event.target !== surface) return;
+      surface?.removeEventListener("animationend", handleAnimationEnd);
+      if (document.activeElement === focusOrigin) focusFirstItem();
+    };
+    const frame = requestAnimationFrame(() => {
+      surface = document.getElementById(surfaceNativeID);
+      if (!surface) return;
+      focusOrigin = document.activeElement;
+      // Reanimated can keep a placed surface hidden until its entering animation starts.
+      // Browsers silently ignore focus on that first frame.
+      if (getComputedStyle(surface).visibility === "hidden") {
+        surface.addEventListener("animationend", handleAnimationEnd);
+      } else {
+        focusFirstItem();
+      }
     });
-    return () => cancelAnimationFrame(frame);
-  }, [open, placed, surfaceNativeID]);
+    return () => {
+      cancelAnimationFrame(frame);
+      surface?.removeEventListener("animationend", handleAnimationEnd);
+    };
+  }, [open, placed, autoFocus, surfaceNativeID]);
 
   const frameStyle = useMemo<StyleProp<ViewStyle>>(() => {
     const { width: screenWidth } = Dimensions.get("window");
@@ -468,11 +493,13 @@ export function MenuOverlay({
   visible,
   onClose,
   restoreFocusRef,
+  onSubmenuKeyDown,
   children,
 }: {
   visible: boolean;
   onClose: () => void;
   restoreFocusRef?: RefObject<View | null>;
+  onSubmenuKeyDown?: (event: KeyboardEvent) => boolean;
   children: ReactElement | null;
 }): ReactElement | null {
   const floatingLayer = useOverlayLayer("floating");
@@ -489,6 +516,12 @@ export function MenuOverlay({
       const target = event.target instanceof Element ? event.target : null;
       const surface = target?.closest<HTMLElement>('[data-menu-surface="true"]');
       if (!surface) return false;
+      if (target?.closest('input, textarea, [contenteditable="true"]')) return false;
+      if (onSubmenuKeyDown?.(event)) {
+        event.preventDefault();
+        event.stopPropagation();
+        return true;
+      }
       const items = Array.from(
         surface.querySelectorAll<HTMLElement>(
           '[data-menu-item="true"]:not([data-menu-disabled="true"])',
@@ -507,10 +540,10 @@ export function MenuOverlay({
       if (nextIndex !== null) {
         event.preventDefault();
         event.stopPropagation();
-        items[nextIndex]?.focus();
+        items[nextIndex]!.focus();
         return true;
       }
-      if ((event.key === "Enter" || event.key === " ") && currentIndex >= 0) {
+      if (["Enter", " "].includes(event.key) && currentIndex >= 0) {
         event.preventDefault();
         event.stopPropagation();
         items[currentIndex]?.click();
@@ -518,7 +551,7 @@ export function MenuOverlay({
       }
       return false;
     },
-    [onClose],
+    [onClose, onSubmenuKeyDown],
   );
   const setWebOverlayScope = useWebOverlayRegistration({
     active: isWeb && visible,
