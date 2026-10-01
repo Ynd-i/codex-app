@@ -752,6 +752,9 @@ visually checked against the typography reference. This adapts existing editable
 fields; it does not invent an installed-font enumeration service or a font-picker
 capability. Logs: `/private/tmp/paseo-font-fields-renderer.log`,
 `/private/tmp/paseo-font-fields-lint.log` and `/private/tmp/paseo-font-fields-commit.log`.
+Implementation `694c3e5` passes normal commit hooks; its refreshed Custom package
+passes real renderer/preload startup, identity/update guard, isolated daemon,
+bundled CLI and terminal smoke.
 
 ### Voice exclusions
 
@@ -1608,15 +1611,16 @@ Appearance captures were inspected in the private artifact directory
 `/private/tmp/paseo-settings-return-final-{format,lint}.log`. The first concurrent
 typecheck raced the dependency build; the final check was run after build completion.
 
-The latest Custom refresh was built from merge `34d9f5f` on 0.11.0-beta.1,
-including upstream `e10f6d2` and all custom interface/content weights, question
-cards, styled text, tool approvals and Diff changes. Real renderer/preload, custom
+The latest Custom refresh was built from `694c3e5` on 0.11.0-beta.1 after
+upstream merge `34d9f5f`, adding the reference font-family fields to the custom
+weights, question cards, styled text, tool approvals and Diff changes. Real renderer/preload, custom
 identity/update guard, isolated daemon, bundled CLI and terminal smoke pass.
-Log: `/private/tmp/paseo-upstream-e10-package-build.log`; artifacts:
-`/private/tmp/paseo-upstream-e10-package-smoke`. The deeper real-package menu,
-font-weight, reload, file/browser and deep-link checks pass in
-`/private/tmp/paseo-upstream-e10-package-final.log`, with artifacts at
-`/private/tmp/paseo-upstream-e10-package-qa`. This smoke establishes package startup;
+Log: `/private/tmp/paseo-font-fields-package-build.log`; artifacts:
+`/private/tmp/paseo-font-fields-package-qa`. The preceding `34d9f5f` package has
+deeper real-package menu, font-weight, reload, file/browser and deep-link evidence
+in `/private/tmp/paseo-upstream-e10-package-final.log`, with artifacts at
+`/private/tmp/paseo-upstream-e10-package-qa`. Font-field interaction evidence is
+the isolated renderer case in its section above. This smoke establishes package startup;
 approval and populated Diff interactions have separate isolated renderer evidence below.
 
 The preceding Custom refresh matched production source `5b5083b`, including code
@@ -1858,6 +1862,13 @@ pass; logs `/private/tmp/paseo-diff-dock-final-{format,lint,typecheck}.log` and
 `/private/tmp/paseo-diff-dock-feature-commit.log`. The refreshed Custom bundle
 passes startup/CLI/terminal smoke as recorded above. Full Diff visual parity and
 provider-specific approval presentation remain open work.
+
+At upstream `e10f6d2`, the working-diff request accepts mode, base ref and
+whitespace handling, but no per-file filter. On a global `diffTooLarge`, the server
+returns an empty file array. The separate commit-file API is for immutable commit
+diffs. Therefore the reference's large-working-diff file paging and omitted-
+untracked counter cannot be claimed from this contract; the existing oversized-
+diff notice can still be restyled without changing backend behavior.
 
 #### Diff code paint
 
