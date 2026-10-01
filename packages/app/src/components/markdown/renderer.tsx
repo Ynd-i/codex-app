@@ -701,7 +701,7 @@ export function createSharedMarkdownRules(): RenderRules {
           parent.some(
             (ancestor) => ancestor.type === "blockquote" && ancestor.children?.at(-1) === node,
           )
-            ? styles.paragraphLastInQuote
+            ? styles.paragraphWithoutBottomMargin
             : styles.paragraph
         }
         containsImage={markdownNodeContainsType(node, "image")}

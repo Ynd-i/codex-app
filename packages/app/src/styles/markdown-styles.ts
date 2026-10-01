@@ -64,7 +64,7 @@ export function createMarkdownStyles(theme: Theme) {
     },
 
     paragraph,
-    paragraphLastInQuote: { ...paragraph, marginBottom: 0 },
+    paragraphWithoutBottomMargin: { ...paragraph, marginBottom: 0 },
 
     // =========================================================================
     // HEADINGS

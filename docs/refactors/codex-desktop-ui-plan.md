@@ -2117,10 +2117,31 @@ settings, file/browser dock and shell checks. Log:
 [packaged question](../qa-evidence/codex-desktop/packaged-question-pending.png)
 were inspected. These 1200×783 CSS viewport captures prove native interaction
 and rendering, not full pixel equality with the 1352×782 reference. Paragraph
-spacing still appears wider than the reference and needs a matched-state check.
+spacing was wider than the reference; the following slice resolves the repeated
+paragraph/quote margins.
 Clipboard writes remain covered by the browser test; this native run only checks
 the Copy button's availability and leaves the system clipboard intact. No real
 provider turn, external service, OS protocol dispatch or production daemon is involved.
+
+#### Chat Markdown block spacing
+
+The chat stream already supplies 12px between Markdown blocks. Its Mac paragraph
+and root quote rules were also adding their own outer margins: the measured
+intro-to-quote gap was 36px. The Mac chat rules now omit the terminal root
+paragraph's bottom margin and the root quote's vertical margins. Both gaps around
+the reference quote measure 12px. Other Markdown surfaces and non-Mac chat keep
+their existing spacing; paragraphs inside a quote retain their internal 12px gap.
+
+The renderer regression first failed with 36px instead of 12px, then passed both
+Mac and Windows presentation branches, including wrap/copy actions and a
+multi-paragraph quote (two cases, 16.5s). The Windows branch is simulated, not VM
+acceptance. Twenty-six Markdown style, stream-spacing and height-cache checks
+pass. The native package runner now asserts the same prose-to-quote gap.
+Logs: `/private/tmp/paseo-prose-spacing-{red,green,final,units}.log`.
+[Updated styled text](../qa-evidence/codex-desktop/styled-text-spacing.png) was
+inspected at the reference's 1352×782 CSS viewport. The fixture additionally
+contains long code and a multi-paragraph quote; this verifies this spacing slice,
+not complete transcript pixel equality.
 
 ### Upstream refresh to e10f6d2 — 2026-10-01
 

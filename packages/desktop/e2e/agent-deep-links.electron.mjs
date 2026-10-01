@@ -288,6 +288,15 @@ export async function runAgentDeepLinksRegression({
   await expect(quote).toContainText("这是一段引用文字。");
   await expect(quote).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await expect(quote).toHaveCSS("border-left-width", "3px");
+  const intro = assistant.locator('[data-paseo-markdown-tag="p"]').filter({ hasText: /^例如/ });
+  await expect
+    .poll(async () => {
+      const before = await intro.boundingBox();
+      const after = await quote.boundingBox();
+      if (!before || !after) return null;
+      return after.y - before.y - before.height;
+    })
+    .toBe(12);
   await expect(assistant.getByText("斜体", { exact: true })).toHaveCSS("font-style", "italic");
   await expect(assistant.getByText("删除线", { exact: true })).toHaveCSS(
     "text-decoration-line",
@@ -367,6 +376,7 @@ export async function runAgentDeepLinksRegression({
     packagedSubmenuKeyboard: true,
     packagedProjectEditor: true,
     packagedStyledText: true,
+    packagedProseSpacing: true,
     packagedQuestionSubmission: true,
     invalidUrlRejected: true,
     osProtocolDispatch: "not tested",

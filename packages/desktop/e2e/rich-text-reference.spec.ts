@@ -14,7 +14,7 @@ for (const platform of ["darwin", "win32"] as const) {
     const markdown =
       "例如，带格式的回复会显示成这样：\n\n> 这是一段引用文字。\n\n这部分是**加粗**，这部分是*斜体*，这部分是~~删除线~~，这里是`行内代码`。\n\n- 项目一\n- 项目二\n\n代码块也可以这样显示：\n\n```\n这是一段代码或纯文本\n```\n\n```ts\n" +
       longCode +
-      "\n```\n";
+      "\n```\n\n> First nested paragraph.\n>\n> Second nested paragraph.\n";
     const fixture = await seedMockAgentWorkspace({
       repoPrefix: "rich-text-",
       title: "Styled text",
@@ -28,12 +28,14 @@ for (const platform of ["darwin", "win32"] as const) {
         manageBuiltInDaemon: false,
         daemonListen: `127.0.0.1:${getE2EDaemonPort()}`,
       });
-      await page.setViewportSize({ width: 1352, height: 1000 });
+      await page.setViewportSize({ width: 1352, height: 782 });
       await page.emulateMedia({ colorScheme: "dark" });
       await openAgentRoute(page, fixture);
       await submitMessage(page, "Show styled text.");
       const assistant = page.getByTestId("assistant-message");
-      const quote = assistant.locator('[data-paseo-markdown-tag="blockquote"]');
+      const quote = assistant
+        .locator('[data-paseo-markdown-tag="blockquote"]')
+        .filter({ hasText: "这是一段引用文字。" });
       await expect(quote).toContainText("这是一段引用文字。");
       await expect(assistant.getByText("斜体", { exact: true })).toHaveCSS("font-style", "italic");
       await expect(assistant.getByText("删除线", { exact: true })).toHaveCSS(
@@ -47,6 +49,28 @@ for (const platform of ["darwin", "win32"] as const) {
         .locator('[data-paseo-markdown-tag="pre"]')
         .filter({ hasText: "const message" });
       if (platform === "darwin") {
+        const intro = assistant
+          .locator('[data-paseo-markdown-tag="p"]')
+          .filter({ hasText: /^例如/ });
+        const paragraph = assistant
+          .locator('[data-paseo-markdown-tag="p"]')
+          .filter({ hasText: /^这部分是/ });
+        await expect
+          .poll(async () => {
+            const before = await intro.boundingBox();
+            const after = await quote.boundingBox();
+            if (!before || !after) return null;
+            return after.y - before.y - before.height;
+          })
+          .toBe(12);
+        await expect
+          .poll(async () => {
+            const before = await quote.boundingBox();
+            const after = await paragraph.boundingBox();
+            if (!before || !after) return null;
+            return after.y - before.y - before.height;
+          })
+          .toBe(12);
         await expect(quote).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
         await expect(quote).toHaveCSS("border-left-width", "3px");
         await expect(quote).toHaveCSS("border-left-color", "rgb(93, 93, 90)");
@@ -68,7 +92,19 @@ for (const platform of ["darwin", "win32"] as const) {
         expect(await scroll.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(true);
         await typed.getByRole("button", { name: "Wrap long lines", exact: true }).click();
         await expect(code).toHaveCSS("white-space", "pre-wrap");
+        const timeline = page.getByTestId("agent-chat-scroll").filter({ visible: true }).first();
+        await timeline.hover();
+        await page.mouse.wheel(0, -10000);
+        await expect.poll(() => timeline.evaluate((node) => node.scrollTop)).toBe(0);
         await page.screenshot({ path: testInfo.outputPath("styled-text.png") });
+        await page.mouse.wheel(0, 10000);
+        const nested = assistant
+          .locator('[data-paseo-markdown-tag="blockquote"]')
+          .filter({ hasText: "First nested paragraph." });
+        const paragraphs = nested.locator('[data-paseo-markdown-tag="p"]');
+        await expect(paragraphs).toHaveCount(2);
+        await expect(paragraphs.first()).toHaveCSS("margin-bottom", "12px");
+        await expect(paragraphs.last()).toHaveCSS("margin-bottom", "0px");
       } else {
         await expect(plain.getByText("Plain text", { exact: true })).toHaveCount(0);
         await expect(quote).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");

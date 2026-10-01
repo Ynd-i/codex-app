@@ -781,6 +781,10 @@ export const assistantMessageStylesheet = StyleSheet.create((theme) => ({
   containerCompactBottom: {
     paddingBottom: 0,
   },
+  topLevelQuote: {
+    // The chat stream already separates these Markdown blocks.
+    marginVertical: 0,
+  },
   cappedNotice: {
     marginTop: theme.spacing[3],
     fontFamily: theme.fontFamily.ui,
@@ -1623,12 +1627,17 @@ export const AssistantMessage = memo(function AssistantMessage({
       blockquote: (
         node: ASTNode,
         children: ReactNode[],
-        _parent: ASTNode[],
+        parent: ASTNode[],
         styles: MarkdownStyles,
       ) => (
         <View
           key={node.key}
-          style={styles._VIEW_SAFE_blockquote}
+          style={[
+            styles._VIEW_SAFE_blockquote,
+            getIsElectronMac() && parent.length === 1 && parent[0].type === "body"
+              ? assistantMessageStylesheet.topLevelQuote
+              : null,
+          ]}
           dataSet={markdownCopyDataSet.blockquote}
         >
           {children}
@@ -1943,10 +1952,13 @@ export const AssistantMessage = memo(function AssistantMessage({
           key={node.key}
           paragraphStyle={
             getIsElectronMac() &&
-            parent.some(
+            (parent.some(
               (ancestor) => ancestor.type === "blockquote" && ancestor.children?.at(-1) === node,
-            )
-              ? styles.paragraphLastInQuote
+            ) ||
+              (parent.length === 1 &&
+                parent[0].type === "body" &&
+                parent[0].children?.at(-1) === node))
+              ? styles.paragraphWithoutBottomMargin
               : styles.paragraph
           }
           containsImage={markdownNodeContainsType(node, "image")}

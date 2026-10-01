@@ -42,6 +42,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- Removed duplicated paragraph and quote margins from macOS chat Markdown blocks, retaining spacing within multi-paragraph quotes and other-platform presentation.
+
 - Extended the real Custom package regression to cover styled text, code wrapping, question submission and retained drafts across reload and chat navigation.
 
 - Matched Mac font-family fields to compact reference capsules and replaced raw default font stacks with the existing localized System default hint; custom font input and other platforms retain their behavior.
