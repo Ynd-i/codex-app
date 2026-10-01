@@ -302,6 +302,8 @@ function ProjectSettingsBody({
         client={client}
         supportsCustomIcon={supportsCustomIcon}
         snapshot={editSnapshot}
+        sourceDirectory={selectedHost.repoRoot}
+        hostName={selectedHost.serverName}
       />
 
       {renderContent({
