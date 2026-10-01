@@ -3,6 +3,11 @@ import { pluginSettings } from "./plugin-settings";
 
 export const es: TranslationResources = {
   usage: {
+    hostUnavailableNamed: "Conéctate a {{host}} para ver el uso",
+    hostUpgradeRequiredNamed: "Actualiza {{host}} para ver el uso",
+    pin: "Fijar",
+    displayUsed: "Usado",
+    displayRemaining: "Restante",
     title: "Uso",
     planUsage: "Uso del plan",
     refresh: "Actualizar",
@@ -1232,6 +1237,9 @@ export const es: TranslationResources = {
       settings: "Ajustes",
       closeSidebar: "Cerrar barra lateral",
     },
+    footer: {
+      usage: "Uso",
+    },
     help: {
       trigger: "Ayuda y soporte",
       sectionHelp: "Ayuda",
@@ -1715,6 +1723,17 @@ export const es: TranslationResources = {
     hostPassword: {
       title: "Contraseña de {{host}}",
       label: "Contraseña del host",
+    },
+    hostConfirmation: {
+      title: "¿Conectar con este host?",
+      description:
+        "Este host podrá ejecutar código en esta app y acceder a tus otros hosts conectados. Conéctate solo si lo reconoces.",
+      descriptionChanged:
+        "Este enlace cambia cómo te conectas a este host. El host podrá ejecutar código en esta app y acceder a tus otros hosts conectados. Conéctate solo si lo reconoces.",
+      hostLabel: "Host",
+      fingerprintLabel: "Huella de la clave",
+      relayLabel: "Relay",
+      connect: "Conectar",
     },
     connectionMethods: {
       title: "Agregar conexión",
@@ -2269,9 +2288,16 @@ export const es: TranslationResources = {
         description: "Muestra un esquema para saltar entre instrucciones",
       },
       sidebar: {
-        title: "Barra lateral",
-        description:
-          "Elige qué elementos aparecen en la parte superior de la barra lateral y en qué orden",
+        header: {
+          title: "Encabezado",
+          description:
+            "Elige qué elementos aparecen en la parte superior de la barra lateral y en qué orden",
+        },
+        footer: {
+          title: "Pie",
+          description:
+            "Elige qué filas aparecen en la parte inferior de la barra lateral y en qué orden. Añadir proyecto y la fila de iconos siempre se muestran",
+        },
         moveUp: "Mover hacia arriba",
         moveDown: "Mover hacia abajo",
       },

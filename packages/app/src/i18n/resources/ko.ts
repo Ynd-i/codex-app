@@ -3,6 +3,11 @@ import { pluginSettings } from "./plugin-settings";
 
 export const ko: TranslationResources = {
   usage: {
+    hostUnavailableNamed: "사용량을 보려면 {{host}}에 연결하세요",
+    hostUpgradeRequiredNamed: "사용량을 보려면 {{host}}를 업데이트하세요",
+    pin: "고정",
+    displayUsed: "사용됨",
+    displayRemaining: "남은 양",
     title: "사용량",
     planUsage: "요금제 사용량",
     refresh: "새로고침",
@@ -1203,6 +1208,9 @@ export const ko: TranslationResources = {
       settings: "설정",
       closeSidebar: "사이드바 닫기",
     },
+    footer: {
+      usage: "사용량",
+    },
     help: {
       trigger: "도움말 및 지원",
       sectionHelp: "도움말",
@@ -1679,6 +1687,17 @@ export const ko: TranslationResources = {
     hostPassword: {
       title: "{{host}}의 비밀번호",
       label: "호스트 비밀번호",
+    },
+    hostConfirmation: {
+      title: "이 호스트에 연결할까요?",
+      description:
+        "이 호스트는 이 앱에서 코드를 실행하고 연결된 다른 호스트에 접근할 수 있게 됩니다. 알고 있는 호스트인 경우에만 연결하세요.",
+      descriptionChanged:
+        "이 링크는 이 호스트에 연결하는 방식을 변경합니다. 호스트는 이 앱에서 코드를 실행하고 연결된 다른 호스트에 접근할 수 있게 됩니다. 알고 있는 호스트인 경우에만 연결하세요.",
+      hostLabel: "호스트",
+      fingerprintLabel: "키 지문",
+      relayLabel: "릴레이",
+      connect: "연결",
     },
     connectionMethods: {
       title: "연결 추가",
@@ -2228,8 +2247,15 @@ export const ko: TranslationResources = {
         description: "프롬프트 사이를 이동하기 위한 개요 표시",
       },
       sidebar: {
-        title: "사이드바",
-        description: "사이드바 상단에 표시할 항목과 순서를 선택하세요",
+        header: {
+          title: "헤더",
+          description: "사이드바 상단에 표시할 항목과 순서를 선택하세요",
+        },
+        footer: {
+          title: "푸터",
+          description:
+            "사이드바 하단에 표시할 행과 순서를 선택하세요. 프로젝트 추가와 아이콘 행은 항상 표시됩니다",
+        },
         moveUp: "위로 이동",
         moveDown: "아래로 이동",
       },

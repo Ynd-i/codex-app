@@ -696,6 +696,10 @@ function TabHandleContent({
   );
 }
 
+function hasPersistentCloseControl(isCompact: boolean, isClosing: boolean, isActive: boolean) {
+  return isNative || isCompact || isClosing || (getIsElectronMac() && isActive);
+}
+
 function TabChip({
   serverId,
   tab,
@@ -752,8 +756,7 @@ function TabChip({
     isFilled: isActive || isHovered,
   });
   const showCloseControl =
-    showCloseButton &&
-    (isHovered || isNative || isCompact || isClosingTab || (getIsElectronMac() && isActive));
+    showCloseButton && (isHovered || hasPersistentCloseControl(isCompact, isClosingTab, isActive));
   const closeButtonDragBlockers = isWeb
     ? ({
         onPointerDown: (event: { stopPropagation?: () => void }) => {
@@ -846,9 +849,8 @@ function TabChip({
               {...(dragHandleProps?.listeners as object | undefined)}
               testID={`workspace-tab-${testIdentity}`}
               triggerRef={dragHandleProps?.setActivatorNodeRef as unknown as undefined}
-              enabledOnMobile={false}
               style={tabChipStyle}
-              onPressIn={handleNavigateTab}
+              onPressIn={isWeb ? handleNavigateTab : undefined}
               onPress={handleNavigateTab}
               accessibilityRole="button"
               accessibilityLabel={accessibilityLabel}

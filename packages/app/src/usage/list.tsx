@@ -1,37 +1,37 @@
-import { Fragment } from "react";
+import { getIsElectronMac } from "@/constants/platform";
+import { useIsCompactFormFactor } from "@/constants/layout";
 import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { settingsStyles } from "@/styles/settings";
-import { getIsElectronMac } from "@/constants/platform";
-import { useIsCompactFormFactor } from "@/constants/layout";
 import { UsageCard } from "./card";
+import type { UsageDisplay } from "./display";
 import type { UsageReportEntry } from "./types";
 
+/** One card per report (source + account). */
 export function UsageList({
   serverId,
   reports,
+  display,
 }: {
   serverId: string;
   reports: UsageReportEntry[];
+  display: UsageDisplay;
 }) {
   const isCompact = useIsCompactFormFactor();
   const overview = getIsElectronMac() && !isCompact;
   return (
-    <View style={overview ? styles.overview : settingsStyles.card}>
-      {reports.map((entry, index) => (
-        <Fragment key={entry.id}>
-          {index > 0 && !overview ? <View style={styles.divider} /> : null}
-          <UsageCard serverId={serverId} entry={entry} />
-        </Fragment>
+    <View style={styles.list(overview)}>
+      {reports.map((entry) => (
+        <View key={entry.id} style={overview ? undefined : settingsStyles.card}>
+          <UsageCard serverId={serverId} entry={entry} display={display} />
+        </View>
       ))}
     </View>
   );
 }
 
 const styles = StyleSheet.create((theme) => ({
-  overview: { gap: theme.spacing[4] },
-  divider: {
-    height: 1,
-    backgroundColor: theme.colors.border,
-  },
+  list: (overview: boolean) => ({
+    gap: overview ? theme.spacing[4] : theme.spacing[3],
+  }),
 }));

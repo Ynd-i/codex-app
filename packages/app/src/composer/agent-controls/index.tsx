@@ -396,6 +396,7 @@ type AgentControlsSlice = {
   runtimeModelId: string | null;
   model: string | null | undefined;
   features: AgentFeature[] | undefined;
+  runtimeThinkingOptionId: string | null;
   thinkingOptionId: string | null | undefined;
   lastUsage: unknown;
 } | null;
@@ -415,6 +416,7 @@ function selectAgentControlsSlice(
     runtimeModelId: currentAgent.runtimeInfo?.model ?? null,
     model: currentAgent.model,
     features: currentAgent.features,
+    runtimeThinkingOptionId: currentAgent.runtimeInfo?.thinkingOptionId ?? null,
     thinkingOptionId: currentAgent.thinkingOptionId,
     lastUsage: currentAgent.lastUsage,
   };
@@ -1618,11 +1620,18 @@ export const AgentControls = memo(function AgentControls({
     });
   }, [agentProviderDefinitions, agentProviderModels, snapshotSelectedEntry]);
 
+  const {
+    runtimeModelId,
+    model: configuredModelId,
+    runtimeThinkingOptionId,
+    thinkingOptionId: explicitThinkingOptionId,
+  } = agent ?? {};
   const modelSelection = resolveAgentModelSelection({
     models,
-    runtimeModelId: agent?.runtimeModelId,
-    configuredModelId: agent?.model,
-    explicitThinkingOptionId: agent?.thinkingOptionId,
+    runtimeModelId,
+    configuredModelId,
+    runtimeThinkingOptionId,
+    explicitThinkingOptionId,
   });
 
   const modelOptions = useMemo<AgentControlOption[]>(() => {

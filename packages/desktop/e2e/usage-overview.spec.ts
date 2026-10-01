@@ -95,11 +95,18 @@ test("desktop usage keeps provider data through refresh failures and language ch
     fetchedAt: new Date().toISOString(),
     report: { status: "unavailable", windows: [] },
   };
+  let usedPct = 31;
+  let forcedRefreshCount = 0;
   await installUsageReportsFixture(page, {
     lists: [
-      [available(31), unavailable],
-      { error: "Fixture usage unavailable" },
-      [available(52), unavailable],
+      ({ forceRefresh }) => {
+        if (forceRefresh) {
+          forcedRefreshCount += 1;
+          if (forcedRefreshCount === 1) return { error: "Fixture usage unavailable" };
+          usedPct = 52;
+        }
+        return [available(usedPct), unavailable];
+      },
     ],
   });
   await page.setViewportSize({ width: 1352, height: 782 });
@@ -111,6 +118,9 @@ test("desktop usage keeps provider data through refresh failures and language ch
   await expect(alpha.getByText("69% remaining", { exact: true })).toBeVisible();
   await expect(alpha.getByText("31% used", { exact: true })).toBeVisible();
   await expect(alpha.getByRole("progressbar")).toHaveCount(1);
+  // The upstream preference defaults to used; explicitly choose the Mac remaining view.
+  await expect(alpha.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "31");
+  await screen.getByTestId("usage-display-remaining").click();
   await expect(alpha.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "69");
   await alpha.getByTestId("usage-refresh").click();
   await expect(alpha.getByTestId("usage-refresh-error")).toBeVisible();
@@ -125,6 +135,8 @@ test("desktop usage keeps provider data through refresh failures and language ch
   await clickSettingsBackToWorkspace(page);
   await page.getByTestId("sidebar-usage").filter({ visible: true }).first().click();
   await expect(screen.getByTestId("page-title")).toHaveText("使用情况");
+  await expect(screen.getByTestId("usage-display-used")).toHaveText("已用");
+  await expect(screen.getByTestId("usage-display-remaining")).toHaveText("剩余");
   await expect(alpha.getByText("剩余 48%", { exact: true })).toBeVisible();
   await expect(alpha.getByText("剩余 1,250", { exact: true })).toBeVisible();
   await expect(
@@ -135,10 +147,18 @@ test("desktop usage keeps provider data through refresh failures and language ch
   await page.setViewportSize({ width: 900, height: 680 });
   await expect(alpha.getByText("剩余 48%", { exact: true })).toBeInViewport();
   await page.setViewportSize({ width: 700, height: 680 });
+  await expect(alpha.getByText(/^剩余 48% · /)).toBeVisible();
+  await expect(
+    alpha.getByRole("progressbar", { name: "Weekly allowance", exact: true }),
+  ).toHaveAttribute("aria-valuenow", "48");
+  await page.getByTestId("usage-display-used").filter({ visible: true }).click();
   await expect(alpha.getByText(/^52% · /)).toBeVisible();
   await expect(
     alpha.getByRole("progressbar", { name: "Weekly allowance", exact: true }),
   ).toHaveAttribute("aria-valuenow", "52");
   await page.setViewportSize({ width: 1352, height: 782 });
   await expect(alpha.getByText("剩余 48%", { exact: true })).toBeVisible();
+  await expect(
+    alpha.getByRole("progressbar", { name: "Weekly allowance", exact: true }),
+  ).toHaveAttribute("aria-valuenow", "52");
 });

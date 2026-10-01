@@ -87,7 +87,7 @@ scope; it does not remove runtime code or add new provider integrations.
 | -------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 0. Upstream baseline             | Complete for local startup                            | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                                      |
 | 1. Window and sidebar appearance | Complete for local macOS development                  | Desktop shell and dark palette implemented; native navigation, sidebar toggle, menus, theme changes, window resize/fullscreen/reactivation checked. Scoped visual QA passed.                 |
-| 1a. Upstream integration check   | Merged and rebuilt                                    | Merge `309f2c4` includes upstream `4e9a458` (release notes plus a host-startup race fix). No conflicts; server/client rebuild and 11 targeted startup tests passed.                          |
+| 1a. Upstream integration check   | Refreshed and verified                                | Upstream `4893629` integrated in isolation; 13 conflicts resolved. Provider, usage, navigation and custom desktop checks pass; protected daemon processes stay running.                      |
 | 2. Chat navigation               | Single-chat layout verified locally                   | Main tabs removed; tools route right with saved state retained. Default sidebar, current-chat actions, draft isolation and Back/Forward remain. Custom chat sidebar stays deferred.          |
 | 3. Transcript and composer       | Composer and activity verified; visual polish pending | Column, input/model controls, tool cards and completed-turn activity are checked in native development. Attachment-menu renderer checks pass; native follow-up and transcript polish remain. |
 | 4. Supporting panels             | Right tools and shared titlebar verified locally      | Terminal, browser, file and diff routing pass. Internal file tree and responsive browser controls pass; detailed panel styling and native tool acceptance remain.                            |
@@ -176,19 +176,42 @@ Merge upstream source changes and review server, protocol, and client compatibil
 together. Keep custom changes at the presentation boundary. Any required protocol
 change is a separate backward-compatible slice.
 
-The October 1 refresh fetched `upstream/main` at `4893629ff5ff8938c129c322d6328dd183023095`,
-26 commits beyond the accepted `4e9a458` baseline. It is not merged yet. Commit the
-current UI slice first, then integrate that pinned target in an isolated worktree.
-Preserve the upstream runtime model/thinking selection, sidebar Usage preferences
-and footer model, stacked-dialog/host-confirmation behavior, and reactive provider
-icons. Keep provider/tool approval and provider-options changes intact on the
-server/protocol side. Merge both locale key sets rather than choosing one side.
+The October 1 refresh integrates `upstream/main` at
+`4893629ff5ff8938c129c322d6328dd183023095`, 26 commits after the previous accepted
+baseline. Work was isolated in `/Users/yndi/dev/projects/codex-app/paseo-upstream-4893629`
+from UI checkpoint `8f49c67`. Thirteen conflicts were resolved without overwriting
+the primary checkout's separate Native session fork plan or reference images.
 
-Rebuild client/server declarations before checking consumers. Focus validation on
-composer selection, settings/usage/sidebar models, host confirmation, and the
-changed Codex/OpenCode/plugin-provider option and approval paths, plus the custom
-desktop regressions. The source review found no blocking upstream defect; actual
-merge resolution and its validation remain outstanding.
+The merge retains upstream runtime model/thinking selection, sidebar Usage
+preferences and footer ordering, stacked dialogs/host confirmation, reactive
+provider icons, provider options and tool approvals. Local usage cards retain
+localization, unknown-vs-zero values, credit units and reported quota durations.
+Both locale key sets are present. Two combined components crossed the existing
+complexity limit; a runtime-selection destructure and a close-control predicate
+keep the same behavior without weakening lint rules.
+
+Client/server packages were rebuilt before consumers were checked. Validation:
+380 provider/core unit tests; 166 UI contract checks; 31 usage model/format/pin
+checks; 10 Codex usage-source checks; 93 Muse and 37 Antigravity fake-CLI checks;
+44 browser integration cases (41 first-pass plus three corrected platform-specific
+shortcut assertions); six usage-page cases; five custom desktop cases and both
+desktop usage cases. Typecheck, lint and formatting pass. The shortcut fixtures
+use the actual browser platform and isolated usage data, retaining their click,
+navigation, ordering and visibility assertions.
+
+New-provider testing exposed a macOS exit race: a failed auth CLI was already a
+zombie before Node consumed its exit event, so group cleanup could return EPERM
+and hide the authentication error. Cleanup now waits briefly for that owned
+child's exit before retrying; real permission failures still propagate with the
+original error. Ten repeated auth failures verify the owned PID is gone. This
+uses fake CLIs and does not establish real provider sign-in acceptance.
+
+Logs are under `/private/tmp/paseo-upstream-`: `build-server`, `server-final-build`,
+`provider-unit`, `ui-contracts`, `usage-unit`, `codex-usage-unit`, `new-providers`,
+`antigravity-unit`, `browser-contracts`, `shortcut-e2e`, `desktop-regression`,
+`usage-ui-e2e`, `usage-overview-verified`, `lint` and `typecheck` (`.log` suffix).
+Native and remote-device checks remain separate. Neither protected daemon was
+restarted; source integration does not claim a running-daemon upgrade.
 
 The upstream desktop updater targets `getpaseo/paseo`. Use the
 [custom macOS package command](../release.md#custom-macos-development-package)

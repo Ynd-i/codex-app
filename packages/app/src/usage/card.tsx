@@ -1,42 +1,45 @@
-import { RefreshCw } from "lucide-react-native";
-import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
+import { RotateCw } from "lucide-react-native";
+import { useCallback, useMemo } from "react";
 import { Text, View, type StyleProp, type TextStyle } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import {
+  extraMutedIconColorMapping,
   iconButtonChromeGlyphSize,
-  mutedIconColorMapping,
   smallIconButtonChromeFrameSize,
 } from "@/components/ui/icon-button-chrome";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { ToolbarButton } from "@/components/ui/pane-content-toolbar";
+import { ToolbarButton, paneContentToolbarIconSize } from "@/components/ui/pane-content-toolbar";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useIsCompactFormFactor } from "@/constants/layout";
 import { getIsElectronMac, isNative } from "@/constants/platform";
 import { useCompactTimeAgo } from "@/hooks/use-time-ago";
 import { UsageBalanceBar } from "./balance-bar";
+import type { UsageDisplay } from "./display";
 import { formatUsageFreshness, type UsageRefresh } from "./model";
 import { useReportRefresh } from "./queries";
 import { UsageSourceIcon } from "./source-icon";
-import type { UsageReportEntry } from "./types";
+import type { UsageReport, UsageReportEntry, UsageWindow } from "./types";
 import { UsageWindowBar } from "./window-bar";
 
-function statusText(status: UsageReportEntry["report"]["status"], t: TFunction): string | null {
-  if (status === "available") return null;
-  return status === "error" ? t("common.errors.error") : t("usage.unavailable");
+function statusText(report: UsageReport, t: TFunction): string | null {
+  if (report.status === "available") return null;
+  return report.status === "error" ? t("common.errors.error") : t("usage.unavailable");
 }
 
-const ThemedRefreshIcon = withUnistyles(RefreshCw);
+const ThemedRotateCw = withUnistyles(RotateCw);
 const ThemedLoadingSpinner = withUnistyles(LoadingSpinner);
 
 export function UsageCard({
   serverId,
   entry,
+  display,
   compact = false,
 }: {
   serverId: string;
   entry: UsageReportEntry;
+  display: UsageDisplay;
   compact?: boolean;
 }) {
   const { t } = useTranslation();
@@ -46,7 +49,7 @@ export function UsageCard({
   // Where there is no hover the freshness is printed on the card; elsewhere the Refresh tooltip.
   const showsFreshnessInline = isNative || isCompact;
   const usage = entry.report;
-  const status = statusText(usage.status, t);
+  const status = statusText(usage, t);
   const footer = entry.account.label ?? null;
   const balances = usage.balances ?? [];
   const details = usage.details ?? [];
@@ -75,7 +78,7 @@ export function UsageCard({
         <Text style={styles.name(overview)} numberOfLines={1}>
           {entry.sourceLabel}
         </Text>
-        {usage.planLabel ? <StatusBadge label={usage.planLabel} variant="muted" /> : null}
+        {usage.planLabel ? <StatusBadge label={usage.planLabel} variant="muted" size="xs" /> : null}
         <View style={styles.headerSpacer} />
         {status ? (
           <View style={styles.statusRow}>
@@ -101,7 +104,13 @@ export function UsageCard({
       {usage.windows.length > 0 || balances.length > 0 ? (
         <View style={styles.bars}>
           {usage.windows.map((window) => (
-            <UsageWindowBar key={window.id} window={window} overview={overview} />
+            <PinnableWindowBar
+              key={window.id}
+              entry={entry}
+              window={window}
+              display={display}
+              overview={overview}
+            />
           ))}
           {balances.map((balance) => (
             <UsageBalanceBar key={balance.id} balance={balance} />
@@ -148,6 +157,37 @@ export function UsageCard({
   );
 }
 
+function PinnableWindowBar({
+  entry,
+  window,
+  display,
+  overview,
+}: {
+  entry: UsageReportEntry;
+  window: UsageWindow;
+  display: UsageDisplay;
+  overview: boolean;
+}) {
+  const { t } = useTranslation();
+  const pin = useMemo(
+    () => ({ sourceId: entry.sourceId, windowId: window.id }),
+    [entry.sourceId, window.id],
+  );
+  const { togglePin } = display;
+  const toggle = useCallback(() => togglePin(pin), [pin, togglePin]);
+  return (
+    <UsageWindowBar
+      window={window}
+      overview={overview}
+      displayAs={display.displayAs}
+      pinned={display.isPinned(pin)}
+      onTogglePin={toggle}
+      pinLabel={`${t("usage.pin")} ${entry.sourceLabel} ${window.label}`}
+      pinTestID={`usage-pin-${entry.sourceId}-${window.id}`}
+    />
+  );
+}
+
 /** Refreshes this one report. Its tooltip says when the report on screen was fetched. */
 function UsageRefreshButton({
   sourceLabel,
@@ -164,7 +204,7 @@ function UsageRefreshButton({
 }) {
   const { t } = useTranslation();
   const isPending = refreshState === "pending";
-  const iconSize = iconButtonChromeGlyphSize("small", compact);
+  const iconSize = paneContentToolbarIconSize(compact);
   const freshness = useMemo(
     () => (
       <UsageFreshness
@@ -187,9 +227,9 @@ function UsageRefreshButton({
       testID="usage-refresh"
     >
       {isPending ? (
-        <ThemedLoadingSpinner size={iconSize} uniProps={mutedIconColorMapping} />
+        <ThemedLoadingSpinner size={iconSize} uniProps={extraMutedIconColorMapping} />
       ) : (
-        <ThemedRefreshIcon size={iconSize} uniProps={mutedIconColorMapping} />
+        <ThemedRotateCw size={iconSize} uniProps={extraMutedIconColorMapping} />
       )}
     </ToolbarButton>
   );
@@ -226,8 +266,9 @@ const styles = StyleSheet.create((theme) => ({
   container: {
     gap: theme.spacing[3],
   },
+  // The gap is one step under the card padding: window rows add their own vertical padding.
   containerPadded: {
-    gap: theme.spacing[4],
+    gap: theme.spacing[3],
     paddingVertical: theme.spacing[4],
     paddingHorizontal: theme.spacing[4],
   },
@@ -275,8 +316,9 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.foregroundMuted,
     fontSize: theme.fontSize.sm,
   },
+  // Window rows carry their own vertical padding, which already separates them.
   bars: {
-    gap: theme.spacing[3],
+    gap: theme.spacing[1],
   },
   details: {
     gap: theme.spacing[1],

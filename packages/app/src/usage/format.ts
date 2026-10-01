@@ -1,6 +1,7 @@
 import { formatTokenCount } from "@/components/context-window-meter.utils";
 import type { TFunction } from "i18next";
 import { i18n } from "@/i18n/i18next";
+import type { UsageDisplayAs } from "./preferences";
 import type { UsageBalanceUnit } from "./types";
 
 export function clampPct(value: number): number {
@@ -9,6 +10,21 @@ export function clampPct(value: number): number {
 
 export function formatPct(value: number): string {
   return `${Math.round(clampPct(value))}%`;
+}
+
+/** Formats the selected percentage without treating missing quota as zero. */
+export function formatDisplayPct(
+  value: number,
+  displayAs: UsageDisplayAs,
+  t: TFunction = i18n.t,
+): string {
+  return displayAs === "used"
+    ? formatPct(value)
+    : t("usage.remainingBalance", { amount: formatPct(value) });
+}
+
+export function formatResetLabel(iso: string | null | undefined): string | null {
+  return formatUsageDeadline(iso);
 }
 
 export function formatUsageDeadline(

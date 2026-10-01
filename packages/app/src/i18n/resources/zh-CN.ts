@@ -3,6 +3,11 @@ import { pluginSettings } from "./plugin-settings";
 
 export const zhCN: TranslationResources = {
   usage: {
+    hostUnavailableNamed: "连接到 {{host}} 以查看用量",
+    hostUpgradeRequiredNamed: "更新 {{host}} 以查看用量",
+    pin: "固定",
+    displayUsed: "已用",
+    displayRemaining: "剩余",
     title: "使用情况",
     planUsage: "套餐用量",
     refresh: "刷新",
@@ -1188,6 +1193,9 @@ export const zhCN: TranslationResources = {
       settings: "设置",
       closeSidebar: "关闭侧边栏",
     },
+    footer: {
+      usage: "使用情况",
+    },
     help: {
       trigger: "帮助与支持",
       sectionHelp: "帮助",
@@ -1652,6 +1660,16 @@ export const zhCN: TranslationResources = {
     hostPassword: {
       title: "{{host}} 的密码",
       label: "主机密码",
+    },
+    hostConfirmation: {
+      title: "连接到此主机？",
+      description: "此主机将能在此应用中运行代码，并访问你其他已连接的主机。仅在你认识它时才连接。",
+      descriptionChanged:
+        "此链接会改变你连接此主机的方式。该主机将能在此应用中运行代码，并访问你其他已连接的主机。仅在你认识它时才连接。",
+      hostLabel: "主机",
+      fingerprintLabel: "密钥指纹",
+      relayLabel: "中继",
+      connect: "连接",
     },
     connectionMethods: {
       title: "添加连接",
@@ -2193,8 +2211,14 @@ export const zhCN: TranslationResources = {
         description: "显示用于在提示词之间跳转的大纲",
       },
       sidebar: {
-        title: "侧边栏",
-        description: "选择侧边栏顶部显示的项目及其顺序",
+        header: {
+          title: "顶部",
+          description: "选择侧边栏顶部显示的项目及其顺序",
+        },
+        footer: {
+          title: "底部",
+          description: "选择侧边栏底部显示的行及其顺序。添加项目和图标行始终显示",
+        },
         moveUp: "上移",
         moveDown: "下移",
       },

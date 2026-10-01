@@ -1,12 +1,13 @@
-import { RefreshCw } from "lucide-react-native";
-import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { useMemo } from "react";
 import { Text, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { settingsStyles } from "@/styles/settings";
 import { SettingsSection } from "@/components/settings/headings/settings-section";
+import type { UsageDisplay } from "./display";
+import { UsageControls } from "./controls";
 import { UsageList } from "./list";
 import type { UsageView } from "./types";
 
@@ -14,49 +15,39 @@ export function UsageSection({
   serverId,
   title,
   view,
+  display,
   onRefresh,
   testID,
 }: {
   serverId: string;
   title: string;
   view: UsageView;
+  display: UsageDisplay;
   onRefresh: () => void;
   testID?: string;
 }) {
-  const { t } = useTranslation();
-  const busy = view.kind === "loading" || (view.kind === "ready" && view.isRefreshing);
-
-  const refreshButton = useMemo(
-    () =>
-      view.kind === "unavailable" ? null : (
-        <Button
-          variant="ghost"
-          size="sm"
-          leftIcon={RefreshCw}
-          loading={busy}
-          onPress={onRefresh}
-          accessibilityLabel={t("usage.refresh")}
-        >
-          {busy ? t("usage.refreshing") : t("usage.refresh")}
-        </Button>
-      ),
-    [busy, onRefresh, t, view.kind],
+  const trailing = useMemo(
+    () => <UsageControls view={view} display={display} onRefresh={onRefresh} />,
+    [display, onRefresh, view],
   );
 
   return (
-    <SettingsSection title={title} testID={testID} trailing={refreshButton}>
-      <UsageBody serverId={serverId} view={view} onRefresh={onRefresh} />
+    <SettingsSection title={title} testID={testID} trailing={trailing}>
+      <UsageBody serverId={serverId} view={view} display={display} onRefresh={onRefresh} />
     </SettingsSection>
   );
 }
 
-function UsageBody({
+/** What a host's usage view shows: its reports, or why there are none. */
+export function UsageBody({
   serverId,
   view,
+  display,
   onRefresh,
 }: {
   serverId: string;
   view: UsageView;
+  display: UsageDisplay;
   onRefresh: () => void;
 }) {
   const { t } = useTranslation();
@@ -82,7 +73,7 @@ function UsageBody({
     return <UsageMessage text={t("usage.empty")} />;
   }
 
-  return <UsageList serverId={serverId} reports={view.reports} />;
+  return <UsageList serverId={serverId} reports={view.reports} display={display} />;
 }
 
 export function UsageMessage({ text }: { text: string }) {

@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { i18n } from "@/i18n/i18next";
-import { formatAmount, formatUsageDeadline } from "./format";
-import { formatUsageFreshness, remainingPercent } from "./model";
+import { usageCopy } from "./copy";
+import { formatAmount, formatDisplayPct, formatResetLabel, formatUsageDeadline } from "./format";
+import { displayPercent, formatUsageFreshness, remainingPercent } from "./model";
 
 beforeEach(async () => {
   vi.useFakeTimers();
@@ -43,4 +44,31 @@ it("preserves reported remaining allowance and distinguishes unknown from zero",
   expect(remainingPercent({ ...window, usedPct: 0 })).toBe(100);
   expect(remainingPercent({ ...window, remainingPct: 0 })).toBe(0);
   expect(remainingPercent({ ...window, usedPct: 20, remainingPct: 70 })).toBe(70);
+});
+
+it("combines used/remaining preferences with localized durations and unknown allowance", async () => {
+  const window = { id: "weekly", label: "Weekly", usedPct: 20, remainingPct: 70 };
+  expect(displayPercent(window, "used")).toBe(20);
+  expect(displayPercent(window, "remaining")).toBe(70);
+  expect(displayPercent({ id: "unknown", label: "Unknown" }, "used")).toBeNull();
+  expect(formatDisplayPct(70, "remaining")).toBe("70% left");
+  expect(formatDisplayPct(20, "used")).toBe("20%");
+  expect(formatResetLabel("2026-10-04T17:00:00Z")).toBe("resets 3d 17h");
+  await i18n.changeLanguage("zh-CN");
+  expect(formatDisplayPct(70, "remaining")).toBe("剩余 70%");
+  expect(formatDisplayPct(0, "used")).toBe("0%");
+  expect(formatResetLabel("2026-10-01T01:25:00Z")).toBe("1小时 25分钟后重置");
+});
+
+it("resolves sidebar copy against the current language and preserves the host name", async () => {
+  expect(usageCopy.title).toBe("Usage");
+  expect(usageCopy.hostUnavailable("Laptop")).toBe("Connect to Laptop to see usage");
+  expect(usageCopy.hostUpgradeRequired("Laptop")).toBe("Update Laptop to see usage");
+  await i18n.changeLanguage("zh-CN");
+  expect(usageCopy.title).toBe("使用情况");
+  expect(usageCopy.hostUnavailable("Laptop")).toContain("Laptop");
+  expect(usageCopy.hostUnavailable("Laptop")).toContain("连接");
+  expect(usageCopy.hostUpgradeRequired("Laptop")).toContain("更新");
+  expect(usageCopy.displayUsed).toBe("已用");
+  expect(usageCopy.displayRemaining).toBe("剩余");
 });

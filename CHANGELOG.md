@@ -22,6 +22,7 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- Integrated upstream through `4893629`, retaining runtime model/thinking reporting, provider options and approvals, and configurable sidebar usage alongside the custom desktop presentation.
 - Matched the macOS browser address field's focused surface to the reference. Escape restores the committed URL without navigating; clicking or using the address shortcut selects the full URL.
 - Kept one current conversation in the macOS main area and moved supporting tools into the right sidebar. Saved chats, terminal IDs, panel state and drafts survive the layout change; tool tabs share the window titlebar.
 - Removed Terminal profiles and Edit profiles from macOS tool launchers. The right-sidebar plus menu retains ordinary tools; providers remain available through New chat.
@@ -48,6 +49,7 @@ distribution and full migration acceptance remain pending; see the
 
 ### Fixed
 
+- Kept Antigravity's authentication error visible when macOS has not yet reaped its failed CLI process. Cleanup waits for the owned child and still reports genuine permission failures.
 - Removed inactive macOS panel-placement selectors from General settings while retaining service URL behavior and other platforms' saved placement choices.
 - Anchored the titlebar's top resize edge to its container, preventing horizontal overflow that could clip Settings navigation after menu interactions.
 - Kept missing quota readings and credit balances unavailable instead of treating them as zero. Known usage meters now expose their values to assistive technology.
