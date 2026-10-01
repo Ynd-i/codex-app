@@ -332,9 +332,9 @@ Real-provider turns and the remaining visual states still need their own checks.
 Additional references supplied by the user are in `context-images/`; preserve
 them as user-owned, currently untracked files. They cover chat actions, search,
 model/effort and attachment menus, approval mode, browser and many settings views.
-The later recording supplies expanded execution and keyboard-settings references,
-as inventoried below. A waiting approval request and populated code diff still
-need confirmation before those visual changes.
+The later recording supplies expanded execution and keyboard-settings references.
+The October 1 screenshots additionally cover populated split diffs and pending/
+denied Computer Use permission cards; see Reference coverage and next input below.
 
 The remote reference advanced again before the merge: the actual second parent
 of merge `309f2c4` is `4e9a458`, which includes `3fea128` and a seven-line host-runtime
@@ -1507,7 +1507,14 @@ Appearance captures were inspected in the private artifact directory
 `/private/tmp/paseo-settings-return-final-{format,lint}.log`. The first concurrent
 typecheck raced the dependency build; the final check was run after build completion.
 
-The latest Custom refresh matches production source `5b5083b`, including code
+The latest Custom refresh was built from `bb54f11` after the Diff dock renderer
+checks passed. Its real renderer/preload, custom identity/update guard, isolated
+daemon startup, bundled CLI and terminal smoke pass. Log:
+`/private/tmp/paseo-diff-dock-package-build.log`; artifacts:
+`/private/tmp/paseo-diff-dock-package-qa`. This smoke establishes package startup;
+the populated Diff interaction evidence is the isolated renderer case below.
+
+The preceding Custom refresh matched production source `5b5083b`, including code
 font weight, the centered address hint and reference reasoning accent, plus
 Advanced appearance, compact size fields, 32px right-tool tabs and submenu
 keyboard focus.
@@ -1664,11 +1671,70 @@ visual references. Adapt their labels, limits, renewal schedules, and any manual
 reset actions to each provider/plan; the screenshots do not establish shared
 Codex reset semantics. These files already exist, so no duplicate capture is needed.
 
-Expanded tool execution and keyboard settings are now covered by the recording
-captures below. An actual waiting approval request and a populated code diff remain
-unverified in this capture task. The approval-mode menu and untracked-files warning
-do not establish those states. Preserve their existing behavior until the visual
-references can be confirmed.
+Expanded tool execution and keyboard settings are covered by the recording
+captures below. Four original 2704×1564 PNGs supplied on October 1 were inspected
+and copied byte-for-byte from the user's Desktop into the private reference directory:
+
+| Reference                                                                                          | Observed state                                                                                                                                      |
+| -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Populated diff, file tree open](../../context-images/codex-diff-populated-file-tree-open.png)     | Changes tab in the shared top bar; branch controls, addition/deletion totals, split code diff and right-hand file tree.                             |
+| [Populated diff, file tree closed](../../context-images/codex-diff-populated-file-tree-closed.png) | Same view with the file tree hidden and the diff expanded into its width.                                                                           |
+| [Permission pending](../../context-images/codex-computer-use-permission-pending.png)               | Computer Use application-access card at the composer position; persistent allow, deny/Escape and conversation allow/Return actions; waiting status. |
+| [Permission denied](../../context-images/codex-computer-use-permission-denied.png)                 | Inline permission entry expands to show the request and denial; ordinary composer is restored.                                                      |
+
+The diff pair also shows tracked-files and large-diff notices. These screenshots
+establish their appearance, not thresholds or new backend requirements. Permission
+cards are application-access requests, not shell-command escalation: reuse the
+layout only with actions actually supported by the existing provider contract.
+Automatic review behavior remains unchanged. Approval styling is lower priority
+and does not block other migration work. Main chat remains untabbed; supporting
+tool tabs belong to the right dock. No further screenshot is needed for these
+observed states; implementation parity still requires its own validation.
+
+### Diff dock and file filter — 2026-10-01
+
+Mac working-diff tabs now reuse the existing combined presentation: comparison
+totals above the branch row, 32px control capsules, a right-hand file tree and its
+circular Folders toggle. The tree uses the existing SearchField and matches full
+paths case-insensitively. Search keeps original file objects/indexes and leaves
+saved folder-collapse state intact. Clearing restores that state. Tree visibility
+now uses TreeRail's existing visibility prop, preserving the mounted diff canvas.
+Independent Diff tabs omit tree-only Inline diffs preferences and commit history;
+the Changes tree retains both. Non-Mac working-diff presentation is unchanged.
+
+The Diff and single-chat renderer cases passed together (33.8s). A subsequent
+menu regression reproduced the unwanted Inline diffs entry, then the corrected
+Diff case passed (16.1s). Coverage includes actual split rendering, tree geometry,
+canvas identity, filtering/empty/clear states, retained folder collapse, saved
+visibility, draft preservation and absent main tabs. Sixteen diff-tree unit tests
+and thirteen rail/state/preference tests pass. A read-only review found no remaining
+actionable correctness issue. Logs: `/private/tmp/paseo-diff-reference-resume.log`,
+`/private/tmp/paseo-diff-inline-red.log`, `/private/tmp/paseo-diff-reference-final.log`,
+`/private/tmp/paseo-diff-filter-{red,green}.log` and `/private/tmp/paseo-diff-reference-unit.log`.
+
+The [open-tree](../qa-evidence/codex-desktop/diff-tree-open.png) and
+[closed-tree](../qa-evidence/codex-desktop/diff-tree-closed.png) renderer captures
+were compared with the supplied reference pair. Source PNGs are 2704×1564 (@2x);
+the synthetic renderer captures are 1352×782 (@1x), at the same CSS viewport.
+This establishes the dock/tree layout and interaction slice, not full pixel parity:
+the fixture has two small changes, while the reference is scrolled into a large
+diff. Code weight/colors, diff hunk treatments and large-diff notices still need
+state-matched refinement. The current branch control retains Paseo checkout
+semantics; a comparison-base picker must not be fabricated from that control.
+Refresh likewise retains its own operation instead of impersonating reference
+search. The user's default workspace sidebar remains intentionally retained.
+
+Earlier attempts stopped before startup with localhost `listen EPERM`, and a
+granular policy rejected escalation. After the execution policy changed, escalation
+was approved and the isolated renderer harness completed with its own temporary
+ports and daemon state. The harness cleaned up; protected 6767/6768 daemons were
+not restarted. This earlier blocker is resolved.
+
+Implementation commit: `bb54f11`. Root format, lint, typecheck and commit hooks
+pass; logs `/private/tmp/paseo-diff-dock-final-{format,lint,typecheck}.log` and
+`/private/tmp/paseo-diff-dock-feature-commit.log`. The refreshed Custom bundle
+passes startup/CLI/terminal smoke as recorded above. Full Diff visual parity and
+provider-specific approval presentation remain open work.
 
 ### Recording references — 2026-09-30
 
