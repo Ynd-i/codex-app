@@ -2232,6 +2232,8 @@ export const ko: TranslationResources = {
     },
     appearance: {
       theme: {
+        visualStyle: "시각적 스타일",
+        mode: "모드",
         title: "테마",
         accessibilityLabel: "테마: {{value}}",
         options: {

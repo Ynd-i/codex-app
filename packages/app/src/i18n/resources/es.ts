@@ -2273,6 +2273,8 @@ export const es: TranslationResources = {
     },
     appearance: {
       theme: {
+        visualStyle: "Estilo visual",
+        mode: "Modo",
         title: "Tema",
         accessibilityLabel: "Tema:{{value}}",
         options: {

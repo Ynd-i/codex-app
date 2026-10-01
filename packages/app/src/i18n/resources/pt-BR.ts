@@ -2256,6 +2256,8 @@ export const ptBR: TranslationResources = {
     },
     appearance: {
       theme: {
+        visualStyle: "Estilo visual",
+        mode: "Modo",
         title: "Tema",
         accessibilityLabel: "Tema: {{value}}",
         options: {

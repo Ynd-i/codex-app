@@ -2259,6 +2259,8 @@ export const ru: TranslationResources = {
     },
     appearance: {
       theme: {
+        visualStyle: "Визуальный стиль",
+        mode: "Режим",
         title: "Тема",
         accessibilityLabel: "Тема: {{value}}",
         options: {

@@ -1,7 +1,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { Text, View } from "react-native";
+import { Pressable, Text, View, type PressableStateCallbackType } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { Monitor, Moon, Sun } from "lucide-react-native";
 import {
@@ -39,6 +39,8 @@ import {
   DEFAULT_THEME_PREFERENCE,
 } from "@/hooks/use-settings";
 import {
+  darkTheme,
+  lightTheme,
   DEFAULT_MONO_FONT_STACK,
   DEFAULT_UI_FONT_STACK,
   ICON_SIZE,
@@ -90,6 +92,137 @@ function sizeDraftToOverride(value: string): number | undefined {
 // ---------------------------------------------------------------------------
 // Theme picker
 // ---------------------------------------------------------------------------
+
+type ThemeMode = "auto" | "light" | "dark";
+const THEME_MODES: readonly ThemeMode[] = ["auto", "light", "dark"];
+
+/** A miniature UI in the built-in palette, independent of the currently selected theme. */
+function ThemeModePreview({ mode }: { mode: "light" | "dark" }) {
+  const colors = mode === "light" ? lightTheme.colors : darkTheme.colors;
+  return (
+    <View style={[styles.modeTile, { backgroundColor: colors.surface1 }]}>
+      <View
+        style={[
+          styles.modeWindow,
+          { backgroundColor: colors.surface0, borderColor: colors.border },
+        ]}
+      >
+        <View
+          style={[
+            styles.modeSidebar,
+            { backgroundColor: colors.surface1, borderColor: colors.border },
+          ]}
+        >
+          <View style={[styles.modeSidebarMark, { backgroundColor: colors.foregroundMuted }]} />
+        </View>
+        <View style={styles.modeConversation}>
+          <View
+            style={[styles.modeMessage, styles.modeUserMessage, { backgroundColor: colors.accent }]}
+          />
+          <View style={[styles.modeMessage, { backgroundColor: colors.foregroundMuted }]} />
+          <View
+            style={[
+              styles.modeMessage,
+              styles.modeShortMessage,
+              { backgroundColor: colors.foregroundMuted },
+            ]}
+          />
+          <View
+            style={[styles.modeMessage, styles.modeUserMessage, { backgroundColor: colors.accent }]}
+          />
+          <View style={[styles.modeComposer, { borderColor: colors.border }]}>
+            <View style={[styles.modeSend, { backgroundColor: colors.accent }]} />
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function ThemeModeChoice({
+  mode,
+  selected,
+  onChange,
+}: {
+  mode: ThemeMode;
+  selected: boolean;
+  onChange: (mode: BuiltInThemePreference) => void;
+}) {
+  const { t } = useTranslation();
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const enter = useCallback(() => setHovered(true), []);
+  const leave = useCallback(() => setHovered(false), []);
+  const focus = useCallback(() => setFocused(true), []);
+  const blur = useCallback(() => setFocused(false), []);
+  const select = useCallback(() => onChange(mode), [mode, onChange]);
+  const choiceStyle = useCallback(
+    ({ pressed }: PressableStateCallbackType) => [
+      styles.modeChoice,
+      (hovered || pressed) && styles.modeChoiceHovered,
+      selected && styles.modeChoiceSelected,
+      focused && styles.modeChoiceFocused,
+    ],
+    [focused, hovered, selected],
+  );
+  return (
+    <View style={styles.modeHoverTarget} onPointerEnter={enter} onPointerLeave={leave}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={getThemeLabel(t, mode)}
+        aria-pressed={selected}
+        onPress={select}
+        onFocus={focus}
+        onBlur={blur}
+        style={choiceStyle}
+      >
+        <View
+          style={styles.modeThumbnail}
+          pointerEvents="none"
+          accessibilityElementsHidden
+          aria-hidden
+        >
+          {mode === "auto" ? (
+            <>
+              <View style={styles.modeHalf}>
+                <ThemeModePreview mode="light" />
+              </View>
+              <View style={styles.modeHalf}>
+                <View style={styles.modeRightHalf}>
+                  <ThemeModePreview mode="dark" />
+                </View>
+              </View>
+            </>
+          ) : (
+            <ThemeModePreview mode={mode} />
+          )}
+        </View>
+      </Pressable>
+    </View>
+  );
+}
+
+function ThemeModes({
+  value,
+  onChange,
+}: {
+  value: AppSettings["theme"];
+  onChange: (mode: BuiltInThemePreference) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <View style={styles.modeCard} testID="appearance-theme-modes">
+      <Text style={[settingsStyles.rowTitle, styles.modeLabel]}>
+        {t("settings.appearance.theme.mode")}
+      </Text>
+      <View style={styles.modeChoices}>
+        {THEME_MODES.map((mode) => (
+          <ThemeModeChoice key={mode} mode={mode} selected={value === mode} onChange={onChange} />
+        ))}
+      </View>
+    </View>
+  );
+}
 
 interface ThemeLeadingProps {
   themeValue: BuiltInThemePreference;
@@ -481,6 +614,7 @@ export function AppearanceSection() {
     select: selectPluginTheme,
   } = useContributedThemes();
   const showInterfaceFontFamilyRow = !isNative;
+  const showThemeModes = getIsElectronMac();
   const uiFontPlaceholder = resolveDefaultStackPlaceholder(t, DEFAULT_UI_FONT_STACK);
   const monoFontPlaceholder = resolveDefaultStackPlaceholder(t, DEFAULT_MONO_FONT_STACK);
 
@@ -637,7 +771,14 @@ export function AppearanceSection() {
 
   return (
     <View>
-      <SettingsSection title={t("settings.appearance.theme.title")}>
+      <SettingsSection
+        title={t(
+          showThemeModes
+            ? "settings.appearance.theme.visualStyle"
+            : "settings.appearance.theme.title",
+        )}
+      >
+        {showThemeModes ? <ThemeModes value={settings.theme} onChange={handleThemeChange} /> : null}
         <View style={settingsStyles.card}>
           <ThemeRow
             value={settings.theme}
@@ -735,6 +876,74 @@ export function AppearanceSection() {
 }
 
 const styles = StyleSheet.create((theme) => ({
+  modeCard: {
+    height: 78,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface1,
+  },
+  modeLabel: { flex: 1, marginRight: 12 },
+  modeChoices: { flexDirection: "row", gap: 16 },
+  modeHoverTarget: { position: "relative" },
+  modeChoice: {
+    width: 80,
+    height: 60,
+    padding: 0,
+    borderWidth: 2,
+    borderColor: "transparent",
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modeChoiceHovered: {
+    backgroundColor: theme.colors.surface2,
+    borderColor: theme.colors.foregroundMuted,
+  },
+  modeChoiceSelected: { borderColor: theme.colors.ring },
+  modeChoiceFocused: {
+    outlineWidth: 2,
+    outlineOffset: 2,
+    outlineColor: theme.colors.ring,
+    outlineStyle: "solid",
+  },
+  modeTile: { width: 76, height: 56, padding: 4 },
+  modeThumbnail: {
+    width: 76,
+    height: 56,
+    flexDirection: "row",
+    borderRadius: 6,
+    overflow: "hidden",
+  },
+  modeHalf: { width: 38, height: 56, overflow: "hidden" },
+  modeRightHalf: { marginLeft: -38 },
+  modeWindow: {
+    width: 68,
+    height: 48,
+    flexDirection: "row",
+    borderWidth: 1,
+    borderRadius: 5,
+    overflow: "hidden",
+  },
+  modeSidebar: { width: 11, borderRightWidth: 1, alignItems: "center", paddingTop: 4 },
+  modeSidebarMark: { width: 4, height: 4, borderRadius: 2 },
+  modeConversation: { flex: 1, padding: 4, gap: 4 },
+  modeMessage: { height: 2, width: "84%", borderRadius: 1, opacity: 0.55 },
+  modeShortMessage: { width: "62%" },
+  modeUserMessage: { width: "62%", alignSelf: "flex-end" },
+  modeComposer: {
+    height: 10,
+    borderWidth: 1,
+    borderRadius: 3,
+    marginTop: "auto",
+    alignItems: "flex-end",
+    justifyContent: "center",
+    paddingRight: 3,
+  },
+  modeSend: { width: 4, height: 4, borderRadius: 2 },
   preview: {
     marginTop: theme.spacing[4],
   },

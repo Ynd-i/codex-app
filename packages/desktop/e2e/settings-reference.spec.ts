@@ -4,6 +4,9 @@ import { openSettingsSection } from "../../app/e2e/support/helpers/settings";
 import { getServerId } from "../../app/e2e/support/helpers/server-id";
 import { getE2EDaemonPort } from "../../app/e2e/support/helpers/daemon-port";
 import { installDesktopRuntime } from "./support/runtime";
+import { installUsageReportsFixture } from "../../app/e2e/support/helpers/usage-reports";
+import { copyPluginExample } from "../../app/e2e/support/helpers/plugin-fixture";
+import { connectNewWorkspaceDaemonClient } from "../../app/e2e/support/helpers/new-workspace";
 
 const placementLabels = [
   "Clicking a file in the Explorer sidebar",
@@ -120,4 +123,95 @@ test("Windows Settings retains editable panel placement preferences", async ({ p
   await expect(pullRequests).toHaveAccessibleName(
     "Clicking a pull request in the Explorer sidebar: Main panel",
   );
+});
+
+test("macOS Appearance mode previews preserve theme choices and keyboard editing", async ({
+  page,
+}, testInfo) => {
+  await installDesktopRuntime(page, {
+    serverId: getServerId(),
+    manageBuiltInDaemon: false,
+    daemonListen: `127.0.0.1:${getE2EDaemonPort()}`,
+  });
+  await installUsageReportsFixture(page, { lists: [[]] });
+  await page.setViewportSize({ width: 1352, height: 782 });
+  await page.emulateMedia({ colorScheme: "dark" });
+  await gotoAppShell(page);
+  await openSettings(page);
+  await openSettingsSection(page, "appearance");
+  const modes = page.getByTestId("appearance-theme-modes");
+  await expect(modes).toBeVisible();
+  const system = modes.getByRole("button", { name: "System", exact: true });
+  const light = modes.getByRole("button", { name: "Light", exact: true });
+  const dark = modes.getByRole("button", { name: "Dark", exact: true });
+  await expect(system).toHaveAttribute("aria-pressed", "true");
+  for (const mode of [system, light, dark]) {
+    expect(await mode.boundingBox()).toMatchObject({ width: 80, height: 60 });
+  }
+  expect((await modes.boundingBox())?.height).toBe(78);
+  await system.focus();
+  await page.keyboard.press("Tab");
+  await expect(light).toBeFocused();
+  await expect(light).toHaveCSS("outline-width", "2px");
+  await page.keyboard.press("Enter");
+  await expect(light).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByLabel("Theme: Light", { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page).toHaveURL(/\/open-project$/);
+  await openSettings(page);
+  await openSettingsSection(page, "appearance");
+  await expect(light).toHaveAttribute("aria-pressed", "true");
+  await light.focus();
+  await page.keyboard.press("Tab");
+  await expect(dark).toBeFocused();
+  await page.keyboard.press("Space");
+  await expect(page.getByLabel("Theme: Dark", { exact: true })).toBeVisible();
+  await expect(dark).toHaveAttribute("aria-pressed", "true");
+  await page.getByLabel("Theme: Dark", { exact: true }).click();
+  await page.getByRole("menuitem", { name: "Claude", exact: true }).click();
+  await expect(page.getByLabel("Theme: Claude", { exact: true })).toBeVisible();
+  for (const mode of [system, light, dark])
+    await expect(mode).toHaveAttribute("aria-pressed", "false");
+
+  const plugin = await copyPluginExample("catppuccin");
+  const client = await connectNewWorkspaceDaemonClient({ ownProjects: false });
+  const previous = await client.getDaemonConfig();
+  try {
+    await client.patchDaemonConfig({ pluginsEnabled: true });
+    await client.installDirectoryPlugin(plugin.directory);
+    await page.getByLabel("Theme: Claude", { exact: true }).click();
+    await page.getByRole("menuitem", { name: "Catppuccin Mocha", exact: true }).click();
+    await expect(page.getByLabel("Theme: Catppuccin Mocha", { exact: true })).toBeVisible();
+    for (const mode of [system, light, dark])
+      await expect(mode).toHaveAttribute("aria-pressed", "false");
+    await page.reload();
+    await expect(page).toHaveURL(/\/open-project$/);
+    await openSettings(page);
+    await openSettingsSection(page, "appearance");
+    await expect(page.getByLabel("Theme: Catppuccin Mocha", { exact: true })).toBeVisible();
+    for (const mode of [system, light, dark])
+      await expect(mode).toHaveAttribute("aria-pressed", "false");
+    await dark.click();
+    await expect(page.getByLabel("Theme: Dark", { exact: true })).toBeVisible();
+    await expect(dark).toHaveAttribute("aria-pressed", "true");
+    await page.mouse.move(450, 100);
+    await light.hover();
+    await expect(light).not.toHaveCSS("border-color", "rgba(0, 0, 0, 0)");
+    await page.mouse.move(450, 100);
+    await page.screenshot({
+      path: testInfo.outputPath("settings-appearance-modes.png"),
+      animations: "disabled",
+    });
+    await page.setViewportSize({ width: 700, height: 782 });
+    await expect(modes).toBeInViewport({ ratio: 1 });
+    for (const mode of [system, light, dark]) await expect(mode).toBeInViewport({ ratio: 1 });
+    await system.click();
+    await expect(page.getByLabel("Theme: System", { exact: true })).toBeVisible();
+    await expect(system).toHaveAttribute("aria-pressed", "true");
+  } finally {
+    await client.removePlugin("catppuccin").catch(() => undefined);
+    await client.patchDaemonConfig({ pluginsEnabled: previous.config.pluginsEnabled ?? false });
+    await client.close();
+    await plugin.cleanup();
+  }
 });

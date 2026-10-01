@@ -2240,6 +2240,8 @@ export const ja: TranslationResources = {
     },
     appearance: {
       theme: {
+        visualStyle: "外観スタイル",
+        mode: "モード",
         title: "テーマ",
         accessibilityLabel: "テーマ: {{value}}",
         options: {

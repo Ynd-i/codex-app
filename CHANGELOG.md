@@ -8,6 +8,7 @@ distribution and full migration acceptance remain pending; see the
 
 ### Added
 
+- Added macOS Appearance previews for System, Light and Dark using the existing theme preference; full built-in and plugin theme choices remain available.
 - Added a compact macOS chat-search panel with recent chats, project labels, Control+1–9 selection and working quick actions; existing workspace, file and plugin search remains available.
 - Added shortcut search in Settings using action names and current bindings, retaining editing, unassign and reset controls.
 - Added a macOS Files initial view with an empty editor, shared workspace toolbar and searchable right-hand tree; narrow panels prioritize the tree.

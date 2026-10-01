@@ -2345,6 +2345,8 @@ export const en = {
     },
     appearance: {
       theme: {
+        visualStyle: "Visual style",
+        mode: "Mode",
         title: "Theme",
         accessibilityLabel: "Theme: {{value}}",
         options: {

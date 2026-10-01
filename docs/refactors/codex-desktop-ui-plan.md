@@ -906,6 +906,19 @@ fully visible navigation/search through 1352/900/700px and back, rather than
 accepting partial visibility. The updated General capture was inspected. Logs:
 `/private/tmp/paseo-settings-geometry-{red,e2e,lint,typecheck}.log`.
 
+The Mac Appearance page now starts with the reference's system/light/dark preview
+choices in a 78px-high mode card. The 80×60px buttons directly select the existing
+theme preference; the full theme menu remains below. Claude and plugin themes
+leave all three mode choices unselected, rather than misrepresent their state.
+No separate mode storage or theme application path was added. The renderer case
+passes keyboard activation, focus and hover, Light persistence after reload,
+installation/selection/reload of the Catppuccin fixture, returning to built-in
+themes and 700px layout. The [mode-card capture](../qa-evidence/codex-desktop/settings-appearance-modes.png)
+was inspected. The existing ordinary-browser Pure black selector case also passes
+(`/private/tmp/paseo-appearance-mode-browser.log`). Log: `/private/tmp/paseo-appearance-mode.log`; 36 locale checks
+also pass in `/private/tmp/paseo-appearance-mode-locales.log`. This slice postdates
+the `580aa19` Custom bundle and still needs native/package comparison.
+
 ### Usage data foundation
 
 The existing usage-source contract already supplies provider/account labels, quota

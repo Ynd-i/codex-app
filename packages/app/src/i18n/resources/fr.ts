@@ -2277,6 +2277,8 @@ export const fr: TranslationResources = {
     },
     appearance: {
       theme: {
+        visualStyle: "Style visuel",
+        mode: "Mode",
         title: "Thème",
         accessibilityLabel: "Thème:{{value}}",
         options: {

@@ -2196,6 +2196,8 @@ export const zhCN: TranslationResources = {
     },
     appearance: {
       theme: {
+        visualStyle: "视觉风格",
+        mode: "模式",
         title: "主题",
         accessibilityLabel: "主题：{{value}}",
         options: {

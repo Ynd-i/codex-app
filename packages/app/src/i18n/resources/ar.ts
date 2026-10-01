@@ -2221,6 +2221,8 @@ export const ar: TranslationResources = {
     },
     appearance: {
       theme: {
+        visualStyle: "النمط المرئي",
+        mode: "الوضع",
         title: "سمة",
         accessibilityLabel: "الموضوع:{{value}}",
         options: {
