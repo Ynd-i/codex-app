@@ -3,11 +3,17 @@ import { withUnistyles } from "react-native-unistyles";
 import { RenderProfile } from "@/utils/render-profiler";
 import { createDiffPalette, retainDiffPalette } from "./palette";
 import { DiffSurface } from "./surface";
-import type { DiffDocumentProps, DiffHeaderTypography, DiffPalette } from "./types";
+import type {
+  DiffDocumentProps,
+  DiffHeaderTypography,
+  DiffPalette,
+  DiffSurfaceProps,
+} from "./types";
 
 export type { DiffDocumentProps, WorkingDiffMode } from "./types";
 
 type ThemedDiffDocumentProps = DiffDocumentProps & {
+  codeFontWeight: DiffSurfaceProps["codeFontWeight"];
   palette: DiffPalette;
   headerTypography: DiffHeaderTypography;
 };
@@ -45,6 +51,7 @@ function ThemedDiffDocument(props: ThemedDiffDocumentProps) {
 }
 
 const StyledDiffDocument = withUnistyles(ThemedDiffDocument, (theme) => ({
+  codeFontWeight: theme.codeFontWeight,
   palette: createDiffPalette(theme),
   headerTypography: {
     family: theme.fontFamily.ui,

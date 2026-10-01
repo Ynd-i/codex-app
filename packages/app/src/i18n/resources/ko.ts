@@ -2299,6 +2299,13 @@ export const ko: TranslationResources = {
         codeFontHint:
           "코드, diff, 터미널 출력에 사용됩니다. 시스템 기본값을 사용하려면 비워 두세요",
         codeFontAccessibility: "코드 글꼴 패밀리",
+        codeWeightAccessibility: "코드 글꼴 굵기: {{value}}",
+        weightOptions: {
+          default: "기본값",
+          regular: "보통",
+          medium: "중간",
+          semibold: "약간 굵게",
+        },
         codeSize: "코드 크기",
         codeSizeHint: "코드, diff 및 터미널 출력에 사용됩니다",
         codeSizeAccessibility: "코드 글꼴 크기",

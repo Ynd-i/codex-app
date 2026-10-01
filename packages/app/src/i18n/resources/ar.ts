@@ -2287,6 +2287,13 @@ export const ar: TranslationResources = {
         codeFontHint:
           "تستخدم في الكود والاختلافات والمخرجات الطرفية. اتركه فارغًا للإعداد الافتراضي للنظام",
         codeFontAccessibility: "عائلة خطوط الكود",
+        codeWeightAccessibility: "سُمك خط الكود: {{value}}",
+        weightOptions: {
+          default: "الافتراضي",
+          regular: "عادي",
+          medium: "متوسط",
+          semibold: "شبه عريض",
+        },
         codeSize: "حجم الكود",
         codeSizeHint: "يُستخدم للكود والفروقات ومخرجات الطرفية",
         codeSizeAccessibility: "حجم خط الكود",

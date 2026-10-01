@@ -387,6 +387,7 @@ interface FontFamilyRowProps {
   value: string;
   draft: string;
   withBorder: boolean;
+  children?: ReactNode;
   onChangeDraft: (value: string) => void;
   onCommit: (value: string) => void;
 }
@@ -400,6 +401,7 @@ function FontFamilyRow({
   value,
   draft,
   withBorder,
+  children,
   onChangeDraft,
   onCommit,
 }: FontFamilyRowProps) {
@@ -414,27 +416,96 @@ function FontFamilyRow({
     input.current?.replaceText(value);
   }, [value, resetKey, onChangeDraft]);
 
+  const familyInput = (
+    <TextInput
+      ref={input}
+      initialValue={draft}
+      onChangeText={onChangeDraft}
+      onBlur={handleCommit}
+      onSubmitEditing={handleCommit}
+      placeholder={placeholder}
+      placeholderTextColor={styles.placeholderColor.color}
+      autoCapitalize="none"
+      autoCorrect={false}
+      spellCheck={false}
+      style={styles.fontFamilyInput}
+      accessibilityLabel={accessibilityLabel}
+    />
+  );
+
   return (
     <View style={withBorder ? styles.rowWithBorder : settingsStyles.row}>
       <View style={settingsStyles.rowContent}>
         <Text style={settingsStyles.rowTitle}>{title}</Text>
         <Text style={settingsStyles.rowHint}>{hint}</Text>
       </View>
-      <TextInput
-        ref={input}
-        initialValue={draft}
-        onChangeText={onChangeDraft}
-        onBlur={handleCommit}
-        onSubmitEditing={handleCommit}
-        placeholder={placeholder}
-        placeholderTextColor={styles.placeholderColor.color}
-        autoCapitalize="none"
-        autoCorrect={false}
-        spellCheck={false}
-        style={styles.fontFamilyInput}
-        accessibilityLabel={accessibilityLabel}
-      />
+      {children ? (
+        <View style={styles.codeFontControls}>
+          {familyInput}
+          {children}
+        </View>
+      ) : (
+        familyInput
+      )}
     </View>
+  );
+}
+
+const CODE_WEIGHT_OPTIONS = [
+  { value: null, label: "default" },
+  { value: "400", label: "regular" },
+  { value: "500", label: "medium" },
+  { value: "600", label: "semibold" },
+] as const;
+
+function CodeWeightOption({
+  option,
+  selected,
+  onChange,
+}: {
+  option: (typeof CODE_WEIGHT_OPTIONS)[number];
+  selected: boolean;
+  onChange: (value: AppSettings["codeFontWeight"]) => void;
+}) {
+  const { t } = useTranslation();
+  const select = useCallback(() => onChange(option.value), [onChange, option.value]);
+  return (
+    <DropdownMenuItem selected={selected} onSelect={select}>
+      {t(`settings.appearance.fonts.weightOptions.${option.label}`)}
+    </DropdownMenuItem>
+  );
+}
+
+function CodeFontWeight({
+  value,
+  onChange,
+}: {
+  value: AppSettings["codeFontWeight"];
+  onChange: (value: AppSettings["codeFontWeight"]) => void;
+}) {
+  const { t } = useTranslation();
+  const selected = CODE_WEIGHT_OPTIONS.find((option) => option.value === value)!;
+  const label = t(`settings.appearance.fonts.weightOptions.${selected.label}`);
+  return (
+    <DropdownMenu>
+      <DropdownTrigger
+        accessibilityLabel={t("settings.appearance.fonts.codeWeightAccessibility", {
+          value: label,
+        })}
+      >
+        {label}
+      </DropdownTrigger>
+      <DropdownMenuContent side="bottom" align="end" width={180}>
+        {CODE_WEIGHT_OPTIONS.map((option) => (
+          <CodeWeightOption
+            key={option.label}
+            option={option}
+            selected={value === option.value}
+            onChange={onChange}
+          />
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -634,6 +705,7 @@ const ADVANCED_DEFAULTS = {
   uiBaseFontSize: DEFAULT_APP_SETTINGS.uiBaseFontSize,
   contentFontSize: DEFAULT_APP_SETTINGS.contentFontSize,
   codeFontSize: DEFAULT_APP_SETTINGS.codeFontSize,
+  codeFontWeight: DEFAULT_APP_SETTINGS.codeFontWeight,
   contentFontFamily: DEFAULT_APP_SETTINGS.contentFontFamily,
   monoFontFamily: DEFAULT_APP_SETTINGS.monoFontFamily,
   contentMaxWidth: DEFAULT_APP_SETTINGS.contentMaxWidth,
@@ -821,6 +893,15 @@ export function AppearanceSection() {
     [settings.contentFontFamily, updateSettings],
   );
 
+  const changeCodeFontWeight = useCallback(
+    (codeFontWeight: AppSettings["codeFontWeight"]) => {
+      void updateSettings({ codeFontWeight }).catch(() =>
+        toast.error(t("common.errors.unableToSave")),
+      );
+    },
+    [t, toast, updateSettings],
+  );
+
   const commitMonoFontFamily = useCallback(
     (value: string) => {
       const sanitized = sanitizeFontFamily(value);
@@ -935,7 +1016,11 @@ export function AppearanceSection() {
       withBorder
       onChangeDraft={setMonoFontDraft}
       onCommit={commitMonoFontFamily}
-    />
+    >
+      {showThemeModes ? (
+        <CodeFontWeight value={settings.codeFontWeight} onChange={changeCodeFontWeight} />
+      ) : null}
+    </FontFamilyRow>
   );
   const interfaceSize = (
     <FontSizeRow
@@ -1179,6 +1264,14 @@ const styles = StyleSheet.create((theme, rt) => ({
     borderRadius: ICON_SIZE.md / 2,
     borderWidth: theme.borderWidth[1],
     borderColor: theme.colors.border,
+  },
+  codeFontControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing[2],
+    flex: 1,
+    minWidth: 0,
+    maxWidth: 380,
   },
   fontFamilyInput: {
     flexGrow: 1,

@@ -207,6 +207,7 @@ const styles = StyleSheet.create((theme) => ({
   codeLine: {
     fontFamily: theme.fontFamily.mono,
     fontSize: theme.fontSize.code,
+    ...(theme.codeFontWeight ? { fontWeight: theme.codeFontWeight } : null),
     lineHeight: theme.lineHeight.diff,
     color: theme.colors.foreground,
     ...(isWeb ? { whiteSpace: "pre", overflowWrap: "normal" } : null),

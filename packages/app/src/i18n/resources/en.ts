@@ -2412,6 +2412,13 @@ export const en = {
         codeFontHint:
           "Used in code, diffs, and the terminal output. Leave empty for the system default",
         codeFontAccessibility: "Code font family",
+        codeWeightAccessibility: "Code font weight: {{value}}",
+        weightOptions: {
+          default: "Default",
+          regular: "Regular",
+          medium: "Medium",
+          semibold: "SemiBold",
+        },
         codeSize: "Code size",
         codeSizeHint: "Used for code, diffs, and terminal output",
         codeSizeAccessibility: "Code font size",

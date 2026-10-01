@@ -77,7 +77,7 @@ test("macOS Advanced resets only its fields and refreshes dirty controls", async
     await expect(field).toHaveCSS("border-color", semanticColors.border);
     await expect(field).toHaveCSS("background-color", semanticColors.background);
   }
-  const keys = [...Object.keys(fields), "syntaxTheme", "reducedMotion"];
+  const keys = [...Object.keys(fields), "syntaxTheme", "reducedMotion", "codeFontWeight"];
   const readSettings = () =>
     page.evaluate(
       () =>
@@ -97,6 +97,7 @@ test("macOS Advanced resets only its fields and refreshes dirty controls", async
     contentMaxWidth: null,
     syntaxTheme: "codex",
     reducedMotion: "system",
+    codeFontWeight: null,
   };
   const preview = page.getByRole("img", {
     name: "Live preview of content typography, syntax theme, and code font",
@@ -111,9 +112,37 @@ test("macOS Advanced resets only its fields and refreshes dirty controls", async
         contentSize: getComputedStyle(content).fontSize,
         codeSize: getComputedStyle(code).fontSize,
         codeFamily: getComputedStyle(code).fontFamily,
+        codeWeight: getComputedStyle(code).fontWeight,
+        contentWeight: getComputedStyle(content).fontWeight,
       };
     });
   const defaultPreview = await readPreview();
+  const weight = page.getByLabel(/^Code font weight:/);
+  for (const [label, value] of [
+    ["Regular", "400"],
+    ["Medium", "500"],
+    ["SemiBold", "600"],
+  ] as const) {
+    await weight.click();
+    await page.getByRole("menuitem", { name: label, exact: true }).click();
+    await expect.poll(readSettings).toMatchObject({ codeFontWeight: value });
+    await expect
+      .poll(readPreview)
+      .toMatchObject({ codeWeight: value, contentWeight: defaultPreview.contentWeight });
+  }
+  await page.reload();
+  await expect(page).toHaveURL(/\/open-project$/);
+  await openSettings(page);
+  await openSettingsSection(page, "appearance");
+  await expect(weight).toHaveAccessibleName("Code font weight: SemiBold");
+  await expect.poll(readPreview).toMatchObject({ codeWeight: "600" });
+  await weight.click();
+  await page.getByRole("menuitem", { name: "Default", exact: true }).click();
+  await expect.poll(readSettings).toMatchObject({ codeFontWeight: null });
+  await expect.poll(readPreview).toEqual(defaultPreview);
+  await weight.click();
+  await page.getByRole("menuitem", { name: "Medium", exact: true }).click();
+  await expect.poll(readPreview).toMatchObject({ codeWeight: "500" });
   for (const [key, value] of Object.entries({
     uiBaseFontSize: "18",
     contentFontSize: "19",
@@ -171,6 +200,7 @@ test("macOS Advanced resets only its fields and refreshes dirty controls", async
     for (const [key, field] of Object.entries(fields))
       await expect(field).toHaveValue(defaultFields[key]);
     await expect.poll(readPreview).toEqual(defaultPreview);
+    await expect(weight).toHaveAccessibleName("Code font weight: Default");
   };
   await assertDefaults();
   // Each uncontrolled row shape must refresh even when its saved value is already the default.
@@ -256,6 +286,11 @@ test("macOS Advanced resets only its fields and refreshes dirty controls", async
     path: testInfo.outputPath("appearance-advanced.png"),
     animations: "disabled",
   });
+  await fields.monoFontFamily.scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: testInfo.outputPath("appearance-code-weight-wide.png"),
+    animations: "disabled",
+  });
   await page.setViewportSize({ width: 700, height: 782 });
   await expect(async () => {
     await advanced.scrollIntoViewIfNeeded();
@@ -265,6 +300,13 @@ test("macOS Advanced resets only its fields and refreshes dirty controls", async
   await expect
     .poll(() => page.evaluate(() => document.documentElement.scrollWidth - innerWidth))
     .toBe(0);
+  await fields.monoFontFamily.scrollIntoViewIfNeeded();
+  await expect(fields.monoFontFamily).toBeInViewport({ ratio: 1 });
+  await expect(weight).toBeInViewport({ ratio: 1 });
+  await page.screenshot({
+    path: testInfo.outputPath("appearance-code-weight-narrow.png"),
+    animations: "disabled",
+  });
   const beforeLargeType = await fields.uiBaseFontSize.elementHandle();
   if (!beforeLargeType) throw new Error("Missing UI size input before large-type check");
   await fields.uiBaseFontSize.fill("21");
@@ -282,4 +324,35 @@ test("macOS Advanced resets only its fields and refreshes dirty controls", async
     expect(geometry.height).toBeGreaterThan(28);
     expect(geometry.scroll).toBeLessThanOrEqual(geometry.client);
   }
+});
+
+test("browser preserves stored code weight without applying the Mac control", async ({ page }) => {
+  await installUsageReportsFixture(page, { lists: [[]] });
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "@paseo:app-settings",
+      JSON.stringify({ codeFontWeight: "600", language: "en" }),
+    );
+  });
+  await gotoAppShell(page);
+  await openSettings(page);
+  await openSettingsSection(page, "appearance");
+  await expect(page.getByLabel(/^Code font weight:/)).toHaveCount(0);
+  const preview = page.getByRole("img", {
+    name: "Live preview of content typography, syntax theme, and code font",
+    exact: true,
+  });
+  await expect(preview).toBeVisible();
+  expect(
+    await preview.evaluate((node) => {
+      const code = node.children[1]?.firstElementChild;
+      if (!code) throw new Error("Missing code preview");
+      return getComputedStyle(code).fontWeight;
+    }),
+  ).toBe("400");
+  expect(
+    await page.evaluate(
+      () => JSON.parse(localStorage.getItem("@paseo:app-settings") ?? "{}").codeFontWeight,
+    ),
+  ).toBe("600");
 });

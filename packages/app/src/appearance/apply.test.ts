@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as platform from "@/constants/platform";
 import { darkHighlightColors, resolveSyntaxColors, SYNTAX_THEME_IDS } from "@getpaseo/highlight";
 import { resolveSyntaxColors as resolveAppSyntaxColors } from "./syntax-theme";
 import { DEFAULT_UI_FONT_STACK, REGISTERED_THEMES } from "@/styles/theme";
@@ -71,6 +72,7 @@ function makeInput(overrides: Partial<AppearanceInput> = {}): AppearanceInput {
     uiBaseFontSize: 14,
     contentFontSize: 15,
     codeFontSize: 12,
+    codeFontWeight: null,
     contentMaxWidth: 820,
     syntaxTheme: "one",
     ...overrides,
@@ -84,6 +86,7 @@ function runCapturedUpdater(call = 0): FakeTheme {
 }
 
 describe("applyAppearance", () => {
+  afterEach(() => vi.restoreAllMocks());
   beforeEach(() => {
     updateTheme.mockClear();
     runtime.themeName = undefined;
@@ -94,6 +97,24 @@ describe("applyAppearance", () => {
 
     expect(updateTheme).toHaveBeenCalledTimes(ALL_THEME_KEYS.length);
     expect(updateTheme.mock.calls.map((call) => call[0])).toEqual([...ALL_THEME_KEYS]);
+  });
+
+  it("applies explicit code weight only on Mac without changing other typography or plugin colors", () => {
+    vi.spyOn(platform, "getIsElectronMac").mockReturnValue(true);
+    for (const codeFontWeight of ["400", "500", "600", null] as const) {
+      updateTheme.mockClear();
+      applyAppearance(makeInput({ codeFontWeight }));
+      for (let index = 0; index < ALL_THEME_KEYS.length; index++) {
+        const updated = runCapturedUpdater(index);
+        expect(updated).toMatchObject({ codeFontWeight });
+        expect(updated.fontSize.content).toBe(15);
+        expect(updated.colors.foreground).toBe("#fff");
+      }
+    }
+    vi.spyOn(platform, "getIsElectronMac").mockReturnValue(false);
+    updateTheme.mockClear();
+    applyAppearance(makeInput({ codeFontWeight: "600" }));
+    expect(runCapturedUpdater()).toMatchObject({ codeFontWeight: null });
   });
 
   it("patches the active theme before inactive registry entries", () => {

@@ -46,6 +46,7 @@ export type DiffDocumentProps = DiffDocumentBaseProps &
   );
 
 export interface DiffTypography {
+  weight?: "400" | "500" | "600";
   family: string;
   size: number;
   lineHeight: number;
@@ -222,6 +223,7 @@ export type DiffScrollAnchor =
     };
 
 export type DiffSurfaceProps = DiffDocumentProps & {
+  codeFontWeight?: DiffTypography["weight"] | null;
   palette: DiffPalette;
   headerTypography: DiffHeaderTypography;
   collapsedFilePaths: ReadonlySet<string>;

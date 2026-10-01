@@ -986,6 +986,7 @@ const styles = StyleSheet.create((theme) => {
       padding: insets.padding,
     },
     scrollText: {
+      ...(theme.codeFontWeight ? { fontWeight: theme.codeFontWeight } : {}),
       fontFamily: theme.fontFamily.mono,
       fontSize: theme.fontSize.code,
       color: theme.colors.foreground,
@@ -1023,6 +1024,7 @@ const styles = StyleSheet.create((theme) => {
       lineHeight: codeLineHeight,
     },
     subAgentActionSummary: {
+      ...(theme.codeFontWeight ? { fontWeight: theme.codeFontWeight } : {}),
       fontFamily: theme.fontFamily.mono,
       fontSize: theme.fontSize.code,
       color: theme.colors.foreground,

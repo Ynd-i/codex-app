@@ -1,3 +1,4 @@
+import { writeFile } from "node:fs/promises";
 import { test, expect } from "../../app/e2e/support/fixtures";
 import { seedMockAgentWorkspace, openAgentRoute } from "../../app/e2e/support/helpers/mock-agent";
 import { composerLocator, submitMessage } from "../../app/e2e/support/helpers/composer";
@@ -10,6 +11,154 @@ import { getServerId } from "../../app/e2e/support/helpers/server-id";
 import { getE2EDaemonPort } from "../../app/e2e/support/helpers/daemon-port";
 import { installDesktopRuntime } from "./support/runtime";
 import { installUsageReportsFixture } from "../../app/e2e/support/helpers/usage-reports";
+
+test("macOS code weight reaches files, Markdown, tool output and canvas without changing prose", async ({
+  page,
+}, testInfo) => {
+  const fixture = await seedMockAgentWorkspace({
+    repoPrefix: "code-weight-",
+    title: "Code weight verification",
+    model: "ten-second-stream",
+    repo: {
+      files: [
+        { path: "sample.ts", content: "export const answer = 42;\n" },
+        { path: "large.ts", content: "export const large = 42;\n".repeat(48_000) },
+        {
+          path: "weights.md",
+          content:
+            "# Weight heading\n\nOrdinary prose with **strong words** and `inline()`.\n\n```ts\nconst weight = 42;\n```\n",
+        },
+      ],
+    },
+  });
+  try {
+    await installDesktopRuntime(page, {
+      serverId: getServerId(),
+      manageBuiltInDaemon: false,
+      daemonListen: `127.0.0.1:${getE2EDaemonPort()}`,
+    });
+    await installUsageReportsFixture(page, { lists: [[]] });
+    await page.addInitScript(() => {
+      Reflect.set(window, "__codeWeightPaints", []);
+      const draw = CanvasRenderingContext2D.prototype.fillText;
+      CanvasRenderingContext2D.prototype.fillText = function (text, x, y, maxWidth) {
+        if (
+          this.canvas.getAttribute("data-testid") === "git-diff-canvas" &&
+          text.includes("answer")
+        )
+          Reflect.get(window, "__codeWeightPaints").push(this.font);
+        if (maxWidth === undefined) draw.call(this, text, x, y);
+        else draw.call(this, text, x, y, maxWidth);
+      };
+    });
+    await writeFile(`${fixture.cwd}/sample.ts`, "export const answer = 43;\n");
+    await fixture.client.checkoutRefresh(fixture.cwd);
+    await page.setViewportSize({ width: 1352, height: 782 });
+    await page.emulateMedia({ colorScheme: "dark" });
+    await openAgentRoute(page, fixture);
+    const prompt = "Show the synthetic typography response.";
+    await submitMessage(page, prompt);
+    const assistant = page.getByTestId("assistant-message").last();
+    await expect(assistant).toContainText("(end of synthetic stream)", { timeout: 30_000 });
+    const title = page.getByTestId("desktop-chat-title");
+    const userText = page.getByTestId("user-message").getByText(prompt, { exact: true });
+    const composer = composerLocator(page);
+    const originalWeights = await Promise.all(
+      [title, userText, composer].map((locator) =>
+        locator.evaluate((node) => getComputedStyle(node).fontWeight),
+      ),
+    );
+    const inline = page
+      .getByTestId("assistant-message")
+      .getByText("userIsAtBottom", { exact: true })
+      .first();
+    await page.screenshot({ path: testInfo.outputPath("code-weight-baseline.png") });
+    await expect(inline).toHaveCSS("font-weight", "400");
+    const selectWeight = async (label: string) => {
+      await openSettings(page);
+      await openSettingsSection(page, "appearance");
+      await page.getByLabel(/^Code font weight:/).click();
+      await page.getByRole("menuitem", { name: label, exact: true }).click();
+      await clickSettingsBackToWorkspace(page);
+    };
+    await selectWeight("Medium");
+    await expect(inline).toHaveCSS("font-weight", "500");
+    for (const [index, locator] of [title, userText, composer].entries())
+      await expect(locator).toHaveCSS("font-weight", originalWeights[index]);
+    await page.getByTestId("desktop-turn-activity").first().click();
+    const shell = page
+      .getByTestId("tool-call-badge")
+      .filter({ hasText: "node scripts/simulate-stream-burst.mjs" })
+      .first();
+    await shell.getByRole("button").first().click();
+    await expect(
+      shell.getByTestId("shell-output-horizontal-scroll").getByText("$", { exact: true }),
+    ).toHaveCSS("font-weight", "500");
+
+    await page.getByTestId("workspace-explorer-toggle").click();
+    await page.getByTestId("explorer-sidebar-tab-files").click();
+    const dock = page.getByTestId("workspace-explorer-sidebar");
+    const tree = dock.getByTestId("file-tree-rail-tree").filter({ visible: true });
+    await tree.getByText("sample.ts", { exact: true }).click();
+    const editor = dock.locator('.cm-content[contenteditable="true"]').filter({ visible: true });
+    await expect(editor).toHaveCSS("font-weight", "500");
+    await expect(editor).toContainText("answer = 43");
+    await tree.getByText("large.ts", { exact: true }).click();
+    await expect(
+      dock.locator('.cm-content[contenteditable="false"]').filter({ visible: true }),
+    ).toHaveCSS("font-weight", "500");
+    await tree.getByText("weights.md", { exact: true }).click();
+    const preview = dock.getByTestId("markdown-preview-frame").filter({ visible: true });
+    const fence = preview
+      .locator('[data-paseo-markdown-tag="pre"] [data-paseo-markdown-tag="code"]')
+      .first();
+    await expect(fence).toHaveCSS("font-weight", "500");
+    await expect(preview.getByText("inline()", { exact: true })).toHaveCSS("font-weight", "500");
+    await expect(preview.getByText("strong words", { exact: true })).toHaveCSS(
+      "font-weight",
+      "500",
+    );
+    await expect(preview.getByText("Weight heading", { exact: true })).toHaveCSS(
+      "font-weight",
+      "700",
+    );
+    await page.screenshot({ path: testInfo.outputPath("code-weight-medium.png") });
+
+    await page.getByTestId("explorer-sidebar-new-tab-button").click();
+    await page.getByTestId("workspace-new-tab-menu-diff").click();
+    const canvas = dock.getByTestId("git-diff-canvas").filter({ visible: true });
+    await expect(canvas).toHaveCSS("font-weight", "500");
+    // The painter restores context state afterward; inspect the actual draw call instead.
+    const paintedFont = () => page.evaluate(() => Reflect.get(window, "__codeWeightPaints").at(-1));
+    await expect.poll(paintedFont).toMatch(/^500 /);
+    await page.screenshot({ path: testInfo.outputPath("code-weight-diff.png") });
+    await selectWeight("Regular");
+    await expect(canvas).toHaveCSS("font-weight", "400");
+    // Canvas serializes normal 400 without the weight token.
+    await expect.poll(paintedFont).toMatch(/^(?:400 )?12px /);
+    await page.getByTestId("explorer-sidebar-tab-files").click();
+    await tree.getByText("weights.md", { exact: true }).click();
+    await expect(fence).toHaveCSS("font-weight", "400");
+    await expect(preview.getByText("strong words", { exact: true })).toHaveCSS(
+      "font-weight",
+      "500",
+    );
+    await expect(preview.getByText("Weight heading", { exact: true })).toHaveCSS(
+      "font-weight",
+      "700",
+    );
+    await tree.getByText("sample.ts", { exact: true }).click();
+    await expect(editor).toHaveCSS("font-weight", "400");
+    await selectWeight("Default");
+    await expect(editor).toHaveCSS("font-weight", "600");
+    await expect(inline).toHaveCSS("font-weight", "400");
+    await page.reload();
+    await expect(editor).toHaveCSS("font-weight", "600");
+    await expect(editor).toContainText("answer = 43");
+  } finally {
+    await fixture.cleanup();
+  }
+});
 
 test("content font changes conversation text and returns to the interface font when cleared", async ({
   page,

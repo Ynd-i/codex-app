@@ -1,6 +1,31 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { createWebTextMeasurer, webDiffFont } from "./typography.web";
 import { paintWebViewport } from "./paint.web";
 import type { DiffCell, DiffDocumentModel, DiffLineRow, DiffPalette, DiffSelection } from "./types";
+
+describe("web diff typography", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("measures code and grapheme advances using the same selected face as painting", () => {
+    const context = {
+      font: "",
+      measureText(text: string) {
+        return { width: (text.length * Number.parseInt(this.font, 10)) / 100 };
+      },
+    };
+    vi.stubGlobal("document", { createElement: () => ({ getContext: () => context }) });
+    const typography = { family: "monospace", size: 12, lineHeight: 18, weight: "500" as const };
+    const measurer = createWebTextMeasurer(typography);
+    expect(measurer.measure("fi")).toBe(10);
+    expect(context.font).toBe(webDiffFont(typography));
+    expect(measurer.measureAdvances?.(["a", "b"])).toEqual([5, 10]);
+    expect(measurer.measure("fi", "semibold")).toBe(12);
+    expect(context.font).toBe("600 12px monospace");
+    expect(webDiffFont({ family: "monospace", size: 12, lineHeight: 18 })).toBe(
+      "400 12px monospace",
+    );
+  });
+});
 
 describe("web diff text shaping", () => {
   it("matches the 30px file-header alignment rails exactly", () => {
@@ -69,7 +94,7 @@ describe("web diff text shaping", () => {
         height: 48,
       },
       palette,
-      typography: { family: "monospace", size: 12, lineHeight: 18 },
+      typography: { family: "monospace", size: 12, lineHeight: 18, weight: "600" },
       headerTypography: { family: "system-ui", size: 14, statSize: 12 },
       measureText: { measure: () => 0 },
       scrollTop: 0,
@@ -81,6 +106,10 @@ describe("web diff text shaping", () => {
       activeHeaderPath: null,
     });
 
+    expect(labels.filter((label) => label.text === "fi")).toEqual([
+      expect.objectContaining({ font: "600 12px monospace" }),
+      expect.objectContaining({ font: "600 12px monospace" }),
+    ]);
     expect(
       fills.filter((fill) => fill.color === "header" || fill.color === "header-border"),
     ).toEqual([

@@ -47,6 +47,24 @@ function makeDeps(
 }
 
 describe("loadAppSettingsFromStorage", () => {
+  it("preserves default code weights and round-trips explicit weights independently of platform", async () => {
+    for (const codeFontWeight of [undefined, "heavy", 500, false]) {
+      const deps = makeDeps({
+        storage: createInMemoryKeyValueStorage({
+          [APP_SETTINGS_KEY]: JSON.stringify({ codeFontWeight }),
+        }),
+      });
+      expect((await loadAppSettingsFromStorage(deps)).codeFontWeight).toBeNull();
+    }
+    vi.spyOn(platform, "getIsElectronMac").mockReturnValue(false);
+    const deps = makeDeps();
+    const queryClient = new QueryClient();
+    for (const codeFontWeight of ["400", "500", "600", null] as const) {
+      await saveAppSettings({ deps, queryClient, updates: { codeFontWeight } });
+      expect((await loadAppSettingsFromStorage(deps)).codeFontWeight).toBe(codeFontWeight);
+    }
+  });
+
   it("defaults reduced motion to System and persists explicit overrides", async () => {
     for (const reducedMotion of [undefined, "future-value", null]) {
       const deps = makeDeps({

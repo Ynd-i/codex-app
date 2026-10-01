@@ -2346,6 +2346,13 @@ export const fr: TranslationResources = {
         codeFontHint:
           "Utilisé dans le code, les différences et la sortie du terminal. Laisser vide pour la valeur par défaut du système",
         codeFontAccessibility: "Famille de polices de code",
+        codeWeightAccessibility: "Graisse de la police de code : {{value}}",
+        weightOptions: {
+          default: "Par défaut",
+          regular: "Normal",
+          medium: "Moyen",
+          semibold: "Demi-gras",
+        },
         codeSize: "Taille du code",
         codeSizeHint: "Utilisée pour le code, les diffs et la sortie du terminal",
         codeSizeAccessibility: "Taille de la police du code",

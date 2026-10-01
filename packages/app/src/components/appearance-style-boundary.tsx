@@ -33,6 +33,7 @@ export function appearanceStyleBoundaryKey(theme: Theme): string {
     theme.fontSize["4xl"],
     theme.fontSize.content,
     theme.fontSize.code,
+    theme.codeFontWeight,
     theme.lineHeight.diff,
     theme.colors.foreground,
     theme.colors.foregroundMuted,

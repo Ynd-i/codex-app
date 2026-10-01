@@ -186,8 +186,15 @@ export async function runAgentDeepLinksRegression({
   await expect(page.getByLabel("Theme: Dark", { exact: true })).toBeVisible();
   await page.screenshot({ path: path.join(artifactDir, "packaged-appearance-modes.png") });
   // Exercise overflow through a real saved appearance preference, without rewriting the timeline.
+  const previousCodeSize = await codeSize.elementHandle();
+  if (!previousCodeSize) throw new Error("Missing code-size input before saving");
   await codeSize.fill("22");
   await codeSize.press("Tab");
+  await expect.poll(() => previousCodeSize.evaluate((node) => node.isConnected)).toBe(false);
+  await previousCodeSize.dispose();
+  await page.getByLabel(/^Code font weight:/).click();
+  await page.getByRole("menuitem", { name: "Medium", exact: true }).click();
+  await expect(page.getByLabel("Code font weight: Medium", { exact: true })).toBeVisible();
   await page.getByTestId("settings-back-to-workspace").filter({ visible: true }).click();
   await expectChat("A");
   await expect(composer).toHaveValue(draft);
@@ -208,6 +215,7 @@ export async function runAgentDeepLinksRegression({
     .getByText("$", { exact: true });
   await expect(prompt).toHaveCSS("font-size", "22px");
   await expect(prompt).toHaveCSS("line-height", "33px");
+  await expect(prompt).toHaveCSS("font-weight", "500");
   await page.getByTestId("combined-model-selector").filter({ visible: true }).click();
   const effort = page.getByTestId("desktop-thinking-range");
   await expect(effort).toHaveCSS("accent-color", "rgb(217, 119, 87)");
@@ -258,6 +266,7 @@ export async function runAgentDeepLinksRegression({
     packagedEffortAccent: true,
     packagedAppearanceModes: true,
     packagedAppearanceAdvancedReset: true,
+    packagedCodeFontWeight: true,
     packagedShellOverflow: true,
     packagedMotionControl: true,
     packagedCopyMenu: true,

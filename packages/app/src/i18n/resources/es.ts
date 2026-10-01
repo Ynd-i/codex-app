@@ -2342,6 +2342,13 @@ export const es: TranslationResources = {
         codeFontHint:
           "Se utiliza en código, diferencias y salida del terminal. Déjelo vacío para el valor predeterminado del sistema.",
         codeFontAccessibility: "Familia de fuentes de código",
+        codeWeightAccessibility: "Peso de la fuente de código: {{value}}",
+        weightOptions: {
+          default: "Predeterminado",
+          regular: "Normal",
+          medium: "Medio",
+          semibold: "Seminegrita",
+        },
         codeSize: "Tamaño del código",
         codeSizeHint: "Se usa en código, diferencias y la salida del terminal",
         codeSizeAccessibility: "Tamaño de fuente del código",

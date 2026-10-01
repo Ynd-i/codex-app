@@ -3,6 +3,33 @@ import { createCompactMarkdownStyles, createMarkdownStyles } from "./markdown-st
 import { darkTheme } from "./theme";
 
 describe("createMarkdownStyles", () => {
+  it.each(["400", "500", "600"] as const)(
+    "applies explicit code weight %s without changing prose or authored emphasis",
+    (codeFontWeight) => {
+      const baseline = createMarkdownStyles(darkTheme);
+      const theme = { ...darkTheme, codeFontWeight };
+      for (const styles of [createMarkdownStyles(theme), createCompactMarkdownStyles(theme)]) {
+        expect(styles.code_inline.fontWeight).toBe(codeFontWeight);
+        expect(styles.code_block.fontWeight).toBe(codeFontWeight);
+        expect(styles.fence.fontWeight).toBe(codeFontWeight);
+      }
+      const styles = createMarkdownStyles(theme);
+      expect(styles.body).toEqual(baseline.body);
+      expect(styles.text).toEqual(baseline.text);
+      expect(styles.heading1).toEqual(baseline.heading1);
+      expect(styles.strong).toEqual(baseline.strong);
+    },
+  );
+
+  it("leaves code weight inherited when the override is unset", () => {
+    const theme = { ...darkTheme, codeFontWeight: null };
+    for (const styles of [createMarkdownStyles(theme), createCompactMarkdownStyles(theme)]) {
+      expect(styles.code_inline).not.toHaveProperty("fontWeight");
+      expect(styles.code_block).not.toHaveProperty("fontWeight");
+      expect(styles.fence).not.toHaveProperty("fontWeight");
+    }
+  });
+
   it("uses the content font for prose while code remains monospace", () => {
     const theme = {
       ...darkTheme,

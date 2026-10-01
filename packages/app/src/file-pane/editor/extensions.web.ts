@@ -25,6 +25,7 @@ export interface EditorVisualTheme {
   selection: string;
   monoFont: string;
   codeFontSize: number;
+  codeFontWeight: "400" | "500" | "600" | null;
   syntax: Record<HighlightStyle, string>;
 }
 
@@ -73,7 +74,7 @@ export function editorTheme(theme: EditorVisualTheme) {
         ".cm-content": {
           caretColor: theme.foreground,
           padding: isMac ? "0 0 8px" : "16px 0",
-          ...(isMac ? { fontWeight: "600" } : {}),
+          ...(isMac ? { fontWeight: theme.codeFontWeight ?? "600" } : {}),
         },
         ".cm-cursor, .cm-dropCursor": { borderLeftColor: theme.cursor },
         ".cm-gutters": {

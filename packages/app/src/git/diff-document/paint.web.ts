@@ -1,3 +1,4 @@
+import { webDiffFont } from "./typography.web";
 import { selectionRectangles } from "./hit-testing";
 import {
   DIFF_BODY_BORDER_HEIGHT,
@@ -65,7 +66,7 @@ export function paintWebViewport(input: PaintWebViewportInput): void {
   context.clearRect(0, paintTop, input.viewportWidth, paintHeight);
   context.fillStyle = input.palette.surface;
   context.fillRect(0, paintTop, input.viewportWidth, paintHeight);
-  context.font = `${input.typography.size}px ${input.typography.family}`;
+  context.font = webDiffFont(input.typography);
   context.textBaseline = "alphabetic";
 
   const range = visibleRowRange(input.model.rows, input.scrollTop + paintTop, paintHeight);
