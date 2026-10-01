@@ -30,6 +30,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- Matched macOS Appearance size fields to the compact reference shape while retaining larger-font sizing and other theme palettes.
+- Matched macOS right-tool tab height to the reference while preserving resizing, close controls and retained sessions.
 - Matched the macOS chat menu's Archive text to the neutral reference color while retaining running-agent confirmation.
 - Matched macOS project editing with a combined name/icon input, real source-folder information and compact actions while retaining existing validation and save behavior.
 - Refined wide macOS modal titles, corners, separators and backdrop to follow the supplied dialog references.
@@ -65,6 +67,7 @@ distribution and full migration acceptance remain pending; see the
 
 ### Fixed
 
+- Fixed submenu keyboard entry and return, delayed focus during entering animations, and hover timers reopening a submenu after keyboard dismissal.
 - Preserve the selected chat when returning from Settings instead of jumping to an unread sibling in the same workspace. Explicit workspace opens still prioritize pending attention.
 - Flip horizontal submenus to the side with sufficient room instead of clamping them over their parent menu.
 - Scaled tool-output and diagnostic code line spacing with the saved code font size, preventing overlapping lines at larger sizes while keeping the default spacing unchanged.

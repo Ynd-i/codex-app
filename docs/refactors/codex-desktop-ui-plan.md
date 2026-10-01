@@ -86,7 +86,7 @@ scope; it does not remove runtime code or add new provider integrations.
 | Step                             | Status                                                | Acceptance                                                                                                                                                                                   |
 | -------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 0. Upstream baseline             | Complete for local startup                            | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                                      |
-| 1. Window and sidebar appearance | Base frame verified; Appearance controls checked      | Window frame and navigation have native evidence. Motion and Advanced reset pass isolated renderer and packaged checks; live-window comparison remains pending.                              |
+| 1. Window and sidebar appearance | Frame and Appearance controls checked                 | Window frame, navigation, Advanced collapse and motion selection have native evidence. Scoped reset passes isolated renderer and packaged checks; full reference matching remains.           |
 | 1a. Upstream integration check   | Refreshed and verified                                | Upstream `4893629` integrated in isolation; 13 conflicts resolved. Provider, usage, navigation and custom desktop checks pass; protected daemon processes stay running.                      |
 | 2. Chat navigation               | Single-chat layout verified locally                   | Main tabs removed; tools route right with saved state retained. Default sidebar, current-chat actions, draft isolation and Back/Forward remain. Custom chat sidebar stays deferred.          |
 | 3. Transcript and composer       | Composer and activity verified; visual polish pending | Column, input/model controls, tool cards and completed-turn activity are checked in native development. Attachment-menu renderer checks pass; native follow-up and transcript polish remain. |
@@ -161,16 +161,17 @@ separate bounded subagent assignments; neither changes shared pane state.
 
 On October 1 the regular allowance reached 0% and reported
 `ordinaryUsageAllowed: false`; a new per-redemption reset confirmation was requested.
-Existing prepaid credits were available to finish the two already-started slices;
-no credits were purchased. Their Shell-overflow and real-webview checks are
-recorded below. The latest verified Custom bundle matches production source at
-`f349168`, including motion preferences, the project editor, Copy menus and the
-settings-return repair. Its real renderer, deep-link, saved-preference,
-large-code-font and retained-chat checks pass.
+Existing prepaid credits remained available for continued authorized work;
+no credits were purchased. The latest account read reports ordinary usage allowed,
+93% of the weekly allowance remaining and zero banked resets. This task did not
+call the reset tool. The Shell-overflow and real-webview checks are recorded below.
+See [Custom package evidence](#custom-agent-links-and-refreshed-package--2026-10-01)
+for the current verified source and real-renderer checks.
 
 Code inspection, implementation, targeted unit tests, isolated headless renderer
 tests, dependency builds, documentation, and commits can continue while the Mac
-is locked. Native screenshots and window interactions wait for manual unlock.
+is locked. The Mac was unlocked during the latest continuation; the development
+window follow-up below records the newly completed native checks.
 The active Codex goal tracks continuation; this document is the durable checkpoint.
 
 At 2% remaining account usage, alert the user; at 1%, save a verified checkpoint
@@ -446,8 +447,8 @@ by the isolated renderer case. [Chat evidence](../qa-evidence/codex-desktop/phas
 shows the new bubble and the retained transcript renderer. Mock tool narration
 does not represent actual shell commands or source edits.
 
-These captures retain the development window's saved sidebar width and show the
-remaining workspace header/tab duplication. They establish native rendering and
+These earlier captures retain the development window's saved sidebar width and show
+the historical workspace header/tab duplication. They establish native rendering and
 the listed interactions, not final full-window fidelity or real-provider acceptance.
 
 This is acceptance of the frame, controls and those simulated-provider interactions.
@@ -700,7 +701,51 @@ confirmed menu placement, project/branch context and Explorer open/close in the
 [consolidated toolbar](../qa-evidence/codex-desktop/phase4-native-workspace-toolbar.jpg).
 Native editor launch, script execution and Git mutation were not exercised.
 
+### Development window follow-up — 2026-10-01
+
+After manual unlock, the existing Electron development window on port 8082 was
+checked at source `1f7b321`. Its stale renderer still had the old composer prompt;
+a normal Cmd+R loaded the current prompt and retained chat `123`. No daemon was
+restarted. Native checks confirmed the single main chat, separate navigation rail,
+default workspace sidebar, neutral Archive row, Copy submenu and disabled Mock
+resume command. Copy was inspected without writing the clipboard.
+
+Appearance Advanced collapsed and reopened with Space. Reduce motion switched to
+On and was restored to its original System setting. Files and a new blank browser
+opened in the right dock; the tool launcher contained no Terminal profiles. The
+actual project editor displayed its source directory, kept Save disabled without
+edits, and Cancel followed by Settings return retained chat `123`. The temporary
+blank browser tab was closed and the original closed-dock layout restored. No
+provider turn, project save, external navigation or OS protocol dispatch occurred.
+
+Private native captures and the check manifest are in
+`/private/tmp/paseo-live-20261001-qa`. The keyboard check found that ArrowRight did
+not enter the Copy submenu; the shared menu correction is recorded below. Saved
+native theme/size choices were preserved, so
+these screenshots do not establish full-window pixel equality with the references.
+
+After promotion to `bfe7bc7`, another normal reload verified ArrowRight, Return and
+Space entering Copy and focusing its first enabled item; ArrowLeft closed it and
+restored parent focus. No copy action was invoked. The updated size fields and
+right-tool capsules were visually checked, settings values stayed unchanged, and
+the original closed-dock chat layout was restored. The post-fix manifests and
+captures are in the same private native directory.
+
 ### Single chat and right tools — 2026-10-01
+
+The native keyboard finding was reproduced in the existing Copy regression and
+fixed in the shared menu engine. [Menu keyboard behavior](../menus.md#keyboard-navigation)
+now includes submenu entry/return, focus and hover ownership. Diagnostics proved
+that an entering Reanimated surface could still be hidden during the old one-frame
+focus attempt; focus now waits for that surface's animation only when initially
+hidden and does not override a subsequent user focus change. No caller-specific
+menu or second focus scope was added. The final Copy case passed twice serially,
+including normal/reduced motion, disabled items, hover and clipboard isolation;
+the ordinary-browser nested label-form case also passes. Logs:
+`/private/tmp/paseo-submenu-keyboard-red.log`,
+`/private/tmp/paseo-submenu-focus-diagnosis.log`,
+`/private/tmp/paseo-submenu-keyboard-ready.log`, and
+`/private/tmp/paseo-submenu-browser-final.log`.
 
 The current-chat titlebar now includes Copy with the existing agent-ID and provider
 resume-command actions. Resume uses runtime native session identity first, then
@@ -898,9 +943,18 @@ passes. Logs: `/private/tmp/paseo-codex-syntax-{red,unit,e2e,lint,typecheck}.log
 `/private/tmp/paseo-source-gutter-red.log`,
 `/private/tmp/paseo-code-geometry-final.log`, and
 `/private/tmp/paseo-code-geometry-web.log`.
-Native confirmation is still pending: the Mac remained locked at the latest check.
+Native source-code typography comparison remains pending; the latest unlocked
+follow-up checked the Files initial view and tree, without opening source content.
 
 ### Earlier panel-tab styling
+
+The current Mac right-tool tabs are 32 CSS pixels high, measured from the 64px
+selected capsule in the 2× terminal/browser references. The shared 26px toolbar
+control token and other platforms are unchanged. The existing supporting-panels
+case first failed at 26px, then passed at 32px for Files and Terminal, including
+900px resizing and all existing close/hover/keyboard/session-retention checks.
+The refreshed [wide capture](../qa-evidence/codex-desktop/supporting-panels-32px.png)
+was inspected. Log: `/private/tmp/paseo-tool-tab-height-verified.log`.
 
 The macOS workspace and Explorer tab rails now follow the reference's rounded
 selected outlines. Workspace tabs allow longer titles, reserve close-control space
@@ -1130,6 +1184,16 @@ no fixed sleep or production lifecycle change was added.
 The [Advanced capture](../qa-evidence/codex-desktop/settings-appearance-advanced.png)
 was inspected at 1352×782 with synthetic host data. The ordinary-browser interface
 font-size regression passes in `/private/tmp/paseo-advanced-browser.log`.
+
+Its Mac numeric size fields now match the reference's 64×28px controls, left-aligned
+numbers and 8px corners. The sampled border/fill apply only to the default dark
+preset; other themes keep semantic colors. Height remains a minimum so larger UI
+fonts fit. The same Advanced regression first failed against the previous 40px
+controls, then passed all three fields, Claude palette preservation and 21px UI
+type without internal clipping, alongside its full reset checks. The ordinary
+browser font-size case also passes. The capture above was refreshed. Logs:
+`/private/tmp/paseo-size-input-red.log`, `/private/tmp/paseo-size-input.log`, and
+`/private/tmp/paseo-size-input-browser.log`.
 
 ### Usage data foundation
 
@@ -1381,22 +1445,24 @@ Appearance captures were inspected in the private artifact directory
 `/private/tmp/paseo-settings-return-final-{format,lint}.log`. The first concurrent
 typecheck raced the dependency build; the final check was run after build completion.
 
-The latest Custom refresh matches production source `dd3c000`, including Advanced
-appearance and the neutral Archive row. Startup, real renderer/preload, isolated daemon, CLI and terminal smoke pass
-in `/private/tmp/paseo-advanced-package-build.log`. The expanded packaged flow also
-passes keyboard collapse/expand, a focused unsaved code-size draft reset to 12,
-motion reset to System and preservation of the selected Dark theme. It retains
-the prior single-chat/right-dock, draft, shell, project editor and deep-link
-checks. Log: `/private/tmp/paseo-advanced-package-final.log`; result and inspected
-private captures: `/private/tmp/paseo-advanced-package-final-qa`. Source hashes
-were checked against the build input after the run. Build clean steps must run
+The latest Custom refresh matches production source `bfe7bc7`, including Advanced
+appearance, compact size fields, 32px right-tool tabs and submenu keyboard focus.
+Startup, real renderer/preload, isolated daemon, CLI and terminal smoke pass in
+`/private/tmp/paseo-native-polish-package-build.log`. The expanded packaged flow
+checks ArrowRight/Left/Enter focus, both control heights, keyboard collapse/expand,
+a focused unsaved code-size draft reset to 12, motion reset to System and the
+selected Dark theme. It retains the prior single-chat/right-dock, draft, shell,
+project editor and deep-link checks. Log:
+`/private/tmp/paseo-native-polish-package-final.log`; result and inspected private
+captures: `/private/tmp/paseo-native-polish-package-final-qa`. Source hashes were
+checked against the build input after the run. Build clean steps must run
 sequentially with renderer tests as well as typechecks; a parallel renderer
 attempt encountered temporary missing protocol output during this build.
 
 Root format, lint and workspace typecheck pass, including the final feature commit
-hooks. Logs: `/private/tmp/paseo-advanced-final-{format,lint,typecheck}.log`,
-`/private/tmp/paseo-archive-tone-commit.log` and
-`/private/tmp/paseo-advanced-feature-commit.log`.
+hooks. Logs: `/private/tmp/paseo-native-polish-final-{format,lint,typecheck}.log`,
+`/private/tmp/paseo-tool-height-commit.log`,
+`/private/tmp/paseo-size-controls-commit.log` and `/private/tmp/paseo-submenu-commit.log`.
 
 The corrected ARM64 ad-hoc bundle passes that final declaration check, independent
 bundle identity, disabled update IPC, real renderer/preload startup, isolated

@@ -45,9 +45,16 @@ export async function runAgentDeepLinksRegression({
   await composer.fill(draft);
   await page.getByTestId("desktop-chat-toolbar-menu").click();
   const copyMenu = page.getByRole("menuitem", { name: "Copy", exact: true });
-  await copyMenu.click();
+  await expect(page.getByRole("menuitem", { name: "Rename", exact: true })).toBeFocused();
+  await copyMenu.focus();
+  await page.keyboard.press("ArrowRight");
   const copyId = page.getByRole("menuitem", { name: "Copy agent id", exact: true });
-  await expect(copyId).toBeVisible();
+  await expect(copyId).toBeFocused();
+  await page.keyboard.press("ArrowLeft");
+  await expect(copyId).toBeHidden();
+  await expect(copyMenu).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(copyId).toBeFocused();
   await expect(
     page.getByRole("menuitem", { name: "Copy resume command", exact: true }),
   ).toBeDisabled();
@@ -70,6 +77,7 @@ export async function runAgentDeepLinksRegression({
   await expect(composer).toHaveValue(draft);
 
   await page.getByTestId("workspace-explorer-toggle").click();
+  await expect(page.getByTestId("explorer-sidebar-tab-files")).toHaveCSS("height", "32px");
   await page.getByTestId("explorer-sidebar-tab-files").click();
   const files = page.getByTestId("workspace-explorer-sidebar");
   await expect(files.getByTestId("file-tool-toolbar").filter({ visible: true })).toBeVisible();
@@ -144,6 +152,7 @@ export async function runAgentDeepLinksRegression({
     "true",
   );
   const codeSize = page.getByRole("textbox", { name: "Code font size", exact: true });
+  await expect(codeSize).toHaveCSS("height", "28px");
   await codeSize.fill("21");
   await page.getByTestId("appearance-advanced-reset").click();
   await expect(codeSize).toHaveValue("12");
@@ -220,6 +229,7 @@ export async function runAgentDeepLinksRegression({
     packagedShellOverflow: true,
     packagedMotionControl: true,
     packagedCopyMenu: true,
+    packagedSubmenuKeyboard: true,
     packagedProjectEditor: true,
     invalidUrlRejected: true,
     osProtocolDispatch: "not tested",
