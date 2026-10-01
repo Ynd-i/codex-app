@@ -613,6 +613,11 @@ export const fr: TranslationResources = {
       },
     },
     browser: {
+      newTab: {
+        tools: "Outils",
+        moreTools: "Plus d’outils",
+        openPages: "Pages ouvertes",
+      },
       unavailable: {
         title: "Le navigateur est réservé au bureau",
         subtitle: "Ouvrez cet espace de travail dans Electron pour utiliser le navigateur intégré.",

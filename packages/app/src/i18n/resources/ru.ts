@@ -612,6 +612,11 @@ export const ru: TranslationResources = {
       },
     },
     browser: {
+      newTab: {
+        tools: "Инструменты",
+        moreTools: "Другие инструменты",
+        openPages: "Открытые страницы",
+      },
       unavailable: {
         title: "Встроенный браузер доступен только в настольном приложении",
         subtitle:

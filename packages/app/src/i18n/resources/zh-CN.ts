@@ -607,6 +607,11 @@ export const zhCN: TranslationResources = {
       },
     },
     browser: {
+      newTab: {
+        tools: "工具",
+        moreTools: "更多工具",
+        openPages: "已打开的网页",
+      },
       unavailable: {
         title: "浏览器仅桌面端可用",
         subtitle: "在 Electron 中打开此 workspace 以使用内置浏览器。",

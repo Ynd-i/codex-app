@@ -613,6 +613,11 @@ export const es: TranslationResources = {
       },
     },
     browser: {
+      newTab: {
+        tools: "Herramientas",
+        moreTools: "Más herramientas",
+        openPages: "Páginas abiertas",
+      },
       unavailable: {
         title: "El navegador es solo para escritorio",
         subtitle: "Abra este espacio de trabajo en Electron para usar el navegador integrado.",

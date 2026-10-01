@@ -42,6 +42,8 @@ import {
 } from "lucide-react-native";
 import { StyleSheet, UnistylesRuntime, useUnistyles, withUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
+import { BrowserNewTabPage } from "./new-tab-page";
+import { BROWSER_NEW_TAB_URL } from "../new-tab-url";
 import * as Clipboard from "expo-clipboard";
 import { Button } from "@/components/ui/button";
 import { useRetainedPanelActive } from "@/components/retained-panel";
@@ -221,7 +223,11 @@ function getUnsafeNavigationMessage(
 ): string | null {
   try {
     const parsed = new URL(url);
-    if (ALLOWED_BROWSER_PROTOCOLS.has(parsed.protocol) || parsed.href === "about:blank") {
+    if (
+      ALLOWED_BROWSER_PROTOCOLS.has(parsed.protocol) ||
+      parsed.href === "about:blank" ||
+      (getIsElectronMac() && parsed.href === BROWSER_NEW_TAB_URL)
+    ) {
       return null;
     }
     return labels.unsupportedProtocol(parsed.protocol);
@@ -415,6 +421,10 @@ function clearAnnotationMarkers(webview: ElectronWebview): void {
     webview,
     "if(window.__paseoAnnotationMarkers) window.__paseoAnnotationMarkers.destroy();",
   ).catch(ignoreWebviewJavaScriptError);
+}
+
+function browserAddressText(url: string, macToolbar: boolean): string {
+  return macToolbar && url === BROWSER_NEW_TAB_URL ? "" : url;
 }
 
 function getTextInputNativeElement(
@@ -641,8 +651,10 @@ export function BrowserPane({
   const browserViewportRef = useRef(browserViewport);
   browserViewportRef.current = browserViewport;
   const isPresented = useRetainedPanelActive();
-  const isPresentedRef = useRef(isPresented);
-  isPresentedRef.current = isPresented;
+  const isNewTab = macToolbar && browser?.url === BROWSER_NEW_TAB_URL;
+  const isWebviewPresented = isPresented && !isNewTab;
+  const isPresentedRef = useRef(isWebviewPresented);
+  isPresentedRef.current = isWebviewPresented;
   const webviewRef = useRef<ElectronWebview | null>(null);
   const webviewHostRef = useRef<HTMLDivElement | null>(null);
   const webviewClipRef = useRef<HTMLElement | null>(null);
@@ -671,7 +683,9 @@ export function BrowserPane({
   const pendingScreenshotRef = useRef<AttachmentMetadata | undefined>(undefined);
   const [isUrlBarFocused, setIsUrlBarFocused] = useState(false);
   const defaultDarkTheme = UnistylesRuntime.themeName === "dark";
-  const [draftUrl, setDraftUrl] = useState(browser?.url ?? "https://example.com");
+  const [draftUrl, setDraftUrl] = useState(
+    browserAddressText(browser?.url ?? "https://example.com", macToolbar),
+  );
   const workspaceAttachmentScopeKey = useMemo(
     () => buildBrowserAttachmentScopeKey({ cwd, serverId, workspaceId }),
     [cwd, serverId, workspaceId],
@@ -722,10 +736,10 @@ export function BrowserPane({
   browserErrorLabelsRef.current = browserErrorLabels;
 
   useEffect(() => {
-    const nextUrl = browser?.url ?? "https://example.com";
+    const nextUrl = browserAddressText(browser?.url ?? "https://example.com", macToolbar);
     urlInputRef.current?.replaceText(nextUrl);
     setDraftUrl((current) => (current === nextUrl ? current : nextUrl));
-  }, [browser?.url]);
+  }, [browser?.url, macToolbar]);
 
   const updateBrowserRef = useRef(updateBrowser);
   updateBrowserRef.current = updateBrowser;
@@ -746,13 +760,16 @@ export function BrowserPane({
       if (!macToolbar || event.nativeEvent.key !== "Escape") return;
       event.preventDefault();
       event.stopPropagation();
-      const committedUrl = browserRef.current?.url ?? initialUrlRef.current;
+      const committedUrl = browserAddressText(
+        browserRef.current?.url ?? initialUrlRef.current,
+        macToolbar,
+      );
       urlInputRef.current?.replaceText(committedUrl);
       setDraftUrl(committedUrl);
       urlInputRef.current?.blur();
-      webviewRef.current?.focus?.();
+      if (!isNewTab) webviewRef.current?.focus?.();
     },
-    [macToolbar],
+    [isNewTab, macToolbar],
   );
 
   const focusUrlBar = useCallback(() => {
@@ -854,7 +871,9 @@ export function BrowserPane({
         lastError: null,
       });
       setDraftUrl((current) => {
-        return current === normalized ? current : normalized;
+        return current === browserAddressText(normalized, macToolbar)
+          ? current
+          : browserAddressText(normalized, macToolbar);
       });
       syncNavigationState();
     };
@@ -873,7 +892,7 @@ export function BrowserPane({
         ...(normalized !== browserRef.current?.url ? { faviconUrl: null } : {}),
         lastError: null,
       });
-      setDraftUrl((current) => (current === normalized ? current : normalized));
+      setDraftUrl(browserAddressText(normalized, macToolbar));
     };
     const handleTitleUpdated = (event: Event) => {
       const title =
@@ -976,7 +995,7 @@ export function BrowserPane({
     if (!webview) {
       return;
     }
-    if (!isPresented) {
+    if (!isWebviewPresented) {
       releaseResidentBrowserWebview(browserId, webview);
       return;
     }
@@ -994,7 +1013,7 @@ export function BrowserPane({
     } else {
       rememberResolvedBrowserWebviewSize(browserId, webview);
     }
-  }, [browserId, browserViewport, isPresented]);
+  }, [browserId, browserViewport, isWebviewPresented]);
 
   const navigate = useCallback(
     (nextUrl: string) => {
@@ -1009,7 +1028,7 @@ export function BrowserPane({
         ...(normalizedUrl !== previousUrl ? { faviconUrl: null } : {}),
         lastError: null,
       });
-      setDraftUrl((current) => (current === normalizedUrl ? current : normalizedUrl));
+      setDraftUrl(browserAddressText(normalizedUrl, macToolbar));
       if (unsafeNavigationMessage) {
         updateBrowserRef.current(browserIdRef.current, {
           isLoading: false,
@@ -1034,7 +1053,7 @@ export function BrowserPane({
         webview.setAttribute("src", normalizedUrl);
       }
     },
-    [browserErrorLabels],
+    [browserErrorLabels, macToolbar],
   );
 
   const handleBack = useCallback(() => {
@@ -1113,8 +1132,9 @@ export function BrowserPane({
   }, [focusUrlBar, isInteractive]);
 
   const handleNavigateDraftUrl = useCallback(() => {
+    if (macToolbar && !draftUrl.trim()) return;
     navigate(draftUrl);
-  }, [draftUrl, navigate]);
+  }, [draftUrl, macToolbar, navigate]);
 
   const addElementAttachment = useCallback(
     (
@@ -1555,6 +1575,7 @@ export function BrowserPane({
         <View style={urlBarStyle}>
           <TextInput
             accessibilityLabel={t("workspace.browser.controls.browserUrl")}
+            autoFocus={isNewTab && isPresented && isInteractive}
             autoCapitalize="none"
             autoCorrect={false}
             onChangeText={setDraftUrl}
@@ -1709,6 +1730,14 @@ export function BrowserPane({
           ref: setWebviewHostNode,
           style: webviewHostStyle,
         })}
+        {isNewTab ? (
+          <BrowserNewTabPage
+            serverId={serverId}
+            workspaceId={workspaceId}
+            browserId={browserId}
+            onNavigate={navigate}
+          />
+        ) : null}
         {pendingSelection ? (
           <BrowserElementAnnotationCard
             anchor={webviewClipRef.current}

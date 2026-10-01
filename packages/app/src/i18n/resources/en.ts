@@ -604,6 +604,11 @@ export const en = {
       },
     },
     browser: {
+      newTab: {
+        tools: "Tools",
+        moreTools: "More tools",
+        openPages: "Open pages",
+      },
       unavailable: {
         title: "Browser is desktop-only",
         subtitle: "Open this workspace in Electron to use the built-in browser.",

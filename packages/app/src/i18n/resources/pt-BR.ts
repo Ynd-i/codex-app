@@ -612,6 +612,11 @@ export const ptBR: TranslationResources = {
       },
     },
     browser: {
+      newTab: {
+        tools: "Ferramentas",
+        moreTools: "Mais ferramentas",
+        openPages: "Páginas abertas",
+      },
       unavailable: {
         title: "O navegador é exclusivo do desktop",
         subtitle: "Abra este workspace no Electron para usar o navegador integrado.",

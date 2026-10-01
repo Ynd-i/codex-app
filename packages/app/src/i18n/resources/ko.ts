@@ -608,6 +608,11 @@ export const ko: TranslationResources = {
       },
     },
     browser: {
+      newTab: {
+        tools: "도구",
+        moreTools: "더 많은 도구",
+        openPages: "열린 페이지",
+      },
       unavailable: {
         title: "브라우저는 데스크톱 전용입니다",
         subtitle: "내장 브라우저를 사용하려면 이 워크스페이스를 Electron에서 여세요.",

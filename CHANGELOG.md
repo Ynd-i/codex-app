@@ -8,6 +8,7 @@ distribution and full migration acceptance remain pending; see the
 
 ### Added
 
+- Added a macOS browser start page with working Review, Terminal, Files and More tools actions, plus pages actually open in the current workspace. Ordinary blank documents and browser automation retain their existing behavior.
 - Added an independent Codex syntax-color preset for macOS defaults, preserving explicitly saved themes and custom font choices. Other platforms retain their existing default.
 - Added a Codex-style macOS titlebar, rounded content frame, and dark palette while retaining the existing themes and providers.
 - Added rename, archive, pinning, and unread actions in the current-chat titlebar.

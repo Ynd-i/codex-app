@@ -767,8 +767,7 @@ screenshots and then navigation joining that menu as available width shrinks.
 The [updated renderer capture](../qa-evidence/codex-desktop/browser-toolbar-right-dock.png)
 was inspected. The isolated case passes at 1352/900/700px and retains the submitted
 URL and address keyboard shortcut. Its profile bridge is simulated, so this does
-not establish actual webview navigation or native acceptance. New-tab content
-remains to be aligned. The passing log is
+not establish actual webview navigation or native acceptance. The passing log is
 `/private/tmp/paseo-browser-responsive-e2e.log`.
 
 The address-focus follow-up uses the supplied focused screenshot's lighter
@@ -780,6 +779,30 @@ webview observes zero source changes for Escape and one for Enter. The
 [focused capture](../qa-evidence/codex-desktop/browser-toolbar-focused.png) was
 inspected. Logs: `/private/tmp/paseo-browser-focus-{red,e2e,lint,typecheck}.log`.
 Actual webview navigation remains a separate native check.
+
+The start-page follow-up matches the reference's two-column Review, Terminal,
+Files and More tools section. Actions reuse the supporting launch catalog and
+right-dock placement, preserving the main chat and draft. Page cards represent
+only titled HTTP(S) browser tabs still present in the current host/workspace's
+layout. The label is Open pages, not invented recommendations or visit history;
+the group is omitted when empty. Nine locales include the new labels.
+
+Only the two Mac UI launch paths select the private start-page URL marker. The
+store and automation defaults remain unchanged. A first implementation treated
+all `about:blank` pages as home; review and a failing regression exposed that this
+would hide real popup/automation blank documents. The exact private fragment now
+distinguishes home from ordinary blank documents, without broadening the allowed
+about protocols. The same resident guest survives home/page transitions.
+
+Two renderer cases pass: real isolated-daemon tool creation/routing, main draft
+retention, active-page focus, More-menu provider exclusion, ordinary blank-page
+visibility, rejection of other about fragments, guest identity, open-page reuse,
+closed-tab exclusion, workspace isolation and responsive address controls. The
+profile/guest boundary is simulated. The [start-page capture](../qa-evidence/codex-desktop/browser-new-tab-open-pages.png)
+was inspected against the supplied browser reference. Logs:
+`/private/tmp/paseo-browser-new-tab-e2e.log`,
+`/private/tmp/paseo-browser-home-locales.log`, and
+`/private/tmp/paseo-browser-home-final-{format,lint,typecheck}.log`.
 
 ### Settings frame — 2026-10-01
 

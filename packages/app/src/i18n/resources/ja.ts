@@ -613,6 +613,11 @@ export const ja: TranslationResources = {
       },
     },
     browser: {
+      newTab: {
+        tools: "ツール",
+        moreTools: "その他のツール",
+        openPages: "開いているページ",
+      },
       unavailable: {
         title: "ブラウザはデスクトップ専用です",
         subtitle: "組み込みブラウザを使用するには、このワークスペースをElectronで開いてください。",

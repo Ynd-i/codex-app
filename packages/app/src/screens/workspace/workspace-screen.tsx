@@ -110,6 +110,7 @@ import { confirmDialog } from "@/utils/confirm-dialog";
 import { useArchiveAgent } from "@/hooks/use-archive-agent";
 import { useStableEvent } from "@/hooks/use-stable-event";
 import { removeResidentBrowserWebview } from "@/desktop/browser/resident-webviews";
+import { BROWSER_NEW_TAB_URL } from "@/desktop/browser/new-tab-url";
 import { createWorkspaceBrowser, useBrowserStore } from "@/desktop/browser/store";
 import { getDesktopHost } from "@/desktop/host";
 import { buildProviderCommand } from "@/utils/provider-command-templates";
@@ -2420,7 +2421,9 @@ function WorkspaceScreenContent({
       if (!persistenceKey || !getIsElectron()) {
         return;
       }
-      const { browserId } = createWorkspaceBrowser();
+      const { browserId } = createWorkspaceBrowser(
+        getIsElectronMac() ? { initialUrl: BROWSER_NEW_TAB_URL } : undefined,
+      );
       openWorkspaceTabFocused(
         persistenceKey,
         { kind: "browser", browserId },
@@ -2470,7 +2473,9 @@ function WorkspaceScreenContent({
         });
         return;
       }
-      const { browserId } = createWorkspaceBrowser();
+      const { browserId } = createWorkspaceBrowser(
+        getIsElectronMac() ? { initialUrl: BROWSER_NEW_TAB_URL } : undefined,
+      );
       openTarget({ kind: "browser", browserId });
     },
     [createTerminal, createWorkspaceTab, persistenceKey, replaceWorkspaceTabTarget],
