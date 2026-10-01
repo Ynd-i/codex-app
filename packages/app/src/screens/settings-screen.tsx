@@ -76,6 +76,7 @@ import { AddHostMethodModal } from "@/components/add-host-method-modal";
 import { AddHostModal } from "@/components/add-host-modal";
 import { AddRemoteSshHostModal } from "@/components/add-remote-ssh-host-modal";
 import { PairLinkModal } from "@/components/pair-link-modal";
+import { SearchField } from "@/components/ui/search-field";
 import { KeyboardShortcutsSection } from "@/screens/settings/keyboard-shortcuts-section";
 import { EditorSection } from "@/screens/settings/editor-section";
 import { Button } from "@/components/ui/button";
@@ -119,7 +120,11 @@ import { HostPluginsPage } from "@/screens/settings/plugins-page";
 import { MetadataGenerationPage } from "@/screens/settings/metadata-generation-page";
 import ProjectsScreen from "@/screens/projects-screen";
 import ProjectSettingsScreen from "@/screens/project-settings-screen";
-import { SETTINGS_DESKTOP_SIDEBAR_WIDTH, useIsCompactFormFactor } from "@/constants/layout";
+import {
+  HEADER_INNER_HEIGHT,
+  SETTINGS_DESKTOP_SIDEBAR_WIDTH,
+  useIsCompactFormFactor,
+} from "@/constants/layout";
 import { useLocalDaemonServerId } from "@/hooks/use-is-local-daemon";
 import {
   type EnableBuiltInDaemonOption,
@@ -278,12 +283,48 @@ function sidebarItemStyle({ hovered }: PressableStateCallbackType & { hovered?: 
   return [sidebarStyles.item, Boolean(hovered) && sidebarStyles.itemHovered];
 }
 
+function codexMacSidebarItemStyle({ hovered }: PressableStateCallbackType & { hovered?: boolean }) {
+  return [
+    sidebarStyles.item,
+    sidebarStyles.itemCodexMac,
+    Boolean(hovered) && sidebarStyles.itemHovered,
+  ];
+}
+
 function selectedSidebarItemStyle({ hovered }: PressableStateCallbackType & { hovered?: boolean }) {
   return [
     sidebarStyles.item,
     Boolean(hovered) && sidebarStyles.itemHovered,
     sidebarStyles.itemSelected,
   ];
+}
+
+function selectedCodexMacSidebarItemStyle({
+  hovered,
+}: PressableStateCallbackType & { hovered?: boolean }) {
+  return [
+    sidebarStyles.item,
+    sidebarStyles.itemCodexMac,
+    Boolean(hovered) && sidebarStyles.itemHovered,
+    sidebarStyles.itemSelected,
+  ];
+}
+
+function settingsHeaderBackButtonStyle({
+  hovered = false,
+  pressed,
+}: PressableStateCallbackType & { hovered?: boolean }) {
+  return [
+    sidebarStyles.headerBackButton,
+    (hovered || pressed) && sidebarStyles.headerBackButtonHovered,
+  ];
+}
+
+function getSettingsSidebarItemStyle(useCodexSettingsFrame: boolean, isSelected: boolean) {
+  if (useCodexSettingsFrame) {
+    return isSelected ? selectedCodexMacSidebarItemStyle : codexMacSidebarItemStyle;
+  }
+  return isSelected ? selectedSidebarItemStyle : sidebarItemStyle;
 }
 
 function getActiveLocale(language: string | undefined): SupportedLocale {
@@ -747,6 +788,7 @@ interface SidebarSectionButtonProps {
   label: string;
   icon: ComponentType<{ size: number; color: string; strokeWidth?: number }>;
   isSelected: boolean;
+  useCodexSettingsFrame: boolean;
   onSelect: (section: SettingsSectionSlug) => void;
 }
 
@@ -758,6 +800,7 @@ function SidebarSectionButton({
   label,
   icon: IconComponent,
   isSelected,
+  useCodexSettingsFrame,
   onSelect,
 }: SidebarSectionButtonProps) {
   const { theme } = useUnistyles();
@@ -774,10 +817,10 @@ function SidebarSectionButton({
       accessibilityRole="button"
       accessibilityState={accessibilityState}
       onPress={handlePress}
-      style={isSelected ? selectedSidebarItemStyle : sidebarItemStyle}
+      style={getSettingsSidebarItemStyle(useCodexSettingsFrame, isSelected)}
     >
       <IconComponent
-        size={theme.iconSize.md}
+        size={useCodexSettingsFrame ? theme.iconSize.sm : theme.iconSize.md}
         color={isSelected ? theme.colors.foreground : theme.colors.foregroundMuted}
         strokeWidth={SIDEBAR_ICON_STROKE_WIDTH}
       />
@@ -793,6 +836,7 @@ interface SidebarHostSectionButtonProps {
   label: string;
   icon: ComponentType<{ size: number; color: string; strokeWidth?: number }>;
   isSelected: boolean;
+  useCodexSettingsFrame: boolean;
   onSelect: (section: HostSectionSlug) => void;
 }
 
@@ -801,6 +845,7 @@ function SidebarHostSectionButton({
   label,
   icon: IconComponent,
   isSelected,
+  useCodexSettingsFrame,
   onSelect,
 }: SidebarHostSectionButtonProps) {
   const { theme } = useUnistyles();
@@ -818,10 +863,10 @@ function SidebarHostSectionButton({
       accessibilityState={accessibilityState}
       onPress={handlePress}
       testID={`settings-host-section-${itemId}`}
-      style={isSelected ? selectedSidebarItemStyle : sidebarItemStyle}
+      style={getSettingsSidebarItemStyle(useCodexSettingsFrame, isSelected)}
     >
       <IconComponent
-        size={theme.iconSize.md}
+        size={useCodexSettingsFrame ? theme.iconSize.sm : theme.iconSize.md}
         color={isSelected ? theme.colors.foreground : theme.colors.foregroundMuted}
         strokeWidth={SIDEBAR_ICON_STROKE_WIDTH}
       />
@@ -835,6 +880,7 @@ function SidebarHostSectionButton({
 interface HostPickerProps {
   activeServerId: string | null;
   sortedHosts: HostProfile[];
+  useCodexSettingsFrame: boolean;
   onSelectHost: (serverId: string) => void;
   onAddHost: () => void;
   enableBuiltInDaemonOption: EnableBuiltInDaemonOption;
@@ -850,6 +896,7 @@ interface HostPickerProps {
 function HostPicker({
   activeServerId,
   sortedHosts,
+  useCodexSettingsFrame,
   onSelectHost,
   onAddHost,
   enableBuiltInDaemonOption,
@@ -868,9 +915,10 @@ function HostPicker({
   const triggerStyle = useCallback(
     ({ hovered = false }: PressableStateCallbackType & { hovered?: boolean }) => [
       sidebarStyles.pickerTrigger,
+      useCodexSettingsFrame && sidebarStyles.pickerTriggerCodexMac,
       hovered && sidebarStyles.pickerTriggerHovered,
     ],
-    [],
+    [useCodexSettingsFrame],
   );
 
   return (
@@ -902,7 +950,12 @@ function HostPicker({
         testID="settings-host-picker"
       >
         {activeHost ? (
-          <View style={sidebarStyles.pickerTriggerDot}>
+          <View
+            style={[
+              sidebarStyles.pickerTriggerDot,
+              useCodexSettingsFrame && sidebarStyles.pickerTriggerDotCodexMac,
+            ]}
+          >
             <HostStatusDot serverId={activeHost.serverId} />
           </View>
         ) : null}
@@ -946,9 +999,21 @@ function SettingsSidebar({
   const items = SIDEBAR_SECTION_ITEMS.filter((item) => isSectionAvailable(item, isDesktopApp));
   const insets = useSafeAreaInsets();
   const isDesktop = layout === "desktop";
+  const useCodexSettingsFrame = isDesktop && getIsElectronMac();
+  const [searchQuery, setSearchQuery] = useState("");
+  const filterQuery = useCodexSettingsFrame ? searchQuery.trim().toLocaleLowerCase() : "";
+  const visibleItems = items.filter(
+    (item) => !filterQuery || t(item.labelKey).toLocaleLowerCase().includes(filterQuery),
+  );
+  const visibleHostItems = HOST_SECTION_ITEMS.filter(
+    (item) => !filterQuery || t(item.labelKey).toLocaleLowerCase().includes(filterQuery),
+  );
   const outerContainerStyle = useMemo(
-    () => [isDesktop ? sidebarStyles.desktopContainer : sidebarStyles.mobileContainer],
-    [isDesktop],
+    () => [
+      isDesktop ? sidebarStyles.desktopContainer : sidebarStyles.mobileContainer,
+      useCodexSettingsFrame && sidebarStyles.desktopContainerCodexMac,
+    ],
+    [isDesktop, useCodexSettingsFrame],
   );
   const innerContainerStyle = useMemo(
     () => [{ flex: 1 }, isDesktop ? { paddingTop: insets.top } : null],
@@ -964,13 +1029,14 @@ function SettingsSidebar({
     <>
       <View style={sidebarStyles.list}>
         <Text style={sidebarStyles.groupLabel}>{t("settings.groups.app")}</Text>
-        {items.map((item) => (
+        {visibleItems.map((item) => (
           <SidebarSectionButton
             key={item.id}
             itemId={item.id}
             label={t(item.labelKey)}
             icon={item.icon}
             isSelected={selectedSectionId === item.id}
+            useCodexSettingsFrame={useCodexSettingsFrame}
             onSelect={onSelectSection}
           />
         ))}
@@ -981,17 +1047,19 @@ function SettingsSidebar({
           <HostPicker
             activeServerId={activeHostServerId}
             sortedHosts={sortedHosts}
+            useCodexSettingsFrame={useCodexSettingsFrame}
             onSelectHost={onSelectHost}
             onAddHost={onAddHost}
             enableBuiltInDaemonOption={enableBuiltInDaemonOption}
           />
-          {HOST_SECTION_ITEMS.map((item) => (
+          {visibleHostItems.map((item) => (
             <SidebarHostSectionButton
               key={item.id}
               itemId={item.id}
               label={t(item.labelKey)}
               icon={item.icon}
               isSelected={selectedHostSection === item.id}
+              useCodexSettingsFrame={useCodexSettingsFrame}
               onSelect={onSelectHostSection}
             />
           ))}
@@ -1003,10 +1071,10 @@ function SettingsSidebar({
             accessibilityLabel={t("settings.addHost")}
             onPress={onAddHost}
             testID="settings-add-host"
-            style={sidebarItemStyle}
+            style={getSettingsSidebarItemStyle(useCodexSettingsFrame, false)}
           >
             <Plus
-              size={theme.iconSize.md}
+              size={useCodexSettingsFrame ? theme.iconSize.sm : theme.iconSize.md}
               color={theme.colors.foregroundMuted}
               strokeWidth={SIDEBAR_ICON_STROKE_WIDTH}
             />
@@ -1020,10 +1088,10 @@ function SettingsSidebar({
               accessibilityLabel={t("settings.enableBuiltInDaemon")}
               onPress={enableBuiltInDaemonOption.onPress}
               testID="settings-enable-built-in-daemon"
-              style={sidebarItemStyle}
+              style={getSettingsSidebarItemStyle(useCodexSettingsFrame, false)}
             >
               <Server
-                size={theme.iconSize.md}
+                size={useCodexSettingsFrame ? theme.iconSize.sm : theme.iconSize.md}
                 color={theme.colors.foregroundMuted}
                 strokeWidth={SIDEBAR_ICON_STROKE_WIDTH}
               />
@@ -1049,13 +1117,42 @@ function SettingsSidebar({
           <View style={sidebarStyles.sidebarDragArea}>
             <TitlebarDragRegion />
             <WindowChromeSafeArea placement="below" />
-            <SidebarHeaderRow
-              icon={ArrowLeft}
-              label={t("settings.backToWorkspace")}
-              onPress={onBackToWorkspace}
-              testID="settings-back-to-workspace"
-            />
+            {useCodexSettingsFrame ? (
+              <View style={sidebarStyles.headerRow}>
+                <Text style={sidebarStyles.headerTitle}>{t("settings.title")}</Text>
+                <Pressable
+                  onPress={onBackToWorkspace}
+                  testID="settings-back-to-workspace"
+                  accessible
+                  accessibilityRole="button"
+                  accessibilityLabel={t("settings.backToWorkspace")}
+                  style={settingsHeaderBackButtonStyle}
+                >
+                  <ArrowLeft size={theme.iconSize.sm} color={theme.colors.foregroundMuted} />
+                </Pressable>
+              </View>
+            ) : (
+              <SidebarHeaderRow
+                icon={ArrowLeft}
+                label={t("settings.backToWorkspace")}
+                onPress={onBackToWorkspace}
+                testID="settings-back-to-workspace"
+              />
+            )}
           </View>
+          {useCodexSettingsFrame ? (
+            <View style={sidebarStyles.searchRegion}>
+              <SearchField
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholder={t("common.placeholders.search")}
+                accessibilityLabel={t("common.actions.search")}
+                clearAccessibilityLabel={t("settings.shortcuts.actions.clear")}
+                testID="settings-sidebar-search"
+                clearTestID="settings-sidebar-search-clear"
+              />
+            </View>
+          ) : null}
           <ScrollView
             style={sidebarStyles.scrollBody}
             showsVerticalScrollIndicator={false}
@@ -1564,11 +1661,41 @@ const sidebarStyles = StyleSheet.create((theme) => ({
     borderRightColor: theme.colors.border,
     backgroundColor: theme.colors.surfaceSidebar,
   },
+  desktopContainerCodexMac: {
+    width: 280,
+  },
   scrollBody: {
     flex: 1,
   },
   sidebarDragArea: {
     position: "relative",
+  },
+  headerRow: {
+    height: HEADER_INNER_HEIGHT,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: theme.spacing[3],
+    userSelect: "none",
+  },
+  headerTitle: {
+    color: theme.colors.foreground,
+    fontSize: theme.fontSize.lg,
+    fontWeight: theme.fontWeight.medium,
+  },
+  headerBackButton: {
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: theme.borderRadius.full,
+  },
+  headerBackButtonHovered: {
+    backgroundColor: theme.colors.surfaceSidebarHover,
+  },
+  searchRegion: {
+    paddingHorizontal: theme.spacing[3],
+    paddingVertical: theme.spacing[2],
   },
   mobileContainer: {
     paddingVertical: theme.spacing[2],
@@ -1595,6 +1722,9 @@ const sidebarStyles = StyleSheet.create((theme) => ({
     paddingHorizontal: theme.spacing[2],
     borderRadius: theme.borderRadius.lg,
   },
+  itemCodexMac: {
+    minHeight: 32,
+  },
   itemHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
   },
@@ -1616,6 +1746,9 @@ const sidebarStyles = StyleSheet.create((theme) => ({
     paddingHorizontal: theme.spacing[2],
     borderRadius: theme.borderRadius.lg,
   },
+  pickerTriggerCodexMac: {
+    minHeight: 32,
+  },
   pickerTriggerHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
   },
@@ -1632,5 +1765,9 @@ const sidebarStyles = StyleSheet.create((theme) => ({
     height: theme.iconSize.md,
     alignItems: "center",
     justifyContent: "center",
+  },
+  pickerTriggerDotCodexMac: {
+    width: theme.iconSize.sm,
+    height: theme.iconSize.sm,
   },
 }));

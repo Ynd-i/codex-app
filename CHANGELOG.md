@@ -23,6 +23,7 @@ distribution and full migration acceptance remain pending; see the
 - Kept one current conversation in the macOS main area and moved supporting tools into the right sidebar. Saved chats, terminal IDs, panel state and drafts survive the layout change; tool tabs share the window titlebar.
 - Removed Terminal profiles and Edit profiles from macOS tool launchers. The right-sidebar plus menu retains ordinary tools; providers remain available through New chat.
 - Added an internal file tree to macOS file tools, preserving unsaved editor content while toggling the tree. New right sidebars default to 576px; saved widths remain unchanged.
+- Matched the macOS Settings navigation frame with a narrower category sidebar, compact rows, a Settings heading and a category search field. Existing setting values and host navigation remain available.
 - Restored Paseo's default workspace sidebar, navigation and footer; deferred the custom chat sidebar. New sidebar preferences use the default 320px width, while saved widths remain unchanged.
 - Animated macOS workspace-sidebar expansion and collapse while retaining rows during the transition. Reduced-motion mode remains immediate, and quick reversals keep the sidebar open.
 - Restored the separate macOS icon navigation rail after the sidebar clarification. It remains available when the workspace list is collapsed and after returning from Settings, with visible and accessible current-page selection.

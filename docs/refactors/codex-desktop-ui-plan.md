@@ -664,6 +664,22 @@ not establish actual webview navigation or native acceptance. Focused-address
 treatment and new-tab content remain to be aligned. The passing log is
 `/private/tmp/paseo-browser-responsive-e2e.log`.
 
+### Settings frame — 2026-10-01
+
+The macOS Settings sidebar is 280px with a Settings heading, back action, compact
+32px category rows and searchable category labels. Existing General/Appearance
+values, host selection and save paths remain. Content-font editing was delivered
+with the separate typography slice.
+
+The focused renderer case passes in `/private/tmp/paseo-settings-layout-e2e.log`.
+It checks category filtering, General/Appearance navigation and 1352/900/700px
+layouts. Both [General](../qa-evidence/codex-desktop/settings-general.png) and
+[Appearance](../qa-evidence/codex-desktop/settings-appearance.png) captures were
+inspected. Native General-to-Appearance navigation also worked; native search was
+interrupted by user activity and is not accepted. Root format, lint and typecheck
+pass. Detailed settings-page parity and removal of macOS placement choices that
+the fixed right-dock layout now overrides remain outstanding.
+
 ### Usage data foundation
 
 The existing usage-source contract already supplies provider/account labels, quota
