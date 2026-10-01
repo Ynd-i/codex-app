@@ -225,7 +225,7 @@ export async function expectSettingsBackButton(page: Page): Promise<void> {
 }
 
 export async function clickSettingsBackToWorkspace(page: Page): Promise<void> {
-  await page.getByTestId("settings-back-to-workspace").click();
+  await page.getByTestId("settings-back-to-workspace").filter({ visible: true }).click();
 }
 
 export async function expectHostSettingsUrl(page: Page, serverId: string): Promise<void> {

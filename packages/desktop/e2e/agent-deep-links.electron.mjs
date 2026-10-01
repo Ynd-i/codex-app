@@ -43,6 +43,19 @@ export async function runAgentDeepLinksRegression({
   await page.screenshot({ path: path.join(artifactDir, "agent-link-cold-argv.png") });
   const draft = "Keep chat A's unsent draft while opening chat B.";
   await composer.fill(draft);
+  await page.getByTestId("desktop-chat-toolbar-menu").click();
+  const copyMenu = page.getByRole("menuitem", { name: "Copy", exact: true });
+  await copyMenu.click();
+  const copyId = page.getByRole("menuitem", { name: "Copy agent id", exact: true });
+  await expect(copyId).toBeVisible();
+  await expect(
+    page.getByRole("menuitem", { name: "Copy resume command", exact: true }),
+  ).toBeDisabled();
+  // Inspect availability only; this packaged check never writes the user's clipboard.
+  await page.keyboard.press("Escape");
+  await expect(copyId).toBeHidden();
+  if (await copyMenu.isVisible()) await page.keyboard.press("Escape");
+  await expect(copyMenu).toBeHidden();
   await page.keyboard.press("Meta+k");
   const search = page.getByTestId("command-center-panel");
   await expect(search.getByTestId("command-center-input")).toHaveAttribute(
@@ -114,12 +127,19 @@ export async function runAgentDeepLinksRegression({
     "true",
   );
   await expect(page.getByLabel("Theme: Dark", { exact: true })).toBeVisible();
+  const motion = page.getByTestId("appearance-reduced-motion");
+  await motion.getByRole("button", { name: "On", exact: true }).click();
+  await expect(motion.getByRole("button", { name: "On", exact: true })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await motion.getByRole("button", { name: "System", exact: true }).click();
   await page.screenshot({ path: path.join(artifactDir, "packaged-appearance-modes.png") });
   // Exercise overflow through a real saved appearance preference, without rewriting the timeline.
   const codeSize = page.getByRole("textbox", { name: "Code font size", exact: true });
   await codeSize.fill("22");
   await codeSize.press("Tab");
-  await page.getByTestId("settings-back-to-workspace").click();
+  await page.getByTestId("settings-back-to-workspace").filter({ visible: true }).click();
   await expectChat("A");
   await expect(composer).toHaveValue(draft);
   await page.getByTestId("workspace-explorer-toggle").click();
@@ -150,6 +170,21 @@ export async function runAgentDeepLinksRegression({
   await expect(shell).toContainText("[burst] drag-end isDragging=false");
   await expect(composer).toHaveValue(draft);
   await page.screenshot({ path: path.join(artifactDir, "packaged-shell-final-line.png") });
+  await page.keyboard.press("Meta+,");
+  await page.getByTestId("settings-host-section-projects").click();
+  await page.getByRole("button", { name: "Edit Desktop browser project 1", exact: true }).click();
+  await page.getByTestId("project-edit-button").click();
+  const projectModal = page.getByTestId("project-edit-sheet");
+  await expect(projectModal.getByRole("dialog")).toHaveCSS("border-radius", "20px");
+  await expect(projectModal.getByTestId("project-edit-source-folder")).toContainText("workspace-1");
+  await expect(projectModal.getByTestId("project-edit-name")).toBeEditable();
+  await expect(projectModal.getByTestId("project-edit-save")).toBeDisabled();
+  await page.screenshot({ path: path.join(artifactDir, "packaged-project-edit.png") });
+  await projectModal.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(projectModal).toBeHidden();
+  await page.getByTestId("settings-back-to-workspace").filter({ visible: true }).click();
+  await expectChat("A");
+  await expect(composer).toHaveValue(draft);
   await page.evaluate(() => window.__stopAgentLinkEvents());
   return {
     serverId,
@@ -165,6 +200,9 @@ export async function runAgentDeepLinksRegression({
     packagedFilesDock: true,
     packagedAppearanceModes: true,
     packagedShellOverflow: true,
+    packagedMotionControl: true,
+    packagedCopyMenu: true,
+    packagedProjectEditor: true,
     invalidUrlRejected: true,
     osProtocolDispatch: "not tested",
   };
