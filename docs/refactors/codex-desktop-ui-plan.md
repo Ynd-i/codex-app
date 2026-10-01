@@ -1002,6 +1002,10 @@ regression now loads both configurations through the actual builder and runs its
 schema validation; the packaged smoke requires the final bundle to declare
 exactly `paseo-custom`. It rejected the mixed-scheme package before launching it.
 
+The verified bundle is `/Users/yndi/dev/projects/codex-app/paseo-upstream-4893629/packages/desktop/release-custom/mac-arm64/Paseo Custom.app`.
+The primary checkout's older build output was not replaced; use the verified bundle
+or rebuild the current checkout before running packaged acceptance.
+
 The corrected ARM64 ad-hoc bundle passes that final declaration check, independent
 bundle identity, disabled update IPC, real renderer/preload startup, isolated
 daemon cold start, bundled CLI status, terminal/hook execution and cleanup.
