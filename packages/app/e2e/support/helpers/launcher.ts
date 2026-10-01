@@ -10,7 +10,14 @@ import { createAgentTabFromMenu } from "./workspace-tabs";
 export async function gotoWorkspace(page: Page, workspaceId: string): Promise<void> {
   const route = buildHostWorkspaceRoute(getServerId(), workspaceId);
   await page.goto(route);
-  await waitForTabBar(page);
+  const singleChatDesktop = await page.evaluate(() => window.paseoDesktop?.platform === "darwin");
+  if (singleChatDesktop) {
+    await expect(
+      page.getByTestId("workspace-header-menu-trigger").filter({ visible: true }).first(),
+    ).toBeVisible();
+  } else {
+    await waitForTabBar(page);
+  }
 }
 
 // ─── Tab bar queries ───────────────────────────────────────────────────────

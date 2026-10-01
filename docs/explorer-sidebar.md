@@ -8,6 +8,27 @@ contracts.
 | Explorer sidebar | Files and Changes navigation | Cmd+E shows or hides the dedicated dock    |
 | Side pane        | Ordinary workspace content   | Created and closed like any workspace pane |
 
+## Custom macOS layout
+
+The custom macOS desktop keeps one current chat in the main area without a tab
+strip. Supporting tools use Explorer on the right, including ordinary terminals,
+browser, files, diffs and workspace plugin panels. New chat owns provider
+selection; tool launchers omit Terminal profiles and Edit profiles.
+
+Saved layouts are adapted without closing sessions or replacing tab instances.
+Chats and drafts remain available through workspace navigation; supporting tabs
+retain their IDs, panel state and underlying resources. The dock starts at 576px
+only when no width was saved, and still clamps to the available workspace width.
+
+On wide macOS windows, tool tabs and their plus menu share the window titlebar.
+The dock keeps its tabs inline in compact windows, while the main area remains a
+chat. Hiding the dock or leaving the workspace also removes its titlebar controls.
+File tools contain their own tree on the right; toggling it preserves the editor
+instance and unsaved text. Panel content and backend ownership are unchanged.
+
+These placement rules override the desktop open-location preferences on macOS.
+The ordinary split-pane and preference contracts below continue on other platforms.
+
 ## Panel host contract
 
 Every desktop panel registers its supported `PaneHost` values and presentation. Launchers derive
@@ -15,8 +36,8 @@ fixed-target labels and icons from that registration, filter by host, and never 
 panel type for another. Tab moves reject unsupported destinations, and placement resolves only to
 a compatible pane.
 
-Files and Changes are the Explorer defaults and its singleton navigation views. Other compatible
-tabs, including agents, terminals, files, and diffs, can move between Explorer and main panes.
+Files and Changes are the Explorer defaults and its singleton navigation views. On other platforms,
+compatible tabs, including agents, terminals, files, and diffs, can move between Explorer and main panes.
 Keep panel implementations independent of either shell. `WorkspacePanelHost` owns mounting and
 retention, while each shell owns its tabs, focus, dragging, resizing, and shortcuts.
 
@@ -28,8 +49,8 @@ workspace, including the header. It has its own persisted width and resize handl
 never read or modify that width.
 
 `packages/app/src/workspace-tabs/open-supporting-view.ts` owns semantic Changes and pull-request
-opens. Compact and wide native layouts select the matching Explorer tab. Desktop Changes opens
-follow the shared diff preference. Desktop pull requests use their Main panel, On the side, or
+opens. Compact and wide native layouts select the matching Explorer tab. Outside the custom macOS
+layout, desktop Changes opens follow the shared diff preference and pull requests use Main panel, On the side, or
 Explorer sidebar setting. Automatic PR discovery follows that preference once per workspace without
 interrupting the user's work. Closing the tab opts that workspace out of future automatic opens,
 even for a different PR; moving or reordering it remains the user's choice.
@@ -43,13 +64,13 @@ literal `"explorer"` pane id and `explorerPaneIdByWorkspace` key for compatibili
 
 On macOS, the tab rail shows an inline close control on the selected tab and on
 hover or keyboard focus. Other platforms retain the context-menu close action.
-The rail has no inline add control. Its context menu opens a New Tab launcher and
+Other platforms have no inline add control. The rail's context menu opens a New Tab launcher and
 toggles Files, Changes, and Explorer-compatible workspace-scoped plugin panels from the shared
-launch catalog. Individual tab menus close instances or move compatible tabs to main. Explorer tabs
+launch catalog. Individual tab menus close instances or, outside macOS, move compatible tabs to main. Explorer tabs
 can be reordered, but the dock cannot be split. Selecting an Explorer tab does not change workspace
 focus.
 
-Cmd+E shows or hides Explorer without changing its selected view. Compact layouts use the combined
+Cmd+E shows or hides Explorer without changing its selected view. Outside macOS, compact layouts use the combined
 full-screen Explorer overlay for Changes, Files, and pull requests, and close it after a file opens. Compact Changes has no tree rail; its overview is the Jump to file action (`packages/app/src/git/jump-to-file/`), a sheet over the same changed-files tree the desktop rail renders.
 Wide native layouts without pane splits use the same combined content in a resizable inline dock;
 opening a file leaves that dock visible. Both presentations keep their selection in the panel store

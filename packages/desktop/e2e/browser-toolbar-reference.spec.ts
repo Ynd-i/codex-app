@@ -1,6 +1,6 @@
 import { test, expect } from "../../app/e2e/support/fixtures";
 import { seedWorkspace } from "../../app/e2e/support/helpers/seed-client";
-import { gotoWorkspace } from "../../app/e2e/support/helpers/launcher";
+import { buildHostWorkspaceRoute } from "../../app/src/utils/host-routes";
 import { getServerId } from "../../app/e2e/support/helpers/server-id";
 import { getE2EDaemonPort } from "../../app/e2e/support/helpers/daemon-port";
 import { installDesktopRuntime } from "./support/runtime";
@@ -17,8 +17,9 @@ test("macOS browser toolbar retains its address and tools when resized", async (
     });
     await page.setViewportSize({ width: 1352, height: 782 });
     await page.emulateMedia({ colorScheme: "dark" });
-    await gotoWorkspace(page, workspace.workspaceId);
-    await page.getByTestId("workspace-new-tab-button").filter({ visible: true }).first().click();
+    await page.goto(buildHostWorkspaceRoute(getServerId(), workspace.workspaceId));
+    await page.getByTestId("workspace-explorer-toggle").click();
+    await page.getByTestId("explorer-sidebar-new-tab-button").click();
     // This renderer check exercises toolbar layout, not a real Electron webview.
     await page.evaluate(() => {
       if (!window.paseoDesktop) throw new Error("Desktop fixture is missing");
@@ -44,14 +45,31 @@ test("macOS browser toolbar retains its address and tools when resized", async (
       await page.setViewportSize({ width, height: 782 });
       await expect(address).toBeInViewport();
       await expect(address).toHaveValue("https://example.test/retained-draft");
-      for (const label of [
-        "Device size",
-        "Open browser dev tools",
-        "Annotate element",
-        "Screenshot element",
-      ]) {
-        await expect(page.getByRole("button", { name: label, exact: true })).toBeInViewport();
+      const more = page.getByTestId("browser-tools-menu-trigger");
+      await expect(more).toBeInViewport();
+      const directTools = page.getByRole("button", { name: "Screenshot element", exact: true });
+      const hasDirectTools = await directTools.isVisible();
+      if (hasDirectTools) {
+        await expect(directTools).toBeInViewport();
+        await expect(
+          page.getByRole("button", { name: "Annotate element", exact: true }),
+        ).toBeInViewport();
       }
+      await more.click();
+      await expect(
+        page.getByRole("menuitem", { name: "Open browser dev tools", exact: true }),
+      ).toBeVisible();
+      if (!hasDirectTools) {
+        await expect(
+          page.getByRole("menuitem", { name: "Annotate element", exact: true }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole("menuitem", { name: "Screenshot element", exact: true }),
+        ).toBeVisible();
+      }
+      await page.getByRole("menuitem", { name: "Device size", exact: true }).click();
+      await expect(page.getByRole("menuitem", { name: "Responsive", exact: true })).toBeVisible();
+      await page.getByRole("menuitem", { name: "Responsive", exact: true }).click();
     }
     await page.keyboard.press("Meta+l");
     await expect(address).toBeFocused();

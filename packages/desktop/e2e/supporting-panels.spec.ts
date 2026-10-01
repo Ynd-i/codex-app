@@ -1,6 +1,6 @@
 import { test, expect } from "../../app/e2e/support/fixtures";
 import { TerminalE2EHarness } from "../../app/e2e/support/helpers/terminal-dsl";
-import { openFileExplorer } from "../../app/e2e/support/helpers/file-explorer";
+import { buildTerminalWorkspaceUrl } from "../../app/e2e/support/helpers/terminal-perf";
 import { getServerId } from "../../app/e2e/support/helpers/server-id";
 import { getE2EDaemonPort } from "../../app/e2e/support/helpers/daemon-port";
 import { installDesktopRuntime } from "./support/runtime";
@@ -20,10 +20,10 @@ test("desktop panel tabs keep active controls visible and retain terminals acros
     await page.emulateMedia({ colorScheme: "dark" });
     const first = await harness.createTerminal({ name: "Panel verification shell" });
     const second = await harness.createTerminal({ name: "Second shell" });
-    await harness.openTerminal(page, { terminalId: first.id });
-    const firstTab = page.getByTestId(`workspace-tab-terminal_${first.id}`).first();
-    const secondTab = page.getByTestId(`workspace-tab-terminal_${second.id}`).first();
-    const closeFirst = page.getByTestId(`workspace-terminal-close-${first.id}`).first();
+    await page.goto(buildTerminalWorkspaceUrl(harness.workspaceId, first.id));
+    const firstTab = page.getByTestId(`explorer-sidebar-tab-terminal_${first.id}`);
+    const secondTab = page.getByTestId(`explorer-sidebar-tab-terminal_${second.id}`);
+    const closeFirst = page.getByTestId(`explorer-sidebar-tab-close-terminal_${first.id}`);
     await expect(firstTab).toHaveAttribute("aria-selected", "true");
     await page.mouse.move(600, 600);
     await expect(closeFirst.locator("..")).toHaveCSS("opacity", "1");
@@ -33,7 +33,7 @@ test("desktop panel tabs keep active controls visible and retain terminals acros
     await firstTab.click();
     await expect(harness.terminalSurface(page).filter({ visible: true })).toHaveCount(1);
     await expect(page.getByTestId("terminal-attach-loading")).toBeHidden();
-    await openFileExplorer(page);
+    await page.getByTestId("explorer-sidebar-tab-files").click();
     await expect(page.getByTestId("files-pane-header")).toBeVisible();
     const explorerRail = page.getByTestId("explorer-sidebar-tab-rail");
     const filesTab = explorerRail.getByRole("button", {
@@ -48,9 +48,13 @@ test("desktop panel tabs keep active controls visible and retain terminals acros
     await expect(closeFiles).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(filesTab).toHaveCount(0);
-    await expect(firstTab).toHaveAttribute("aria-selected", "true");
     await expect(secondTab).toBeVisible();
-    await expect(harness.terminalSurface(page).filter({ visible: true })).toHaveCount(1);
+    const liveTerminals = await harness.client.listTerminals(harness.tempRepo.path, undefined, {
+      workspaceId: harness.workspaceId,
+    });
+    expect(liveTerminals.terminals.map((terminal) => terminal.id)).toEqual(
+      expect.arrayContaining([first.id, second.id]),
+    );
     await explorerRail.click({
       button: "right",
       position: { x: 20, y: 2 },
@@ -83,18 +87,21 @@ test("desktop panel tabs keep active controls visible and retain terminals acros
     await closeChanges.click();
     await expect(changesTab).toHaveCount(0);
     await expect(filesTab).toHaveAttribute("aria-selected", "true");
-    await expect(firstTab).toHaveAttribute("aria-selected", "true");
     await expect(secondTab).toBeVisible();
+    await page.mouse.move(800, 400);
     await page.screenshot({ path: testInfo.outputPath("supporting-panels-wide.png") });
+    await firstTab.click({ position: { x: 12, y: 13 } });
     await page.setViewportSize({ width: 900, height: 680 });
     await expect(firstTab).toBeInViewport();
     await expect(firstTab).toHaveAttribute("aria-selected", "true");
     await page.setViewportSize({ width: 1352, height: 782 });
     await page.getByTestId("workspace-explorer-toggle").click();
+    await expect(page.getByTestId("workspace-explorer-sidebar")).toBeHidden();
+    await page.getByTestId("workspace-explorer-toggle").click();
     await secondTab.click();
     await expect(secondTab).toHaveAttribute("aria-selected", "true");
     await expect(page.getByTestId("terminal-attach-loading")).toBeHidden();
-    const closeSecond = page.getByTestId(`workspace-terminal-close-${second.id}`).first();
+    const closeSecond = page.getByTestId(`explorer-sidebar-tab-close-terminal_${second.id}`);
     await closeSecond.focus();
     await expect(closeSecond).toBeFocused();
     await page.keyboard.press("Enter");

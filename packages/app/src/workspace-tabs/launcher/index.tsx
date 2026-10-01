@@ -10,10 +10,11 @@ import { useRouter, type Href } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Globe, SquarePen, SquareTerminal } from "lucide-react-native";
 import invariant from "tiny-invariant";
+import { getIsElectronMac } from "@/constants/platform";
 import { useDaemonConfig } from "@/hooks/use-daemon-config";
 import { resolvePluginIcon } from "@/plugins/icons";
 import { useInstalledPlugins } from "@/plugins/registry";
-import { pluginPanelSupportsLocation } from "@/plugins/workspace-panels/locations";
+import { panelTargetSupportsHost } from "@/plugins/workspace-panels/locations";
 import { buildSettingsHostSectionRoute } from "@/utils/host-routes";
 import type { NewTabSelection } from "@/workspace-tabs/new-tab";
 import type { WorkspaceTabTarget } from "@/workspace-tabs/model";
@@ -104,6 +105,7 @@ export function useWorkspaceTabLaunchCatalog(input: {
   const launcher = useContext(NewTabLauncherContext);
   invariant(launcher, "NewTabLauncherProvider is required");
   const { config } = useDaemonConfig(serverId);
+  const showTerminalProfiles = !getIsElectronMac();
   const plugins = useInstalledPlugins();
   ensurePanelsRegistered();
 
@@ -206,12 +208,11 @@ export function useWorkspaceTabLaunchCatalog(input: {
       if (plugin.serverId !== serverId) continue;
       for (const panel of plugin.workspacePanels) {
         if (panel.context !== "workspace") continue;
-        const location = host === "explorer" ? "explorer" : "workspace";
-        if (!pluginPanelSupportsLocation(panel, location)) continue;
         const selection: NewTabSelection = {
           kind: "target",
           target: { kind: "plugin", pluginId: plugin.id, panelId: panel.id, context: "workspace" },
         };
+        if (!panelTargetSupportsHost(serverId, selection.target, host)) continue;
         pluginItems.push({
           id: `plugin:${plugin.id}:${panel.id}`,
           label: panel.title,
@@ -229,7 +230,7 @@ export function useWorkspaceTabLaunchCatalog(input: {
     if (pluginItems.length > 0) {
       groups.push({ id: "plugin-panels", label: null, items: pluginItems });
     }
-    if (profiles.length > 0) {
+    if (showTerminalProfiles && profiles.length > 0) {
       groups.push({
         id: "terminal-profiles",
         label: t("workspace.tabs.actions.terminalProfilesMenu"),
@@ -259,6 +260,7 @@ export function useWorkspaceTabLaunchCatalog(input: {
     purpose,
     host,
     serverId,
+    showTerminalProfiles,
     t,
   ]);
 }

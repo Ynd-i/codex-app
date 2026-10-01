@@ -18,6 +18,8 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { DropdownMenu } from "@/components/ui/dropdown-menu";
+import { ToolbarButton } from "@/components/ui/pane-content-toolbar";
 import { titlebarDragSurfaceStyle } from "@/components/desktop/titlebar-drag-region";
 import { WORKSPACE_SECONDARY_HEADER_HEIGHT } from "@/constants/layout";
 import { getIsElectronMac, isWeb } from "@/constants/platform";
@@ -30,6 +32,7 @@ import {
 } from "@/screens/workspace/workspace-tab-presentation";
 import type { WorkspaceDesktopTabRowItem } from "@/screens/workspace/workspace-desktop-tabs-row";
 import type { WorkspaceTabDescriptor } from "@/screens/workspace/workspace-tabs-types";
+import { WorkspaceNewTabMenuContent } from "@/screens/workspace/workspace-new-tab-menu";
 import {
   useWorkspaceTabLaunchCatalog,
   type WorkspaceTabLaunchItem,
@@ -68,6 +71,7 @@ interface ExplorerSidebarTabRailProps {
   onMoveTabToMain: (tabId: string) => void;
   onReorderTabs: (tabs: WorkspaceTabDescriptor[]) => void;
   trailingAccessory?: ReactNode;
+  inTitlebar?: boolean;
 }
 
 function tabKey(item: WorkspaceDesktopTabRowItem): string {
@@ -123,7 +127,10 @@ function ExplorerSidebarTab({
     () => onMoveTabToMain(item.tab.tabId),
     [item.tab.tabId, onMoveTabToMain],
   );
-  const canMoveToMain = panelTargetSupportsHost(normalizedServerId, item.tab.target, "main");
+  const isConversation = item.tab.kind === "agent" || item.tab.kind === "draft";
+  const mainAreaAllowsTab = !getIsElectronMac() || isConversation;
+  const canMoveToMain =
+    mainAreaAllowsTab && panelTargetSupportsHost(normalizedServerId, item.tab.target, "main");
   const moveToMainLeading = useMemo(
     () => <ThemedArrowLeftToLine size={14} uniProps={mutedColorMapping} />,
     [],
@@ -335,6 +342,7 @@ export function ExplorerSidebarTabRail({
   onMoveTabToMain,
   onReorderTabs,
   trailingAccessory,
+  inTitlebar = false,
 }: ExplorerSidebarTabRailProps) {
   const scrollBoundary = useHorizontalScrollBoundary();
   const { t } = useTranslation();
@@ -405,7 +413,11 @@ export function ExplorerSidebarTabRail({
     <ContextMenu>
       <ContextMenuTrigger
         contextOnly
-        style={[styles.track, titlebarDragSurfaceStyle as never]}
+        style={[
+          styles.track,
+          inTitlebar && styles.titlebarTrack,
+          titlebarDragSurfaceStyle as never,
+        ]}
         testID="explorer-sidebar-tab-rail"
       >
         <View style={styles.scrollContainer}>
@@ -428,6 +440,23 @@ export function ExplorerSidebarTabRail({
               activeId={activeDragTabId}
               getItemData={getTabDragData}
             />
+            {getIsElectronMac() ? (
+              <DropdownMenu>
+                <ToolbarButton
+                  kind="menu"
+                  label={t("workspace.tabs.actions.newTab")}
+                  testID="explorer-sidebar-new-tab-button"
+                >
+                  <ThemedPlus size={14} uniProps={mutedColorMapping} />
+                </ToolbarButton>
+                <WorkspaceNewTabMenuContent
+                  serverId={normalizedServerId}
+                  purpose="supporting"
+                  host="explorer"
+                  paneId={paneId}
+                />
+              </DropdownMenu>
+            ) : null}
           </Animated.ScrollView>
           <HorizontalScrollBoundaryShades
             visible
@@ -467,6 +496,12 @@ const styles = StyleSheet.create((theme) => ({
     backgroundColor: theme.colors.surfaceSidebar,
     flexDirection: "row",
     alignItems: "center",
+  },
+  titlebarTrack: {
+    height: "100%",
+    backgroundColor: "transparent",
+    borderLeftWidth: 1,
+    borderLeftColor: theme.colors.border,
   },
   scrollContainer: {
     flex: 1,

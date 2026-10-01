@@ -7,6 +7,20 @@ using the original dark-theme screenshots and the user's `context-images/`. Keep
 providers and remote connections. Model names, modes, permissions, and reasoning
 controls come from the selected host and provider.
 
+**Single-chat main area — 2026-10-01:** the user clarified that the main area must
+show only the current conversation, with no workspace tab strip or its plus menu.
+Terminal, files, diff, browser and other supporting tools open in the right
+sidebar. Hide the Terminal profiles group and its edit action from desktop
+launchers; provider selection belongs to New chat. Preserve the normal Terminal
+tool and Paseo backend. This supersedes earlier main-tab styling work; right-side
+tool tabs remain in scope. Retain existing chats, terminal IDs and panel state
+when adapting saved layouts. The two `paseo-main-*-tabs-to-remove.png` references
+in `context-images/` show unwanted current UI, not the target design.
+The subsequent `codex-right-tools-titlebar.png` reference places supporting tabs
+in the same top window bar as the chat title. Supporting content starts below
+that shared bar; a file tree belongs inside the supporting tool, not beside the
+main chat as a separate main tab strip.
+
 **Sidebar and navigation rail scope — 2026-10-01:** keep Paseo's default workspace
 sidebar, including its navigation rows, project/workspace groups, footer, resizing
 and workspace pin shortcut. The user clarified that the separate thin icon rail
@@ -69,15 +83,15 @@ scope; it does not remove runtime code or add new provider integrations.
 
 ## Steps
 
-| Step                             | Status                                                 | Acceptance                                                                                                                                                                                   |
-| -------------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0. Upstream baseline             | Complete for local startup                             | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                                      |
-| 1. Window and sidebar appearance | Complete for local macOS development                   | Desktop shell and dark palette implemented; native navigation, sidebar toggle, menus, theme changes, window resize/fullscreen/reactivation checked. Scoped visual QA passed.                 |
-| 1a. Upstream integration check   | Merged and rebuilt                                     | Merge `309f2c4` includes upstream `4e9a458` (release notes plus a host-startup race fix). No conflicts; server/client rebuild and 11 targeted startup tests passed.                          |
-| 2. Chat navigation               | Default sidebar retained; chrome consolidation pending | Keep upstream workspace navigation. Current-chat titlebar actions, draft isolation and Back/Forward remain in scope. Custom sidebar work is deferred at the user's request.                  |
-| 3. Transcript and composer       | Composer and activity verified; visual polish pending  | Column, input/model controls, tool cards and completed-turn activity are checked in native development. Attachment-menu renderer checks pass; native follow-up and transcript polish remain. |
-| 4. Supporting panels             | Toolbar consolidated; panel presentation pending       | Active-workspace actions now share the window titlebar. Continue adapting Diff, files, terminal, and settings using their supplied references.                                               |
-| 5. Custom distribution           | Local macOS package verified; distribution pending     | Independent identity, update guard, renderer/daemon/CLI startup and isolated defaults pass. Release source, signing, deep-link ownership and distribution remain.                            |
+| Step                             | Status                                                | Acceptance                                                                                                                                                                                   |
+| -------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0. Upstream baseline             | Complete for local startup                            | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                                      |
+| 1. Window and sidebar appearance | Complete for local macOS development                  | Desktop shell and dark palette implemented; native navigation, sidebar toggle, menus, theme changes, window resize/fullscreen/reactivation checked. Scoped visual QA passed.                 |
+| 1a. Upstream integration check   | Merged and rebuilt                                    | Merge `309f2c4` includes upstream `4e9a458` (release notes plus a host-startup race fix). No conflicts; server/client rebuild and 11 targeted startup tests passed.                          |
+| 2. Chat navigation               | Single-chat layout verified locally                   | Main tabs removed; tools route right with saved state retained. Default sidebar, current-chat actions, draft isolation and Back/Forward remain. Custom chat sidebar stays deferred.          |
+| 3. Transcript and composer       | Composer and activity verified; visual polish pending | Column, input/model controls, tool cards and completed-turn activity are checked in native development. Attachment-menu renderer checks pass; native follow-up and transcript polish remain. |
+| 4. Supporting panels             | Right tools and shared titlebar verified locally      | Terminal, browser, file and diff routing pass. Internal file tree and responsive browser controls pass; detailed panel styling and native tool acceptance remain.                            |
+| 5. Custom distribution           | Local macOS package verified; distribution pending    | Independent identity, update guard, renderer/daemon/CLI startup and isolated defaults pass. Release source, signing, deep-link ownership and distribution remain.                            |
 
 Each slice leaves a runnable app and a small independently revertible commit.
 Update this table and its evidence before moving to the next slice. Local startup
@@ -134,6 +148,14 @@ test state and unique evidence filenames. Native GUI validation is coordinated
 here so simultaneous chats do not drive the same window. Return exact changed
 paths, focused check results, before/after evidence and remaining visual gaps;
 green functional tests alone do not prove pixel equality.
+
+The transcript owner also owns the content-font preference in
+`hooks/use-settings/storage.ts`, `appearance/apply.ts`, `appearance/provider.tsx`,
+the typography fields of `styles/theme.ts`, `styles/markdown-styles.ts`, and their
+focused tests. Empty content-font settings retain the existing UI-font fallback.
+The coordinator connects that preference to Appearance after the settings owner
+finishes its layout slice. Browser toolbar and Explorer tab-close controls are
+separate bounded subagent assignments; neither changes shared pane state.
 
 ### Work that can continue unattended
 
@@ -517,7 +539,8 @@ The workspace menu, scripts, editor, Git and Explorer controls now share the
 macOS window titlebar, removing the repeated workspace header beneath it. The
 folder menu retains project/branch details and the existing copy/import/setup
 actions. The title falls back to the workspace name when no chat is selected.
-The default sidebar and existing pane/tab behavior are preserved.
+The default sidebar remains. The October 1 single-chat update below supersedes
+the earlier main-pane tab and split presentation.
 
 The toolbar uses a DOM portal so its original workspace routing and panel
 contexts remain attached. Only the focused workspace contributes controls;
@@ -535,7 +558,44 @@ confirmed menu placement, project/branch context and Explorer open/close in the
 [consolidated toolbar](../qa-evidence/codex-desktop/phase4-native-workspace-toolbar.jpg).
 Native editor launch, script execution and Git mutation were not exercised.
 
-### Panel tabs
+### Single chat and right tools — 2026-10-01
+
+The main area now renders only the current conversation. Supporting tools move
+into the right dock and share the top window bar with the chat title. The
+[Explorer contract](../explorer-sidebar.md#custom-macos-layout) owns placement,
+saved-layout retention and platform boundaries. The new plus menu contains tools;
+provider profiles stay in New chat. Files have an internal tree on the right.
+
+The final isolated renderer case passes for Terminal, Browser, File and Diff,
+including the terminal shortcut while the composer is focused. It checks retained
+chat/draft state, shared-titlebar geometry, hide/reopen, Settings return, narrow
+windows, editor identity and unsaved content while toggling the file tree, and
+opening another file through that tree. Inspected captures:
+[right tools](../qa-evidence/codex-desktop/single-main-chat-right-tools.png) and
+[file tree](../qa-evidence/codex-desktop/file-tool-with-tree.png).
+
+Focused store, placement and plugin tests passed (167), followed by the added
+macOS routing cases (7) and hidden-browser lifecycle case (1). Fresh terminal
+deep links initially lacked the Explorer registration; the shared layout write
+now keeps that registration synchronized. The real-terminal supporting-panel
+renderer case passes, including inactive close hover/focus and retained terminal
+IDs. Four ordinary-browser placement cases pass on the unchanged web layout.
+
+On October 1, the live development renderer still showed the old main tabs after
+source changes. A normal frontend reload removed the tabs and plus button while
+preserving the open chat. Native evidence is private at
+`.dev/codex-reference/native-single-chat-after-reload.jpg`; neither daemon was
+restarted. Native right-tab dragging and actual browser-webview navigation remain
+unverified. File breadcrumbs, directory selection and filtering still need visual
+alignment; these checks do not establish full pixel equality or package acceptance.
+
+Logs: `/private/tmp/paseo-single-chat-final-e2e.log`,
+`/private/tmp/paseo-supporting-titlebar-e2e.log`,
+`/private/tmp/paseo-browser-placement-verified.log`,
+`/private/tmp/paseo-hidden-explorer-browser.log`, and
+`/private/tmp/paseo-layout-final-{format,lint,typecheck}.log`.
+
+### Earlier panel-tab styling
 
 The macOS workspace and Explorer tab rails now follow the reference's rounded
 selected outlines. Workspace tabs allow longer titles, reserve close-control space
@@ -559,8 +619,8 @@ Logs: `/private/tmp/paseo-supporting-panels-final-e2e.log`,
 The [native tab capture](../qa-evidence/codex-desktop/phase4-native-panel-tabs.jpg)
 was inspected on October 1 after a normal renderer reload. Active outlines and
 close controls were visible with Explorer open; Explorer was then closed again.
-Integrating panel tabs into the window chrome and each panel's detailed
-presentation still remain; this is not full panel acceptance.
+The later single-chat update integrates supporting tabs into window chrome.
+Each panel's detailed presentation remains; this is not full panel acceptance.
 
 On October 1, Explorer tabs gained their own macOS close control. A fixed 20px
 slot keeps hover from moving titles. The button appears on selection, hover or
@@ -580,13 +640,14 @@ controls/address field, 16px corners and 10px group gaps. Existing navigation an
 four browser tools remain available. Other desktop platforms keep their previous
 dimensions. The device-size menu now exposes its button role.
 
-The [renderer capture](../qa-evidence/codex-desktop/browser-toolbar-rounded.png)
-was inspected. The isolated case verifies address/controls through 1352/900/700px
-layouts and the URL keyboard shortcut; its profile bridge is simulated, so this
-does not establish actual webview navigation or native acceptance. The reference's
-overflow menu, focused-address treatment and new-tab content remain to be aligned.
-Root format, lint and typecheck pass; the final two panel/browser renderer cases
-pass in `/private/tmp/paseo-final-panels-e2e.log`.
+The right-dock follow-up puts device size and DevTools in More, with annotation,
+screenshots and then navigation joining that menu as available width shrinks.
+The [updated renderer capture](../qa-evidence/codex-desktop/browser-toolbar-right-dock.png)
+was inspected. The isolated case passes at 1352/900/700px and retains the submitted
+URL and address keyboard shortcut. Its profile bridge is simulated, so this does
+not establish actual webview navigation or native acceptance. Focused-address
+treatment and new-tab content remain to be aligned. The passing log is
+`/private/tmp/paseo-browser-responsive-e2e.log`.
 
 ### Usage data foundation
 
@@ -694,11 +755,10 @@ The rail stays visible when the workspace sidebar is collapsed. Native inspectio
 verified both states; the [renderer evidence](../qa-evidence/codex-desktop/restored-navigation-rail.png)
 and desktop route/compact-layout regression pass.
 
-Continue from the consolidated workspace toolbar. Its focused checks are in
-`/private/tmp/paseo-titlebar-final-e2e.log`, `/private/tmp/paseo-titlebar-typecheck.log`
-and `/private/tmp/paseo-titlebar-lint.log`. Recheck the live native instance after
-structural HMR changes; a normal View > Reload refreshed the new portal without
-restarting either daemon.
+Continue from the single-chat layout and shared right-tool titlebar above.
+Recheck the live native instance after structural HMR changes: on October 1 it
+retained the old main tab strip until a normal frontend reload. That reload kept
+the current chat and refreshed the layout without restarting either daemon.
 
 Inline tool output, completed-turn activity, the attachment menu and panel tabs
 have local native evidence above. The usage overview passes its focused frontend

@@ -10,7 +10,14 @@ import {
   createElement,
 } from "react";
 import { createPortal } from "react-dom";
-import { Pressable, Text, View, type StyleProp, type ViewStyle } from "react-native";
+import {
+  Pressable,
+  Text,
+  View,
+  type LayoutChangeEvent,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 import {
   EditingTextInput as TextInput,
   type EditingTextInputHandle,
@@ -20,6 +27,7 @@ import {
   ArrowRight,
   Camera,
   ChevronDown,
+  Ellipsis,
   Maximize,
   Monitor,
   MousePointer2,
@@ -41,7 +49,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
+  type MenuPageDefinition,
 } from "@/components/ui/dropdown-menu";
 import {
   buildWorkspaceAttachmentScopeKey,
@@ -553,18 +564,29 @@ function DeviceSizeMenu({
         </TooltipContent>
       </Tooltip>
       <DropdownMenuContent align="end" scrollable maxHeight={360}>
-        {DEVICE_SIZE_PRESETS.map((preset) => (
-          <DeviceSizeMenuItem
-            key={preset.id}
-            preset={preset}
-            selected={preset.id === selectedId}
-            label={formatDevicePresetLabel(preset, t(RESPONSIVE_DEVICE_LABEL_KEY))}
-            onSelect={onSelect}
-          />
-        ))}
+        <DeviceSizeOptions selectedId={selectedId} onSelect={onSelect} />
       </DropdownMenuContent>
     </DropdownMenu>
   );
+}
+
+function DeviceSizeOptions({
+  selectedId,
+  onSelect,
+}: {
+  selectedId: DeviceSizeId | null;
+  onSelect: (id: DeviceSizeId) => void;
+}) {
+  const { t } = useTranslation();
+  return DEVICE_SIZE_PRESETS.map((preset) => (
+    <DeviceSizeMenuItem
+      key={preset.id}
+      preset={preset}
+      selected={preset.id === selectedId}
+      label={formatDevicePresetLabel(preset, t(RESPONSIVE_DEVICE_LABEL_KEY))}
+      onSelect={onSelect}
+    />
+  ));
 }
 
 function deviceSizeIdForViewport(viewport: BrowserViewport): DeviceSizeId | null {
@@ -602,6 +624,14 @@ export function BrowserPane({
   const { theme } = useUnistyles();
   const { t } = useTranslation();
   const macToolbar = getIsElectronMac();
+  const [toolbarWidth, setToolbarWidth] = useState(0);
+  const showNavigation = !macToolbar || toolbarWidth >= 280;
+  const showElementTools = !macToolbar || toolbarWidth >= 400;
+  const handleToolbarLayout = useCallback((event: LayoutChangeEvent) => {
+    const width = event.nativeEvent.layout.width;
+    if (width <= 0) return;
+    setToolbarWidth((current) => (current === width ? current : width));
+  }, []);
   const browser = useBrowserStore((state) => state.browsersById[browserId] ?? null);
   const updateBrowser = useBrowserStore((state) => state.updateBrowser);
   const setBrowserViewport = useBrowserStore((state) => state.setBrowserViewport);
@@ -1371,6 +1401,14 @@ export function BrowserPane({
     ],
     [selectorMode, macToolbar],
   );
+  const moreIconButtonStyle = useCallback(
+    ({ hovered, pressed }: { hovered?: boolean; pressed?: boolean }) => [
+      styles.iconButton(true),
+      styles.moreButton,
+      (hovered || pressed) && styles.iconButtonHovered(true),
+    ],
+    [],
+  );
 
   const selectedDeviceSizeId = useMemo(
     () => deviceSizeIdForViewport(browserViewport),
@@ -1391,6 +1429,18 @@ export function BrowserPane({
       );
     },
     [browserId, setBrowserViewport],
+  );
+  const browserMenuPages = useMemo<MenuPageDefinition[]>(
+    () => [
+      {
+        id: "device-size",
+        title: t("workspace.browser.devices.label"),
+        content: (
+          <DeviceSizeOptions selectedId={selectedDeviceSizeId} onSelect={handleSelectDeviceSize} />
+        ),
+      },
+    ],
+    [handleSelectDeviceSize, selectedDeviceSizeId, t],
   );
 
   const webviewHostStyle = useMemo<CSSProperties>(
@@ -1440,37 +1490,42 @@ export function BrowserPane({
 
   return (
     <View style={styles.container}>
-      <View style={styles.chromeRow(macToolbar)}>
-        <View style={styles.chromeLeft(macToolbar)}>
-          <ToolbarButton
-            label={t("workspace.browser.controls.back")}
-            disabled={!browser?.canGoBack}
-            onPress={handleBack}
-            style={backIconButtonStyle}
-          >
-            <ArrowLeft size={16} color={theme.colors.foregroundMuted} />
-          </ToolbarButton>
-          <ToolbarButton
-            label={t("workspace.browser.controls.forward")}
-            disabled={!browser?.canGoForward}
-            onPress={handleForward}
-            style={forwardIconButtonStyle}
-          >
-            <ArrowRight size={16} color={theme.colors.foregroundMuted} />
-          </ToolbarButton>
-          {macToolbar ? <View style={styles.navigationSeparator} /> : null}
-          <ToolbarButton
-            label={
-              browser?.isLoading
-                ? t("workspace.browser.controls.stopLoading")
-                : t("workspace.browser.controls.refresh")
-            }
-            onPress={handleRefresh}
-            style={baseIconButtonStyle}
-          >
-            <RotateCw size={16} color={theme.colors.foregroundMuted} />
-          </ToolbarButton>
-        </View>
+      <View
+        style={styles.chromeRow(macToolbar)}
+        onLayout={macToolbar ? handleToolbarLayout : undefined}
+      >
+        {showNavigation ? (
+          <View style={styles.chromeLeft(macToolbar)}>
+            <ToolbarButton
+              label={t("workspace.browser.controls.back")}
+              disabled={!browser?.canGoBack}
+              onPress={handleBack}
+              style={backIconButtonStyle}
+            >
+              <ArrowLeft size={16} color={theme.colors.foregroundMuted} />
+            </ToolbarButton>
+            <ToolbarButton
+              label={t("workspace.browser.controls.forward")}
+              disabled={!browser?.canGoForward}
+              onPress={handleForward}
+              style={forwardIconButtonStyle}
+            >
+              <ArrowRight size={16} color={theme.colors.foregroundMuted} />
+            </ToolbarButton>
+            {macToolbar ? <View style={styles.navigationSeparator} /> : null}
+            <ToolbarButton
+              label={
+                browser?.isLoading
+                  ? t("workspace.browser.controls.stopLoading")
+                  : t("workspace.browser.controls.refresh")
+              }
+              onPress={handleRefresh}
+              style={baseIconButtonStyle}
+            >
+              <RotateCw size={16} color={theme.colors.foregroundMuted} />
+            </ToolbarButton>
+          </View>
+        ) : null}
         <View style={styles.urlBarWrap(macToolbar)}>
           <TextInput
             accessibilityLabel={t("workspace.browser.controls.browserUrl")}
@@ -1486,54 +1541,129 @@ export function BrowserPane({
             initialValue={draftUrl}
           />
         </View>
-        <View style={styles.chromeRight(macToolbar)}>
-          <DeviceSizeMenu
-            selectedId={selectedDeviceSizeId}
-            onSelect={handleSelectDeviceSize}
-            triggerStyle={baseIconButtonStyle}
-          />
-          <ToolbarButton
-            label={t("workspace.browser.controls.openDevTools")}
-            onPress={handleOpenDevTools}
-            style={baseIconButtonStyle}
-          >
-            <Wrench size={16} color={theme.colors.foregroundMuted} />
-          </ToolbarButton>
-          <ToolbarButton
-            label={
-              selectorMode === "annotate"
-                ? t("workspace.browser.controls.cancelSelector")
-                : t("workspace.browser.controls.annotateElement")
-            }
-            active={selectorMode === "annotate"}
-            onPress={handleToggleElementSelector}
-            style={annotateIconButtonStyle}
-          >
-            <MousePointer2
-              size={16}
-              color={
-                selectorMode === "annotate" ? theme.colors.accent : theme.colors.foregroundMuted
+        {showElementTools ? (
+          <View style={styles.chromeRight(macToolbar)}>
+            {!macToolbar ? (
+              <>
+                <DeviceSizeMenu
+                  selectedId={selectedDeviceSizeId}
+                  onSelect={handleSelectDeviceSize}
+                  triggerStyle={baseIconButtonStyle}
+                />
+                <ToolbarButton
+                  label={t("workspace.browser.controls.openDevTools")}
+                  onPress={handleOpenDevTools}
+                  style={baseIconButtonStyle}
+                >
+                  <Wrench size={16} color={theme.colors.foregroundMuted} />
+                </ToolbarButton>
+              </>
+            ) : null}
+            <ToolbarButton
+              label={
+                selectorMode === "annotate"
+                  ? t("workspace.browser.controls.cancelSelector")
+                  : t("workspace.browser.controls.annotateElement")
               }
-            />
-          </ToolbarButton>
-          <ToolbarButton
-            label={
-              selectorMode === "screenshot"
-                ? t("workspace.browser.controls.cancelSelector")
-                : t("workspace.browser.controls.screenshotElement")
-            }
-            active={selectorMode === "screenshot"}
-            onPress={handleToggleScreenshot}
-            style={screenshotIconButtonStyle}
-          >
-            <Camera
-              size={16}
-              color={
-                selectorMode === "screenshot" ? theme.colors.accent : theme.colors.foregroundMuted
+              active={selectorMode === "annotate"}
+              onPress={handleToggleElementSelector}
+              style={annotateIconButtonStyle}
+            >
+              <MousePointer2
+                size={16}
+                color={
+                  selectorMode === "annotate" ? theme.colors.accent : theme.colors.foregroundMuted
+                }
+              />
+            </ToolbarButton>
+            <ToolbarButton
+              label={
+                selectorMode === "screenshot"
+                  ? t("workspace.browser.controls.cancelSelector")
+                  : t("workspace.browser.controls.screenshotElement")
               }
-            />
-          </ToolbarButton>
-        </View>
+              active={selectorMode === "screenshot"}
+              onPress={handleToggleScreenshot}
+              style={screenshotIconButtonStyle}
+            >
+              <Camera
+                size={16}
+                color={
+                  selectorMode === "screenshot" ? theme.colors.accent : theme.colors.foregroundMuted
+                }
+              />
+            </ToolbarButton>
+          </View>
+        ) : null}
+        {macToolbar ? (
+          <DropdownMenu>
+            <Tooltip delayDuration={0} enabledOnDesktop enabledOnMobile={false}>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger
+                  accessibilityRole="button"
+                  accessibilityLabel={t("workspace.fileActions.moreActions")}
+                  style={moreIconButtonStyle}
+                  testID="browser-tools-menu-trigger"
+                >
+                  <Ellipsis
+                    size={16}
+                    color={selectorActive ? theme.colors.accent : theme.colors.foregroundMuted}
+                  />
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" align="end" offset={8}>
+                <Text style={styles.toolbarTooltipText}>
+                  {t("workspace.fileActions.moreActions")}
+                </Text>
+              </TooltipContent>
+            </Tooltip>
+            <DropdownMenuContent align="end" pages={browserMenuPages} scrollable maxHeight={360}>
+              {!showNavigation ? (
+                <>
+                  <DropdownMenuItem disabled={!browser?.canGoBack} onSelect={handleBack}>
+                    {t("workspace.browser.controls.back")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled={!browser?.canGoForward} onSelect={handleForward}>
+                    {t("workspace.browser.controls.forward")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={handleRefresh}>
+                    {browser?.isLoading
+                      ? t("workspace.browser.controls.stopLoading")
+                      : t("workspace.browser.controls.refresh")}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              ) : null}
+              {!showElementTools ? (
+                <>
+                  <DropdownMenuItem
+                    selected={selectorMode === "annotate"}
+                    onSelect={handleToggleElementSelector}
+                  >
+                    {selectorMode === "annotate"
+                      ? t("workspace.browser.controls.cancelSelector")
+                      : t("workspace.browser.controls.annotateElement")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    selected={selectorMode === "screenshot"}
+                    onSelect={handleToggleScreenshot}
+                  >
+                    {selectorMode === "screenshot"
+                      ? t("workspace.browser.controls.cancelSelector")
+                      : t("workspace.browser.controls.screenshotElement")}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              ) : null}
+              <DropdownMenuSubTrigger id="device-size">
+                {t("workspace.browser.devices.label")}
+              </DropdownMenuSubTrigger>
+              <DropdownMenuItem onSelect={handleOpenDevTools}>
+                {t("workspace.browser.controls.openDevTools")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
       </View>
       {browser?.lastError ? (
         <View style={styles.errorRow}>
@@ -1733,6 +1863,10 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: "center",
     justifyContent: "center",
   }),
+  moreButton: {
+    flexShrink: 0,
+    backgroundColor: theme.colors.surface2,
+  },
   selectorActiveButton: {
     backgroundColor: `${String(theme.colors.accent)}20`,
   },

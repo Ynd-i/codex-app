@@ -1,7 +1,8 @@
 import { TreeRailToggle } from "@/components/tree-rail-toggle";
 import { useCallback } from "react";
 import { useIsCompactFormFactor } from "@/constants/layout";
-import { defaultFileState, fileStateSchema } from "@/panels/file/state";
+import { getIsElectronMac } from "@/constants/platform";
+import { defaultFileState, fileStateForFilesView, fileStateSchema } from "@/panels/file/state";
 import { usePanelState } from "@/panels/use-panel-state";
 
 /**
@@ -11,7 +12,11 @@ import { usePanelState } from "@/panels/use-panel-state";
  */
 export function FileTreeToggle() {
   const isCompact = useIsCompactFormFactor();
-  const [fileState, setFileState] = usePanelState(fileStateSchema, defaultFileState);
+  const isMac = getIsElectronMac();
+  const [fileState, setFileState] = usePanelState(
+    fileStateSchema,
+    isMac ? fileStateForFilesView : defaultFileState,
+  );
   const visible = fileState.treeVisible;
   const toggle = useCallback(
     () => setFileState({ ...fileState, treeVisible: !visible }),
@@ -19,7 +24,7 @@ export function FileTreeToggle() {
   );
   // Compact layouts reach the tree through the explorer panel; there is no rail
   // beside the file to open or close.
-  if (isCompact) {
+  if (!isMac || isCompact) {
     return null;
   }
   return <TreeRailToggle visible={visible} testID="file-toggle-tree" onToggle={toggle} />;

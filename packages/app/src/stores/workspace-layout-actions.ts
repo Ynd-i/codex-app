@@ -11,6 +11,7 @@ import {
   workspaceTabTargetsEqual,
 } from "@/workspace-tabs/identity";
 import { createNewWorkspaceTab } from "@/workspace-tabs/new-tab";
+import { getIsElectronMac } from "@/constants/platform";
 
 export interface SplitPane {
   id: string;
@@ -1225,6 +1226,14 @@ export function restoreWorkspaceLayout(
 export function getFocusedBrowserId(layout: WorkspaceLayout | null | undefined): string | null {
   if (!layout) {
     return null;
+  }
+  if (getIsElectronMac()) {
+    const browser = collectAllTabs(layout.root).find(
+      (tab) =>
+        tab.target.kind === "browser" &&
+        collectAllPanes(layout.root).some((pane) => pane.focusedTabId === tab.tabId),
+    );
+    if (browser?.target.kind === "browser") return browser.target.browserId;
   }
   const focusedPane = findPaneById(layout.root, layout.focusedPaneId);
   if (!focusedPane?.focusedTabId || focusedPane.hidden === true) {

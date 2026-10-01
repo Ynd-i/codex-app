@@ -87,8 +87,9 @@ async function openExplorerView(
   page: Page,
   view: { tabTestId: string; contentTestId: string; timeout?: number },
 ): Promise<void> {
-  const explorer = await ensureExplorerSidebar(page);
-  const tab = explorer.getByTestId(view.tabTestId);
+  await ensureExplorerSidebar(page);
+  // macOS hosts this rail in the window titlebar; other platforms keep it in the dock.
+  const tab = page.getByTestId(view.tabTestId).filter({ visible: true }).first();
   await tab.click();
   await expect(visibleTestId(page, view.contentTestId).first()).toBeVisible({
     timeout: view.timeout ?? 30_000,

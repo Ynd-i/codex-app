@@ -189,7 +189,7 @@ import {
 } from "@/panels/panel-instance-attributes";
 import { findAdjacentPane } from "@/utils/split-navigation";
 import { supportsDesktopPaneSplits, useIsCompactFormFactor } from "@/constants/layout";
-import { getIsElectron, isNative, isWeb } from "@/constants/platform";
+import { getIsElectron, getIsElectronMac, isNative, isWeb } from "@/constants/platform";
 import type { SurfaceBackdrop } from "@/styles/surface-backdrop";
 import { buildHostRootRoute, buildSettingsHostRoute } from "@/utils/host-routes";
 import { useWorkspaceTerminals } from "@/screens/workspace/terminals/use-workspace-terminals";
@@ -1539,6 +1539,12 @@ function useLastMainPane(input: {
   return lastMainPaneRef;
 }
 
+function useIsMobileWorkspace(): boolean {
+  const isCompact = useIsCompactFormFactor();
+  // Mac tools remain in the dock when the window narrows; the mobile view only renders one tab.
+  return isCompact && !getIsElectronMac();
+}
+
 function WorkspaceScreenContent({
   serverId,
   workspaceId,
@@ -1548,7 +1554,7 @@ function WorkspaceScreenContent({
   const { t } = useTranslation();
   const _insets = useSafeAreaInsets();
   const toast = useToast();
-  const isMobile = useIsCompactFormFactor();
+  const isMobile = useIsMobileWorkspace();
   const hasMacTrafficLights = useHasWindowChromeObstruction("top-left");
   const explorerToggleOwner = resolveWorkspaceExplorerToggleOwner({
     isMobile,
@@ -3336,6 +3342,7 @@ function WorkspaceScreenContent({
     ],
   );
 
+  // These route-level launch shortcuts stay active without the desktop tab strip.
   // Shared by every handler below: these actions only exist on a focused workspace route.
   const workspaceActionsEnabled = Boolean(
     isRouteFocused && normalizedServerId && normalizedWorkspaceId,
@@ -3500,7 +3507,7 @@ function WorkspaceScreenContent({
   );
   const canRenderDesktopPaneSplits = supportsDesktopPaneSplits();
   const shouldRenderDesktopPaneFallback = useMemo(
-    () => !isMobile && !canRenderDesktopPaneSplits,
+    () => !isMobile && !canRenderDesktopPaneSplits && !getIsElectronMac(),
     [isMobile, canRenderDesktopPaneSplits],
   );
   useEffect(() => {

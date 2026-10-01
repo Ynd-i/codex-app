@@ -233,8 +233,8 @@ async function closeOnlyDraft(page: Page): Promise<void> {
 }
 
 async function moveOnlyDraftIntoRightSplit(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "More actions", exact: true }).click();
-  await page.getByRole("menuitem", { name: "Split pane right", exact: true }).click();
+  await page.getByTestId("workspace-split-pane-menu").filter({ visible: true }).first().click();
+  await page.getByTestId("workspace-split-pane-right").click();
   const target = await emptyPaneBox(page);
   await dragChipTo(page, draftTabChip(page), {
     x: target.x + target.width / 2,

@@ -1,8 +1,11 @@
-import { useCallback, useMemo, type ReactNode } from "react";
-import { View } from "react-native";
+import { useCallback, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { View, type LayoutChangeEvent } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
-import { RetainedPanel } from "@/components/retained-panel";
+import { RetainedPanel, useRetainedPanelActive } from "@/components/retained-panel";
 import { TitlebarDragRegion } from "@/components/desktop/titlebar-drag-region";
+import { DesktopWorkspaceToolbar, usesDesktopShell } from "@/components/desktop/desktop-shell";
+import { useIsCompactFormFactor } from "@/constants/layout";
+import { isWeb } from "@/constants/platform";
 import type { TabDropPreview } from "@/components/split-container-tab-drop-preview";
 import { ExplorerSidebarTabRail } from "@/screens/workspace/explorer-sidebar-tab-rail";
 import { WorkspacePanelHost } from "@/screens/workspace/workspace-panel-host";
@@ -53,6 +56,27 @@ export function ExplorerSidebarDock({
   buildPaneContentModel,
   headerAction,
 }: ExplorerSidebarDockProps) {
+  const isCompact = useIsCompactFormFactor();
+  const isRetainedPanelActive = useRetainedPanelActive();
+  const usesTitlebar = isWeb && usesDesktopShell && !isCompact;
+  const [dockWidth, setDockWidth] = useState(0);
+  const handleDockLayout = useCallback((event: LayoutChangeEvent) => {
+    const width = event.nativeEvent.layout.width;
+    if (width <= 0) return;
+    setDockWidth((current) => (current === width ? current : width));
+  }, []);
+  const titlebarStyle = useMemo<CSSProperties>(
+    () => ({
+      width: dockWidth,
+      alignSelf: "stretch",
+      flexShrink: 0,
+      order: 1,
+      position: "relative",
+    }),
+    [dockWidth],
+  );
+  const showTitlebarPortal =
+    usesTitlebar && isWorkspaceFocused && isRetainedPanelActive && !pane.hidden && dockWidth > 0;
   const paneState = useMemo(() => deriveWorkspacePaneState({ pane, tabs: uiTabs }), [pane, uiTabs]);
   const tabs = useMemo(() => paneState.tabs.map((tab) => tab.descriptor), [paneState.tabs]);
   const activeTabId = paneState.activeTabId;
@@ -79,31 +103,48 @@ export function ExplorerSidebarDock({
     },
     [onReorderTabsInPane, pane.id],
   );
+  const tabRail = (
+    <ExplorerSidebarTabRail
+      paneId={pane.id}
+      tabs={tabItems}
+      normalizedServerId={normalizedServerId}
+      normalizedWorkspaceId={normalizedWorkspaceId}
+      activeDragTabId={activeDragTabId}
+      tabDropPreviewIndex={
+        tabDropPreview?.paneId === pane.id ? tabDropPreview.indicatorIndex : null
+      }
+      onNavigateTab={handleSelectTab}
+      onCloseTab={onCloseTab}
+      onCreateNewTab={onCreateNewTab}
+      onMoveTabToMain={onMoveTabToMain}
+      onReorderTabs={handleReorderTabs}
+      trailingAccessory={headerAction}
+      inTitlebar={usesTitlebar}
+    />
+  );
 
   return (
     <RetainedPanel active>
       <WindowChromeRegion corners="top-right">
-        <View style={styles.dock} testID="workspace-explorer-sidebar">
-          <WindowChromeSafeArea placement="inline" style={styles.tabRail}>
-            <TitlebarDragRegion />
-            <ExplorerSidebarTabRail
-              paneId={pane.id}
-              tabs={tabItems}
-              normalizedServerId={normalizedServerId}
-              normalizedWorkspaceId={normalizedWorkspaceId}
-              activeDragTabId={activeDragTabId}
-              tabDropPreviewIndex={
-                tabDropPreview?.paneId === pane.id ? tabDropPreview.indicatorIndex : null
-              }
-              onNavigateTab={handleSelectTab}
-              onCloseTab={onCloseTab}
-              onCreateNewTab={onCreateNewTab}
-              onMoveTabToMain={onMoveTabToMain}
-              onReorderTabs={handleReorderTabs}
-              trailingAccessory={headerAction}
-            />
-            <View pointerEvents="none" style={styles.tabRailDivider} />
-          </WindowChromeSafeArea>
+        <View
+          style={styles.dock}
+          testID="workspace-explorer-sidebar"
+          onLayout={usesTitlebar ? handleDockLayout : undefined}
+        >
+          {showTitlebarPortal ? (
+            <DesktopWorkspaceToolbar>
+              <div style={titlebarStyle} data-testid="desktop-explorer-toolbar">
+                {tabRail}
+              </div>
+            </DesktopWorkspaceToolbar>
+          ) : null}
+          {usesTitlebar ? null : (
+            <WindowChromeSafeArea placement="inline" style={styles.tabRail}>
+              <TitlebarDragRegion />
+              {tabRail}
+              <View pointerEvents="none" style={styles.tabRailDivider} />
+            </WindowChromeSafeArea>
+          )}
           <View style={styles.content}>
             <WorkspacePanelHost
               paneId={pane.id}

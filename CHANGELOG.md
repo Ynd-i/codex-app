@@ -20,12 +20,15 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- Kept one current conversation in the macOS main area and moved supporting tools into the right sidebar. Saved chats, terminal IDs, panel state and drafts survive the layout change; tool tabs share the window titlebar.
+- Removed Terminal profiles and Edit profiles from macOS tool launchers. The right-sidebar plus menu retains ordinary tools; providers remain available through New chat.
+- Added an internal file tree to macOS file tools, preserving unsaved editor content while toggling the tree. New right sidebars default to 576px; saved widths remain unchanged.
 - Restored Paseo's default workspace sidebar, navigation and footer; deferred the custom chat sidebar. New sidebar preferences use the default 320px width, while saved widths remain unchanged.
-- Restored the separate macOS icon navigation rail after the sidebar clarification. It remains available when the workspace list is collapsed and uses the existing Home, History, Schedules, Help and Settings actions.
+- Restored the separate macOS icon navigation rail after the sidebar clarification. It remains available when the workspace list is collapsed and after returning from Settings, with visible and accessible current-page selection.
 - Moved macOS workspace actions into the window titlebar, freeing one header row for chat content. Project/branch details stay in the workspace menu, and editor, scripts, Git and file-panel actions follow the active workspace.
 - Refined macOS panel tabs with rounded selected outlines, more room for titles, and a visible close button on the active tab. Tab measurements reserve that button's space, preserving the existing overflow and resize behavior.
 - Added macOS Explorer tab close controls that appear on selection, hover or keyboard focus, with stable title spacing and the existing close confirmations.
-- Aligned the macOS browser toolbar with rounded navigation, address and tool groups while preserving the existing browser controls and other desktop platforms.
+- Aligned the macOS browser toolbar with rounded navigation, address and tool groups. Narrow tool panels move secondary controls into More; existing browser actions and other desktop platforms are preserved.
 - Aligned the macOS chat column and composer frame with the reference: a narrower default column, larger corners, tighter padding, and a neutral stop control. Saved content-width preferences still take priority.
 - Moved the macOS composer mode beside attachments and aligned model/reasoning controls to the right, retaining provider-backed selections.
 - Updated macOS selector surfaces to the rounded, raised style used by the reference.

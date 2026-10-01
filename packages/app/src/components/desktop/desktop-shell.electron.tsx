@@ -49,11 +49,10 @@ import {
 export const usesDesktopShell = getIsElectronMac();
 export const desktopShellInset = usesDesktopShell ? 56 : 0;
 
-function canShowNavigationRail(chromeEnabled: boolean, pathname: string, width: number): boolean {
+function canShowNavigationRail(pathname: string, width: number): boolean {
   return (
-    chromeEnabled ||
-    (pathname.startsWith("/settings") &&
-      width >= SETTINGS_DESKTOP_SPLIT_MIN_WIDTH + desktopShellInset)
+    !pathname.startsWith("/settings") ||
+    width >= SETTINGS_DESKTOP_SPLIT_MIN_WIDTH + desktopShellInset
   );
 }
 
@@ -64,6 +63,9 @@ const HistoryIcon = withUnistyles(History);
 const SchedulesIcon = withUnistyles(CalendarClock);
 const SettingsIcon = withUnistyles(Settings);
 const iconProps = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
+const railIconProps = (active: boolean) => (theme: Theme) => ({
+  color: active ? theme.colors.foreground : theme.colors.foregroundMuted,
+});
 const devLabel = process.env.EXPO_PUBLIC_PASEO_DEV_BUILD_LABEL?.trim();
 
 function openHome() {
@@ -93,7 +95,6 @@ function RailButton({
   children: ReactNode;
 }) {
   const style = useMemo(() => [styles.railButton, active && styles.railActive], [active]);
-  const accessibilityState = useMemo(() => ({ selected: active }), [active]);
   return (
     <HeaderToggleButton
       onPress={onPress}
@@ -101,7 +102,7 @@ function RailButton({
       accessibilityLabel={label}
       accessibilityRole="button"
       accessible
-      accessibilityState={accessibilityState}
+      aria-current={active ? "page" : undefined}
       tooltipKeys={[]}
       tooltipSide="right"
       style={style}
@@ -114,45 +115,43 @@ function RailButton({
 
 function DesktopNavigationRail({ pathname }: { pathname: string }) {
   const { t } = useTranslation();
+  const homeActive =
+    !pathname.includes("/settings") &&
+    !pathname.includes("/sessions") &&
+    !pathname.includes("/schedules");
+  const historyActive = pathname.includes("/sessions");
+  const schedulesActive = pathname.includes("/schedules");
+  const settingsActive = pathname.includes("/settings");
   return (
     <View style={styles.rail} testID="desktop-shell-rail">
-      <RailButton
-        onPress={openHome}
-        label="Paseo"
-        active={
-          !pathname.includes("/settings") &&
-          !pathname.includes("/sessions") &&
-          !pathname.includes("/schedules")
-        }
-        testID="desktop-shell-home"
-      >
-        <HomeIcon size={20} uniProps={iconProps} />
+      <RailButton onPress={openHome} label="Paseo" active={homeActive} testID="desktop-shell-home">
+        <HomeIcon size={20} uniProps={railIconProps(homeActive)} />
       </RailButton>
       <RailButton
         onPress={openHistory}
         label={t("sidebar.sections.sessions")}
-        active={pathname.includes("/sessions")}
+        active={historyActive}
         testID="desktop-shell-history"
       >
-        <HistoryIcon size={20} uniProps={iconProps} />
+        <HistoryIcon size={20} uniProps={railIconProps(historyActive)} />
       </RailButton>
       <RailButton
         onPress={openSchedules}
         label={t("sidebar.sections.schedules")}
-        active={pathname.includes("/schedules")}
+        active={schedulesActive}
         testID="desktop-shell-schedules"
       >
-        <SchedulesIcon size={20} uniProps={iconProps} />
+        <SchedulesIcon size={20} uniProps={railIconProps(schedulesActive)} />
       </RailButton>
       <View style={styles.railSpacer} />
       <SidebarHelpMenu />
       <RailButton
         onPress={openSettings}
         label={t("sidebar.actions.settings")}
-        active={pathname.includes("/settings")}
+        active={settingsActive}
         testID="desktop-shell-settings"
       >
-        <SettingsIcon size={20} uniProps={iconProps} />
+        <SettingsIcon size={20} uniProps={railIconProps(settingsActive)} />
       </RailButton>
     </View>
   );
@@ -162,10 +161,12 @@ const WorkspaceToolbarHostContext = createContext<HTMLDivElement | null>(null);
 const workspaceToolbarHostStyle: CSSProperties = {
   display: "flex",
   alignItems: "center",
+  alignSelf: "stretch",
   position: "relative",
   flexShrink: 0,
   marginLeft: 8,
-  marginRight: 8,
+  // Match the body's 4px inset and 1px content border so tool headers align with their dock.
+  marginRight: 5,
 };
 
 export function DesktopWorkspaceToolbar({ children }: { children: ReactNode }) {
@@ -206,7 +207,7 @@ export function DesktopShell({
   });
   const isCompact = useIsCompactFormFactor();
   const { width } = useWindowDimensions();
-  const showRail = !isCompact && canShowNavigationRail(chromeEnabled, pathname, width);
+  const showRail = !isCompact && canShowNavigationRail(pathname, width);
   const controlsWidth =
     Math.max(
       190,
@@ -272,16 +273,16 @@ export function DesktopShell({
               agentId={navigation.chat.agentId}
             />
           ) : null}
-          <div
-            ref={setToolbarHost}
-            data-testid="desktop-workspace-toolbar"
-            style={workspaceToolbarHostStyle}
-          />
           {devLabel ? (
             <Text style={styles.devLabel} testID="dev-build-label" numberOfLines={1}>
               {devLabel}
             </Text>
           ) : null}
+          <div
+            ref={setToolbarHost}
+            data-testid="desktop-workspace-toolbar"
+            style={workspaceToolbarHostStyle}
+          />
         </WindowChromeSafeArea>
         <View style={styles.body}>
           {showRail ? <DesktopNavigationRail pathname={pathname} /> : null}

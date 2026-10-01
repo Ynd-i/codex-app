@@ -1,4 +1,5 @@
 import type { WorkspaceTabTarget } from "@/workspace-tabs/model";
+import { getIsElectronMac } from "@/constants/platform";
 
 export type PaneHost = "main" | "explorer";
 
@@ -90,7 +91,10 @@ const manifests = {
 } satisfies PanelManifestByKind;
 
 export function getPanelManifest<K extends WorkspaceTabTarget["kind"]>(kind: K): PanelManifest<K> {
-  return manifests[kind] as unknown as PanelManifest<K>;
+  const manifest = manifests[kind] as unknown as PanelManifest<K>;
+  return getIsElectronMac() && (kind === "browser" || kind === "setup")
+    ? { ...manifest, supportedHosts: ["main", "explorer"] }
+    : manifest;
 }
 
 export function panelSupportsHost(kind: WorkspaceTabTarget["kind"], host: PaneHost): boolean {

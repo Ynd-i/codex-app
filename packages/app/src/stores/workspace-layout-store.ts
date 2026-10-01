@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
-import { create } from "zustand";
+import { create, type StoreApi } from "zustand";
 import { persist } from "zustand/middleware";
 import type { z } from "zod";
 import { WorkspaceLayoutPersistedStateSchema } from "./workspace-layout-storage";
@@ -62,6 +62,8 @@ import {
 import { normalizeWorkspaceTabTarget } from "@/workspace-tabs/identity";
 import { createValidatedPersistStorage } from "@/storage/validated-persist-storage";
 import { panelTargetSupportsHostForWorkspaceKey } from "@/plugins/workspace-panels/locations";
+import { getIsElectronMac } from "@/constants/platform";
+import { isMainChatTarget, toSingleChatLayout } from "@/workspace-tabs/single-chat-layout";
 
 export {
   AMBIENT_PLACEMENT,
@@ -552,12 +554,28 @@ function getOpenTabPlacement(
   placement: WorkspaceTabPlacement;
   explorerSidebarPaneId: string | null;
 } {
-  const layout = getWorkspaceLayout(state.layoutByWorkspace, workspaceKey);
+  let layout = getWorkspaceLayout(state.layoutByWorkspace, workspaceKey);
+  if (getIsElectronMac() && state.layoutByWorkspace[workspaceKey]) {
+    layout = toSingleChatLayout(
+      layout,
+      state.explorerSidebarPaneIdByWorkspace[workspaceKey] ?? null,
+    );
+  }
   const explorerSidebarPaneId = resolveExplorerSidebarPaneId(
     layout,
     state.explorerSidebarPaneIdByWorkspace[workspaceKey],
   );
   const requestedPlacement = placement ?? AMBIENT_PLACEMENT;
+  if (getIsElectronMac()) {
+    const wantsMain =
+      isMainChatTarget(target) ||
+      (target.kind === "new_tab" &&
+        !("paneId" in requestedPlacement && requestedPlacement.paneId === explorerSidebarPaneId));
+    const paneId = wantsMain
+      ? collectAllPanes(layout.root).find((pane) => pane.id !== explorerSidebarPaneId)?.id
+      : explorerSidebarPaneId;
+    if (paneId) return { layout, placement: { mode: "pane", paneId }, explorerSidebarPaneId };
+  }
   const supportsPane = (pane: SplitPane) =>
     panelTargetSupportsHostForWorkspaceKey(
       workspaceKey,
@@ -651,6 +669,38 @@ function createExplorerSidebarPane(
   return targetPaneId ? splitPaneEmpty(workspaceKey, { targetPaneId, position: "right" }) : null;
 }
 
+function setWorkspaceLayout(
+  setState: StoreApi<WorkspaceLayoutStore>["setState"],
+  update:
+    | Partial<WorkspaceLayoutStore>
+    | ((state: WorkspaceLayoutStore) => Partial<WorkspaceLayoutStore>),
+): void {
+  setState((state) => {
+    const next = typeof update === "function" ? update(state) : update;
+    if (!getIsElectronMac() || !next.layoutByWorkspace || next === state) return next;
+    const layoutByWorkspace = { ...next.layoutByWorkspace };
+    const sidePaneIdByWorkspace = {
+      ...(next.sidePaneIdByWorkspace ?? state.sidePaneIdByWorkspace),
+    };
+    const explorerSidebarPaneIdByWorkspace = {
+      ...(next.explorerSidebarPaneIdByWorkspace ?? state.explorerSidebarPaneIdByWorkspace),
+    };
+    for (const [key, layout] of Object.entries(layoutByWorkspace)) {
+      if (layout === state.layoutByWorkspace[key]) continue;
+      layoutByWorkspace[key] = toSingleChatLayout(
+        layout,
+        explorerSidebarPaneIdByWorkspace[key] ?? null,
+      );
+      explorerSidebarPaneIdByWorkspace[key] = resolveExplorerSidebarPaneId(
+        layoutByWorkspace[key],
+        explorerSidebarPaneIdByWorkspace[key],
+      );
+      if (sidePaneIdByWorkspace[key]) sidePaneIdByWorkspace[key] = null;
+    }
+    return { ...next, layoutByWorkspace, sidePaneIdByWorkspace, explorerSidebarPaneIdByWorkspace };
+  });
+}
+
 export function createWorkspaceLayoutStore(
   ids: WorkspaceLayoutIdSource = defaultWorkspaceLayoutIds,
 ) {
@@ -667,7 +717,7 @@ export function createWorkspaceLayoutStore(
             ...resolvePlacement(),
           });
           if (tabId) {
-            set((state) => ({
+            setWorkspaceLayout(set, (state) => ({
               pullRequestTabAutoOpenedByWorkspace: {
                 ...state.pullRequestTabAutoOpenedByWorkspace,
                 [key]: true,
@@ -691,6 +741,16 @@ export function createWorkspaceLayoutStore(
           if (!normalizedWorkspaceKey || !normalizedTarget) {
             return null;
           }
+          if (
+            getIsElectronMac() &&
+            !isMainChatTarget(normalizedTarget) &&
+            !panelTargetSupportsHostForWorkspaceKey(
+              normalizedWorkspaceKey,
+              normalizedTarget,
+              "explorer",
+            )
+          )
+            return null;
           const placement = getOpenTabPlacement(
             get(),
             normalizedWorkspaceKey,
@@ -726,13 +786,25 @@ export function createWorkspaceLayoutStore(
           if (!result) {
             return null;
           }
+          const revealedLayout =
+            getIsElectronMac() &&
+            input.intent !== "background" &&
+            placement.placement.mode === "pane" &&
+            placement.placement.paneId === placement.explorerSidebarPaneId &&
+            placement.explorerSidebarPaneId
+              ? (setPaneHiddenInLayout({
+                  layout: result.layout,
+                  paneId: placement.explorerSidebarPaneId,
+                  hidden: false,
+                }) ?? result.layout)
+              : result.layout;
           const nextLayout = keepWorkspaceFocusOutOfExplorerSidebar(
-            result.layout,
+            revealedLayout,
             placement.explorerSidebarPaneId,
             placement.layout.focusedPaneId,
           );
           const shouldPinAgent = input.pin === true && normalizedTarget.kind === "agent";
-          set((state) => ({
+          setWorkspaceLayout(set, (state) => ({
             ...withoutFocusRestoration(state, normalizedWorkspaceKey),
             hiddenAgentIdsByWorkspace:
               normalizedTarget.kind !== "agent"
@@ -768,7 +840,13 @@ export function createWorkspaceLayoutStore(
             return null;
           }
 
-          const layout = getWorkspaceLayout(get().layoutByWorkspace, normalizedWorkspaceKey);
+          let layout = getWorkspaceLayout(get().layoutByWorkspace, normalizedWorkspaceKey);
+          if (getIsElectronMac()) {
+            layout = toSingleChatLayout(
+              layout,
+              get().explorerSidebarPaneIdByWorkspace[normalizedWorkspaceKey] ?? null,
+            );
+          }
           const paneId =
             resolveExplorerSidebarPaneId(
               layout,
@@ -778,11 +856,10 @@ export function createWorkspaceLayoutStore(
             return null;
           }
 
-          set((state) => {
-            const currentLayout = getWorkspaceLayout(
-              state.layoutByWorkspace,
-              normalizedWorkspaceKey,
-            );
+          setWorkspaceLayout(set, (state) => {
+            const currentLayout = getIsElectronMac()
+              ? layout
+              : getWorkspaceLayout(state.layoutByWorkspace, normalizedWorkspaceKey);
             const revealedLayout =
               setPaneHiddenInLayout({ layout: currentLayout, paneId, hidden: false }) ??
               currentLayout;
@@ -809,7 +886,7 @@ export function createWorkspaceLayoutStore(
             return;
           }
 
-          set((state) => {
+          setWorkspaceLayout(set, (state) => {
             const layout = getWorkspaceLayout(state.layoutByWorkspace, normalizedWorkspaceKey);
             const paneId = resolveExplorerSidebarPaneId(
               layout,
@@ -835,6 +912,10 @@ export function createWorkspaceLayoutStore(
           if (!normalizedWorkspaceKey) {
             return null;
           }
+          if (getIsElectronMac()) {
+            if (options?.focus !== false) return get().showExplorerSidebar(normalizedWorkspaceKey);
+            return selectExplorerSidebarPaneId(get(), normalizedWorkspaceKey);
+          }
           const currentState = get();
           const layout = getWorkspaceLayout(currentState.layoutByWorkspace, normalizedWorkspaceKey);
           const explorerPaneId = resolveExplorerSidebarPaneId(
@@ -857,7 +938,7 @@ export function createWorkspaceLayoutStore(
           if (!result) {
             return null;
           }
-          set((state) => ({
+          setWorkspaceLayout(set, (state) => ({
             ...withoutFocusRestoration(state, normalizedWorkspaceKey),
             layoutByWorkspace: {
               ...state.layoutByWorkspace,
@@ -880,7 +961,7 @@ export function createWorkspaceLayoutStore(
             return;
           }
 
-          set((state) => {
+          setWorkspaceLayout(set, (state) => {
             const layout = getWorkspaceLayout(state.layoutByWorkspace, normalizedWorkspaceKey);
             const explorerSidebarPaneId = resolveExplorerSidebarPaneId(
               layout,
@@ -958,7 +1039,7 @@ export function createWorkspaceLayoutStore(
             return;
           }
 
-          set((state) => {
+          setWorkspaceLayout(set, (state) => {
             const layout = getWorkspaceLayout(state.layoutByWorkspace, normalizedWorkspaceKey);
             const explorerSidebarPaneId = resolveExplorerSidebarPaneId(
               layout,
@@ -1002,7 +1083,7 @@ export function createWorkspaceLayoutStore(
           if (!normalizedWorkspaceKey || !normalizedPaneId || !normalizedTabId) {
             return;
           }
-          set((state) => {
+          setWorkspaceLayout(set, (state) => {
             const layout = getWorkspaceLayout(state.layoutByWorkspace, normalizedWorkspaceKey);
             const nextLayout = selectTabInPaneInLayout({
               layout,
@@ -1024,6 +1105,35 @@ export function createWorkspaceLayoutStore(
           const normalizedTabId = trimNonEmpty(tabId);
           const normalizedTarget = normalizeWorkspaceTabTarget(target);
           if (!normalizedWorkspaceKey || !normalizedTabId || !normalizedTarget) return null;
+          if (
+            getIsElectronMac() &&
+            !isMainChatTarget(normalizedTarget) &&
+            !panelTargetSupportsHostForWorkspaceKey(
+              normalizedWorkspaceKey,
+              normalizedTarget,
+              "explorer",
+            )
+          )
+            return null;
+          const currentTab = collectAllTabs(
+            getWorkspaceLayout(get().layoutByWorkspace, normalizedWorkspaceKey).root,
+          ).find((tab) => tab.tabId === normalizedTabId);
+          if (
+            getIsElectronMac() &&
+            currentTab &&
+            isMainChatTarget(currentTab.target) &&
+            !isMainChatTarget(normalizedTarget)
+          ) {
+            const openedTabId = get().openTab({
+              workspaceKey: normalizedWorkspaceKey,
+              target: normalizedTarget,
+              intent: "reveal",
+              parentTabId: normalizedTabId,
+            });
+            if (openedTabId && tabState !== undefined)
+              get().setTabState(normalizedWorkspaceKey, openedTabId, tabState);
+            return openedTabId;
+          }
           const result = replaceTabTargetInLayout({
             layout: getWorkspaceLayout(get().layoutByWorkspace, normalizedWorkspaceKey),
             tabId: normalizedTabId,
@@ -1032,7 +1142,7 @@ export function createWorkspaceLayoutStore(
             state: tabState,
           });
           if (!result) return null;
-          set((state) => ({
+          setWorkspaceLayout(set, (state) => ({
             ...withoutFocusRestoration(state, normalizedWorkspaceKey),
             hiddenAgentIdsByWorkspace:
               normalizedTarget.kind !== "agent"
@@ -1053,7 +1163,7 @@ export function createWorkspaceLayoutStore(
           const normalizedWorkspaceKey = trimNonEmpty(workspaceKey);
           const normalizedTabId = trimNonEmpty(tabId);
           if (!normalizedWorkspaceKey || !normalizedTabId) return;
-          set((state) => {
+          setWorkspaceLayout(set, (state) => {
             const layout = setTabStateInLayout({
               layout: getWorkspaceLayout(state.layoutByWorkspace, normalizedWorkspaceKey),
               tabId: normalizedTabId,
@@ -1090,7 +1200,7 @@ export function createWorkspaceLayoutStore(
             return null;
           }
 
-          set((state) => ({
+          setWorkspaceLayout(set, (state) => ({
             ...(result.layout.focusedPaneId !== null
               ? (withoutFocusRestoration(state, normalizedWorkspaceKey) ?? {})
               : {}),
@@ -1113,7 +1223,7 @@ export function createWorkspaceLayoutStore(
             return;
           }
 
-          set((state) => {
+          setWorkspaceLayout(set, (state) => {
             const rawLayout = getWorkspaceLayout(state.layoutByWorkspace, normalizedWorkspaceKey);
             const explorerSidebarPaneId = resolveExplorerSidebarPaneId(
               rawLayout,
@@ -1171,7 +1281,7 @@ export function createWorkspaceLayoutStore(
             return;
           }
 
-          set((state) => {
+          setWorkspaceLayout(set, (state) => {
             const nextLayout = reorderFocusedPaneTabsInLayout({
               layout: getWorkspaceLayout(state.layoutByWorkspace, normalizedWorkspaceKey),
               tabIds,
@@ -1198,6 +1308,7 @@ export function createWorkspaceLayoutStore(
           );
         },
         splitPane: (workspaceKey, input) => {
+          if (getIsElectronMac()) return null;
           const normalizedWorkspaceKey = trimNonEmpty(workspaceKey);
           const normalizedTabId = trimNonEmpty(input.tabId);
           const normalizedTargetPaneId = trimNonEmpty(input.targetPaneId);
@@ -1239,7 +1350,7 @@ export function createWorkspaceLayoutStore(
             return null;
           }
 
-          set((state) => ({
+          setWorkspaceLayout(set, (state) => ({
             ...withoutFocusRestoration(state, normalizedWorkspaceKey),
             layoutByWorkspace: {
               ...state.layoutByWorkspace,
@@ -1250,6 +1361,7 @@ export function createWorkspaceLayoutStore(
           return result.paneId;
         },
         splitPaneEmpty: (workspaceKey, input) => {
+          if (getIsElectronMac()) return null;
           const normalizedWorkspaceKey = trimNonEmpty(workspaceKey);
           const normalizedTargetPaneId = trimNonEmpty(input.targetPaneId);
           if (!normalizedWorkspaceKey || !normalizedTargetPaneId) {
@@ -1276,7 +1388,7 @@ export function createWorkspaceLayoutStore(
             return null;
           }
 
-          set((state) => ({
+          setWorkspaceLayout(set, (state) => ({
             ...withoutFocusRestoration(state, normalizedWorkspaceKey),
             layoutByWorkspace: {
               ...state.layoutByWorkspace,
@@ -1294,7 +1406,7 @@ export function createWorkspaceLayoutStore(
             return;
           }
 
-          set((state) => {
+          setWorkspaceLayout(set, (state) => {
             const layout = getWorkspaceLayout(state.layoutByWorkspace, normalizedWorkspaceKey);
             const movingTab = collectAllTabs(layout.root).find(
               (tab) => tab.tabId === normalizedTabId,
@@ -1305,6 +1417,12 @@ export function createWorkspaceLayoutStore(
             );
             const destinationHost =
               normalizedToPaneId === explorerSidebarPaneId ? "explorer" : "main";
+            if (
+              getIsElectronMac() &&
+              movingTab &&
+              isMainChatTarget(movingTab.target) !== (destinationHost === "main")
+            )
+              return state;
             if (
               !movingTab ||
               !panelTargetSupportsHostForWorkspaceKey(
@@ -1356,7 +1474,7 @@ export function createWorkspaceLayoutStore(
             return;
           }
 
-          set((state) => {
+          setWorkspaceLayout(set, (state) => {
             const layout = getWorkspaceLayout(state.layoutByWorkspace, normalizedWorkspaceKey);
             // The Explorer is a surface the user summons, so closing it puts it
             // away rather than dismantling the split it lives in.
@@ -1399,7 +1517,7 @@ export function createWorkspaceLayoutStore(
             return;
           }
 
-          set((state) => {
+          setWorkspaceLayout(set, (state) => {
             const layout = getWorkspaceLayout(state.layoutByWorkspace, normalizedWorkspaceKey);
             const explorerSidebarPaneId = resolveExplorerSidebarPaneId(
               layout,
@@ -1432,7 +1550,7 @@ export function createWorkspaceLayoutStore(
           }
 
           const token = ids.createFocusRestorationToken();
-          set((state) => {
+          setWorkspaceLayout(set, (state) => {
             const layout = getWorkspaceLayout(state.layoutByWorkspace, normalizedWorkspaceKey);
             const currentRestoration = state.focusRestorationByWorkspace[normalizedWorkspaceKey];
             const restorePaneId = currentRestoration?.restorePaneId ?? layout.focusedPaneId;
@@ -1461,7 +1579,7 @@ export function createWorkspaceLayoutStore(
             return;
           }
 
-          set((state) => {
+          setWorkspaceLayout(set, (state) => {
             const restoration = state.focusRestorationByWorkspace[normalizedWorkspaceKey];
             if (!restoration?.tokens.includes(normalizedToken)) {
               return state;
@@ -1517,7 +1635,7 @@ export function createWorkspaceLayoutStore(
             return;
           }
 
-          set((state) => ({
+          setWorkspaceLayout(set, (state) => ({
             splitSizesByWorkspace: {
               ...state.splitSizesByWorkspace,
               [normalizedWorkspaceKey]: {
@@ -1533,7 +1651,7 @@ export function createWorkspaceLayoutStore(
             return;
           }
 
-          set((state) => ({
+          setWorkspaceLayout(set, (state) => ({
             explorerSidebarWidthByWorkspace: {
               ...state.explorerSidebarWidthByWorkspace,
               [normalizedWorkspaceKey]: width,
@@ -1547,7 +1665,7 @@ export function createWorkspaceLayoutStore(
             return;
           }
 
-          set((state) => {
+          setWorkspaceLayout(set, (state) => {
             const nextLayout = reorderPaneTabsInLayout({
               layout: getWorkspaceLayout(state.layoutByWorkspace, normalizedWorkspaceKey),
               paneId: normalizedPaneId,
@@ -1573,7 +1691,7 @@ export function createWorkspaceLayoutStore(
             return;
           }
 
-          set((state) => {
+          setWorkspaceLayout(set, (state) => {
             const currentPinnedAgentIds =
               state.pinnedAgentIdsByWorkspace[normalizedWorkspaceKey] ?? null;
             if (!currentPinnedAgentIds?.has(normalizedAgentId)) {
@@ -1608,7 +1726,7 @@ export function createWorkspaceLayoutStore(
             return;
           }
 
-          set((state) => {
+          setWorkspaceLayout(set, (state) => {
             const nextHiddenAgentIdsByWorkspace = addAgentIdToWorkspaceSet(
               state.hiddenAgentIdsByWorkspace,
               normalizedWorkspaceKey,
@@ -1630,7 +1748,7 @@ export function createWorkspaceLayoutStore(
             return;
           }
 
-          set((state) => {
+          setWorkspaceLayout(set, (state) => {
             const nextHiddenAgentIdsByWorkspace = removeAgentIdFromWorkspaceSet(
               state.hiddenAgentIdsByWorkspace,
               normalizedWorkspaceKey,
@@ -1651,7 +1769,7 @@ export function createWorkspaceLayoutStore(
             return;
           }
 
-          set((state) => {
+          setWorkspaceLayout(set, (state) => {
             const hasAny =
               normalizedWorkspaceKey in state.layoutByWorkspace ||
               normalizedWorkspaceKey in state.splitSizesByWorkspace ||
@@ -1759,7 +1877,10 @@ export function createWorkspaceLayoutStore(
               registeredPaneId: explorerSidebarPaneIdByWorkspace[workspaceKey],
               ids,
             });
-            layoutByWorkspace[workspaceKey] = explorerSidebar?.layout ?? restoredLayout;
+            const nextLayout = explorerSidebar?.layout ?? restoredLayout;
+            layoutByWorkspace[workspaceKey] = getIsElectronMac()
+              ? toSingleChatLayout(nextLayout, explorerSidebar?.paneId ?? null)
+              : nextLayout;
             if (explorerSidebar) {
               explorerSidebarPaneIdByWorkspace[workspaceKey] = explorerSidebar.paneId;
             }
@@ -1782,7 +1903,12 @@ export function createWorkspaceLayoutStore(
                   {},
               ),
             explorerSidebarPaneIdByWorkspace,
-            sidePaneIdByWorkspace: result.data.sidePaneIdByWorkspace ?? {},
+            sidePaneIdByWorkspace: Object.fromEntries(
+              Object.entries(result.data.sidePaneIdByWorkspace ?? {}).map(([key, paneId]) => [
+                key,
+                getIsElectronMac() ? null : paneId,
+              ]),
+            ),
             pullRequestTabAutoOpenedByWorkspace:
               result.data.pullRequestTabAutoOpenedByWorkspace ?? {},
           };
