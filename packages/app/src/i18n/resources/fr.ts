@@ -1040,6 +1040,7 @@ export const fr: TranslationResources = {
         modifiedFile: "Modifié",
         commits: {
           title: "Commits",
+          baseHint: "L’historique utilise {{baseRef}}",
           countLabel: "{{count}} commits de l’espace de travail",
           noneAhead: "Aucun commit en avance sur {{baseRef}} pour le moment",
           fileDiffEmpty: "Aucune modification à afficher",
@@ -1629,6 +1630,12 @@ export const fr: TranslationResources = {
     restore: "Restaurer",
     later: "Plus tard",
     stashRestored: "Modifications cachées restaurées",
+  },
+  diffBaseSelector: {
+    compareAgainst: "Comparer avec {{ref}}",
+    workspaceDefault: "Valeur par défaut de l’espace de travail",
+    worktreeFixed: "La base de comparaison de ce worktree est fixe.",
+    unableToResolve: "Impossible de résoudre {{ref}}",
   },
   agentAutocomplete: {
     searchingWorkspace: "Recherche dans l'espace de travail...",

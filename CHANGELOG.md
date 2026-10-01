@@ -8,6 +8,7 @@ distribution and full migration acceptance remain pending; see the
 
 ### Added
 
+- Added a query-only comparison-base picker to macOS Diff tabs, distinguishing local and origin refs while preserving checkout state, review drafts and fixed worktree bases.
 - Added a searchable file tree to macOS Diff tabs, with comparison totals and retained diff content when the tree is toggled.
 - Added macOS code font weight choices for chat code, file editors and diffs, including preview, persistence and Advanced reset; Default retains each surface's existing style.
 - Grouped macOS typography, motion, content width and syntax controls under a collapsible Advanced section with a scoped reset; theme and interface font selections remain separate.

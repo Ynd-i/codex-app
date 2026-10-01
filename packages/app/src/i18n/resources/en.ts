@@ -1016,6 +1016,7 @@ export const en = {
         modifiedFile: "Modified",
         commits: {
           title: "Commits",
+          baseHint: "History uses {{baseRef}}",
           countLabel: "{{count}} workspace commits",
           noneAhead: "No commits ahead of {{baseRef}} yet",
           fileDiffEmpty: "No changes to display",
@@ -1604,6 +1605,12 @@ export const en = {
     restore: "Restore",
     later: "Later",
     stashRestored: "Stashed changes restored",
+  },
+  diffBaseSelector: {
+    compareAgainst: "Compare against {{ref}}",
+    workspaceDefault: "Workspace default",
+    worktreeFixed: "This worktree's comparison base is fixed.",
+    unableToResolve: "Unable to resolve {{ref}}",
   },
   agentAutocomplete: {
     searchingWorkspace: "Searching workspace...",

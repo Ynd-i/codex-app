@@ -1021,6 +1021,7 @@ export const ja: TranslationResources = {
         modifiedFile: "変更済み",
         commits: {
           title: "コミット",
+          baseHint: "履歴では {{baseRef}} を使用",
           countLabel: "ワークスペースのコミット数: {{count}}",
           noneAhead: "{{baseRef}} より先のコミットはまだありません",
           fileDiffEmpty: "表示する変更はありません",
@@ -1596,6 +1597,12 @@ export const ja: TranslationResources = {
     restore: "復元",
     later: "後で",
     stashRestored: "スタッシュした変更を復元しました",
+  },
+  diffBaseSelector: {
+    compareAgainst: "{{ref}} と比較",
+    workspaceDefault: "ワークスペースのデフォルト",
+    worktreeFixed: "この worktree の比較ベースは固定されています。",
+    unableToResolve: "{{ref}} を解決できません",
   },
   agentAutocomplete: {
     searchingWorkspace: "ワークスペースを検索中...",

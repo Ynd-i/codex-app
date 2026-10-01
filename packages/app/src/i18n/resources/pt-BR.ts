@@ -1031,6 +1031,7 @@ export const ptBR: TranslationResources = {
         modifiedFile: "Modificado",
         commits: {
           title: "Commits",
+          baseHint: "O histórico usa {{baseRef}}",
           countLabel: "{{count}} commits do espaço de trabalho",
           noneAhead: "Ainda não há commits à frente de {{baseRef}}",
           fileDiffEmpty: "Nenhuma alteração para exibir",
@@ -1610,6 +1611,12 @@ export const ptBR: TranslationResources = {
     restore: "Restaurar",
     later: "Depois",
     stashRestored: "Alterações em stash restauradas",
+  },
+  diffBaseSelector: {
+    compareAgainst: "Comparar com {{ref}}",
+    workspaceDefault: "Padrão do workspace",
+    worktreeFixed: "A base de comparação deste worktree é fixa.",
+    unableToResolve: "Não foi possível resolver {{ref}}",
   },
   agentAutocomplete: {
     searchingWorkspace: "Buscando workspace...",

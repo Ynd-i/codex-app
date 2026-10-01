@@ -1008,6 +1008,7 @@ export const ar: TranslationResources = {
         modifiedFile: "معدّل",
         commits: {
           title: "الإيداعات",
+          baseHint: "يستخدم السجل {{baseRef}}",
           countLabel: "{{count}} من إيداعات مساحة العمل",
           noneAhead: "لا توجد إيداعات متقدمة على {{baseRef}} بعد",
           fileDiffEmpty: "لا توجد تغييرات لعرضها",
@@ -1579,6 +1580,12 @@ export const ar: TranslationResources = {
     restore: "يعيد",
     later: "لاحقاً",
     stashRestored: "تمت استعادة التغييرات المخفية",
+  },
+  diffBaseSelector: {
+    compareAgainst: "المقارنة مع {{ref}}",
+    workspaceDefault: "إعداد مساحة العمل الافتراضي",
+    worktreeFixed: "قاعدة المقارنة لشجرة العمل هذه ثابتة.",
+    unableToResolve: "تعذر تحليل {{ref}}",
   },
   agentAutocomplete: {
     searchingWorkspace: "جارٍ البحث في مساحة العمل...",

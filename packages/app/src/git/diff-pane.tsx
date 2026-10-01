@@ -57,6 +57,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip
 import { GitActionsSplitButton } from "@/git/actions-split-button";
 import type { GitActions } from "@/git/policy";
 import { BranchSwitcher } from "@/components/branch-switcher";
+import { DiffBaseSelector } from "@/git/diff-base-selector";
 import { useGitActions } from "@/git/use-actions";
 import { GIT_ACTION_ICONS } from "@/git/action-icons";
 import { buildForgeSignInCommand, getForgePresentation, type Forge } from "@/git/forge";
@@ -480,6 +481,7 @@ interface ChangesHeaderProps {
   repository: ChangesRepositoryToolbarModel;
   comparison: ChangesComparisonToolbarModel;
   sidebarSurface: boolean;
+  standaloneDiff?: boolean;
 }
 
 interface BuildChangesHeaderModelInput {
@@ -527,7 +529,13 @@ function buildChangesHeaderModel(input: BuildChangesHeaderModelInput): {
 
 // Presentation resolves into these two capability models before rendering. The rows
 // never infer which host or Changes presentation produced them.
-function ChangesHeader({ compact, repository, comparison, sidebarSurface }: ChangesHeaderProps) {
+function ChangesHeader({
+  compact,
+  repository,
+  comparison,
+  sidebarSurface,
+  standaloneDiff,
+}: ChangesHeaderProps) {
   if (comparison.mode.kind === "diff") {
     return (
       <ChangesDiffOnlyToolbar
@@ -551,6 +559,7 @@ function ChangesHeader({ compact, repository, comparison, sidebarSurface }: Chan
         compact={compact}
         model={repository}
         sidebarSurface={sidebarSurface}
+        standaloneDiff={standaloneDiff}
       />
       {!comparisonFirst ? (
         <ChangesComparisonToolbar
@@ -650,10 +659,12 @@ function ChangesRepositoryToolbar({
   compact,
   model,
   sidebarSurface,
+  standaloneDiff,
 }: {
   compact: boolean;
   model: ChangesRepositoryToolbarModel;
   sidebarSurface: boolean;
+  standaloneDiff?: boolean;
 }) {
   return (
     <ChangesToolbarRow
@@ -663,14 +674,22 @@ function ChangesRepositoryToolbar({
       trailing={model.gitActions ? "framed" : "glyph"}
     >
       <ChangesToolbarLeading pill={getIsElectronMac() && !compact && !sidebarSurface}>
-        <BranchSwitcher
-          currentBranchName={model.branchName}
-          serverId={model.serverId}
-          workspaceId={model.workspaceId ?? model.cwd}
-          workspaceDirectory={model.cwd}
-          isGitCheckout
-          testID="changes-branch-switcher"
-        />
+        {getIsElectronMac() && standaloneDiff && !compact ? (
+          <DiffBaseSelector
+            serverId={model.serverId}
+            workspaceId={model.workspaceId}
+            cwd={model.cwd}
+          />
+        ) : (
+          <BranchSwitcher
+            currentBranchName={model.branchName}
+            serverId={model.serverId}
+            workspaceId={model.workspaceId ?? model.cwd}
+            workspaceDirectory={model.cwd}
+            isGitCheckout
+            testID="changes-branch-switcher"
+          />
+        )}
       </ChangesToolbarLeading>
       <ChangesToolbarTrailing>
         {model.pullRequest ? (
@@ -1400,6 +1419,8 @@ function ChangesBody({
 function ChangesCommits({
   presentation,
   standaloneDiff,
+  baseRef,
+  defaultBaseRef,
   serverId,
   cwd,
   collapsed,
@@ -1408,21 +1429,31 @@ function ChangesCommits({
 }: {
   presentation: ChangesPresentation;
   standaloneDiff?: boolean;
+  baseRef?: string;
+  defaultBaseRef?: string;
   serverId: string;
   cwd: string;
   collapsed: boolean;
   onCommitPress: (sha: string) => void;
   onCollapsedChange: (collapsed: boolean) => void;
 }) {
+  const { t } = useTranslation();
   if (standaloneDiff || presentation === "diff") return null;
   return (
-    <CommitsSection
-      serverId={serverId}
-      cwd={cwd}
-      onCommitPress={onCommitPress}
-      collapsed={collapsed}
-      onCollapsedChange={onCollapsedChange}
-    />
+    <>
+      {defaultBaseRef && baseRef !== defaultBaseRef ? (
+        <Text style={styles.commitsBaseHint} testID="commits-base-hint">
+          {t("workspace.git.diff.commits.baseHint", { baseRef: defaultBaseRef })}
+        </Text>
+      ) : null}
+      <CommitsSection
+        serverId={serverId}
+        cwd={cwd}
+        onCommitPress={onCommitPress}
+        collapsed={collapsed}
+        onCollapsedChange={onCollapsedChange}
+      />
+    </>
   );
 }
 
@@ -1584,6 +1615,8 @@ export function ChangesSurface({
     statusErrorMessage,
     baseRef,
     currentBranchName,
+    defaultBaseRef,
+    reviewBaseRef,
     diffMode,
     selectUncommitted: handleSelectUncommitted,
     selectBase: handleSelectBase,
@@ -1963,6 +1996,7 @@ export function ChangesSurface({
           repository={changesHeaderModel.repository}
           comparison={changesHeaderModel.comparison}
           sidebarSurface={presentation === "tree"}
+          standaloneDiff={standaloneDiff}
         />
       ) : null}
 
@@ -1984,6 +2018,8 @@ export function ChangesSurface({
       <ChangesCommits
         presentation={presentation}
         standaloneDiff={standaloneDiff}
+        baseRef={reviewBaseRef}
+        defaultBaseRef={defaultBaseRef}
         serverId={serverId}
         cwd={cwd}
         onCommitPress={handleCommitPress}
@@ -1995,6 +2031,12 @@ export function ChangesSurface({
 }
 
 const styles = StyleSheet.create((theme) => ({
+  commitsBaseHint: {
+    paddingHorizontal: 12,
+    paddingTop: 4,
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.foregroundMuted,
+  },
   container: {
     flex: 1,
     minHeight: 0,

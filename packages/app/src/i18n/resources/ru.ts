@@ -1025,6 +1025,7 @@ export const ru: TranslationResources = {
         modifiedFile: "Файл изменён",
         commits: {
           title: "Коммиты",
+          baseHint: "История использует {{baseRef}}",
           countLabel: "Коммитов в рабочем пространстве: {{count}}",
           noneAhead: "Пока нет коммитов, отсутствующих в {{baseRef}}",
           fileDiffEmpty: "Нет изменений для отображения",
@@ -1608,6 +1609,12 @@ export const ru: TranslationResources = {
     restore: "Восстановить",
     later: "Позже",
     stashRestored: "Изменения из stash восстановлены.",
+  },
+  diffBaseSelector: {
+    compareAgainst: "Сравнить с {{ref}}",
+    workspaceDefault: "По умолчанию для рабочего пространства",
+    worktreeFixed: "База сравнения этого worktree фиксирована.",
+    unableToResolve: "Не удалось разрешить {{ref}}",
   },
   agentAutocomplete: {
     searchingWorkspace: "Поиск в рабочем пространстве...",

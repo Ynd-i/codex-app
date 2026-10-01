@@ -1000,6 +1000,7 @@ export const zhCN: TranslationResources = {
         modifiedFile: "已修改",
         commits: {
           title: "提交",
+          baseHint: "历史记录使用 {{baseRef}}",
           countLabel: "{{count}} 个工作区提交",
           noneAhead: "尚无领先于 {{baseRef}} 的提交",
           fileDiffEmpty: "没有可显示的更改",
@@ -1562,6 +1563,12 @@ export const zhCN: TranslationResources = {
     restore: "恢复",
     later: "稍后",
     stashRestored: "Stashed 变更已恢复",
+  },
+  diffBaseSelector: {
+    compareAgainst: "与 {{ref}} 比较",
+    workspaceDefault: "工作区默认值",
+    worktreeFixed: "此 worktree 的比较基准已固定。",
+    unableToResolve: "无法解析 {{ref}}",
   },
   agentAutocomplete: {
     searchingWorkspace: "正在搜索 workspace...",

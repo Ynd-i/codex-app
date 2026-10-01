@@ -1015,6 +1015,7 @@ export const ko: TranslationResources = {
         modifiedFile: "수정됨",
         commits: {
           title: "커밋",
+          baseHint: "기록은 {{baseRef}}를 사용합니다",
           countLabel: "워크스페이스 커밋 {{count}}개",
           noneAhead: "아직 {{baseRef}}보다 앞서 커밋이 없습니다.",
           fileDiffEmpty: "표시할 변경사항이 없습니다.",
@@ -1589,6 +1590,12 @@ export const ko: TranslationResources = {
     restore: "복원",
     later: "나중에",
     stashRestored: "스태시된 변경 사항이 복원되었습니다",
+  },
+  diffBaseSelector: {
+    compareAgainst: "{{ref}}와 비교",
+    workspaceDefault: "워크스페이스 기본값",
+    worktreeFixed: "이 worktree의 비교 기준은 고정되어 있습니다.",
+    unableToResolve: "{{ref}}을(를) 해석할 수 없습니다",
   },
   agentAutocomplete: {
     searchingWorkspace: "워크스페이스 검색 중...",

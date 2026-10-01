@@ -11,6 +11,7 @@ import {
 import { useCheckoutDiffQuery } from "@/git/use-diff-query";
 import { useCheckoutStatusQuery } from "@/git/use-status-query";
 import { useWorkingDiffComparison } from "@/git/working-diff-comparison";
+import { resolveWorkingDiffRefs } from "@/git/working-diff-comparison/state";
 
 interface UseWorkingDiffOptions {
   serverId: string;
@@ -41,16 +42,28 @@ export function useWorkingDiff({
   const statusErrorMessage =
     status?.error?.message ??
     (isStatusError && statusError instanceof Error ? statusError.message : null);
-  const baseRef = gitStatus?.baseRef ?? undefined;
+  const defaultBaseRef = gitStatus?.baseRef ?? undefined;
   const hasUncommittedChanges = Boolean(gitStatus?.isDirty);
-  const currentBranchName =
-    gitStatus?.currentBranch && gitStatus.currentBranch !== "HEAD" ? gitStatus.currentBranch : null;
+  const currentBranch = gitStatus?.currentBranch ?? null;
+  const currentBranchName = currentBranch && currentBranch !== "HEAD" ? currentBranch : null;
 
-  const { comparison: diffMode, selectComparison } = useWorkingDiffComparison({
+  const {
+    comparison: diffMode,
+    selectComparison,
+    selectedBaseRef,
+  } = useWorkingDiffComparison({
     serverId,
     workspaceId,
     cwd,
     isDirty: hasUncommittedChanges,
+    currentBranch,
+    defaultBaseRef: defaultBaseRef ?? null,
+  });
+  const { baseRef, reviewBaseRef } = resolveWorkingDiffRefs({
+    comparison: diffMode,
+    defaultBaseRef,
+    selectedBaseRef,
+    fixedBase: gitStatus?.isPaseoOwnedWorktree,
   });
   const selectUncommitted = useCallback(() => selectComparison("uncommitted"), [selectComparison]);
   const selectBase = useCallback(() => selectComparison("base"), [selectComparison]);
@@ -76,10 +89,10 @@ export function useWorkingDiff({
         workspaceId,
         cwd,
         mode: diffMode,
-        baseRef,
+        baseRef: reviewBaseRef,
         ignoreWhitespace,
       }),
-    [baseRef, cwd, diffMode, ignoreWhitespace, serverId, workspaceId],
+    [reviewBaseRef, cwd, diffMode, ignoreWhitespace, serverId, workspaceId],
   );
   const reviewActions = useInlineReviewController({ reviewDraftKey });
   const reviewAttachment = useReviewAttachmentSnapshot({
@@ -87,7 +100,7 @@ export function useWorkingDiff({
     diffFiles: files,
     cwd,
     mode: diffMode,
-    baseRef,
+    baseRef: reviewBaseRef,
   });
 
   return {
@@ -98,6 +111,8 @@ export function useWorkingDiff({
     statusErrorMessage,
     baseRef,
     currentBranchName,
+    defaultBaseRef,
+    reviewBaseRef,
     diffMode,
     selectUncommitted,
     selectBase,
