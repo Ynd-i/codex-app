@@ -293,6 +293,8 @@ export const zhCN: TranslationResources = {
       implement: "实施",
       question: "你想如何继续？",
       proposedPlan: "建议计划",
+      waiting: "等待批准",
+      responseFailed: "无法响应：{{message}}",
     },
   },
   agentPanel: {

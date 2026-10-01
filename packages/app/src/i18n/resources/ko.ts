@@ -293,6 +293,8 @@ export const ko: TranslationResources = {
       implement: "구현",
       question: "어떻게 진행할까요?",
       proposedPlan: "제안된 계획",
+      waiting: "승인 대기 중",
+      responseFailed: "응답하지 못했습니다: {{message}}",
     },
   },
   agentPanel: {

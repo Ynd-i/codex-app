@@ -297,6 +297,8 @@ export const fr: TranslationResources = {
       implement: "Mettre en œuvre",
       question: "Comment souhaitez-vous procéder?",
       proposedPlan: "Plan proposé",
+      waiting: "En attente d’approbation",
+      responseFailed: "Impossible de répondre : {{message}}",
     },
   },
   agentPanel: {

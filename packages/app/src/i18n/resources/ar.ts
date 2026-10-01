@@ -293,6 +293,8 @@ export const ar: TranslationResources = {
       implement: "ينفذ",
       question: "كيف تريد المتابعة؟",
       proposedPlan: "الخطة المقترحة",
+      waiting: "بانتظار الموافقة",
+      responseFailed: "تعذرت الاستجابة: {{message}}",
     },
   },
   agentPanel: {

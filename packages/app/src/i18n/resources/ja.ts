@@ -295,6 +295,8 @@ export const ja: TranslationResources = {
       implement: "実装",
       question: "どのように続けますか？",
       proposedPlan: "提案されたプラン",
+      waiting: "承認待ち",
+      responseFailed: "応答できませんでした: {{message}}",
     },
   },
   agentPanel: {

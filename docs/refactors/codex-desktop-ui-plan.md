@@ -1851,6 +1851,52 @@ package startup/CLI/terminal smoke pass. Read-only review identified the refetch
 expiry bug before commit; a final review confirmed its fix and asynchronous
 selection guards. No remaining material correctness finding was reported.
 
+### Tool approval dock — 2026-10-01
+
+Mac tool requests now occupy the composer position, following the supplied pending
+Computer Use card's 20px corners, neutral surface, split action row and filled
+primary action. Command details remain visible through the existing tool renderer.
+The original composer stays mounted and hidden while a tool request is pending;
+its draft returns after resolution. The timeline shows a waiting indicator.
+Plans and questions retain their inline presentation and usable composer.
+
+The provider remains authoritative for action IDs, labels and permission scopes.
+Only an explicitly unique primary action receives Enter; a unique denial receives
+Escape. These shortcuts work only when the card itself is focused, never globally.
+Providers without an explicit primary variant retain clickable choices without
+an inferred default approval. Duplicate sends are guarded while the response is
+pending. Connection failure displays an error and permits a manual retry.
+Automatic review and production providers/protocols are unchanged. The only server
+change adds a synthetic Mock fixture; its displayed shell command is never run.
+
+Five renderer cases pass (26.3s): the three action IDs through real local daemon
+transport, disabled pending controls, scoped keyboard handling, retained composer
+node and draft, window narrowing, and inline plan approval. Two recovery cases
+pass (21.6s): real WebSocket disconnection followed by manual retry, and the
+Windows frontend branch retaining inline tool requests and its editable draft.
+The latter is simulated renderer coverage, not Windows device acceptance.
+The named Mock permission test and locale resource checks pass, along with root
+format, lint and typecheck. No real provider approval was submitted.
+
+[Pending card](../qa-evidence/codex-desktop/permission-pending.png) and
+[narrow Light card](../qa-evidence/codex-desktop/permission-narrow.png) were inspected.
+The first failed checks exposed test assumptions: shell output includes its prompt,
+Mock finalText is not a transcript message, and crossing the compact breakpoint
+remounts the existing layout. Tests now check rendered command content, actual
+permission-response IDs, and draft retention across resize separately from
+same-layout composer identity.
+Logs: `/private/tmp/paseo-permission-verified.log`,
+`/private/tmp/paseo-permission-recovery.log`,
+`/private/tmp/paseo-permission-mock-final.log`,
+`/private/tmp/paseo-permission-locales.log`, and
+`/private/tmp/paseo-permission-{format,lint,typecheck}-final.log`.
+
+This slice covers pending requests and restoration only. The reference's durable
+expanded denial record remains open: current stream conversion does not expose
+resolved permissions as retained transcript items. No local-only approval history
+was invented. Full provider-specific visual parity and distribution acceptance
+remain open work.
+
 ### Recording references — 2026-09-30
 
 Source: user-provided `录屏2026-09-30 12.55.37.mov` (205.383 seconds, 2704×1562).

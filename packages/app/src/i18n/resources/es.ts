@@ -295,6 +295,8 @@ export const es: TranslationResources = {
       implement: "Implementar",
       question: "¿Cómo le gustaría proceder?",
       proposedPlan: "Plan propuesto",
+      waiting: "Esperando aprobación",
+      responseFailed: "No se pudo responder: {{message}}",
     },
   },
   agentPanel: {

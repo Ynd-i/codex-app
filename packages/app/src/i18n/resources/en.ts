@@ -289,6 +289,8 @@ export const en = {
       implement: "Implement",
       question: "How would you like to proceed?",
       proposedPlan: "Proposed plan",
+      waiting: "Waiting for approval",
+      responseFailed: "Couldn't respond: {{message}}",
     },
   },
   agentPanel: {

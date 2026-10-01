@@ -424,6 +424,53 @@ describe("MockLoadTestAgentClient", () => {
     unsubscribe();
   });
 
+  test("emits a synthetic tool permission and records the selected denial", async () => {
+    vi.useFakeTimers();
+    const client = new MockLoadTestAgentClient();
+    const session = await client.createSession({
+      provider: "mock",
+      cwd: process.cwd(),
+      model: "ten-second-stream",
+    });
+    const events: AgentStreamEvent[] = [];
+    const unsubscribe = session.subscribe((event) => events.push(event));
+
+    const resultPromise = session.run("Emit synthetic tool permission.");
+    await vi.advanceTimersByTimeAsync(0);
+
+    const permission = expectSinglePermissionRequest(events);
+    expect(permission.request).toMatchObject({
+      provider: "mock",
+      name: "MockToolPermission",
+      kind: "tool",
+      title: "Shell access",
+      description: "Allow this command to run?",
+      input: { command: "/bin/echo permission-fixture" },
+      detail: { type: "shell", command: "/bin/echo permission-fixture" },
+      actions: [
+        { id: "allow-once", label: "Allow once", behavior: "allow", variant: "primary" },
+        {
+          id: "allow-session",
+          label: "Allow for session",
+          behavior: "allow",
+          variant: "secondary",
+        },
+        { id: "deny-once", label: "Deny", behavior: "deny", variant: "secondary" },
+      ],
+    });
+
+    await session.respondToPermission(permission.request.id, {
+      behavior: "deny",
+      selectedActionId: "deny-once",
+    });
+    await expect(resultPromise).resolves.toMatchObject({
+      sessionId: session.id,
+      finalText: "Synthetic tool permission resolved: deny-once",
+      canceled: false,
+    });
+    unsubscribe();
+  });
+
   test("uses one continuous assistant stream for bursty rendering measurements", async () => {
     vi.useFakeTimers();
     const client = new MockLoadTestAgentClient();

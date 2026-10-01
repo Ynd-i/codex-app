@@ -294,6 +294,8 @@ export const ptBR: TranslationResources = {
       implement: "Implementar",
       question: "Como você quer prosseguir?",
       proposedPlan: "Plano proposto",
+      waiting: "Aguardando aprovação",
+      responseFailed: "Não foi possível responder: {{message}}",
     },
   },
   agentPanel: {
