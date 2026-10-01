@@ -613,8 +613,8 @@ not acceptance of the older visible main tab strip.
 ### Code weight — 2026-10-01
 
 Mac Appearance now exposes Default, Regular, Medium and SemiBold beside the code
-font family. Default stores no override: it retains the editor's existing 600
-and the existing regular/inherited weights in chat code and diffs. Explicit choices
+font family. Default stores no override: Mac editors and diffs use 600, while
+chat code retains its existing regular/inherited weight. Explicit choices
 apply to inline/fenced Markdown, tool code, editable/readonly files and diff bodies.
 Other platforms retain the saved preference without applying it. Terminal/xterm
 normal and ANSI-bold weights remain independent.
@@ -1507,11 +1507,11 @@ Appearance captures were inspected in the private artifact directory
 `/private/tmp/paseo-settings-return-final-{format,lint}.log`. The first concurrent
 typecheck raced the dependency build; the final check was run after build completion.
 
-The latest Custom refresh was built from `bb54f11` after the Diff dock renderer
+The latest Custom refresh was built from `b81718f` after the Diff dock and code-paint renderer
 checks passed. Its real renderer/preload, custom identity/update guard, isolated
 daemon startup, bundled CLI and terminal smoke pass. Log:
-`/private/tmp/paseo-diff-dock-package-build.log`; artifacts:
-`/private/tmp/paseo-diff-dock-package-qa`. This smoke establishes package startup;
+`/private/tmp/paseo-diff-paint-package-build.log`; artifacts:
+`/private/tmp/paseo-diff-paint-package-qa`. This smoke establishes package startup;
 the populated Diff interaction evidence is the isolated renderer case below.
 
 The preceding Custom refresh matched production source `5b5083b`, including code
@@ -1718,7 +1718,7 @@ were compared with the supplied reference pair. Source PNGs are 2704×1564 (@2x)
 the synthetic renderer captures are 1352×782 (@1x), at the same CSS viewport.
 This establishes the dock/tree layout and interaction slice, not full pixel parity:
 the fixture has two small changes, while the reference is scrolled into a large
-diff. Code weight/colors, diff hunk treatments and large-diff notices still need
+diff. Intraline highlights, diff hunk treatments and large-diff notices still need
 state-matched refinement. The current branch control retains Paseo checkout
 semantics; a comparison-base picker must not be fabricated from that control.
 Refresh likewise retains its own operation instead of impersonating reference
@@ -1735,6 +1735,37 @@ pass; logs `/private/tmp/paseo-diff-dock-final-{format,lint,typecheck}.log` and
 `/private/tmp/paseo-diff-dock-feature-commit.log`. The refreshed Custom bundle
 passes startup/CLI/terminal smoke as recorded above. Full Diff visual parity and
 provider-specific approval presentation remain open work.
+
+#### Diff code paint
+
+The populated reference's embedded Display ICC profile was converted to sRGB
+before sampling. The code region at source pixels `(1560,685)`–`(2190,1535)`
+establishes opaque addition/deletion backgrounds `#334a34`/`#55392e`, darker
+gutters `#122013`/`#28150e`, green/orange-red change markers and diagonal empty-side
+stripes. These paints apply only to Mac Electron's registered `dark` theme;
+other themes and native platforms keep their semantic palette. Stripes use
+document coordinates so scrolling and adjacent rows preserve phase, and exclude
+inline-review space. The refreshed captures above show this paint slice.
+
+Mac Diff defaults now use the existing Mac editor's 600 weight, with the saved
+code-weight preference taking precedence. Painting, font loading and measured
+selection geometry share the same font descriptor. The explicit-weight renderer
+regression still passes for Markdown, files, Shell output and diffs without
+changing prose or authored emphasis.
+
+Palette and canvas regressions went red before implementation. All 29 focused
+palette, web/native paint and workspace-cache tests pass; the 12 palette tests
+passed again after simplifying the retention comparison. Two real renderer cases
+pass (43.0s), including pixel reads of six reference colors, Light/Claude/Dark
+switching, default weight and explicit weight overrides. Root lint/typecheck pass.
+Logs: `/private/tmp/paseo-diff-paint-palette-{red,green,final}.log`,
+`/private/tmp/paseo-diff-paint-canvas-{red,green}.log`,
+`/private/tmp/paseo-diff-paint-final-{format,lint,typecheck,unit}.log`, and
+`/private/tmp/paseo-diff-paint-renderer.log`. The small fixture does not establish
+large-diff pagination, hunk-expansion or per-character highlight fidelity.
+Implementation commit: `b81718f`; normal commit hooks pass. The refreshed Custom
+package also passes renderer/preload, custom identity/update guard, isolated
+daemon, CLI and terminal smoke. The read-only review found no material issue.
 
 ### Recording references — 2026-09-30
 
