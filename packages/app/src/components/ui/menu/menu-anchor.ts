@@ -38,24 +38,34 @@ export function measureElement(element: View): Promise<Rect> {
  * there is more room above. Both conditions matter: flipping into a side that is equally
  * cramped just moves the clipping, so a surface taller than the whole viewport stays put.
  *
- * Only the vertical placements flip. A left/right submenu that doesn't fit is handled by the
- * caller choosing its side up front, because flipping it mid-open would move the surface out
- * from under the pointer that is travelling toward it.
+ * Horizontal submenus flip only when the requested side cannot fit the width and the other
+ * side can, including the offset and display-edge padding. Otherwise retain the requested
+ * side and let the clamp handle displays too narrow for either placement.
  */
 function flipPlacement(input: {
   placement: Placement;
   triggerRect: Rect;
-  contentHeight: number;
+  contentSize: Size;
   displayArea: Rect;
+  offset: number;
 }): Placement {
-  const { placement, triggerRect, contentHeight, displayArea } = input;
+  const { placement, triggerRect, contentSize, displayArea, offset } = input;
+  const spaceLeft = triggerRect.x - displayArea.x - EDGE_PADDING - offset;
+  const spaceRight =
+    displayArea.x + displayArea.width - EDGE_PADDING - (triggerRect.x + triggerRect.width) - offset;
+  if (placement === "right" && spaceRight < contentSize.width && spaceLeft >= contentSize.width) {
+    return "left";
+  }
+  if (placement === "left" && spaceLeft < contentSize.width && spaceRight >= contentSize.width) {
+    return "right";
+  }
   const spaceTop = triggerRect.y - displayArea.y;
   const spaceBottom = displayArea.y + displayArea.height - (triggerRect.y + triggerRect.height);
 
-  if (placement === "bottom" && spaceBottom < contentHeight && spaceTop > spaceBottom) {
+  if (placement === "bottom" && spaceBottom < contentSize.height && spaceTop > spaceBottom) {
     return "top";
   }
-  if (placement === "top" && spaceTop < contentHeight && spaceBottom > spaceTop) {
+  if (placement === "top" && spaceTop < contentSize.height && spaceBottom > spaceTop) {
     return "bottom";
   }
   return placement;
@@ -131,8 +141,9 @@ export function computePosition({
   const actualPlacement = flipPlacement({
     placement,
     triggerRect,
-    contentHeight: contentSize.height,
+    contentSize,
     displayArea,
+    offset,
   });
   const anchored = anchorToPlacement({
     placement: actualPlacement,
