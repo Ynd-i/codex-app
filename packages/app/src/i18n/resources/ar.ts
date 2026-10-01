@@ -2220,6 +2220,13 @@ export const ar: TranslationResources = {
       },
     },
     appearance: {
+      motion: {
+        title: "تقليل الحركة",
+        hint: "تقليل الرسوم المتحركة أو اتباع إعداد النظام.",
+        system: "النظام",
+        on: "تشغيل",
+        off: "إيقاف",
+      },
       theme: {
         visualStyle: "النمط المرئي",
         mode: "الوضع",
@@ -2720,6 +2727,7 @@ export const ar: TranslationResources = {
       noEditableTarget: "هذا المشروع غير متاح للتحرير على هذا المضيف.",
       backToProjects: "العودة إلى المشاريع",
       edit: {
+        sourceFolder: "مجلد المصدر",
         title: "تعديل المشروع",
         name: "الاسم",
         nameLabel: "اسم المشروع",

@@ -2231,6 +2231,13 @@ export const ko: TranslationResources = {
       },
     },
     appearance: {
+      motion: {
+        title: "동작 줄이기",
+        hint: "애니메이션을 줄이거나 시스템 설정을 따릅니다.",
+        system: "시스템",
+        on: "켜기",
+        off: "끄기",
+      },
       theme: {
         visualStyle: "시각적 스타일",
         mode: "모드",
@@ -2736,6 +2743,7 @@ export const ko: TranslationResources = {
       noEditableTarget: "이 호스트에서는 이 프로젝트를 편집할 수 없습니다.",
       backToProjects: "프로젝트로 돌아가기",
       edit: {
+        sourceFolder: "소스 폴더",
         title: "프로젝트 편집",
         name: "이름",
         nameLabel: "프로젝트 이름",

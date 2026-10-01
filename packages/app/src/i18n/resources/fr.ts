@@ -2276,6 +2276,13 @@ export const fr: TranslationResources = {
       },
     },
     appearance: {
+      motion: {
+        title: "Réduire les animations",
+        hint: "Réduire les animations ou suivre le réglage du système.",
+        system: "Système",
+        on: "Activé",
+        off: "Désactivé",
+      },
       theme: {
         visualStyle: "Style visuel",
         mode: "Mode",
@@ -2789,6 +2796,7 @@ export const fr: TranslationResources = {
       noEditableTarget: "Ce projet n'est pas modifiable sur cet hôte.",
       backToProjects: "Retour aux projets",
       edit: {
+        sourceFolder: "Dossier source",
         title: "Modifier le projet",
         name: "Nom",
         nameLabel: "Nom du projet",

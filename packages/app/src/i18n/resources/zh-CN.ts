@@ -2195,6 +2195,13 @@ export const zhCN: TranslationResources = {
       },
     },
     appearance: {
+      motion: {
+        title: "减少动态效果",
+        hint: "减少动画效果或遵循系统设置。",
+        system: "系统",
+        on: "开启",
+        off: "关闭",
+      },
       theme: {
         visualStyle: "视觉风格",
         mode: "模式",
@@ -2687,6 +2694,7 @@ export const zhCN: TranslationResources = {
       noEditableTarget: "此项目无法在这个 Host 上编辑。",
       backToProjects: "返回 Projects",
       edit: {
+        sourceFolder: "源文件夹",
         title: "编辑 Project",
         name: "名称",
         nameLabel: "Project 名称",

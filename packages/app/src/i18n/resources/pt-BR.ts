@@ -2255,6 +2255,13 @@ export const ptBR: TranslationResources = {
       },
     },
     appearance: {
+      motion: {
+        title: "Reduzir movimento",
+        hint: "Reduz as animações ou segue a configuração do sistema.",
+        system: "Sistema",
+        on: "Ativado",
+        off: "Desativado",
+      },
       theme: {
         visualStyle: "Estilo visual",
         mode: "Modo",
@@ -2763,6 +2770,7 @@ export const ptBR: TranslationResources = {
       noEditableTarget: "Este projeto não pode ser editado neste host.",
       backToProjects: "Voltar para projetos",
       edit: {
+        sourceFolder: "Pasta de origem",
         title: "Editar projeto",
         name: "Nome",
         nameLabel: "Nome do projeto",

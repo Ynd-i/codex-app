@@ -2258,6 +2258,13 @@ export const ru: TranslationResources = {
       },
     },
     appearance: {
+      motion: {
+        title: "Уменьшить движение",
+        hint: "Уменьшать анимацию или следовать настройке системы.",
+        system: "Системные",
+        on: "Включено",
+        off: "Выключено",
+      },
       theme: {
         visualStyle: "Визуальный стиль",
         mode: "Режим",
@@ -2772,6 +2779,7 @@ export const ru: TranslationResources = {
       noEditableTarget: "Этот проект нельзя редактировать на этом хосте.",
       backToProjects: "Вернуться к проектам",
       edit: {
+        sourceFolder: "Исходная папка",
         title: "Изменить проект",
         name: "Название",
         nameLabel: "Название проекта",

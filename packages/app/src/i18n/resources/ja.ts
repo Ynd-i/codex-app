@@ -2239,6 +2239,13 @@ export const ja: TranslationResources = {
       },
     },
     appearance: {
+      motion: {
+        title: "視差効果を減らす",
+        hint: "アニメーションを減らすか、システム設定に従います。",
+        system: "システム",
+        on: "オン",
+        off: "オフ",
+      },
       theme: {
         visualStyle: "外観スタイル",
         mode: "モード",
@@ -2749,6 +2756,7 @@ export const ja: TranslationResources = {
       noEditableTarget: "このホストではこのプロジェクトを編集できません。",
       backToProjects: "プロジェクトに戻る",
       edit: {
+        sourceFolder: "ソースフォルダー",
         title: "プロジェクトを編集",
         name: "名前",
         nameLabel: "プロジェクト名",

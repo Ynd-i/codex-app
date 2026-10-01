@@ -2344,6 +2344,13 @@ export const en = {
       },
     },
     appearance: {
+      motion: {
+        title: "Reduce motion",
+        hint: "Reduce animations or follow the system setting.",
+        system: "System",
+        on: "On",
+        off: "Off",
+      },
       theme: {
         visualStyle: "Visual style",
         mode: "Mode",
@@ -2849,6 +2856,7 @@ export const en = {
       noEditableTarget: "This project isn't editable on this host.",
       backToProjects: "Back to projects",
       edit: {
+        sourceFolder: "Source folder",
         title: "Edit project",
         name: "Name",
         nameLabel: "Project name",
