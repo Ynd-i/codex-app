@@ -8,6 +8,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Added
 
+- Added a saved macOS Reduce motion preference with live System behavior and consistent sidebar, outline, streaming-loader and decorative shimmer handling.
+- Restored Copy agent id and supported provider resume commands in the current-chat titlebar; unavailable resume commands stay disabled.
 - Added macOS Appearance previews for System, Light and Dark using the existing theme preference; full built-in and plugin theme choices remain available.
 - Added a compact macOS chat-search panel with recent chats, project labels, Control+1–9 selection and working quick actions; existing workspace, file and plugin search remains available.
 - Added shortcut search in Settings using action names and current bindings, retaining editing, unassign and reset controls.
@@ -27,6 +29,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- Matched macOS project editing with a combined name/icon input, real source-folder information and compact actions while retaining existing validation and save behavior.
+- Refined wide macOS modal titles, corners, separators and backdrop to follow the supplied dialog references.
 - Matched macOS Settings card width, corner radius and appearance-mode spacing to the reference; theme previews now use the actual platform palette. Other platforms keep their layout defaults.
 - Matched macOS inline Shell output's bottom fade while more output remains below; reaching the end or showing short output leaves the final line unobscured.
 - Local relay checks now use PATH-managed Elixir, avoid protected daemon ports, and block direct WebSocket fallbacks.
@@ -59,6 +63,7 @@ distribution and full migration acceptance remain pending; see the
 
 ### Fixed
 
+- Flip horizontal submenus to the side with sufficient room instead of clamping them over their parent menu.
 - Scaled tool-output and diagnostic code line spacing with the saved code font size, preventing overlapping lines at larger sizes while keeping the default spacing unchanged.
 - Removed the floating focus hint from the macOS composer so it cannot overlap the empty placeholder in narrow chat columns. The focus shortcut and other platforms remain unchanged.
 - Prevented custom packaging from inheriting the official operating-system URL scheme through concatenated configuration arrays. The package smoke now checks the final scheme declaration.

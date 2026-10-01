@@ -86,7 +86,7 @@ scope; it does not remove runtime code or add new provider integrations.
 | Step                             | Status                                                | Acceptance                                                                                                                                                                                   |
 | -------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 0. Upstream baseline             | Complete for local startup                            | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                                      |
-| 1. Window and sidebar appearance | Complete for local macOS development                  | Desktop shell and dark palette implemented; native navigation, sidebar toggle, menus, theme changes, window resize/fullscreen/reactivation checked. Scoped visual QA passed.                 |
+| 1. Window and sidebar appearance | Base frame verified; motion preference checked        | Window frame and navigation have native evidence. The new System/On/Off preference passes isolated renderer checks; its live-window review remains pending.                                  |
 | 1a. Upstream integration check   | Refreshed and verified                                | Upstream `4893629` integrated in isolation; 13 conflicts resolved. Provider, usage, navigation and custom desktop checks pass; protected daemon processes stay running.                      |
 | 2. Chat navigation               | Single-chat layout verified locally                   | Main tabs removed; tools route right with saved state retained. Default sidebar, current-chat actions, draft isolation and Back/Forward remain. Custom chat sidebar stays deferred.          |
 | 3. Transcript and composer       | Composer and activity verified; visual polish pending | Column, input/model controls, tool cards and completed-turn activity are checked in native development. Attachment-menu renderer checks pass; native follow-up and transcript polish remain. |
@@ -641,6 +641,26 @@ Logs: `/private/tmp/paseo-default-sidebar-newchat.log`,
 
 ### Sidebar motion and selection — 2026-10-01
 
+Mac Appearance now exposes a saved System / On / Off reduced-motion preference.
+System listens to the live media-query setting; On and Off override it. One
+application context feeds sidebar movement, outline magnification/transitions,
+the synchronized streaming loader and Reanimated configuration. Consumers outside
+Appearance keep their prior OS fallback, without requiring a QueryClient. Other
+platforms do not mount the new override. Decorative tool-row/startup shimmer also
+uses this Mac preference; necessary ActivityIndicator feedback remains available.
+This follows the [global configuration API](https://docs.swmansion.com/react-native-reanimated/docs/device/ReducedMotionConfig/)
+while avoiding the [startup-only OS hook](https://docs.swmansion.com/react-native-reanimated/docs/device/useReducedMotion/)
+as the application preference source.
+
+All 90 storage/context tests pass. Separate final renderer runs verify saved
+overrides, reload, live System changes, immediate/animated sidebar geometry,
+outline transitions and real Mock streaming-loader frames. A normal browser
+shimmer regression passes. The [settings capture](../qa-evidence/codex-desktop/settings-reduced-motion.png)
+was inspected. Logs: `/private/tmp/paseo-motion-unit.log`,
+`/private/tmp/paseo-motion-ui.log`, `/private/tmp/paseo-motion-stream.log`, and
+`/private/tmp/paseo-motion-browser.log`. Earlier fixed-frame timing assumptions in
+the combined run were corrected; the final runs sample the observed transition.
+
 The default workspace list remains intact. Its macOS show/hide action now uses
 a 220ms width transition and retains rows until closing finishes. Resize width
 stays independent of visibility; a canceled close cannot hide a reopened list.
@@ -680,6 +700,25 @@ confirmed menu placement, project/branch context and Explorer open/close in the
 Native editor launch, script execution and Git mutation were not exercised.
 
 ### Single chat and right tools — 2026-10-01
+
+The current-chat titlebar now includes Copy with the existing agent-ID and provider
+resume-command actions. Resume uses runtime native session identity first, then
+persisted native identity; it never substitutes a Paseo agent ID and is disabled
+when the provider/template or identity is unavailable. Four pure checks cover that
+selection. The renderer test opens the actual submenu, switches chats through
+search and verifies the correct ID in an isolated clipboard-write capture. It
+does not overwrite the user's clipboard or execute a provider CLI.
+
+The shared menu anchor now flips a horizontal submenu when its requested side
+cannot fit and the opposite side can, including edge padding and offset. If both
+sides are too small it retains the clamp fallback. This fixes the new right-edge
+Copy submenu obscuring its parent. All 23 positioning checks, the Copy renderer
+case and the existing browser nested-label-menu case pass. Inspected captures:
+[menu](../qa-evidence/codex-desktop/chat-copy-menu.png) and
+[submenu](../qa-evidence/codex-desktop/chat-copy-submenu.png). Logs:
+`/private/tmp/paseo-chat-copy-unit.log`, `/private/tmp/paseo-chat-copy-verified.log`
+and `/private/tmp/paseo-menu-flip-browser.log`. Native session branching remains
+outside this UI slice; no new branch or cloud-share behavior was added.
 
 The main area now renders only the current conversation. Supporting tools move
 into the right dock and share the top window bar with the chat title. The
@@ -940,6 +979,33 @@ webview navigation and cleanup, not external websites, OS URL dispatch or signin
 See [the focused command](../testing.md#desktop-browser-regression).
 
 ### Settings frame — 2026-10-01
+
+Mac project editing now follows the supplied dialog's combined icon/name input,
+520px width, source-folder group and compact Cancel/Save footer. The source path
+and host are real, read-only project metadata; no unsupported multi-folder mapping
+or removal control was added. The icon entry reveals the existing upload, URL and
+automatic-icon controls. Name/icon validation, acquisition-before-rename and
+daemon mutation paths are unchanged. The Mac regression and five existing browser
+project-edit cases pass, including cancellation, invalid URL recovery, combined
+save and reopening saved values.
+
+The shared wide Mac modal frame now uses 20px corners, an 18px semibold title,
+borderless header/footer and a lighter backdrop. Only the default dark dialog
+surface uses the sampled neutral fill; other palettes and compact/non-Mac paths
+retain their defaults. The backdrop opacity is a visual approximation from the
+supplied edit/create references, not an exact same-frame measurement. Final
+[wide](../qa-evidence/codex-desktop/project-edit-wide.png) and
+[narrow](../qa-evidence/codex-desktop/project-edit-narrow.png) captures were inspected.
+The original 440px width and 12px corner checks went red before their fixes.
+The final Mac case passes in `/private/tmp/paseo-mac-modal-verified.log`; the
+ordinary-browser rename case passes in `/private/tmp/paseo-mac-modal-browser.log`.
+Earlier full edit-flow coverage is in `/private/tmp/paseo-project-edit-browser.log`.
+The native file-picker/read boundary is simulated; project and icon saves use the
+real isolated daemon. These frontend slices postdate the verified `968b8d9` bundle.
+
+Integration formatting, lint and workspace typechecks pass for the motion,
+project/modal and Copy changes. Logs:
+`/private/tmp/paseo-motion-project-copy-final-{format,lint,typecheck}.log`.
 
 The macOS Settings sidebar is 280px with a Settings heading, back action, compact
 32px category rows and searchable category labels. Existing General/Appearance
