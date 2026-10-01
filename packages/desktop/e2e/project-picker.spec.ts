@@ -121,6 +121,7 @@ test("desktop composer keeps send and stop reachable with attachments", async ({
       manageBuiltInDaemon: false,
       daemonListen: `127.0.0.1:${getE2EDaemonPort()}`,
     });
+    await installUsageReportsFixture(page, { lists: [[]] });
     await page.setViewportSize({ width: 1352, height: 782 });
     await page.emulateMedia({ colorScheme: "dark" });
     await openAgentRoute(page, fixture);
@@ -139,6 +140,26 @@ test("desktop composer keeps send and stop reachable with attachments", async ({
     await model.click();
     const effort = page.getByTestId("desktop-thinking-range");
     await expect(effort).toHaveAttribute("aria-valuetext", "Low");
+    const effortPopover = effort.locator(
+      "xpath=ancestor::div[.//*[@data-testid='desktop-model-browse']][1]",
+    );
+    const effortIcon = effortPopover.locator("svg").first();
+    const effortLevel = effortPopover.getByText("Low", { exact: true });
+    await expect(effort).toHaveCSS("accent-color", "rgb(217, 119, 87)");
+    await expect(effortIcon).toHaveCSS("stroke", "rgb(217, 119, 87)");
+    await expect(effortLevel).toHaveCSS("color", "rgb(217, 119, 87)");
+    await page.emulateMedia({ colorScheme: "light" });
+    await expect(effort).toHaveCount(0);
+    await model.click();
+    await expect(effort).toHaveCSS("accent-color", "rgb(249, 115, 22)");
+    await expect(effortIcon).toHaveCSS("stroke", "rgb(249, 115, 22)");
+    await expect(effortLevel).toHaveCSS("color", "rgb(249, 115, 22)");
+    await page.emulateMedia({ colorScheme: "dark" });
+    await expect(effort).toHaveCount(0);
+    await model.click();
+    await expect(effort).toHaveCSS("accent-color", "rgb(217, 119, 87)");
+    await expect(effortIcon).toHaveCSS("stroke", "rgb(217, 119, 87)");
+    await expect(effortLevel).toHaveCSS("color", "rgb(217, 119, 87)");
     await page.getByTestId("desktop-model-browse").click();
     await page.getByRole("textbox", { name: /search model/i }).fill("Ten second stream");
     await page.getByText("Ten second stream", { exact: true }).click();

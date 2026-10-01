@@ -16,6 +16,7 @@ import type { AgentSelectOption } from "@getpaseo/protocol/agent-types";
 import { HeaderToggleButton } from "@/components/headers/header-toggle-button";
 import { Button } from "@/components/ui/button";
 import type { Theme } from "@/styles/theme";
+import { getIsElectronMac } from "@/constants/platform";
 
 export interface DesktopThinkingControl {
   options: readonly AgentSelectOption[];
@@ -68,17 +69,24 @@ const RANGE_CSS = `
 .paseo-desktop-effort-range:disabled { opacity: 0.5; cursor: default; }
 `;
 
-const Range = withUnistyles(EffortRange);
-const RightIcon = withUnistyles(ChevronRight);
-const ResetIcon = withUnistyles(RotateCcw);
-const EffortIcon = withUnistyles(Zap);
-const mutedIcon = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
-const effortIcon = (theme: Theme) => ({ color: theme.colors.palette.orange[500] });
-const rangeColors = (theme: Theme) => ({
-  accentColor: theme.colors.palette.orange[500],
+const CODEX_EFFORT_ACCENT = "#d97757";
+const Range = withUnistyles(EffortRange, (theme, rt) => ({
+  accentColor:
+    getIsElectronMac() && rt.themeName === "dark"
+      ? CODEX_EFFORT_ACCENT
+      : theme.colors.palette.orange[500],
   thumbColor: theme.colors.foreground,
   trackColor: theme.colors.surface4,
-});
+}));
+const RightIcon = withUnistyles(ChevronRight);
+const ResetIcon = withUnistyles(RotateCcw);
+const EffortIcon = withUnistyles(Zap, (theme, rt) => ({
+  color:
+    getIsElectronMac() && rt.themeName === "dark"
+      ? CODEX_EFFORT_ACCENT
+      : theme.colors.palette.orange[500],
+}));
+const mutedIcon = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
 
 export function DesktopModelPreferences({
   thinking,
@@ -138,7 +146,7 @@ export function DesktopModelPreferences({
     <View style={styles.root}>
       <View style={styles.header}>
         <View style={styles.resetSpace}>
-          <EffortIcon size={16} uniProps={effortIcon} />
+          <EffortIcon size={16} />
         </View>
         <Text style={styles.level}>
           {thinking.options[displayedIndex]?.label ?? thinking.label}
@@ -188,13 +196,12 @@ export function DesktopModelPreferences({
         onPointerDown={startDrag}
         onPointerUp={finishDrag}
         onPointerCancel={cancelDrag}
-        uniProps={rangeColors}
       />
     </View>
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   root: { padding: theme.spacing[3] },
   header: { flexDirection: "row", alignItems: "center", gap: theme.spacing[2] },
   level: {
@@ -202,7 +209,10 @@ const styles = StyleSheet.create((theme) => ({
     textAlign: "center",
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.medium,
-    color: theme.colors.palette.orange[500],
+    color:
+      getIsElectronMac() && rt.themeName === "dark"
+        ? CODEX_EFFORT_ACCENT
+        : theme.colors.palette.orange[500],
   },
   modelButton: {
     alignSelf: "center",
