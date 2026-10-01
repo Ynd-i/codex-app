@@ -720,6 +720,15 @@ case and the existing browser nested-label-menu case pass. Inspected captures:
 and `/private/tmp/paseo-menu-flip-browser.log`. Native session branching remains
 outside this UI slice; no new branch or cloud-share behavior was added.
 
+The older desktop chat-navigation case still clicked the removed main agent tabs.
+Its targeted red run reproduced that timeout; the test now selects real chats
+through Command Center. Back/Forward, per-chat drafts, offline rename rejection
+and recovery, chat/workspace pin scope and archive behavior all remain asserted.
+After archive it checks the daemon record, active list and search absence. The
+unchanged 120-second case limit and 75-second connection-liveness boundary remain.
+The repaired case passes in 56.6 seconds; log:
+`/private/tmp/paseo-chat-navigation-verified.log`.
+
 The main area now renders only the current conversation. Supporting tools move
 into the right dock and share the top window bar with the chat title. The
 [Explorer contract](../explorer-sidebar.md#custom-macos-layout) owns placement,

@@ -14,6 +14,7 @@ import { installDesktopRuntime, waitForDirectoryDialog } from "./support/runtime
 import { seedMockAgentWorkspace, openAgentRoute } from "../../app/e2e/support/helpers/mock-agent";
 import { composerLocator, dropFileOnComposer } from "../../app/e2e/support/helpers/composer";
 import { expectAgentIdle } from "../../app/e2e/support/helpers/agent-stream";
+import { installUsageReportsFixture } from "../../app/e2e/support/helpers/usage-reports";
 
 test("desktop new chat retains project selection and creates a chat", async ({
   page,
@@ -267,22 +268,23 @@ test("desktop chat navigation preserves sibling drafts and scopes pinning", asyn
       manageBuiltInDaemon: false,
       daemonListen: `127.0.0.1:${getE2EDaemonPort()}`,
     });
+    await installUsageReportsFixture(page, { lists: [[]] });
     await page.setViewportSize({ width: 1352, height: 782 });
     await page.emulateMedia({ colorScheme: "dark" });
     await openAgentRoute(page, fixture);
     const title = page.getByTestId("desktop-chat-title");
-    const firstRow = page
-      .getByTestId(`workspace-tab-agent_${fixture.agentId}`)
-      .filter({ visible: true })
-      .first();
-    const secondRow = page
-      .getByTestId(`workspace-tab-agent_${second.id}`)
-      .filter({ visible: true })
-      .first();
+    const search = page.getByTestId("command-center-panel");
+    const selectChat = async (agentId: string, query: string) => {
+      await page.keyboard.press("Meta+K");
+      await expect(search).toBeVisible();
+      await search.getByTestId("command-center-input").fill(query);
+      await search.getByTestId(`command-center-agent-${serverId}:${agentId}`).click();
+      await expect(search).toBeHidden();
+    };
     await expect(title).toHaveText("First chat");
     await expect(page.getByTestId("desktop-shell-back")).toBeDisabled();
     await composerLocator(page).fill("Draft stays with first chat");
-    await secondRow.click();
+    await selectChat(second.id, "Second chat");
     await expect(title).toHaveText("Second chat");
     await expect(composerLocator(page)).toHaveValue("");
     await page.getByTestId("desktop-shell-back").click();
@@ -346,14 +348,31 @@ test("desktop chat navigation preserves sibling drafts and scopes pinning", asyn
     ).toBe("");
     await page.keyboard.press("Meta+Shift+P");
     await expect(page.getByTestId("sidebar-pinned-section-header")).toHaveCount(0);
-    await firstRow.click();
+    await selectChat(fixture.agentId, "First chat");
     await expect(title).toHaveText("First chat");
     await expect(composerLocator(page)).toHaveValue("Draft stays with first chat");
-    await secondRow.click();
+    await selectChat(second.id, "Renamed second chat");
     await toolbarMenu.click();
     await page.getByText("Archive", { exact: true }).click();
-    await expect(secondRow).toHaveCount(0);
-    await firstRow.click();
+    await expect
+      .poll(async () => (await fixture.client.fetchAgent({ agentId: second.id }))?.agent.archivedAt)
+      .toMatch(/^\d{4}-\d\d-\d\dT/);
+    await expect
+      .poll(async () =>
+        (await fixture.client.fetchAgents({ scope: "active" })).entries.map(
+          ({ agent }) => agent.id,
+        ),
+      )
+      .not.toContain(second.id);
+    await page.keyboard.press("Meta+K");
+    await expect(search).toBeVisible();
+    await search.getByTestId("command-center-input").fill("Renamed second chat");
+    await expect(search.getByText("No matches", { exact: true })).toBeVisible();
+    await expect(search.getByTestId(`command-center-agent-${serverId}:${second.id}`)).toHaveCount(
+      0,
+    );
+    await page.keyboard.press("Escape");
+    await selectChat(fixture.agentId, "First chat");
     await expect(title).toHaveText("First chat");
     await expect(composerLocator(page)).toHaveValue("Draft stays with first chat");
     expect((await fixture.client.fetchAgent({ agentId: fixture.agentId }))?.agent.archivedAt).toBe(
