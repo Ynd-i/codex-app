@@ -1611,7 +1611,15 @@ Appearance captures were inspected in the private artifact directory
 `/private/tmp/paseo-settings-return-final-{format,lint}.log`. The first concurrent
 typecheck raced the dependency build; the final check was run after build completion.
 
-The latest Custom refresh was built from `694c3e5` on 0.11.0-beta.1 after
+The latest Custom refresh was built from `3d2ee63` on 0.11.0-beta.1 after
+upstream merge `34d9f5f`. Startup/CLI/terminal smoke and the full native custom-link
+runner pass, including 12px prose-to-quote spacing, code wrapping, question
+submission and draft retention across reload/navigation. Logs:
+`/private/tmp/paseo-prose-spacing-package-build.log` and
+`/private/tmp/paseo-prose-spacing-package.log`; artifacts:
+`/private/tmp/paseo-prose-spacing-package-{smoke,qa}`.
+
+The preceding Custom refresh was built from `694c3e5` on 0.11.0-beta.1 after
 upstream merge `34d9f5f`, adding the reference font-family fields to the custom
 weights, question cards, styled text, tool approvals and Diff changes. Real renderer/preload, custom
 identity/update guard, isolated daemon, bundled CLI and terminal smoke pass.
@@ -2142,6 +2150,12 @@ Logs: `/private/tmp/paseo-prose-spacing-{red,green,final,units}.log`.
 inspected at the reference's 1352×782 CSS viewport. The fixture additionally
 contains long code and a multi-paragraph quote; this verifies this spacing slice,
 not complete transcript pixel equality.
+
+Implementation `3d2ee63` passes root format/lint/typecheck and normal commit hooks.
+Its rebuilt Custom package passes startup/CLI/terminal smoke and the complete
+native interaction runner, including the new 12px assertion. The
+[packaged spacing capture](../qa-evidence/codex-desktop/packaged-prose-spacing.png)
+was inspected. Logs and package source are recorded in the package section above.
 
 ### Upstream refresh to e10f6d2 — 2026-10-01
 
