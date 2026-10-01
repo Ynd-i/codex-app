@@ -27,6 +27,7 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- Matched macOS Settings card width, corner radius and appearance-mode spacing to the reference; theme previews now use the actual platform palette. Other platforms keep their layout defaults.
 - Matched macOS inline Shell output's bottom fade while more output remains below; reaching the end or showing short output leaves the final line unobscured.
 - Local relay checks now use PATH-managed Elixir, avoid protected daemon ports, and block direct WebSocket fallbacks.
 - Matched the macOS chat placeholder text and default dark color to the reference, preserving explicit caller and terminal prompts, other themes and custom fonts.

@@ -27,6 +27,7 @@ test("macOS Settings keeps navigation searchable and Appearance preferences edit
   });
   await page.setViewportSize({ width: 1352, height: 782 });
   await page.emulateMedia({ colorScheme: "dark" });
+  await installUsageReportsFixture(page, { lists: [[]] });
   await gotoAppShell(page);
   await openSettings(page);
 
@@ -80,10 +81,14 @@ test("macOS Settings keeps navigation searchable and Appearance preferences edit
   await openSettingsSection(page, "appearance");
   await expect(page.getByTestId("page-title")).toHaveText("Appearance");
   await expect(page.getByText("Theme", { exact: true }).first()).toBeVisible();
+  const themeCard = page.getByText("Theme", { exact: true }).locator("../../..");
+  expect.soft((await themeCard.boundingBox())?.width).toBe(728);
+  await expect.soft(themeCard).toHaveCSS("border-radius", "16px");
   await page.screenshot({ path: testInfo.outputPath("settings-appearance.png") });
   for (const width of [900, 700, 1352]) {
     await page.setViewportSize({ width, height: 680 });
     await expectFrameFits();
+    await expect(themeCard).toBeInViewport({ ratio: 1 });
     await expect(page.getByText("Theme", { exact: true }).first()).toBeInViewport({ ratio: 1 });
     if (width >= 768) {
       await expect(sidebar).toBeInViewport({ ratio: 1 });
@@ -102,6 +107,7 @@ test("Windows Settings retains editable panel placement preferences", async ({ p
     manageBuiltInDaemon: false,
     daemonListen: `127.0.0.1:${getE2EDaemonPort()}`,
   });
+  await installUsageReportsFixture(page, { lists: [[]] });
   await gotoAppShell(page);
   await openSettings(page);
   for (const label of placementLabels) {
@@ -123,6 +129,11 @@ test("Windows Settings retains editable panel placement preferences", async ({ p
   await expect(pullRequests).toHaveAccessibleName(
     "Clicking a pull request in the Explorer sidebar: Main panel",
   );
+  await openSettingsSection(page, "appearance");
+  const card = page.getByText("Theme", { exact: true }).last().locator("../../..");
+  expect((await card.boundingBox())?.width).toBe(688);
+  await expect(card).toHaveCSS("border-radius", "8px");
+  await expect(page.getByTestId("appearance-theme-modes")).toHaveCount(0);
 });
 
 test("macOS Appearance mode previews preserve theme choices and keyboard editing", async ({
@@ -144,11 +155,27 @@ test("macOS Appearance mode previews preserve theme choices and keyboard editing
   const system = modes.getByRole("button", { name: "System", exact: true });
   const light = modes.getByRole("button", { name: "Light", exact: true });
   const dark = modes.getByRole("button", { name: "Dark", exact: true });
+  const registeredDarkBackground = await page
+    .getByTestId("settings-detail-pane")
+    .locator(":scope > div")
+    .first()
+    .evaluate((node) => getComputedStyle(node).backgroundColor);
+  await expect(dark.getByTestId("appearance-mode-preview-dark")).toHaveCSS(
+    "background-color",
+    registeredDarkBackground,
+  );
   await expect(system).toHaveAttribute("aria-pressed", "true");
   for (const mode of [system, light, dark]) {
     expect(await mode.boundingBox()).toMatchObject({ width: 80, height: 60 });
   }
-  expect((await modes.boundingBox())?.height).toBe(78);
+  const modeBounds = await modes.boundingBox();
+  const themeBounds = await page
+    .getByText("Theme", { exact: true })
+    .locator("../../..")
+    .boundingBox();
+  if (!modeBounds || !themeBounds) throw new Error("Missing appearance card geometry");
+  expect(modeBounds.height).toBe(78);
+  expect(themeBounds.y - modeBounds.y - modeBounds.height).toBe(16);
   await system.focus();
   await page.keyboard.press("Tab");
   await expect(light).toBeFocused();

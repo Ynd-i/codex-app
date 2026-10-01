@@ -1193,6 +1193,7 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
   const appVersion = resolveAppVersion();
   const appVersionText = formatVersionWithPrefix(appVersion);
   const isCompactLayout = useIsCompactFormFactor();
+  const contentMaxWidth = getIsElectronMac() ? 760 : undefined;
   const insets = useSafeAreaInsets();
   const insetBottomStyle = useMemo(() => ({ paddingBottom: insets.bottom }), [insets.bottom]);
   const hosts = useHosts();
@@ -1551,7 +1552,11 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
   if (isCompactLayout) {
     return (
       <View style={styles.container}>
-        <PageLayout title={detailTitle} onBack={handleBackFromDetail}>
+        <PageLayout
+          title={detailTitle}
+          onBack={handleBackFromDetail}
+          contentMaxWidth={contentMaxWidth}
+        >
           {content}
         </PageLayout>
         {addHostModals}
@@ -1579,7 +1584,11 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
         </WindowChromeRegion>
         <WindowChromeRegion corners="top-right">
           <View style={desktopStyles.contentPane} testID="settings-detail-pane">
-            <PageLayout title={detailTitle} titleTestID="settings-detail-header-title">
+            <PageLayout
+              title={detailTitle}
+              titleTestID="settings-detail-header-title"
+              contentMaxWidth={contentMaxWidth}
+            >
               {content}
             </PageLayout>
           </View>

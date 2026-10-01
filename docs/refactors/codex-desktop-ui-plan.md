@@ -968,6 +968,24 @@ was inspected. The existing ordinary-browser Pure black selector case also passe
 also pass in `/private/tmp/paseo-appearance-mode-locales.log`. This slice postdates
 the `580aa19` Custom bundle and still needs native/package comparison.
 
+The next settings comparison measured both original 2704px-wide references at
+2× scale: their cards span 728 CSS pixels with approximately 16px corners. Mac
+Settings now uses a 760px outer PageLayout column, including its existing 16px
+side padding, to match that 728px content width. Other pages and platforms retain
+the 720px default. Shared settings cards use 16px corners only on Mac; the local
+Appearance mode-to-theme gap is 16px. General section and row spacing is unchanged.
+
+The mode preview also now reads the platform's registered theme, correcting its
+previous upstream green dark palette. Tests went red for the actual old 688px
+width, 8px corners and RGB 24/27/26 preview instead of the live RGB 44/44/43.
+All three updated desktop cases pass, including narrow layouts, the unchanged
+Windows-runtime 688px/8px layout and plugin/theme persistence; the ordinary-browser
+Pure black case passes too. Corrected captures were inspected:
+[General](../qa-evidence/codex-desktop/settings-general-geometry.png) and
+[Appearance](../qa-evidence/codex-desktop/settings-appearance-geometry.png).
+Logs: `/private/tmp/paseo-settings-geometry{-red,,-browser}.log` and
+`/private/tmp/paseo-settings-package-final-{format,lint,typecheck}.log`.
+
 ### Usage data foundation
 
 The existing usage-source contract already supplies provider/account labels, quota

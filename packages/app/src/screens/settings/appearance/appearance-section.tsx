@@ -39,8 +39,6 @@ import {
   DEFAULT_THEME_PREFERENCE,
 } from "@/hooks/use-settings";
 import {
-  darkTheme,
-  lightTheme,
   DEFAULT_MONO_FONT_STACK,
   DEFAULT_UI_FONT_STACK,
   ICON_SIZE,
@@ -52,6 +50,7 @@ import {
 import { getIsElectronMac, isNative } from "@/constants/platform";
 import type { PluginThemeOption } from "@/plugins/themes";
 import { settingsStyles } from "@/styles/settings";
+import { REGISTERED_THEMES } from "@/styles/registered-themes";
 import { AppearancePreview } from "./appearance-preview";
 
 // ---------------------------------------------------------------------------
@@ -98,10 +97,11 @@ const THEME_MODES: readonly ThemeMode[] = ["auto", "light", "dark"];
 
 /** A miniature UI in the built-in palette, independent of the currently selected theme. */
 function ThemeModePreview({ mode }: { mode: "light" | "dark" }) {
-  const colors = mode === "light" ? lightTheme.colors : darkTheme.colors;
+  const colors = REGISTERED_THEMES[mode].colors;
   return (
     <View style={[styles.modeTile, { backgroundColor: colors.surface1 }]}>
       <View
+        testID={`appearance-mode-preview-${mode}`}
         style={[
           styles.modeWindow,
           { backgroundColor: colors.surface0, borderColor: colors.border },
@@ -878,6 +878,7 @@ export function AppearanceSection() {
 const styles = StyleSheet.create((theme) => ({
   modeCard: {
     height: 78,
+    marginBottom: theme.spacing[1],
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
