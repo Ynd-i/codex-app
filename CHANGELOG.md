@@ -42,6 +42,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- Aligned macOS chat text and code blocks with the composer at wide and compact widths, keeping measured Markdown height-cache keys consistent with the rendered column.
+
 - Removed duplicated paragraph and quote margins from macOS chat Markdown blocks, retaining spacing within multi-paragraph quotes and other-platform presentation.
 
 - Extended the real Custom package regression to cover styled text, code wrapping, question submission and retained drafts across reload and chat navigation.

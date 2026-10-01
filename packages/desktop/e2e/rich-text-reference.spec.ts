@@ -49,6 +49,21 @@ for (const platform of ["darwin", "win32"] as const) {
         .locator('[data-paseo-markdown-tag="pre"]')
         .filter({ hasText: "const message" });
       if (platform === "darwin") {
+        const composer = page.getByTestId("message-input-root").filter({ visible: true });
+        const expectAligned = async () => {
+          await expect
+            .poll(async () => {
+              const body = await plain.boundingBox();
+              const input = await composer.boundingBox();
+              if (!body || !input) return Infinity;
+              return Math.max(
+                Math.abs(body.x - input.x),
+                Math.abs(body.x + body.width - input.x - input.width),
+              );
+            })
+            .toBeLessThan(1);
+        };
+        await expectAligned();
         const intro = assistant
           .locator('[data-paseo-markdown-tag="p"]')
           .filter({ hasText: /^例如/ });
@@ -97,6 +112,10 @@ for (const platform of ["darwin", "win32"] as const) {
         await page.mouse.wheel(0, -10000);
         await expect.poll(() => timeline.evaluate((node) => node.scrollTop)).toBe(0);
         await page.screenshot({ path: testInfo.outputPath("styled-text.png") });
+        await page.setViewportSize({ width: 700, height: 782 });
+        await expectAligned();
+        await page.screenshot({ path: testInfo.outputPath("styled-text-narrow.png") });
+        await page.setViewportSize({ width: 1352, height: 782 });
         await page.mouse.wheel(0, 10000);
         const nested = assistant
           .locator('[data-paseo-markdown-tag="blockquote"]')

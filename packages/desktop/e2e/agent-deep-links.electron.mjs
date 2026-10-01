@@ -307,6 +307,20 @@ export async function runAgentDeepLinksRegression({
     .filter({ hasText: "这是一段代码或纯文本" });
   await expect(plain.getByText("Plain text", { exact: true })).toBeVisible();
   await expect(plain).toHaveCSS("border-radius", "20px");
+  await expect
+    .poll(async () => {
+      const body = await plain.boundingBox();
+      const input = await page
+        .getByTestId("message-input-root")
+        .filter({ visible: true })
+        .boundingBox();
+      if (!body || !input) return Infinity;
+      return Math.max(
+        Math.abs(body.x - input.x),
+        Math.abs(body.x + body.width - input.x - input.width),
+      );
+    })
+    .toBeLessThan(1);
   const typed = assistant
     .locator('[data-paseo-markdown-tag="pre"]')
     .filter({ hasText: "const message" });
@@ -377,6 +391,7 @@ export async function runAgentDeepLinksRegression({
     packagedProjectEditor: true,
     packagedStyledText: true,
     packagedProseSpacing: true,
+    packagedChatColumnAlignment: true,
     packagedQuestionSubmission: true,
     invalidUrlRejected: true,
     osProtocolDispatch: "not tested",

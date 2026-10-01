@@ -86,7 +86,7 @@ import { navigateToWorkspace } from "@/stores/navigation-active-workspace-store"
 import { useStableEvent } from "@/hooks/use-stable-event";
 import { useForkAgent } from "@/hooks/use-fork-agent";
 import { isWeb } from "@/constants/platform";
-import type { Theme } from "@/styles/theme";
+import { CHAT_MESSAGE_HORIZONTAL_PADDING, type Theme } from "@/styles/theme";
 import { recordRenderProfileReasons } from "@/utils/render-profiler";
 import { useRetainedPanelActive } from "@/components/retained-panel";
 import { useStreamHistoryWindow } from "./use-stream-history-window";
@@ -1367,7 +1367,7 @@ const stylesheet = StyleSheet.create((theme) => ({
     width: "100%",
     maxWidth: theme.contentMaxWidth,
     alignSelf: "center",
-    paddingHorizontal: theme.spacing[2],
+    paddingHorizontal: CHAT_MESSAGE_HORIZONTAL_PADDING,
   },
   listContentContainer: {
     paddingVertical: 0,
@@ -1388,7 +1388,7 @@ const stylesheet = StyleSheet.create((theme) => ({
     width: "100%",
     maxWidth: theme.contentMaxWidth,
     alignSelf: "center",
-    paddingHorizontal: theme.spacing[2],
+    paddingHorizontal: CHAT_MESSAGE_HORIZONTAL_PADDING,
   },
   emptyState: {
     flex: 1,

@@ -2157,6 +2157,24 @@ native interaction runner, including the new 12px assertion. The
 [packaged spacing capture](../qa-evidence/codex-desktop/packaged-prose-spacing.png)
 was inspected. Logs and package source are recorded in the package section above.
 
+#### Chat content alignment
+
+The styled-text reference aligns the code block and composer edges. The Mac
+stream row instead applied an extra 8px on each side inside the 736px content
+column. Mac stream rows now use the full column width; the compact Web list uses
+the same 16px outer inset as the composer. Non-Mac row padding and native mobile
+list padding remain unchanged. The Markdown height-cache lookup shares the row's
+padding token so its width key still matches measured blocks.
+
+The new wide alignment assertion first failed with an 8px edge mismatch. Wide
+and 700px compact assertions now pass, along with both platform branches' existing
+quote spacing, wrap, copy and multi-paragraph checks (two cases, 17.5s). Thirteen
+height-cache/virtualization tests pass. Inspected captures:
+[wide](../qa-evidence/codex-desktop/chat-column-wide.png) and
+[compact](../qa-evidence/codex-desktop/chat-column-compact.png).
+Logs: `/private/tmp/paseo-chat-rail-{red,green,final,units}.log`.
+The actual-package runner includes the same edge-alignment assertion.
+
 ### Upstream refresh to e10f6d2 — 2026-10-01
 
 Fetched ten new upstream commits after `4893629`, through `e10f6d2`, including the

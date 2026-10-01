@@ -1,8 +1,8 @@
 import { estimateAssistantMessageHeightFromCache as estimateAssistantImageMessageHeightFromCache } from "@/utils/assistant-image-metadata";
 import { splitMarkdownBlocks } from "@/utils/split-markdown-blocks";
+import { CHAT_MESSAGE_HORIZONTAL_PADDING } from "@/styles/theme";
 
 const ASSISTANT_MARKDOWN_BLOCK_HEIGHT_CACHE_LIMIT = 1000;
-const ASSISTANT_MARKDOWN_BLOCK_INSET = 16;
 const ASSISTANT_MESSAGE_VERTICAL_PADDING = 24;
 const ASSISTANT_MARKDOWN_BLOCK_GAP = 12;
 
@@ -90,7 +90,7 @@ function estimateAssistantMarkdownBlockHeightFromCache(
   for (const block of blocks) {
     const key = createMarkdownBlockHeightKey({
       block,
-      width: contentMaxWidth - ASSISTANT_MARKDOWN_BLOCK_INSET,
+      width: contentMaxWidth - 2 * CHAT_MESSAGE_HORIZONTAL_PADDING,
     });
     const cachedHeight = key ? assistantMarkdownBlockHeightCache.get(key) : undefined;
     if (cachedHeight === undefined) {
