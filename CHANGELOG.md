@@ -8,6 +8,9 @@ distribution and full migration acceptance remain pending; see the
 
 ### Added
 
+- Added a compact macOS chat-search panel with recent chats, project labels, Control+1–9 selection and working quick actions; existing workspace, file and plugin search remains available.
+- Added shortcut search in Settings using action names and current bindings, retaining editing, unassign and reset controls.
+- Added a macOS Files initial view with an empty editor, shared workspace toolbar and searchable right-hand tree; narrow panels prioritize the tree.
 - Added independent `paseo-custom://` agent links for Paseo Custom, using the existing route validation and leaving official links and internal app routes unchanged.
 - Added a macOS browser start page with working Review, Terminal, Files and More tools actions, plus pages actually open in the current workspace. Ordinary blank documents and browser automation retain their existing behavior.
 - Added an independent Codex syntax-color preset for macOS defaults, preserving explicitly saved themes and custom font choices. Other platforms retain their existing default.

@@ -358,8 +358,8 @@ custom Georgia content font. Switching to Chinese confirms the reference text.
 All 36 locale-resource checks pass. The [wide](../qa-evidence/codex-desktop/composer-placeholder-dark-wide.png)
 and [narrow](../qa-evidence/codex-desktop/composer-placeholder-dark-narrow.png)
 empty composer captures were inspected. This accepts the composer text/color
-slice, not whole-window equality. These frontend changes postdate the latest
-packaged bundle. Logs: `/private/tmp/paseo-composer-placeholder-red.log`,
+slice, not whole-window equality. The refreshed package built at `c706ee5` includes
+these frontend changes. Logs: `/private/tmp/paseo-composer-placeholder-red.log`,
 `/private/tmp/paseo-composer-placeholder-copy-{red,verified}.log`,
 `/private/tmp/paseo-composer-copy-locales.log`, and
 `/private/tmp/paseo-composer-placeholder-final-{lint,typecheck}.log`.
@@ -1032,6 +1032,64 @@ Logs: `/private/tmp/paseo-custom-distribution-unit.log`,
 `/private/tmp/paseo-custom-package-defaults.log`,
 `/private/tmp/paseo-custom-typecheck.log` and `/private/tmp/paseo-custom-lint.log`.
 
+### Shortcut search and Files initial view — 2026-10-01
+
+Settings now searches shortcut names and their effective bindings, reusing the
+existing shortcut-help filter. Rebinding updates search results; focusing search
+cancels shortcut capture. Clear, no-results, unassign and reset remain available.
+The new renderer search case, the existing Mac editing case, simulated Windows
+editing case and repaired unassign case pass, along with 10 helper tests. The
+[settings capture](../qa-evidence/codex-desktop/settings-shortcuts-search.png)
+was inspected. Logs: `/private/tmp/paseo-shortcut-settings-{unit,e2e,existing,unassign}.log`.
+The initial combined run included a failed unassign test; the final separate
+unassign log records its passing rerun after fixing the dialog-close race.
+
+The Mac Files tab now initially shows a shared root-path toolbar, an empty editor
+and a right-hand directory tree, following the supplied file-explorer reference.
+Panels narrower than 420px give the tree the full width. Selecting files retains
+existing target deduplication and the chat draft. Tree filtering survives hiding
+and reopening the tree in both the Files picker and file editor. The two focused
+file-tree renderer cases pass, including existing create, rename and retry actions.
+Inspected captures: [wide](../qa-evidence/codex-desktop/files-empty-wide.png) and
+[narrow](../qa-evidence/codex-desktop/files-empty-narrow.png). Logs:
+`/private/tmp/paseo-files-empty-{e2e,typecheck,lint,format}.log`.
+These are isolated renderer checks, not native locked-screen or Windows-device
+acceptance. All 36 locale-resource checks pass with the new translated labels.
+
+### Mac chat search — 2026-10-01
+
+The command center follows the supplied chat-search reference on Mac: a 520×486px
+rounded panel, up to nine recent chats with project labels, then New chat, Open
+folder, Search files and Settings. Control+1–9 selects the corresponding visible
+chat. Querying retains the existing workspace, file and plugin contributions;
+file scope and other platforms keep their existing behavior. The default dark
+surface is reference-matched, with other themes using their own palette.
+
+The [isolated renderer capture](../qa-evidence/codex-desktop/command-center-chats.png)
+was inspected. Focused checks cover exact geometry, real chat navigation and draft
+retention, scrolling to keyboard-selected matches, opening a file in the right
+dock, clearing the previous query when switching to file scope, Escape, actual
+quick actions, canceled folder selection, Light theme and narrow windows. The
+navigation case passes in `/private/tmp/paseo-command-center-navigation.log`;
+the separate quick-action/theme case passes in `/private/tmp/paseo-command-center.log`.
+An earlier failed selector in that combined log was corrected before the passing
+navigation rerun. All 34 result-model tests and the existing ordinary-browser
+command-center scrolling case pass (`/private/tmp/paseo-command-center-browser.log`).
+Root formatting, lint and typecheck pass for all three slices; logs are
+`/private/tmp/paseo-search-files-final-{format,lint,typecheck}.log`. These checks
+do not claim native pixel equality while the Mac remains locked.
+
+### Sources menu data boundary — 2026-10-01
+
+The supplied chat-contents menu cannot currently be copied as a complete inventory
+without changing Paseo's backend contract. Canonical historical user messages do
+not retain the optimistic attachment list; workspace attachment state is not a
+chat source index. Terminals have workspace ownership but no agent ownership.
+Loaded timeline outputs are paginated, not a complete output inventory. Keep this
+menu pending rather than label these partial sources as all chat content. Existing
+file/terminal navigation and attachment preview actions remain available in their
+current surfaces. No protocol or persistence changes were made for this review.
+
 ### Custom agent links and refreshed package — 2026-10-01
 
 Paseo Custom accepts `paseo-custom://h/<serverId>/agent/<agentId>` at cold-start
@@ -1050,6 +1108,13 @@ exactly `paseo-custom`. It rejected the mixed-scheme package before launching it
 The verified bundle is `/Users/yndi/dev/projects/codex-app/paseo-upstream-4893629/packages/desktop/release-custom/mac-arm64/Paseo Custom.app`.
 The primary checkout's older build output was not replaced; use the verified bundle
 or rebuild the current checkout before running packaged acceptance.
+
+The bundle was rebuilt at `c706ee5` after the placeholder and local relay changes.
+The real renderer/preload, isolated daemon, bundled CLI, terminal hooks, exclusive
+custom scheme and cleanup smoke passed again. Log:
+`/private/tmp/paseo-current-custom-package-build.log`; isolated startup capture:
+`/private/tmp/paseo-current-custom-package-qa/renderer.png`. The shortcut-search,
+Files-empty-state and chat-search changes above are newer than this bundle.
 
 The corrected ARM64 ad-hoc bundle passes that final declaration check, independent
 bundle identity, disabled update IPC, real renderer/preload startup, isolated
