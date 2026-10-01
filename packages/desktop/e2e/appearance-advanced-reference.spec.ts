@@ -77,7 +77,13 @@ test("macOS Advanced resets only its fields and refreshes dirty controls", async
     await expect(field).toHaveCSS("border-color", semanticColors.border);
     await expect(field).toHaveCSS("background-color", semanticColors.background);
   }
-  const keys = [...Object.keys(fields), "syntaxTheme", "reducedMotion", "codeFontWeight"];
+  const keys = [
+    ...Object.keys(fields),
+    "syntaxTheme",
+    "reducedMotion",
+    "codeFontWeight",
+    "contentFontWeight",
+  ];
   const readSettings = () =>
     page.evaluate(
       () =>
@@ -98,6 +104,7 @@ test("macOS Advanced resets only its fields and refreshes dirty controls", async
     syntaxTheme: "codex",
     reducedMotion: "system",
     codeFontWeight: null,
+    contentFontWeight: null,
   };
   const preview = page.getByRole("img", {
     name: "Live preview of content typography, syntax theme, and code font",
@@ -143,6 +150,9 @@ test("macOS Advanced resets only its fields and refreshes dirty controls", async
   await weight.click();
   await page.getByRole("menuitem", { name: "Medium", exact: true }).click();
   await expect.poll(readPreview).toMatchObject({ codeWeight: "500" });
+  await page.getByLabel(/^Content font weight:/).click();
+  await page.getByRole("menuitem", { name: "SemiBold", exact: true }).click();
+  await expect.poll(readPreview).toMatchObject({ contentWeight: "600", codeWeight: "500" });
   for (const [key, value] of Object.entries({
     uiBaseFontSize: "18",
     contentFontSize: "19",
@@ -331,13 +341,14 @@ test("browser preserves stored code weight without applying the Mac control", as
   await page.addInitScript(() => {
     localStorage.setItem(
       "@paseo:app-settings",
-      JSON.stringify({ codeFontWeight: "600", language: "en" }),
+      JSON.stringify({ codeFontWeight: "600", contentFontWeight: "600", language: "en" }),
     );
   });
   await gotoAppShell(page);
   await openSettings(page);
   await openSettingsSection(page, "appearance");
   await expect(page.getByLabel(/^Code font weight:/)).toHaveCount(0);
+  await expect(page.getByLabel(/^Content font weight:/)).toHaveCount(0);
   const preview = page.getByRole("img", {
     name: "Live preview of content typography, syntax theme, and code font",
     exact: true,
@@ -355,4 +366,12 @@ test("browser preserves stored code weight without applying the Mac control", as
       () => JSON.parse(localStorage.getItem("@paseo:app-settings") ?? "{}").codeFontWeight,
     ),
   ).toBe("600");
+  expect(
+    await page.evaluate(
+      () => JSON.parse(localStorage.getItem("@paseo:app-settings") ?? "{}").contentFontWeight,
+    ),
+  ).toBe("600");
+  expect(await preview.evaluate((node) => getComputedStyle(node.children[0]).fontWeight)).toBe(
+    "400",
+  );
 });

@@ -2337,6 +2337,7 @@ export const ru: TranslationResources = {
         codeFontHint:
           "Используется для кода, диффов и вывода терминала. Оставьте поле пустым, чтобы использовать системный шрифт.",
         codeFontAccessibility: "Семейство шрифтов кода",
+        contentWeightAccessibility: "Толщина шрифта содержимого: {{value}}",
         codeWeightAccessibility: "Толщина шрифта кода: {{value}}",
         weightOptions: {
           default: "По умолчанию",

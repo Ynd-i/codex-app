@@ -73,6 +73,7 @@ function makeInput(overrides: Partial<AppearanceInput> = {}): AppearanceInput {
     contentFontSize: 15,
     codeFontSize: 12,
     codeFontWeight: null,
+    contentFontWeight: null,
     contentMaxWidth: 820,
     syntaxTheme: "one",
     ...overrides,
@@ -99,23 +100,26 @@ describe("applyAppearance", () => {
     expect(updateTheme.mock.calls.map((call) => call[0])).toEqual([...ALL_THEME_KEYS]);
   });
 
-  it("applies explicit code weight only on Mac without changing other typography or plugin colors", () => {
-    vi.spyOn(platform, "getIsElectronMac").mockReturnValue(true);
-    for (const codeFontWeight of ["400", "500", "600", null] as const) {
-      updateTheme.mockClear();
-      applyAppearance(makeInput({ codeFontWeight }));
-      for (let index = 0; index < ALL_THEME_KEYS.length; index++) {
-        const updated = runCapturedUpdater(index);
-        expect(updated).toMatchObject({ codeFontWeight });
-        expect(updated.fontSize.content).toBe(15);
-        expect(updated.colors.foreground).toBe("#fff");
+  it.each(["codeFontWeight", "contentFontWeight"] as const)(
+    "applies %s only on Mac without changing other typography or plugin colors",
+    (field) => {
+      vi.spyOn(platform, "getIsElectronMac").mockReturnValue(true);
+      for (const codeFontWeight of ["400", "500", "600", null] as const) {
+        updateTheme.mockClear();
+        applyAppearance(makeInput({ [field]: codeFontWeight }));
+        for (let index = 0; index < ALL_THEME_KEYS.length; index++) {
+          const updated = runCapturedUpdater(index);
+          expect(updated).toMatchObject({ [field]: codeFontWeight });
+          expect(updated.fontSize.content).toBe(15);
+          expect(updated.colors.foreground).toBe("#fff");
+        }
       }
-    }
-    vi.spyOn(platform, "getIsElectronMac").mockReturnValue(false);
-    updateTheme.mockClear();
-    applyAppearance(makeInput({ codeFontWeight: "600" }));
-    expect(runCapturedUpdater()).toMatchObject({ codeFontWeight: null });
-  });
+      vi.spyOn(platform, "getIsElectronMac").mockReturnValue(false);
+      updateTheme.mockClear();
+      applyAppearance(makeInput({ [field]: "600" }));
+      expect(runCapturedUpdater()).toMatchObject({ [field]: null });
+    },
+  );
 
   it("patches the active theme before inactive registry entries", () => {
     runtime.themeName = "darkPureBlack";

@@ -47,23 +47,26 @@ function makeDeps(
 }
 
 describe("loadAppSettingsFromStorage", () => {
-  it("preserves default code weights and round-trips explicit weights independently of platform", async () => {
-    for (const codeFontWeight of [undefined, "heavy", 500, false]) {
-      const deps = makeDeps({
-        storage: createInMemoryKeyValueStorage({
-          [APP_SETTINGS_KEY]: JSON.stringify({ codeFontWeight }),
-        }),
-      });
-      expect((await loadAppSettingsFromStorage(deps)).codeFontWeight).toBeNull();
-    }
-    vi.spyOn(platform, "getIsElectronMac").mockReturnValue(false);
-    const deps = makeDeps();
-    const queryClient = new QueryClient();
-    for (const codeFontWeight of ["400", "500", "600", null] as const) {
-      await saveAppSettings({ deps, queryClient, updates: { codeFontWeight } });
-      expect((await loadAppSettingsFromStorage(deps)).codeFontWeight).toBe(codeFontWeight);
-    }
-  });
+  it.each(["codeFontWeight", "contentFontWeight"] as const)(
+    "round-trips %s with safe defaults independently of platform",
+    async (field) => {
+      for (const value of [undefined, "heavy", 500, false]) {
+        const deps = makeDeps({
+          storage: createInMemoryKeyValueStorage({
+            [APP_SETTINGS_KEY]: JSON.stringify({ [field]: value }),
+          }),
+        });
+        expect((await loadAppSettingsFromStorage(deps))[field]).toBeNull();
+      }
+      vi.spyOn(platform, "getIsElectronMac").mockReturnValue(false);
+      const deps = makeDeps();
+      const queryClient = new QueryClient();
+      for (const value of ["400", "500", "600", null] as const) {
+        await saveAppSettings({ deps, queryClient, updates: { [field]: value } });
+        expect((await loadAppSettingsFromStorage(deps))[field]).toBe(value);
+      }
+    },
+  );
 
   it("defaults reduced motion to System and persists explicit overrides", async () => {
     for (const reducedMotion of [undefined, "future-value", null]) {

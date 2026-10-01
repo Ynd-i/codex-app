@@ -440,7 +440,7 @@ function FontFamilyRow({
         <Text style={settingsStyles.rowHint}>{hint}</Text>
       </View>
       {children ? (
-        <View style={styles.codeFontControls}>
+        <View style={styles.fontFamilyControls}>
           {familyInput}
           {children}
         </View>
@@ -451,19 +451,19 @@ function FontFamilyRow({
   );
 }
 
-const CODE_WEIGHT_OPTIONS = [
+const FONT_WEIGHT_OPTIONS = [
   { value: null, label: "default" },
   { value: "400", label: "regular" },
   { value: "500", label: "medium" },
   { value: "600", label: "semibold" },
 ] as const;
 
-function CodeWeightOption({
+function FontWeightOption({
   option,
   selected,
   onChange,
 }: {
-  option: (typeof CODE_WEIGHT_OPTIONS)[number];
+  option: (typeof FONT_WEIGHT_OPTIONS)[number];
   selected: boolean;
   onChange: (value: AppSettings["codeFontWeight"]) => void;
 }) {
@@ -476,28 +476,30 @@ function CodeWeightOption({
   );
 }
 
-function CodeFontWeight({
+function FontWeight({
+  kind,
   value,
   onChange,
 }: {
+  kind: "code" | "content";
   value: AppSettings["codeFontWeight"];
   onChange: (value: AppSettings["codeFontWeight"]) => void;
 }) {
   const { t } = useTranslation();
-  const selected = CODE_WEIGHT_OPTIONS.find((option) => option.value === value)!;
+  const selected = FONT_WEIGHT_OPTIONS.find((option) => option.value === value)!;
   const label = t(`settings.appearance.fonts.weightOptions.${selected.label}`);
   return (
     <DropdownMenu>
       <DropdownTrigger
-        accessibilityLabel={t("settings.appearance.fonts.codeWeightAccessibility", {
+        accessibilityLabel={t(`settings.appearance.fonts.${kind}WeightAccessibility`, {
           value: label,
         })}
       >
         {label}
       </DropdownTrigger>
       <DropdownMenuContent side="bottom" align="end" width={180}>
-        {CODE_WEIGHT_OPTIONS.map((option) => (
-          <CodeWeightOption
+        {FONT_WEIGHT_OPTIONS.map((option) => (
+          <FontWeightOption
             key={option.label}
             option={option}
             selected={value === option.value}
@@ -704,6 +706,7 @@ function SyntaxRow({ value, onChange }: SyntaxRowProps) {
 const ADVANCED_DEFAULTS = {
   uiBaseFontSize: DEFAULT_APP_SETTINGS.uiBaseFontSize,
   contentFontSize: DEFAULT_APP_SETTINGS.contentFontSize,
+  contentFontWeight: DEFAULT_APP_SETTINGS.contentFontWeight,
   codeFontSize: DEFAULT_APP_SETTINGS.codeFontSize,
   codeFontWeight: DEFAULT_APP_SETTINGS.codeFontWeight,
   contentFontFamily: DEFAULT_APP_SETTINGS.contentFontFamily,
@@ -893,6 +896,15 @@ export function AppearanceSection() {
     [settings.contentFontFamily, updateSettings],
   );
 
+  const changeContentFontWeight = useCallback(
+    (contentFontWeight: AppSettings["contentFontWeight"]) => {
+      void updateSettings({ contentFontWeight }).catch(() =>
+        toast.error(t("common.errors.unableToSave")),
+      );
+    },
+    [t, toast, updateSettings],
+  );
+
   const changeCodeFontWeight = useCallback(
     (codeFontWeight: AppSettings["codeFontWeight"]) => {
       void updateSettings({ codeFontWeight }).catch(() =>
@@ -1002,7 +1014,15 @@ export function AppearanceSection() {
       withBorder={!showThemeModes}
       onChangeDraft={setContentFontDraft}
       onCommit={commitContentFontFamily}
-    />
+    >
+      {showThemeModes ? (
+        <FontWeight
+          kind="content"
+          value={settings.contentFontWeight}
+          onChange={changeContentFontWeight}
+        />
+      ) : null}
+    </FontFamilyRow>
   );
   const codeFont = (
     <FontFamilyRow
@@ -1018,7 +1038,7 @@ export function AppearanceSection() {
       onCommit={commitMonoFontFamily}
     >
       {showThemeModes ? (
-        <CodeFontWeight value={settings.codeFontWeight} onChange={changeCodeFontWeight} />
+        <FontWeight kind="code" value={settings.codeFontWeight} onChange={changeCodeFontWeight} />
       ) : null}
     </FontFamilyRow>
   );
@@ -1265,7 +1285,7 @@ const styles = StyleSheet.create((theme, rt) => ({
     borderWidth: theme.borderWidth[1],
     borderColor: theme.colors.border,
   },
-  codeFontControls: {
+  fontFamilyControls: {
     flexDirection: "row",
     alignItems: "center",
     gap: theme.spacing[2],

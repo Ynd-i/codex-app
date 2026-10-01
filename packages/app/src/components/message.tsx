@@ -359,6 +359,7 @@ const userMessageStylesheet = StyleSheet.create((theme) => ({
   text: {
     color: theme.colors.foreground,
     fontFamily: theme.fontFamily.content,
+    ...(theme.contentFontWeight ? { fontWeight: theme.contentFontWeight } : {}),
     fontSize: theme.fontSize.content,
     ...(isWeb
       ? {
@@ -2073,6 +2074,7 @@ const speakMessageStylesheet = StyleSheet.create((theme) => ({
   },
   text: {
     fontFamily: theme.fontFamily.content,
+    ...(theme.contentFontWeight ? { fontWeight: theme.contentFontWeight } : {}),
     fontSize: theme.fontSize.content,
     lineHeight: Math.round(theme.fontSize.content * 1.4),
     color: theme.colors.foreground,

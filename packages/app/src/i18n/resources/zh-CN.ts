@@ -2269,6 +2269,7 @@ export const zhCN: TranslationResources = {
         codeFont: "代码字体",
         codeFontHint: "用于代码、diff 和终端输出。留空则使用系统默认",
         codeFontAccessibility: "代码字体族",
+        contentWeightAccessibility: "内容字体字重：{{value}}",
         codeWeightAccessibility: "代码字体字重：{{value}}",
         weightOptions: {
           default: "默认",

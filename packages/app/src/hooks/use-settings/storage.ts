@@ -29,7 +29,7 @@ import {
   PLUGIN_THEME_PREFERENCE,
   THEME_OPTIONS,
   type ThemePreference,
-  type CodeFontWeight,
+  type FontWeightSetting,
 } from "@/styles/theme";
 import { z } from "zod";
 import { APP_SETTINGS_KEY, LEGACY_SETTINGS_KEY } from "./keys";
@@ -93,7 +93,8 @@ export interface AppSettings {
   uiBaseFontSize: number; // clamped px, platform default 14 or 15
   contentFontSize: number; // clamped px, platform default 15 or 16
   codeFontSize: number; // clamped px, default 12
-  codeFontWeight: CodeFontWeight;
+  codeFontWeight: FontWeightSetting;
+  contentFontWeight: FontWeightSetting;
   /** Max width of chat and markdown content in px; null follows the current default. */
   contentMaxWidth: number | null;
   syntaxTheme: SyntaxThemeId;
@@ -157,6 +158,7 @@ export const DEFAULT_CLIENT_SETTINGS: AppSettings = {
   contentFontSize: DEFAULT_CONTENT_FONT_SIZE,
   codeFontSize: DEFAULT_CODE_FONT_SIZE,
   codeFontWeight: null,
+  contentFontWeight: null,
   contentMaxWidth: null,
   syntaxTheme: getDefaultSyntaxTheme(),
   reducedMotion: "system",
@@ -249,6 +251,7 @@ const StoredAppSettingsSchema = z
       DEFAULT_CODE_FONT_SIZE,
     ),
     codeFontWeight: z.enum(["400", "500", "600"]).nullable().catch(null),
+    contentFontWeight: z.enum(["400", "500", "600"]).nullable().catch(null),
     contentMaxWidth: z
       .null()
       .or(clampedNumber(MIN_CONTENT_MAX_WIDTH, MAX_CONTENT_MAX_WIDTH))

@@ -21,6 +21,20 @@ describe("createMarkdownStyles", () => {
     },
   );
 
+  it("keeps content weight independent from code and authored heading weights", () => {
+    const styles = createMarkdownStyles({
+      ...darkTheme,
+      contentFontWeight: "600",
+      codeFontWeight: null,
+    });
+    expect(styles.body.fontWeight).toBe("600");
+    expect(styles.strong.fontWeight).toBe("700");
+    expect(styles.heading1.fontWeight).toBe(darkTheme.fontWeight.bold);
+    expect(styles.code_inline.fontWeight).toBe("400");
+    expect(styles.fence.fontWeight).toBe("400");
+    expect(styles.text).not.toHaveProperty("fontWeight");
+  });
+
   it("leaves code weight inherited when the override is unset", () => {
     const theme = { ...darkTheme, codeFontWeight: null };
     for (const styles of [createMarkdownStyles(theme), createCompactMarkdownStyles(theme)]) {

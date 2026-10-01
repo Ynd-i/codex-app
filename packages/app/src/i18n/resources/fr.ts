@@ -2355,6 +2355,7 @@ export const fr: TranslationResources = {
         codeFontHint:
           "Utilisé dans le code, les différences et la sortie du terminal. Laisser vide pour la valeur par défaut du système",
         codeFontAccessibility: "Famille de polices de code",
+        contentWeightAccessibility: "Graisse de la police du contenu : {{value}}",
         codeWeightAccessibility: "Graisse de la police de code : {{value}}",
         weightOptions: {
           default: "Par défaut",

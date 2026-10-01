@@ -20,6 +20,7 @@ export interface AppearanceInput {
   contentFontSize: number; // already clamped
   codeFontSize: number; // already clamped
   codeFontWeight: Theme["codeFontWeight"];
+  contentFontWeight: Theme["contentFontWeight"];
   contentMaxWidth: number; // already clamped, default resolved
   syntaxTheme: SyntaxThemeId;
 }
@@ -68,6 +69,7 @@ export function applyAppearance(input: AppearanceInput): void {
   const content = input.contentFontFamily.trim() || ui;
   const mono = input.monoFontFamily.trim() || DEFAULT_MONO_FONT_STACK;
   const codeFontWeight = getIsElectronMac() ? input.codeFontWeight : null;
+  const contentFontWeight = getIsElectronMac() ? input.contentFontWeight : null;
   const diffLineHeight = Math.round(input.codeFontSize * 1.5); // couple to code size
   const activeTheme = UnistylesRuntime.themeName;
   // Unistyles web emits after each registry patch. Updating the mounted theme
@@ -91,6 +93,7 @@ export function applyAppearance(input: AppearanceInput): void {
           ...t,
           fontFamily,
           codeFontWeight,
+          contentFontWeight,
           fontSize,
           lineHeight,
           contentMaxWidth: input.contentMaxWidth,
@@ -101,6 +104,7 @@ export function applyAppearance(input: AppearanceInput): void {
         ...t,
         fontFamily,
         codeFontWeight,
+        contentFontWeight,
         fontSize,
         lineHeight,
         contentMaxWidth: input.contentMaxWidth,

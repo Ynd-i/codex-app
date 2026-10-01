@@ -2332,6 +2332,7 @@ export const ptBR: TranslationResources = {
         codeFontHint:
           "Usada em código, diffs e saída do terminal. Deixe vazio para usar o padrão do sistema",
         codeFontAccessibility: "Família da fonte de código",
+        contentWeightAccessibility: "Peso da fonte do conteúdo: {{value}}",
         codeWeightAccessibility: "Peso da fonte de código: {{value}}",
         weightOptions: {
           default: "Padrão",

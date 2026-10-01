@@ -23,6 +23,7 @@ function contentHeadingLineHeight(contentSize: number, tier: keyof typeof FONT_S
  * which rewrites a literal `(c)` as ©.
  */
 export function createMarkdownStyles(theme: Theme) {
+  const codeFontWeight = theme.codeFontWeight ?? (theme.contentFontWeight ? "400" : null);
   return {
     // =========================================================================
     // BASE STYLES
@@ -33,6 +34,7 @@ export function createMarkdownStyles(theme: Theme) {
       color: theme.colors.foreground,
       fontFamily: theme.fontFamily.content,
       fontSize: theme.fontSize.content,
+      ...(theme.contentFontWeight ? { fontWeight: theme.contentFontWeight } : {}),
       // Prose line-height scales with the content size, not the
       // code-size-coupled lineHeight.diff token used by code/diff surfaces.
       lineHeight: Math.round(theme.fontSize.content * 1.4),
@@ -139,7 +141,9 @@ export function createMarkdownStyles(theme: Theme) {
 
     strong: {
       ...webSelectableTextStyle,
-      fontWeight: theme.fontWeight.medium,
+      fontWeight: theme.contentFontWeight
+        ? ({ "400": "500", "500": "600", "600": "700" } as const)[theme.contentFontWeight]
+        : theme.fontWeight.medium,
     },
 
     em: {
@@ -183,7 +187,7 @@ export function createMarkdownStyles(theme: Theme) {
       paddingVertical: 2,
       borderRadius: theme.borderRadius.md,
       borderWidth: 0,
-      ...(theme.codeFontWeight ? { fontWeight: theme.codeFontWeight } : {}),
+      ...(codeFontWeight ? { fontWeight: codeFontWeight } : {}),
       fontFamily: theme.fontFamily.mono,
       fontSize: theme.fontSize.code,
     },
@@ -194,7 +198,7 @@ export function createMarkdownStyles(theme: Theme) {
       color: theme.colors.foreground,
       padding: theme.spacing[3],
       borderRadius: theme.borderRadius.md,
-      ...(theme.codeFontWeight ? { fontWeight: theme.codeFontWeight } : {}),
+      ...(codeFontWeight ? { fontWeight: codeFontWeight } : {}),
       fontFamily: theme.fontFamily.mono,
       fontSize: theme.fontSize.code,
       marginVertical: theme.spacing[2],
@@ -208,7 +212,7 @@ export function createMarkdownStyles(theme: Theme) {
       borderRadius: theme.borderRadius.md,
       borderWidth: 1,
       borderColor: theme.colors.border,
-      ...(theme.codeFontWeight ? { fontWeight: theme.codeFontWeight } : {}),
+      ...(codeFontWeight ? { fontWeight: codeFontWeight } : {}),
       fontFamily: theme.fontFamily.mono,
       fontSize: theme.fontSize.code,
       marginVertical: theme.spacing[3],
@@ -310,7 +314,7 @@ export function createMarkdownStyles(theme: Theme) {
       fontFamily: theme.fontFamily.content,
       marginRight: 4,
       fontSize: theme.fontSize.content,
-      fontWeight: theme.fontWeight.normal,
+      fontWeight: theme.contentFontWeight ?? theme.fontWeight.normal,
       lineHeight: Math.round(theme.fontSize.content * 1.4),
       minWidth: 12,
     },

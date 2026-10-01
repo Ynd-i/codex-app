@@ -5,11 +5,14 @@ import { darkTheme } from "@/styles/theme";
 import { appearanceStyleBoundaryKey } from "./appearance-style-boundary";
 
 describe("appearanceStyleBoundaryKey", () => {
-  it("refreshes mounted web code when only its explicit weight changes", () => {
-    expect(appearanceStyleBoundaryKey({ ...darkTheme, codeFontWeight: "500" })).not.toBe(
-      appearanceStyleBoundaryKey(darkTheme),
-    );
-  });
+  it.each(["codeFontWeight", "contentFontWeight"] as const)(
+    "refreshes mounted text when only %s changes",
+    (field) => {
+      expect(appearanceStyleBoundaryKey({ ...darkTheme, [field]: "500" })).not.toBe(
+        appearanceStyleBoundaryKey(darkTheme),
+      );
+    },
+  );
   it("changes when content size changes without any other appearance token changing", () => {
     const contentOnlyChange = {
       ...darkTheme,

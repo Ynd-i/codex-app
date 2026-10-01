@@ -651,14 +651,15 @@ export const DEFAULT_CONTENT_MAX_WIDTH = getIsElectronMac() ? 736 : 820;
 // `number`/`string` (not narrowed by `as const`) so the appearance updater can patch
 // them at runtime via `UnistylesRuntime.updateTheme`. The remaining tokens keep their
 // literal types.
-export type CodeFontWeight = "400" | "500" | "600" | null;
+export type FontWeightSetting = "400" | "500" | "600" | null;
 
 interface CommonTheme {
   spacing: typeof SPACING;
   fontSize: Record<keyof typeof FONT_SIZE, number>;
   fontFamily: { ui: string; content: string; mono: string };
   /** Null preserves each code surface's authored default. */
-  codeFontWeight: CodeFontWeight;
+  codeFontWeight: FontWeightSetting;
+  contentFontWeight: FontWeightSetting;
   lineHeight: Record<keyof typeof LINE_HEIGHT, number>;
   contentMaxWidth: number;
   iconSize: typeof ICON_SIZE;
@@ -677,6 +678,7 @@ const commonTheme: CommonTheme = {
     mono: DEFAULT_MONO_FONT_STACK,
   },
   codeFontWeight: null,
+  contentFontWeight: null,
   lineHeight: LINE_HEIGHT,
   contentMaxWidth: DEFAULT_CONTENT_MAX_WIDTH,
   iconSize: ICON_SIZE,

@@ -215,6 +215,7 @@ const styles = StyleSheet.create((theme) => ({
   contentSample: {
     color: theme.colors.foreground,
     fontSize: theme.fontSize.content,
+    ...(theme.contentFontWeight ? { fontWeight: theme.contentFontWeight } : null),
     lineHeight: Math.round(theme.fontSize.content * 1.4),
     paddingHorizontal: theme.spacing[3],
     paddingBottom: theme.spacing[2],
