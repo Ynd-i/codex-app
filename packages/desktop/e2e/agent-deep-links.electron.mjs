@@ -144,6 +144,7 @@ export async function runAgentDeepLinksRegression({
   await expect(composer).toHaveValue(draft);
   expect((await appState()).windows).toEqual(initial.windows);
   await page.screenshot({ path: path.join(artifactDir, "agent-link-preserved-draft.png") });
+  await page.evaluate(() => window.__stopAgentLinkEvents());
 
   await page.keyboard.press("Meta+,");
   await page
@@ -260,7 +261,6 @@ export async function runAgentDeepLinksRegression({
   await page.getByTestId("settings-back-to-workspace").filter({ visible: true }).click();
   await expectChat("A");
   await expect(composer).toHaveValue(draft);
-  await page.evaluate(() => window.__stopAgentLinkEvents());
   return {
     serverId,
     workspaceId,
@@ -278,6 +278,7 @@ export async function runAgentDeepLinksRegression({
     packagedAppearanceModes: true,
     packagedAppearanceAdvancedReset: true,
     packagedCodeFontWeight: true,
+    packagedInterfaceFontWeight: true,
     packagedShellOverflow: true,
     packagedMotionControl: true,
     packagedCopyMenu: true,
