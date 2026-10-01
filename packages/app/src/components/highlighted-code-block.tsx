@@ -11,7 +11,7 @@ import { StyleSheet } from "react-native-unistyles";
 import { ScrollView } from "@/components/ui/scroll-view";
 import { MarkdownTextSpan } from "@/components/markdown-text";
 import * as Clipboard from "expo-clipboard";
-import { Check, Copy, Code, WrapText } from "lucide-react-native";
+import { ArrowRightToLine, Check, Copy, Code, WrapText } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import type { HighlightToken } from "@getpaseo/highlight";
 import { getIsElectronMac, isNative, isWeb } from "@/constants/platform";
@@ -90,6 +90,7 @@ export const HighlightedCodeBlock = React.memo(function HighlightedCodeBlock({
   const isMac = getIsElectronMac();
   const { t } = useTranslation();
   const [wrap, setWrap] = useState(true);
+  const WrapActionIcon = wrap ? ArrowRightToLine : WrapText;
   const toggleWrap = useCallback(() => setWrap((value) => !value), []);
   const [isHovered, setIsHovered] = useState(false);
   const handlePointerEnter = useCallback(() => setIsHovered(true), []);
@@ -130,7 +131,7 @@ export const HighlightedCodeBlock = React.memo(function HighlightedCodeBlock({
                 onPress={toggleWrap}
                 style={macStyles.action}
               >
-                <WrapText size={16} color={macStyles.headerText.color} />
+                <WrapActionIcon size={16} color={macStyles.headerText.color} />
               </Pressable>
               <CopyButton getCode={getCode} visible inline />
             </View>
@@ -200,7 +201,8 @@ function splitFenceStyle(inheritedStyles: TextStyle, textStyle: TextStyle): Spli
   if (fontFamily !== undefined) textOnly.fontFamily = fontFamily;
   if (fontSize !== undefined) textOnly.fontSize = fontSize;
   if (fontWeight !== undefined) textOnly.fontWeight = fontWeight;
-  if (fontSize !== undefined) textOnly.lineHeight = Math.round(fontSize * 1.45);
+  if (fontSize !== undefined)
+    textOnly.lineHeight = Math.round(fontSize * (getIsElectronMac() ? 1.5 : 1.45));
   if (color !== undefined) textOnly.color = color;
   return {
     containerStyle: [box as ViewStyle, CONTAINER_BASE],
@@ -305,9 +307,9 @@ const macStyles = StyleSheet.create((theme, rt) => ({
     borderColor: rt.themeName === "dark" ? "#555553" : theme.colors.border,
     backgroundColor: rt.themeName === "dark" ? "#454543" : theme.colors.surface2,
     paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingTop: 8,
     paddingBottom: 14,
-    gap: 16,
+    gap: 12,
     minWidth: 0,
     overflow: "hidden",
   },

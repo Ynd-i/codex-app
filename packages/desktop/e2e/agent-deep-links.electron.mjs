@@ -308,6 +308,7 @@ export async function runAgentDeepLinksRegression({
     .filter({ hasText: "这是一段代码或纯文本" });
   await expect(plain.getByText("Plain text", { exact: true })).toBeVisible();
   await expect(plain).toHaveCSS("border-radius", "20px");
+  await expect(plain).toHaveCSS("height", "82px");
   await expect
     .poll(async () => {
       const body = await plain.boundingBox();
@@ -399,6 +400,7 @@ export async function runAgentDeepLinksRegression({
     packagedProseSpacing: true,
     packagedChatColumnAlignment: true,
     packagedPlainReplyTiming: true,
+    packagedCodeCardDensity: true,
     packagedQuestionSubmission: true,
     invalidUrlRejected: true,
     osProtocolDispatch: "not tested",

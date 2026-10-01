@@ -2226,6 +2226,23 @@ plain-reply timing and question submission. The
 inspected. The bundle retains the existing backend and the harness uses only its
 isolated Mock host; protected daemons were not restarted.
 
+#### Code-card and tight-list density
+
+The supplied styled-text image's single-line code card spans source rows 719–882
+at 2× scale, approximately 82 CSS pixels. The existing card measured 89px. Mac
+code cards now use 8px top padding, a 12px header/body gap and 1.5× code line height;
+the default single-line card measures 82px. The wrapped state's action uses the
+reference's right-arrow icon, switching to the wrap icon for the reverse action.
+Mac tight list rows no longer add 4px below each item, reducing the measured row
+interval from 25px to 21px. Loose-list paragraph margins remain available.
+
+Two renderer cases pass (18.4s), covering density, wide/compact alignment, nested
+quote paragraphs, code wrap/copy and timing controls. Twenty Markdown style/list
+tests pass. [Updated density](../qa-evidence/codex-desktop/code-list-density.png)
+was inspected. Logs: `/private/tmp/paseo-code-density-{red,green,units}.log`.
+Non-Mac density is unchanged. Paragraph/list/fence boundaries still share the
+stream's generic gap, so this does not claim full cross-block spacing parity.
+
 ### Upstream refresh to e10f6d2 — 2026-10-01
 
 Fetched ten new upstream commits after `4893629`, through `e10f6d2`, including the

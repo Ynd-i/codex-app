@@ -42,6 +42,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- Matched Mac code-card padding, line height and wrap-action icons to the reference, and removed extra spacing between tight Markdown list rows.
+
 - Removed empty activity headers from plain Mac replies and restored completion timestamps beside reply actions; hovering reveals elapsed time without shifting the controls.
 
 - Aligned macOS chat text and code blocks with the composer at wide and compact widths, keeping measured Markdown height-cache keys consistent with the rendered column.

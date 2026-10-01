@@ -95,6 +95,14 @@ for (const platform of ["darwin", "win32"] as const) {
           "0px",
         );
         await expect(plain).toHaveCSS("border-radius", "20px");
+        await expect(plain).toHaveCSS("height", "82px");
+        await expect
+          .poll(async () => {
+            const first = await assistant.getByText("项目一", { exact: true }).boundingBox();
+            const second = await assistant.getByText("项目二", { exact: true }).boundingBox();
+            return first && second ? second.y - first.y : null;
+          })
+          .toBe(21);
         await expect(plain).toHaveCSS("background-color", "rgb(69, 69, 67)");
         await expect(plain.getByText("Plain text", { exact: true })).toBeVisible();
         await expect(typed.getByText("ts", { exact: true })).toBeVisible();

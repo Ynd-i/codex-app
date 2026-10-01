@@ -286,7 +286,7 @@ export function createMarkdownStyles(theme: Theme) {
     },
 
     list_item: {
-      marginBottom: theme.spacing[1],
+      marginBottom: getIsElectronMac() ? 0 : theme.spacing[1],
       flexDirection: "row" as const,
       alignItems: "flex-start" as const,
       flexShrink: 1,
