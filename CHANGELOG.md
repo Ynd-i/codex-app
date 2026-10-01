@@ -63,6 +63,7 @@ distribution and full migration acceptance remain pending; see the
 
 ### Fixed
 
+- Preserve the selected chat when returning from Settings instead of jumping to an unread sibling in the same workspace. Explicit workspace opens still prioritize pending attention.
 - Flip horizontal submenus to the side with sufficient room instead of clamping them over their parent menu.
 - Scaled tool-output and diagnostic code line spacing with the saved code font size, preventing overlapping lines at larger sizes while keeping the default spacing unchanged.
 - Removed the floating focus hint from the macOS composer so it cannot overlap the empty placeholder in narrow chat columns. The focus shortcut and other platforms remain unchanged.

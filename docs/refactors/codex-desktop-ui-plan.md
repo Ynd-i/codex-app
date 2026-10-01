@@ -164,8 +164,9 @@ On October 1 the regular allowance reached 0% and reported
 Existing prepaid credits were available to finish the two already-started slices;
 no credits were purchased. Their Shell-overflow and real-webview checks are
 recorded below. The latest verified Custom bundle matches production source at
-`968b8d9`, including settings geometry, Appearance previews and Shell overflow.
-Its real renderer, deep-link, saved-preference and large-code-font checks pass.
+`f349168`, including motion preferences, the project editor, Copy menus and the
+settings-return repair. Its real renderer, deep-link, saved-preference,
+large-code-font and retained-chat checks pass.
 
 Code inspection, implementation, targeted unit tests, isolated headless renderer
 tests, dependency builds, documentation, and commits can continue while the Mac
@@ -729,6 +730,18 @@ unchanged 120-second case limit and 75-second connection-liveness boundary remai
 The repaired case passes in 56.6 seconds; log:
 `/private/tmp/paseo-chat-navigation-verified.log`.
 
+The expanded packaged test then exposed a separate production bug: returning from
+project settings could replace chat A with its unread sibling B. The shared
+last-workspace helper reused an explicit workspace-open path that prioritizes
+attention agents. It now restores the existing route and pane selection without
+opening another agent tab. Explicit workspace navigation keeps its attention
+priority. A focused regression first recorded the unwanted sibling tab open;
+all 12 navigation tests and the original real-Electron flow now pass, with chat A
+and its draft retained after project editing. Settings test helpers also restrict
+their Back locator to visible screens, since inactive routes remain mounted.
+Logs: `/private/tmp/paseo-settings-return-{red,unit}.log` and
+`/private/tmp/paseo-settings-return-package-final.log`.
+
 The main area now renders only the current conversation. Supporting tools move
 into the right dock and share the top window bar with the chat title. The
 [Explorer contract](../explorer-sidebar.md#custom-macos-layout) owns placement,
@@ -1010,7 +1023,7 @@ The final Mac case passes in `/private/tmp/paseo-mac-modal-verified.log`; the
 ordinary-browser rename case passes in `/private/tmp/paseo-mac-modal-browser.log`.
 Earlier full edit-flow coverage is in `/private/tmp/paseo-project-edit-browser.log`.
 The native file-picker/read boundary is simulated; project and icon saves use the
-real isolated daemon. These frontend slices postdate the verified `968b8d9` bundle.
+real isolated daemon. These slices are included in the refreshed bundle below.
 
 Integration formatting, lint and workspace typechecks pass for the motion,
 project/modal and Copy changes. Logs:
@@ -1298,7 +1311,7 @@ Mock chat content and a private host. Log:
 `/private/tmp/paseo-search-files-packaged-links.log`; result and captures:
 `/private/tmp/paseo-search-files-packaged-links-qa`.
 
-The latest refresh matches the production source committed as `968b8d9`, including
+A subsequent refresh matched the production source committed as `968b8d9`, including
 the settings geometry and the code-line-height repair found during screenshot
 review. The source diff used for the build was compared with the final production
 diff before committing. The full custom startup/CLI/terminal smoke passes in
@@ -1310,6 +1323,19 @@ The older `580aa19` package failed the added Appearance check; `8ed7135` failed 
 added line-height check before the final rebuild. Result and inspected private
 captures are under `/private/tmp/paseo-code-line-height-final-qa`. Root checks pass
 in `/private/tmp/paseo-code-line-height-final-{format,lint,typecheck}.log`.
+
+The latest bundle now matches production source `f349168`. The startup/CLI/terminal
+smoke and expanded agent-link flow pass after the settings-return repair. The flow
+also checks the Copy submenu without writing the user's clipboard, changes and
+restores the motion control, opens the actual project editor with its real source
+directory, cancels it, and returns to chat A with its original draft. Project and
+Appearance captures were inspected in the private artifact directory
+`/private/tmp/paseo-settings-return-package-final-qa`. Logs:
+`/private/tmp/paseo-settings-return-package-build.log`,
+`/private/tmp/paseo-settings-return-package-final.log`,
+`/private/tmp/paseo-settings-return-typecheck-verified.log`, and
+`/private/tmp/paseo-settings-return-final-{format,lint}.log`. The first concurrent
+typecheck raced the dependency build; the final check was run after build completion.
 
 The corrected ARM64 ad-hoc bundle passes that final declaration check, independent
 bundle identity, disabled update IPC, real renderer/preload startup, isolated

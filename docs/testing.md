@@ -179,6 +179,8 @@ panel and Files dock, asserting that the main tab strip and main plus stay absen
 while the dock and draft survive chat switching. It then uses the packaged Appearance
 controls to select Dark and save the maximum code size of 22px, checks 33px Shell
 line spacing and verifies that scrolling to the last line removes the fade.
+The flow checks the motion option and Copy submenu, then opens and cancels the
+actual project editor and verifies return to the original chat and draft.
 These preference changes apply only to the temporary test user data. It keeps the single-instance lock enabled
 inside private user data and does not invoke OS handler registration. The `open-url` event is
 injected through the test process's own debugger; OS dispatch and coexistence with the
