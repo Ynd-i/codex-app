@@ -42,6 +42,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- Matched Mac font-family fields to compact reference capsules and replaced raw default font stacks with the existing localized System default hint; custom font input and other platforms retain their behavior.
+
 - Integrated upstream through `e10f6d2` (0.11.0-beta.1), retaining the custom Mac layout and usage overview while adopting usage options, stacked-sheet behavior, session import entry, provider fixes and skill deduplication.
 
 - Matched macOS Markdown quotes to the supplied transparent, narrow-bar reference while retaining paragraph spacing inside multi-paragraph quotes and preserving other platforms.

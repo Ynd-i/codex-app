@@ -734,6 +734,25 @@ Logs: `/private/tmp/paseo-ui-weight-units-final.log`,
 `/private/tmp/paseo-ui-weight-final.log`, `/private/tmp/paseo-ui-weight-layout.log`,
 and `/private/tmp/paseo-ui-weight-{format,lint-final,typecheck-final}.log`.
 
+### Font-family field chrome — 2026-10-01
+
+Mac font-family inputs now use the reference's 28px minimum height, 14px radius
+and sampled default-dark capsule colors (`#494947` fill, `#61615f` border).
+The existing localized System default placeholder replaces the long internal font
+stack on Mac; a selected interface family still appears as the content fallback.
+User-supplied font names remain editable through the existing validation/save path.
+Other themes keep their semantic colors and non-Mac fields keep their geometry.
+
+The existing Advanced renderer cases pass (two cases, 22.9s), including all three
+family fields, actual pixel geometry/colors, save/reset behavior, 700px layout,
+21px interface text without vertical clipping, and ordinary-browser preservation.
+[Wide fields](../qa-evidence/codex-desktop/font-family-fields-wide.png) and
+[narrow fields](../qa-evidence/codex-desktop/font-family-fields-narrow.png) were
+visually checked against the typography reference. This adapts existing editable
+fields; it does not invent an installed-font enumeration service or a font-picker
+capability. Logs: `/private/tmp/paseo-font-fields-renderer.log`,
+`/private/tmp/paseo-font-fields-lint.log` and `/private/tmp/paseo-font-fields-commit.log`.
+
 ### Voice exclusions
 
 The custom macOS desktop now hides both composer microphone controls and the

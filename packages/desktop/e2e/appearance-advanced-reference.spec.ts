@@ -304,6 +304,14 @@ test("macOS Advanced resets only its fields and refreshes dirty controls", async
     path: testInfo.outputPath("appearance-advanced.png"),
     animations: "disabled",
   });
+  const familyControls = [uiFamily, fields.contentFontFamily, fields.monoFontFamily];
+  for (const field of familyControls) {
+    await expect(field).toHaveCSS("height", "28px");
+    await expect(field).toHaveCSS("border-radius", "14px");
+    await expect(field).toHaveCSS("background-color", "rgb(73, 73, 71)");
+    await expect(field).toHaveCSS("border-color", "rgb(97, 97, 95)");
+    await expect(field).toHaveAttribute("placeholder", "System default");
+  }
   await fields.monoFontFamily.scrollIntoViewIfNeeded();
   await page.screenshot({
     path: testInfo.outputPath("appearance-code-weight-wide.png"),
@@ -331,7 +339,7 @@ test("macOS Advanced resets only its fields and refreshes dirty controls", async
   await fields.uiBaseFontSize.press("Tab");
   await expect.poll(() => beforeLargeType.evaluate((node) => node.isConnected)).toBe(false);
   await beforeLargeType.dispose();
-  for (const field of sizeControls) {
+  for (const field of [...sizeControls, ...familyControls]) {
     await expect(field).toHaveCSS("min-height", "28px");
     await expect(field).toHaveCSS("font-size", "21px");
     const geometry = await field.evaluate((node) => ({
