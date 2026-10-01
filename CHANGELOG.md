@@ -8,6 +8,7 @@ distribution and full migration acceptance remain pending; see the
 
 ### Added
 
+- Grouped macOS typography, motion, content width and syntax controls under a collapsible Advanced section with a scoped reset; theme and interface font selections remain separate.
 - Added a saved macOS Reduce motion preference with live System behavior and consistent sidebar, outline, streaming-loader and decorative shimmer handling.
 - Restored Copy agent id and supported provider resume commands in the current-chat titlebar; unavailable resume commands stay disabled.
 - Added macOS Appearance previews for System, Light and Dark using the existing theme preference; full built-in and plugin theme choices remain available.
@@ -29,6 +30,7 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- Matched the macOS chat menu's Archive text to the neutral reference color while retaining running-agent confirmation.
 - Matched macOS project editing with a combined name/icon input, real source-folder information and compact actions while retaining existing validation and save behavior.
 - Refined wide macOS modal titles, corners, separators and backdrop to follow the supplied dialog references.
 - Matched macOS Settings card width, corner radius and appearance-mode spacing to the reference; theme previews now use the actual platform palette. Other platforms keep their layout defaults.

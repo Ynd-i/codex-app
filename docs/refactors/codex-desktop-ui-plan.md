@@ -86,7 +86,7 @@ scope; it does not remove runtime code or add new provider integrations.
 | Step                             | Status                                                | Acceptance                                                                                                                                                                                   |
 | -------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 0. Upstream baseline             | Complete for local startup                            | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                                      |
-| 1. Window and sidebar appearance | Base frame verified; motion preference checked        | Window frame and navigation have native evidence. The new System/On/Off preference passes isolated renderer checks; its live-window review remains pending.                                  |
+| 1. Window and sidebar appearance | Base frame verified; Appearance controls checked      | Window frame and navigation have native evidence. Motion and Advanced reset pass isolated renderer and packaged checks; live-window comparison remains pending.                              |
 | 1a. Upstream integration check   | Refreshed and verified                                | Upstream `4893629` integrated in isolation; 13 conflicts resolved. Provider, usage, navigation and custom desktop checks pass; protected daemon processes stay running.                      |
 | 2. Chat navigation               | Single-chat layout verified locally                   | Main tabs removed; tools route right with saved state retained. Default sidebar, current-chat actions, draft isolation and Back/Forward remain. Custom chat sidebar stays deferred.          |
 | 3. Transcript and composer       | Composer and activity verified; visual polish pending | Column, input/model controls, tool cards and completed-turn activity are checked in native development. Attachment-menu renderer checks pass; native follow-up and transcript polish remain. |
@@ -721,6 +721,12 @@ case and the existing browser nested-label-menu case pass. Inspected captures:
 and `/private/tmp/paseo-menu-flip-browser.log`. Native session branching remains
 outside this UI slice; no new branch or cloud-share behavior was added.
 
+The Archive row now uses the reference's neutral text color on macOS; other
+platforms retain destructive coloring, and running-agent confirmation is unchanged.
+The existing Copy case first failed on the old red color, then passed in 14.4s;
+the refreshed menu capture was inspected. Logs:
+`/private/tmp/paseo-chat-menu-tone-{red,final}.log`.
+
 The older desktop chat-navigation case still clicked the removed main agent tabs.
 Its targeted red run reproduced that timeout; the test now selects real chats
 through Command Center. Back/Forward, per-chat drafts, offline rename rejection
@@ -1087,6 +1093,44 @@ Pure black case passes too. Corrected captures were inspected:
 Logs: `/private/tmp/paseo-settings-geometry{-red,,-browser}.log` and
 `/private/tmp/paseo-settings-package-final-{format,lint,typecheck}.log`.
 
+### Advanced appearance — 2026-10-01
+
+On macOS, Interface font now sits in the upper visual-style card. Advanced starts
+expanded and supports keyboard collapse/expand. It groups the existing size,
+motion, content/code family, width and syntax controls without adding unsupported
+color, weight or platform settings. Other platforms retain their previous layout.
+
+Reset submits only eight fields through the existing save path: interface,
+content and code sizes; content and code families; content width; syntax theme;
+and reduced motion. Theme, plugin theme, interface family, language and other
+preferences remain unchanged. Uncontrolled inputs use their existing replacement
+refs and a reset key so dirty text and the preview refresh even when stored values
+already equal the defaults. A pointer reset avoids blur-saving the discarded
+draft first. Save errors show a localized message and permit retry; the existing
+optimistic settings cache is not rolled back by this feature.
+
+The renderer regression passes all eight saved defaults, one storage write for a
+focused dirty reset, numeric/family/width drafts when saved defaults are unchanged,
+preview refresh, reload, unrelated preference retention, save failure/retry and
+700px layout. The initial red run proved the missing Advanced entry. A later
+test correction distinguished the legacy missing-content-size migration (14)
+from the current reset default (15); product defaults were not changed. Syntax
+defaults are resolved when Reset is clicked, including late desktop bridge
+availability. Logs: `/private/tmp/paseo-advanced-red.log` and
+`/private/tmp/paseo-advanced.log`. All 36 locale checks pass in
+`/private/tmp/paseo-advanced-i18n.log`.
+
+The existing AppearanceStyleBoundary intentionally remounts children after font
+token changes. A repeated test filled the next field after storage completed but
+before that remount, losing the test's new draft. Trace snapshots showed the
+replacement before the next Tab event. The regression now waits for the old
+input node to detach after those font-token saves before editing the next field;
+no fixed sleep or production lifecycle change was added.
+
+The [Advanced capture](../qa-evidence/codex-desktop/settings-appearance-advanced.png)
+was inspected at 1352×782 with synthetic host data. The ordinary-browser interface
+font-size regression passes in `/private/tmp/paseo-advanced-browser.log`.
+
 ### Usage data foundation
 
 The existing usage-source contract already supplies provider/account labels, quota
@@ -1324,7 +1368,7 @@ added line-height check before the final rebuild. Result and inspected private
 captures are under `/private/tmp/paseo-code-line-height-final-qa`. Root checks pass
 in `/private/tmp/paseo-code-line-height-final-{format,lint,typecheck}.log`.
 
-The latest bundle now matches production source `f349168`. The startup/CLI/terminal
+The previous bundle matched production source `f349168`. The startup/CLI/terminal
 smoke and expanded agent-link flow pass after the settings-return repair. The flow
 also checks the Copy submenu without writing the user's clipboard, changes and
 restores the motion control, opens the actual project editor with its real source
@@ -1336,6 +1380,23 @@ Appearance captures were inspected in the private artifact directory
 `/private/tmp/paseo-settings-return-typecheck-verified.log`, and
 `/private/tmp/paseo-settings-return-final-{format,lint}.log`. The first concurrent
 typecheck raced the dependency build; the final check was run after build completion.
+
+The latest Custom refresh matches production source `dd3c000`, including Advanced
+appearance and the neutral Archive row. Startup, real renderer/preload, isolated daemon, CLI and terminal smoke pass
+in `/private/tmp/paseo-advanced-package-build.log`. The expanded packaged flow also
+passes keyboard collapse/expand, a focused unsaved code-size draft reset to 12,
+motion reset to System and preservation of the selected Dark theme. It retains
+the prior single-chat/right-dock, draft, shell, project editor and deep-link
+checks. Log: `/private/tmp/paseo-advanced-package-final.log`; result and inspected
+private captures: `/private/tmp/paseo-advanced-package-final-qa`. Source hashes
+were checked against the build input after the run. Build clean steps must run
+sequentially with renderer tests as well as typechecks; a parallel renderer
+attempt encountered temporary missing protocol output during this build.
+
+Root format, lint and workspace typecheck pass, including the final feature commit
+hooks. Logs: `/private/tmp/paseo-advanced-final-{format,lint,typecheck}.log`,
+`/private/tmp/paseo-archive-tone-commit.log` and
+`/private/tmp/paseo-advanced-feature-commit.log`.
 
 The corrected ARM64 ad-hoc bundle passes that final declaration check, independent
 bundle identity, disabled update IPC, real renderer/preload startup, isolated
