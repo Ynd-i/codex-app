@@ -424,6 +424,78 @@ describe("MockLoadTestAgentClient", () => {
     unsubscribe();
   });
 
+  test("emits the single-choice question scenario selected by prompt", async () => {
+    vi.useFakeTimers();
+    const client = new MockLoadTestAgentClient();
+    const session = await client.createSession({
+      provider: "mock",
+      cwd: process.cwd(),
+      model: "ten-second-stream",
+    });
+    const events: AgentStreamEvent[] = [];
+    const unsubscribe = session.subscribe((event) => events.push(event));
+
+    const resultPromise = session.run("Emit synthetic question: single choice.");
+    await vi.advanceTimersByTimeAsync(0);
+
+    const permission = expectSinglePermissionRequest(events);
+    expect(permission.request.input).toMatchObject({
+      questions: [
+        {
+          question: "Which implementation path should we take?",
+          header: "path",
+          options: [{ label: "Use the existing component" }, { label: "Build a new component" }],
+          multiSelect: false,
+        },
+      ],
+    });
+    await session.respondToPermission(permission.request.id, {
+      behavior: "allow",
+      updatedInput: { answers: { path: "Use the existing component" } },
+    });
+    await expect(resultPromise).resolves.toMatchObject({
+      finalText: "Synthetic questions resolved",
+    });
+    unsubscribe();
+  });
+
+  test("emits the multi-select question scenario with free text selected by prompt", async () => {
+    vi.useFakeTimers();
+    const client = new MockLoadTestAgentClient();
+    const session = await client.createSession({
+      provider: "mock",
+      cwd: process.cwd(),
+      model: "ten-second-stream",
+    });
+    const events: AgentStreamEvent[] = [];
+    const unsubscribe = session.subscribe((event) => events.push(event));
+
+    const resultPromise = session.run("Emit synthetic questions: multi-select with free text.");
+    await vi.advanceTimersByTimeAsync(0);
+
+    const permission = expectSinglePermissionRequest(events);
+    expect(permission.request.input).toMatchObject({
+      questions: [
+        {
+          question: "Which checks should run?",
+          header: "checks",
+          options: [{ label: "Lint" }, { label: "Typecheck" }, { label: "UI regression" }],
+          multiSelect: true,
+          allowOther: true,
+          placeholder: "Add another check...",
+        },
+      ],
+    });
+    await session.respondToPermission(permission.request.id, {
+      behavior: "allow",
+      updatedInput: { answers: { checks: "Lint, UI regression, Manual review" } },
+    });
+    await expect(resultPromise).resolves.toMatchObject({
+      finalText: "Synthetic questions resolved",
+    });
+    unsubscribe();
+  });
+
   test("emits a synthetic tool permission and records the selected denial", async () => {
     vi.useFakeTimers();
     const client = new MockLoadTestAgentClient();

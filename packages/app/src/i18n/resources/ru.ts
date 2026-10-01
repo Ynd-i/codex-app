@@ -422,6 +422,9 @@ export const ru: TranslationResources = {
       failedRetry: "Диктовка не удалась. Нажмите «Повторить».",
     },
     question: {
+      title: "Вопрос",
+      skip: "Пропустить",
+      send: "Отправить",
       submit: "Отправить",
       next: "Далее",
       answerPlaceholder: "Введите ответ...",

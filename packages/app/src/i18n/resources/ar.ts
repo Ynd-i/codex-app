@@ -418,6 +418,9 @@ export const ar: TranslationResources = {
       failedRetry: "فشل الإملاء. اضغط على إعادة المحاولة.",
     },
     question: {
+      title: "سؤال",
+      skip: "تخطي",
+      send: "إرسال",
       submit: "يُقدِّم",
       next: "التالي",
       answerPlaceholder: "اكتب إجابتك...",

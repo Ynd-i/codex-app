@@ -281,6 +281,34 @@ function parseMockQuestionPrompt(prompt: AgentPromptInput): MockQuestionPromptRe
     return null;
   }
 
+  if (/single[-\s]?choice/i.test(text)) {
+    return {
+      questions: [
+        {
+          question: "Which implementation path should we take?",
+          header: "path",
+          options: [{ label: "Use the existing component" }, { label: "Build a new component" }],
+          multiSelect: false,
+        },
+      ],
+    };
+  }
+
+  if (/multi[-\s]?select/i.test(text)) {
+    return {
+      questions: [
+        {
+          question: "Which checks should run?",
+          header: "checks",
+          options: [{ label: "Lint" }, { label: "Typecheck" }, { label: "UI regression" }],
+          multiSelect: true,
+          allowOther: true,
+          placeholder: "Add another check...",
+        },
+      ],
+    };
+  }
+
   if (/free[-\s]?write|freeform|text[-\s]?only/i.test(text)) {
     return {
       questions: [

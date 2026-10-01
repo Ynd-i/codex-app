@@ -132,14 +132,23 @@ test("macOS tool approval remains usable after narrowing the window", async ({
     const card = dock.getByTestId("permission-request-card");
     await expect(card).toBeVisible();
     await page.setViewportSize({ width: 700, height: 782 });
-    const cardBox = (await card.boundingBox())!;
-    for (const name of ["Allow for session", "Deny", "Allow once"]) {
-      const button = card.getByRole("button", { name, exact: true });
-      await expect(button).toBeVisible();
-      const bounds = (await button.boundingBox())!;
-      expect(bounds.x).toBeGreaterThanOrEqual(cardBox.x);
-      expect(bounds.x + bounds.width).toBeLessThanOrEqual(cardBox.x + cardBox.width + 1);
-    }
+    await expect
+      .poll(async () => {
+        const cardBox = await card.boundingBox();
+        if (!cardBox) return false;
+        const buttons = await Promise.all(
+          ["Allow for session", "Deny", "Allow once"].map((name) =>
+            card.getByRole("button", { name, exact: true }).boundingBox(),
+          ),
+        );
+        return buttons.every(
+          (bounds) =>
+            bounds &&
+            bounds.x >= cardBox.x &&
+            bounds.x + bounds.width <= cardBox.x + cardBox.width + 1,
+        );
+      })
+      .toBe(true);
     await page.screenshot({ path: testInfo.outputPath("permission-narrow.png") });
     await card.getByRole("button", { name: "Deny", exact: true }).click();
     await expect(dock).toHaveCount(0);

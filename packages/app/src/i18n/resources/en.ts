@@ -415,6 +415,9 @@ export const en = {
       failedRetry: "Dictation failed. Tap retry.",
     },
     question: {
+      title: "Question",
+      skip: "Skip",
+      send: "Send",
       submit: "Submit",
       next: "Next",
       answerPlaceholder: "Type your answer...",

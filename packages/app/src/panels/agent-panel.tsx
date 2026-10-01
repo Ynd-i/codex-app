@@ -22,7 +22,7 @@ import { useShallow } from "zustand/shallow";
 import { useStoreWithEqualityFn } from "zustand/traditional";
 import { AgentStreamView, type AgentStreamViewHandle } from "@/agent-stream/view";
 import { useAgentPendingPermissions } from "@/agent-stream/use-pending-permissions";
-import { ToolPermissionDock } from "@/agent-stream/tool-permission-dock";
+import { PermissionDock } from "@/agent-stream/permission-dock";
 import { ArchivedAgentCallout } from "@/components/archived-agent-callout";
 import { ComposerDock } from "@/composer/dock";
 import { FileDropZone } from "@/components/file-drop/file-drop-zone";
@@ -1422,20 +1422,23 @@ const AgentStreamSection = memo(function AgentStreamSection({
   );
   const streamItems = streamItemsRaw ?? EMPTY_STREAM_ITEMS;
   const pendingPermissionList = useAgentPendingPermissions(serverId, agentId);
-  const dockToolPermissions = getIsElectronMac() && hasActiveComposer;
+  const dockRequests = getIsElectronMac() && hasActiveComposer;
   const hasDockedPermissions =
-    dockToolPermissions &&
-    pendingPermissionList.some((permission) => permission.request.kind === "tool");
+    dockRequests && pendingPermissionList.some((permission) => permission.request.kind === "tool");
   const pendingPermissions = useMemo(() => {
     if (pendingPermissionList.length === 0) {
       return EMPTY_PENDING_PERMISSIONS;
     }
     return new Map(
       pendingPermissionList
-        .filter((permission) => !dockToolPermissions || permission.request.kind !== "tool")
+        .filter(
+          (permission) =>
+            !dockRequests ||
+            (permission.request.kind !== "tool" && permission.request.kind !== "question"),
+        )
         .map((permission) => [permission.key, permission]),
     );
-  }, [pendingPermissionList, dockToolPermissions]);
+  }, [pendingPermissionList, dockRequests]);
 
   return (
     <AgentStreamView
@@ -1536,14 +1539,19 @@ function ActiveAgentComposer({
 }) {
   const isCompactFormFactor = useIsCompactFormFactor();
   const pendingPermissions = useAgentPendingPermissions(serverId, agentId);
-  const toolPermissions = useMemo(
+  const dockedPermissions = useMemo(
     () =>
       getIsElectronMac()
-        ? pendingPermissions.filter((permission) => permission.request.kind === "tool")
+        ? pendingPermissions.filter(
+            (permission) =>
+              permission.request.kind === "tool" || permission.request.kind === "question",
+          )
         : [],
     [pendingPermissions],
   );
-  const hasToolPermissions = toolPermissions.length > 0;
+  const hasToolPermissions = dockedPermissions.some(
+    (permission) => permission.request.kind === "tool",
+  );
   const { onLayout: onInputAreaLayout, isBelow: isCompactComposerLayout } = useContainerWidthBelow(
     COMPACT_FORM_FACTOR_WIDTH,
     { initialIsBelow: isCompactFormFactor },
@@ -1619,10 +1627,10 @@ function ActiveAgentComposer({
 
   return (
     <View style={animatedStaticStyles.inputAreaWrapper} onLayout={onInputAreaLayout}>
-      {hasToolPermissions ? (
-        <ToolPermissionDock
+      {dockedPermissions.length > 0 ? (
+        <PermissionDock
           serverId={serverId}
-          permissions={toolPermissions}
+          permissions={dockedPermissions}
           onHeightChange={onComposerHeightChange}
         />
       ) : null}

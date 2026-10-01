@@ -423,6 +423,9 @@ export const ja: TranslationResources = {
       failedRetry: "音声入力に失敗しました。再試行をタップしてください。",
     },
     question: {
+      title: "質問",
+      skip: "スキップ",
+      send: "送信",
       submit: "送信",
       next: "次へ",
       answerPlaceholder: "回答を入力...",

@@ -422,6 +422,9 @@ export const ptBR: TranslationResources = {
       failedRetry: "Falha no ditado. Toque para tentar novamente.",
     },
     question: {
+      title: "Pergunta",
+      skip: "Pular",
+      send: "Enviar",
       submit: "Enviar",
       next: "Próximo",
       answerPlaceholder: "Digite sua resposta...",

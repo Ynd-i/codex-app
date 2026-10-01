@@ -423,6 +423,9 @@ export const es: TranslationResources = {
       failedRetry: "El dictado falló. Toca reintentar.",
     },
     question: {
+      title: "Pregunta",
+      skip: "Omitir",
+      send: "Enviar",
       submit: "Entregar",
       next: "Siguiente",
       answerPlaceholder: "Escribe tu respuesta...",

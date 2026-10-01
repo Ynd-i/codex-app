@@ -6,7 +6,7 @@ import { useHostRuntimeClient } from "@/runtime/host-runtime";
 import type { PendingPermission } from "@/types/shared";
 import { PermissionRequestCard } from "./permission-request-card";
 
-export function ToolPermissionDock({
+export function PermissionDock({
   serverId,
   permissions,
   onHeightChange,

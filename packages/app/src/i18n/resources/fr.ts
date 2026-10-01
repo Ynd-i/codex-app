@@ -424,6 +424,9 @@ export const fr: TranslationResources = {
       failedRetry: "La dictée a échoué. Appuyez sur réessayer.",
     },
     question: {
+      title: "Question",
+      skip: "Ignorer",
+      send: "Envoyer",
       submit: "Soumettre",
       next: "Suivant",
       answerPlaceholder: "Tapez votre réponse...",
