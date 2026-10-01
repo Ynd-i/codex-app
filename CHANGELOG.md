@@ -8,6 +8,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Added
 
+- Added independent macOS content font weight controls, live preview and Advanced reset, preserving chat drafts, stronger emphasis and separate code/UI typography.
+
 - Added a macOS tool-approval card at the composer position, retaining drafts, provider-defined permission choices, scoped keyboard shortcuts and manual retry after connection failure; plans and questions keep their existing inline flow.
 
 - Added grapheme-safe intraline highlights to macOS default-dark diffs, preserving original source/selection data and deferring computation outside the visible materialization window.

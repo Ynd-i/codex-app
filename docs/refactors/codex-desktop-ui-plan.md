@@ -646,11 +646,50 @@ Logs: `/private/tmp/paseo-code-weight-foundation-{red,green}.log`,
 `/private/tmp/paseo-code-weight-advanced-visual.log`, and
 `/private/tmp/paseo-code-weight-surfaces-final.log`.
 
-Independent interface and content weight controls remain open work. An isolated
+Independent interface weight remains open work. Content weight is implemented
+below. An isolated
 probe confirmed that ordinary RN-web text stays at 400 when its parent changes
 to 500, so inherited container styling alone cannot implement the interface
 control. Adding weight to the high-specificity font-family rule would flatten
 authored emphasis; that shortcut was not introduced.
+
+### Content weight — 2026-10-01
+
+Mac Appearance now offers Default, Regular, Medium and SemiBold beside content
+font family, reusing the code-weight dropdown and storage validation. Default
+retains the prior styles. Explicit content weights apply to user messages,
+assistant prose, lists, quotes and the composer; the live preview and Advanced
+reset use the same preference. Non-Mac clients retain the stored value without
+applying it or displaying the control.
+
+Markdown strong text stays one step heavier than an explicit base, while heading
+weights retain their authored values. Default code weight is explicitly 400 only
+when needed to prevent the content override from leaking into inline/fenced code;
+an explicit code choice still wins. When both preferences are unset, the original
+code inheritance remains unchanged. No global weight override, new lifecycle or
+backend change was introduced.
+
+The storage/appearance/boundary/Markdown checks pass (131), and locale resources
+pass (36). The actual renderer checks user/assistant/composer weight, list and
+quote text, strong/heading/code boundaries, saved reload, draft retention, Medium
+and Default restoration (17.4s). Advanced reset and ordinary-browser preservation
+pass separately (two cases, 22.8s). Root format, lint and typecheck pass.
+Evidence: [content weight](../qa-evidence/codex-desktop/content-weight-semibold.png),
+[wide controls](../qa-evidence/codex-desktop/appearance-content-weight-wide.png),
+[narrow controls](../qa-evidence/codex-desktop/appearance-content-weight-narrow.png).
+Implementation commit: `72c4163`; normal format/lint/typecheck hooks pass.
+The refreshed Custom package passes real renderer/preload, identity/update guard,
+isolated daemon, bundled CLI and terminal smoke; this proves package startup,
+while the isolated renderer cases above prove the content-weight interactions.
+Read-only review found no material regression in the final Mac gating, default
+inheritance or code-weight separation.
+These captures were inspected against the typography reference; UI weight remains
+an explicit follow-up rather than a completed control.
+Logs: `/private/tmp/paseo-content-weight-red.log`,
+`/private/tmp/paseo-content-weight-green-final.log`,
+`/private/tmp/paseo-content-weight-renderer-final.log`,
+`/private/tmp/paseo-content-weight-advanced.log`, and
+`/private/tmp/paseo-content-weight-{format,lint,typecheck}.log`.
 
 ### Voice exclusions
 
@@ -1507,11 +1546,11 @@ Appearance captures were inspected in the private artifact directory
 `/private/tmp/paseo-settings-return-final-{format,lint}.log`. The first concurrent
 typecheck raced the dependency build; the final check was run after build completion.
 
-The latest Custom refresh was built from `c640825`, including the pending tool
-approval dock and preceding Diff changes. Real renderer/preload, custom
+The latest Custom refresh was built from `72c4163`, including content weight,
+the pending tool approval dock and preceding Diff changes. Real renderer/preload, custom
 identity/update guard, isolated daemon, bundled CLI and terminal smoke pass.
-Log: `/private/tmp/paseo-permission-package-build.log`; artifacts:
-`/private/tmp/paseo-permission-package-qa`. This smoke establishes package startup;
+Log: `/private/tmp/paseo-content-weight-package-build.log`; artifacts:
+`/private/tmp/paseo-content-weight-package-qa`. This smoke establishes package startup;
 approval and populated Diff interactions have separate isolated renderer evidence below.
 
 The preceding Custom refresh matched production source `5b5083b`, including code
@@ -1690,6 +1729,24 @@ Automatic review behavior remains unchanged. Approval styling is lower priority
 and does not block other migration work. Main chat remains untabbed; supporting
 tool tabs belong to the right dock. No further screenshot is needed for these
 observed states; implementation parity still requires its own validation.
+
+The subsequent [user-question choices](../../context-images/codex-user-question-options.png)
+reference was supplied at 14:48:25 on October 1 and copied byte-for-byte from
+`~/Desktop/截屏2026-10-01 14.48.25.png`. It shows a question card above the ordinary
+composer, numbered choices with the first highlighted, free-text reply, Skip and
+Send controls. It is a user-input question, not a command-permission approval.
+The reference directory now contains 79 original files; all previous 78 hashes
+remain unchanged. Existing Paseo question actions and answer formats govern the
+implementation; the screenshot does not add voice or backend capabilities.
+
+The [styled response](../../context-images/codex-chat-styled-text.png) reference
+was supplied at 14:54:16 on October 1 and copied byte-for-byte from
+`~/Desktop/截屏2026-10-01 14.54.16.png`. It shows a transparent quote with a narrow
+left bar, bold/italic/strikethrough spans, inline code, compact bullet spacing and
+a rounded plain-text code block with a language header and copy/wrap actions.
+The directory now contains 80 originals; the preceding 79 remain unchanged.
+This is additional evidence for transcript polish, not proof that those surfaces
+already match. Quote and code-block chrome are explicit follow-up work.
 
 ### Diff dock and file filter — 2026-10-01
 
@@ -1897,11 +1954,12 @@ isolated daemon, bundled CLI and terminal smoke. Read-only review found no
 request-scoping, duplicate-send, draft or inline-plan regression; omitted Enter
 defaults for providers without a primary variant are an intentional boundary.
 
-This slice covers pending requests and restoration only. The reference's durable
-expanded denial record remains open: current stream conversion does not expose
-resolved permissions as retained transcript items. No local-only approval history
-was invented. Full provider-specific visual parity and distribution acceptance
-remain open work.
+The user explicitly deferred durable approval records on October 1 to keep the
+backend unchanged. This slice covers pending requests and restoration only. The reference's durable
+expanded denial record is deferred outside the frontend-only scope: the manager
+only broadcasts resolutions and persists timeline items, while the client removes
+the resolved pending request. No local-only approval history was invented.
+Question-card and rich-text visual parity and distribution acceptance remain open work.
 
 ### Recording references — 2026-09-30
 
