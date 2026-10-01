@@ -1507,12 +1507,12 @@ Appearance captures were inspected in the private artifact directory
 `/private/tmp/paseo-settings-return-final-{format,lint}.log`. The first concurrent
 typecheck raced the dependency build; the final check was run after build completion.
 
-The latest Custom refresh was built from `e367355` after the Diff dock, paint, comparison-base and intraline renderer
-checks passed. Its real renderer/preload, custom identity/update guard, isolated
-daemon startup, bundled CLI and terminal smoke pass. Log:
-`/private/tmp/paseo-intraline-package-build.log`; artifacts:
-`/private/tmp/paseo-intraline-package-qa`. This smoke establishes package startup;
-the populated Diff interaction evidence is the isolated renderer case below.
+The latest Custom refresh was built from `c640825`, including the pending tool
+approval dock and preceding Diff changes. Real renderer/preload, custom
+identity/update guard, isolated daemon, bundled CLI and terminal smoke pass.
+Log: `/private/tmp/paseo-permission-package-build.log`; artifacts:
+`/private/tmp/paseo-permission-package-qa`. This smoke establishes package startup;
+approval and populated Diff interactions have separate isolated renderer evidence below.
 
 The preceding Custom refresh matched production source `5b5083b`, including code
 font weight, the centered address hint and reference reasoning accent, plus
@@ -1890,6 +1890,12 @@ Logs: `/private/tmp/paseo-permission-verified.log`,
 `/private/tmp/paseo-permission-mock-final.log`,
 `/private/tmp/paseo-permission-locales.log`, and
 `/private/tmp/paseo-permission-{format,lint,typecheck}-final.log`.
+
+Implementation commit: `c640825`; normal format/lint/typecheck commit hooks pass.
+The refreshed Custom package passes real renderer/preload, identity/update guard,
+isolated daemon, bundled CLI and terminal smoke. Read-only review found no
+request-scoping, duplicate-send, draft or inline-plan regression; omitted Enter
+defaults for providers without a primary variant are an intentional boundary.
 
 This slice covers pending requests and restoration only. The reference's durable
 expanded denial record remains open: current stream conversion does not expose
