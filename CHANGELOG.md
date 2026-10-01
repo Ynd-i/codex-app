@@ -42,6 +42,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- Removed empty activity headers from plain Mac replies and restored completion timestamps beside reply actions; hovering reveals elapsed time without shifting the controls.
+
 - Aligned macOS chat text and code blocks with the composer at wide and compact widths, keeping measured Markdown height-cache keys consistent with the rendered column.
 
 - Removed duplicated paragraph and quote margins from macOS chat Markdown blocks, retaining spacing within multi-paragraph quotes and other-platform presentation.

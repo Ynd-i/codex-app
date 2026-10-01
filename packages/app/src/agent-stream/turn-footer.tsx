@@ -1,7 +1,7 @@
 import React, { memo, useCallback, useMemo, type ReactNode } from "react";
 import { View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import { SPACING, type Theme } from "@/styles/theme";
+import { CHAT_MESSAGE_HORIZONTAL_PADDING, SPACING, type Theme } from "@/styles/theme";
 import type { TurnTiming } from "@/timeline/turn-time";
 import type { StreamItem } from "@/types/stream";
 import {
@@ -19,8 +19,6 @@ import type { TurnFooterHost } from "./layout";
 import { AssistantForkMenu } from "@/components/assistant-fork-menu";
 import { SyncedLoader } from "@/components/synced-loader";
 import { useRetainedPanelActive } from "@/components/retained-panel";
-import { getIsElectronMac } from "@/constants/platform";
-import { useIsCompactFormFactor } from "@/constants/layout";
 
 const ThemedSyncedLoader = withUnistyles(SyncedLoader);
 const workingIndicatorColorMapping = (theme: Theme) => ({ color: theme.colors.foreground });
@@ -173,7 +171,6 @@ function CompletedTurnFooter({
   supportsTimelineCursor: boolean;
   onForkAssistantTurn?: AssistantTurnForkHandler;
 }) {
-  const isCompact = useIsCompactFormFactor();
   const getContent = useCallback(
     () =>
       collectAssistantResponseContentForStreamRenderStrategy({
@@ -203,7 +200,6 @@ function CompletedTurnFooter({
         getContent={getContent}
         completedAt={timing?.completedAt}
         durationMs={timing?.durationMs}
-        showTiming={!getIsElectronMac() || isCompact}
         onFork={boundary && onForkAssistantTurn ? handleFork : undefined}
       />
     </View>
@@ -220,7 +216,7 @@ const stylesheet = StyleSheet.create((theme) => ({
     width: "100%",
     maxWidth: theme.contentMaxWidth,
     alignSelf: "center",
-    paddingHorizontal: theme.spacing[2],
+    paddingHorizontal: CHAT_MESSAGE_HORIZONTAL_PADDING,
   },
   turnFooterRow: {
     marginTop: theme.spacing[2] + 5,

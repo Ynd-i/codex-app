@@ -590,7 +590,6 @@ interface AssistantTurnFooterProps {
   getContent: () => string;
   completedAt?: Date;
   durationMs?: number | null;
-  showTiming?: boolean;
   onFork?: (target: AssistantForkTarget) => Promise<void> | void;
 }
 
@@ -628,14 +627,14 @@ const TIMESTAMP_REVEAL_MS = 3000;
 
 /**
  * Footer rendered next to the copy button at the end of an assistant turn.
- * Shows the turn duration and swaps to the end timestamp when both are known.
+ * Mac shows the end timestamp first; other platforms show duration first.
+ * Hover/tap swaps between them when both are known.
  * A turn without a visible start shows its end timestamp directly.
  */
 export const AssistantTurnFooter = memo(function AssistantTurnFooter({
   getContent,
   completedAt,
   durationMs,
-  showTiming = true,
   onFork,
 }: AssistantTurnFooterProps) {
   const [hovered, setHovered] = useState(false);
@@ -663,9 +662,13 @@ export const AssistantTurnFooter = memo(function AssistantTurnFooter({
     [completedAt],
   );
 
-  const primaryLabel = durationLabel || timestampLabel;
+  const timestampFirst = getIsElectronMac();
+  const primaryLabel = timestampFirst
+    ? timestampLabel || durationLabel
+    : durationLabel || timestampLabel;
+  const secondaryLabel = timestampFirst ? durationLabel : timestampLabel;
   const canSwap = Boolean(durationLabel && timestampLabel);
-  const showTimestamp = canSwap && (isWeb ? hovered : pressedReveal);
+  const showSecondary = canSwap && (isWeb ? hovered : pressedReveal);
 
   const handleHoverIn = useCallback(() => setHovered(true), []);
   const handleHoverOut = useCallback(() => setHovered(false), []);
@@ -695,7 +698,7 @@ export const AssistantTurnFooter = memo(function AssistantTurnFooter({
         containerStyle={assistantTurnFooterStylesheet.copyButton}
       />
       {canFork ? <AssistantForkMenu onFork={handleFork} /> : null}
-      {showTiming && primaryLabel ? (
+      {primaryLabel ? (
         <Pressable
           onPress={handlePress}
           onHoverIn={handleHoverIn}
@@ -707,10 +710,10 @@ export const AssistantTurnFooter = memo(function AssistantTurnFooter({
             {/* Sizer reserves space for whichever label is longer so the
                 container width is stable across hover transitions. */}
             <Text style={assistantTurnFooterStylesheet.labelSizer} aria-hidden>
-              {primaryLabel.length >= timestampLabel.length ? primaryLabel : timestampLabel}
+              {durationLabel.length >= timestampLabel.length ? durationLabel : timestampLabel}
             </Text>
-            <Text style={assistantTurnFooterStylesheet.labelOverlay}>
-              {showTimestamp ? timestampLabel : primaryLabel}
+            <Text style={assistantTurnFooterStylesheet.labelOverlay} testID="assistant-turn-timing">
+              {showSecondary ? secondaryLabel : primaryLabel}
             </Text>
           </View>
         </Pressable>

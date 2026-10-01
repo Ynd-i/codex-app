@@ -64,11 +64,11 @@ function buildActivity(
   const boundary = turn.findLastIndex(
     (item) => item.kind === "thought" || isGroupableToolCall(item),
   );
+  if (boundary < 0 && !turn.some((item) => item.kind === "tool_call")) return null;
   const hasReply = turn.slice(boundary + 1).some((item) => item.kind === "assistant_message");
-  const collapsible =
-    boundary >= 0 && hasReply
-      ? turn.slice(0, boundary + 1).filter((item) => canCollapse(item, input.toolGroups))
-      : [];
+  const collapsible = hasReply
+    ? turn.slice(0, boundary + 1).filter((item) => canCollapse(item, input.toolGroups))
+    : [];
   const collapsibleItemIds = new Set(collapsible.map((item) => item.id));
   const messageIds = new Set(collapsible.map(getStreamItemMessageId));
   const turnId =

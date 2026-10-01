@@ -92,6 +92,17 @@ function inputFor(turnItems: StreamItem[], isTurnActive = false) {
 }
 
 describe("desktop turn activity", () => {
+  it("leaves plain replies without an activity header, regardless of elapsed time", () => {
+    const turn = items.filter(
+      (item) => item.kind === "user_message" || item.kind === "assistant_message",
+    );
+    const input = inputFor(turn);
+    expect(input.timingByAssistantId.size).toBeGreaterThan(0);
+    const projection = createDesktopTurnActivityProjection()(input);
+    expect(projection.byHostId.size).toBe(0);
+    expect(projection.hiddenItemIds.size).toBe(0);
+    expect(projectDesktopActivityItems(turn, projection)).toBe(turn);
+  });
   it("folds completed activity while retaining every reply block and warning", () => {
     const project = createDesktopTurnActivityProjection();
     const input = {
@@ -197,6 +208,10 @@ describe("desktop turn activity", () => {
         },
       },
     };
+    const planOnly = [items[0], plan, items[5]] as StreamItem[];
+    const planProjection = createDesktopTurnActivityProjection()(inputFor(planOnly));
+    expect(planProjection.byHostId.size).toBe(1);
+    expect(planProjection.hiddenItemIds.size).toBe(0);
     const host = { ...read, id: "overview" };
     const turn = [...items.slice(0, 3), plan, host, ...items.slice(4)];
     const input = inputFor(turn);

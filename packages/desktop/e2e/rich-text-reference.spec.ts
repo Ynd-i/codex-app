@@ -49,6 +49,7 @@ for (const platform of ["darwin", "win32"] as const) {
         .locator('[data-paseo-markdown-tag="pre"]')
         .filter({ hasText: "const message" });
       if (platform === "darwin") {
+        await expect(page.getByTestId("desktop-turn-activity")).toHaveCount(0);
         const composer = page.getByTestId("message-input-root").filter({ visible: true });
         const expectAligned = async () => {
           await expect
@@ -139,6 +140,15 @@ for (const platform of ["darwin", "win32"] as const) {
       expect(copied).toContain(longCode);
       expect(copied).not.toContain("Plain text");
       expect(copied).not.toContain("Wrap long lines");
+      const timing = page.getByTestId("assistant-turn-timing").last();
+      await expect(timing).toHaveText(platform === "darwin" ? /^\d{1,2}:\d{2}/ : /^Worked for/);
+      const timingButton = page.getByRole("button", { name: /^Worked for.+ended/ }).last();
+      const beforeHover = await timingButton.boundingBox();
+      await timingButton.hover();
+      await expect(timing).toHaveText(platform === "darwin" ? /^Worked for/ : /^\d{1,2}:\d{2}/);
+      expect(await timingButton.boundingBox()).toEqual(beforeHover);
+      await page.mouse.move(0, 0);
+      await expect(timing).toHaveText(platform === "darwin" ? /^\d{1,2}:\d{2}/ : /^Worked for/);
     } finally {
       await fixture.cleanup();
     }

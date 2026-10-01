@@ -495,20 +495,22 @@ execution or a live provider run.
 
 ### Completed-turn activity
 
-Wide macOS conversations now show elapsed headers and initially fold the completed
-activity preceding the reply. The protocol has no universal commentary/final
+Wide macOS conversations show elapsed headers for actual tool/thought activity
+and initially fold completed activity preceding the reply. Plain text replies
+have no activity header. The protocol has no universal commentary/final
 channel, so the display boundary is the last tool/reasoning item: all subsequent
 assistant blocks remain visible. Notifications, plans, plugin content and failed
 or unfinished tool rows/overview groups remain outside the fold. A response with
 no assistant text after its activity stays fully visible. Active turns, compact
-layouts and other platforms retain their existing presentation.
+layouts and other platforms retain their existing activity presentation.
 
 This filters viewport segments only. The full layout, message identities,
 copy text and fork cursors stay complete; search expands a hidden message before
 scrolling to its match. Completed header identities are retained during live
 text updates, and disclosure state is scoped by host, agent and turn. Expanding
 pauses the viewport's existing automatic-follow behavior to keep the header at
-the reader's position. Completion timestamps remain available on hover.
+the reader's position. Mac completion timestamps appear beside the reply actions;
+hovering them reveals duration. Header timestamps remain available on hover.
 
 The initial fold and scroll-position failures were reproduced before their fixes.
 The desktop regression forces partial virtualization and checks running/completed
@@ -2189,6 +2191,25 @@ including edge alignment and question submission. The
 [native capture](../qa-evidence/codex-desktop/packaged-chat-column.png) was
 inspected. No backend, provider, protocol, remote configuration or production
 daemon was changed by this slice.
+
+#### Plain replies and completion timing
+
+The styled-text reference has no activity header above an ordinary reply and
+shows its completion time beside the footer actions. The projection previously
+created a header for every completed reply, including a synthetic `Worked for 0s`
+row with nothing to expand. It now omits headers only when no tool or thought
+activity exists. Non-foldable plan/tool activity retains its header and content.
+
+Mac reply footers show completion time first and reveal duration on hover;
+other platforms retain duration first. The longer label reserves width so the
+controls do not shift. The footer also uses the shared chat-column inset.
+The unit regression failed before the change; all five projection tests now
+pass, including plain replies, plans, errors and stable completed headers.
+Three renderer cases pass (32.2s): Mac/non-Mac timing and Markdown controls,
+plus activity disclosure, search, copy and fork boundaries. Timing swaps retain
+the same control bounds. [Plain reply](../qa-evidence/codex-desktop/plain-reply.png)
+was inspected at 1352×782. Logs:
+`/private/tmp/paseo-plain-turn-{red,units,final}.log`.
 
 ### Upstream refresh to e10f6d2 — 2026-10-01
 

@@ -279,6 +279,7 @@ export async function runAgentDeepLinksRegression({
   // Check the production renderer with its native preload, preserving chat A's draft.
   await evaluateMain(openUrl(link(styledAgent)));
   await expect(title).toHaveText("Styled response");
+  await expect(page.getByTestId("desktop-turn-activity").filter({ visible: true })).toHaveCount(0);
   const timeline = page.getByTestId("agent-chat-scroll").filter({ visible: true }).first();
   await timeline.hover();
   await page.mouse.wheel(0, -10000);
@@ -340,6 +341,11 @@ export async function runAgentDeepLinksRegression({
   await expect(typed.getByRole("button", { name: "Copy code", exact: true })).toBeEnabled();
   // Actual clipboard contents are covered by the browser suite; keep the system clipboard intact.
   await page.screenshot({ path: path.join(artifactDir, "packaged-styled-text.png") });
+  const timing = page.getByTestId("assistant-turn-timing").filter({ visible: true }).last();
+  await expect(timing).toHaveText(/^\d{1,2}:\d{2}/);
+  await timing.scrollIntoViewIfNeeded();
+  await expect(timing).toBeInViewport();
+  await page.screenshot({ path: path.join(artifactDir, "packaged-turn-timing.png") });
 
   await evaluateMain(openUrl(link(agentB)));
   await expectChat("B");
@@ -392,6 +398,7 @@ export async function runAgentDeepLinksRegression({
     packagedStyledText: true,
     packagedProseSpacing: true,
     packagedChatColumnAlignment: true,
+    packagedPlainReplyTiming: true,
     packagedQuestionSubmission: true,
     invalidUrlRejected: true,
     osProtocolDispatch: "not tested",
