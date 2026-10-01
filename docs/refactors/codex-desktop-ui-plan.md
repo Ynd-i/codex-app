@@ -341,6 +341,18 @@ radius, tighter insets and a borderless surface. Read-only input retains its
 dotted border. The macOS stop button follows the neutral foreground treatment;
 other platforms retain their original stop styling.
 
+The Mac empty composer now omits the floating focus-shortcut label, matching the
+supplied projectless-chat and terminal references. It previously overlapped the
+placeholder in a narrow chat column. The new renderer regression failed on that
+label before the change, then passed with Meta+L focus, input/send bounds and draft
+retention across 900/1352px. The [empty narrow composer capture](../qa-evidence/codex-desktop/composer-empty-narrow.png)
+was inspected with a loaded Files dock. Logs:
+`/private/tmp/paseo-composer-focus-hint-{red,verified,lint,typecheck}.log`.
+This frontend change postdates the latest packaged bundle. A further reference
+comparison should address the placeholder contrast: the supplied projectless
+capture has a dominant placeholder RGB of 132/132/129, while the current Mac
+surface4 token used for it is 96/96/94.
+
 A new case in the existing desktop renderer suite passed with a real isolated
 daemon and the Mock Load Test provider. It uploads a JSON attachment, preserves a
 40-line draft at 900 × 680, verifies that attachment/send/stop controls stay in

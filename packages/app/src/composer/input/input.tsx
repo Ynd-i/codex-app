@@ -662,7 +662,9 @@ function FocusHint({
   label: string;
 }) {
   const { isActiveComposer } = useComposerKeyboardScope();
-  if (!isActiveComposer || !visible || !focusInputKeys || !label.trim()) return null;
+  if (getIsElectronMac() || !isActiveComposer || !visible || !focusInputKeys || !label.trim()) {
+    return null;
+  }
   return (
     <Text style={styles.focusHintText} pointerEvents="none">
       {label}
