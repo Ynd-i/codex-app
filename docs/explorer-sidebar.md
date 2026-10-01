@@ -27,6 +27,8 @@ File tools contain their own tree on the right; toggling it preserves the editor
 instance and unsaved text. Panel content and backend ownership are unchanged.
 
 These placement rules override the desktop open-location preferences on macOS.
+The inactive placement selectors are hidden there without deleting saved choices;
+the service-URL behavior setting remains effective and visible.
 The ordinary split-pane and preference contracts below continue on other platforms.
 
 ## Panel host contract

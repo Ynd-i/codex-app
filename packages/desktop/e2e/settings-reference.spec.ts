@@ -5,6 +5,15 @@ import { getServerId } from "../../app/e2e/support/helpers/server-id";
 import { getE2EDaemonPort } from "../../app/e2e/support/helpers/daemon-port";
 import { installDesktopRuntime } from "./support/runtime";
 
+const placementLabels = [
+  "Clicking a file in the Explorer sidebar",
+  "Clicking a change in the Explorer sidebar or a chat",
+  "Clicking a file in an agent chat",
+  "Clicking a file in a diff",
+  "Clicking a subagent in an agent chat",
+  "Clicking a pull request in the Explorer sidebar",
+];
+
 test("macOS Settings keeps navigation searchable and Appearance preferences editable", async ({
   page,
 }, testInfo) => {
@@ -20,7 +29,19 @@ test("macOS Settings keeps navigation searchable and Appearance preferences edit
 
   const sidebar = page.getByTestId("settings-sidebar");
   const search = page.getByTestId("settings-sidebar-search");
-  await expect(sidebar).toBeVisible();
+  const shell = page.getByTestId("desktop-shell");
+  const expectFrameFits = async () => {
+    await expect
+      .poll(() =>
+        shell.evaluate((node) => {
+          const rect = node.getBoundingClientRect();
+          return { x: rect.x, width: rect.width, overflow: node.scrollWidth - node.clientWidth };
+        }),
+      )
+      .toEqual({ x: 0, width: page.viewportSize()!.width, overflow: 0 });
+  };
+  await expectFrameFits();
+  await expect(sidebar).toBeInViewport({ ratio: 1 });
   expect(await sidebar.evaluate((node) => node.getBoundingClientRect().width)).toBe(280);
   await expect(sidebar.getByText("Settings", { exact: true })).toBeVisible();
   await expect(search).toBeVisible();
@@ -31,16 +52,72 @@ test("macOS Settings keeps navigation searchable and Appearance preferences edit
 
   await openSettingsSection(page, "general");
   await expect(page.getByTestId("page-title")).toHaveText("General");
+  for (const label of placementLabels) {
+    await expect(page.getByText(label, { exact: true })).toHaveCount(0);
+  }
+  const serviceUrl = page.getByRole("button", { name: /^Clicking a script's service URL:/ });
+  await serviceUrl.click();
+  await page.getByRole("menuitem", { name: "External browser", exact: true }).click();
+  await expect(serviceUrl).toHaveAccessibleName(
+    "Clicking a script's service URL: External browser",
+  );
+  await page.reload();
+  await openSettings(page);
+  await expect(serviceUrl).toHaveAccessibleName(
+    "Clicking a script's service URL: External browser",
+  );
+  await serviceUrl.click();
+  await page.getByRole("menuitem", { name: "In Paseo", exact: true }).click();
+  await expect(serviceUrl).toHaveAccessibleName("Clicking a script's service URL: In Paseo");
+  await expectFrameFits();
+  await expect(sidebar).toBeInViewport({ ratio: 1 });
+  await expect(search).toBeInViewport({ ratio: 1 });
   await page.screenshot({ path: testInfo.outputPath("settings-general.png") });
 
   await openSettingsSection(page, "appearance");
   await expect(page.getByTestId("page-title")).toHaveText("Appearance");
   await expect(page.getByText("Theme", { exact: true }).first()).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("settings-appearance.png") });
-  await page.setViewportSize({ width: 900, height: 680 });
-  await expect(sidebar).toBeInViewport();
-  await page.setViewportSize({ width: 700, height: 680 });
-  await expect(sidebar).toBeHidden();
-  await page.setViewportSize({ width: 1352, height: 782 });
-  await expect(sidebar).toBeVisible();
+  for (const width of [900, 700, 1352]) {
+    await page.setViewportSize({ width, height: 680 });
+    await expectFrameFits();
+    await expect(page.getByText("Theme", { exact: true }).first()).toBeInViewport({ ratio: 1 });
+    if (width >= 768) {
+      await expect(sidebar).toBeInViewport({ ratio: 1 });
+      await expect(search).toBeInViewport({ ratio: 1 });
+      await expect(sidebar.getByText("Settings", { exact: true })).toBeInViewport({ ratio: 1 });
+    } else {
+      await expect(sidebar).toBeHidden();
+    }
+  }
+});
+
+test("Windows Settings retains editable panel placement preferences", async ({ page }) => {
+  await installDesktopRuntime(page, {
+    serverId: getServerId(),
+    platform: "win32",
+    manageBuiltInDaemon: false,
+    daemonListen: `127.0.0.1:${getE2EDaemonPort()}`,
+  });
+  await gotoAppShell(page);
+  await openSettings(page);
+  for (const label of placementLabels) {
+    await expect(page.getByText(label, { exact: true })).toBeVisible();
+  }
+  const files = page.getByRole("button", { name: /^Clicking a file in the Explorer sidebar:/ });
+  await files.click();
+  await page.getByRole("menuitem", { name: "On the side", exact: true }).click();
+  await expect(files).toHaveAccessibleName("Clicking a file in the Explorer sidebar: On the side");
+  const pullRequests = page.getByRole("button", {
+    name: /^Clicking a pull request in the Explorer sidebar:/,
+  });
+  await pullRequests.click();
+  await expect(page.getByRole("menuitem", { name: "Explorer sidebar", exact: true })).toBeVisible();
+  await page.getByRole("menuitem", { name: "Main panel", exact: true }).click();
+  await page.reload();
+  await openSettings(page);
+  await expect(files).toHaveAccessibleName("Clicking a file in the Explorer sidebar: On the side");
+  await expect(pullRequests).toHaveAccessibleName(
+    "Clicking a pull request in the Explorer sidebar: Main panel",
+  );
 });

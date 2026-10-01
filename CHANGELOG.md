@@ -41,6 +41,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Fixed
 
+- Removed inactive macOS panel-placement selectors from General settings while retaining service URL behavior and other platforms' saved placement choices.
+- Anchored the titlebar's top resize edge to its container, preventing horizontal overflow that could clip Settings navigation after menu interactions.
 - Kept missing quota readings and credit balances unavailable instead of treating them as zero. Known usage meters now expose their values to assistive technology.
 - Corrected Codex quota labels using the API's reported window duration and retained credit balances in credits, including accounts whose primary limit spans a week.
 - Localized the file-upload label in Chinese, Spanish, French and Arabic.

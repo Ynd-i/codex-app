@@ -677,8 +677,20 @@ layouts. Both [General](../qa-evidence/codex-desktop/settings-general.png) and
 [Appearance](../qa-evidence/codex-desktop/settings-appearance.png) captures were
 inspected. Native General-to-Appearance navigation also worked; native search was
 interrupted by user activity and is not accepted. Root format, lint and typecheck
-pass. Detailed settings-page parity and removal of macOS placement choices that
-the fixed right-dock layout now overrides remain outstanding.
+pass. Detailed settings-page parity remains outstanding.
+
+The follow-up removes six inactive placement selectors on macOS while retaining
+the service-URL setting and saved placement values for other platforms. Both Mac
+and Windows-runtime renderer cases pass, including setting changes and reload
+persistence. This is simulated platform coverage, not a Windows-device check.
+
+Menu interaction exposed a separate crop: the top resize edge had no horizontal
+anchor, so its parent's inset created overflow. Focus then scrolled the hidden
+overflow containers and moved Settings partly off-screen. Adding `left: 0` at
+the shared edge fixes the source. The regression checks zero shell overflow and
+fully visible navigation/search through 1352/900/700px and back, rather than
+accepting partial visibility. The updated General capture was inspected. Logs:
+`/private/tmp/paseo-settings-geometry-{red,e2e,lint,typecheck}.log`.
 
 ### Usage data foundation
 
