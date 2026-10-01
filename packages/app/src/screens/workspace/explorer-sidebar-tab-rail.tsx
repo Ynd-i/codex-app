@@ -521,7 +521,7 @@ const styles = StyleSheet.create((theme) => ({
     marginHorizontal: TAB_GAP / 2,
   },
   tab: {
-    height: HEADER_CONTROL_HEIGHT,
+    height: getIsElectronMac() ? 32 : HEADER_CONTROL_HEIGHT,
     maxWidth: 180,
     paddingHorizontal: theme.spacing[2],
     paddingRight: getIsElectronMac() ? theme.spacing[2] + 20 : theme.spacing[2],

@@ -20,6 +20,7 @@ test("desktop panel tabs keep active controls visible and retain terminals acros
       confirmShouldAccept: true,
       daemonListen: `127.0.0.1:${getE2EDaemonPort()}`,
     });
+    await installUsageReportsFixture(page, { lists: [[]] });
     await page.setViewportSize({ width: 1352, height: 782 });
     await page.emulateMedia({ colorScheme: "dark" });
     const first = await harness.createTerminal({ name: "Panel verification shell" });
@@ -45,6 +46,10 @@ test("desktop panel tabs keep active controls visible and retain terminals acros
       exact: true,
     });
     const closeFiles = page.getByTestId("explorer-sidebar-tab-close-files");
+    await expect(page.getByTestId("file-explorer-tree-scroll")).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath("supporting-tabs-baseline.png") });
+    await expect(filesTab).toHaveCSS("height", "32px");
+    await expect(firstTab).toHaveCSS("height", "32px");
     await page.mouse.move(600, 600);
     await expect(closeFiles.locator("..")).toHaveCSS("opacity", "1");
     await filesTab.focus();
@@ -98,6 +103,7 @@ test("desktop panel tabs keep active controls visible and retain terminals acros
     await page.setViewportSize({ width: 900, height: 680 });
     await expect(firstTab).toBeInViewport();
     await expect(firstTab).toHaveAttribute("aria-selected", "true");
+    await expect(firstTab).toHaveCSS("height", "32px");
     await page.setViewportSize({ width: 1352, height: 782 });
     await page.getByTestId("workspace-explorer-toggle").click();
     await expect(page.getByTestId("workspace-explorer-sidebar")).toBeHidden();
