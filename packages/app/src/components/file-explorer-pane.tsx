@@ -414,6 +414,8 @@ function TreeRowItem({
 }
 
 interface FileExplorerPaneProps {
+  filter?: string;
+  onFilterChange?: (value: string) => void;
   serverId: string;
   workspaceId?: string | null;
   workspaceRoot: string;
@@ -423,6 +425,8 @@ interface FileExplorerPaneProps {
 }
 
 export function FileExplorerPane({
+  filter: controlledFilter,
+  onFilterChange: setControlledFilter,
   serverId,
   workspaceId,
   workspaceRoot,
@@ -433,13 +437,15 @@ export function FileExplorerPane({
   const { t } = useTranslation();
   const isCompact = useIsCompactFormFactor();
   const isMac = getIsElectronMac();
-  const [filter, setFilter] = useState("");
+  const [localFilter, setLocalFilter] = useState("");
+  const filter = controlledFilter ?? localFilter;
+  const setFilter = setControlledFilter ?? setLocalFilter;
   const [filterResetKey, setFilterResetKey] = useState(0);
   const clearFilterAfterAction = useCallback(() => {
     setFilter("");
     // SearchField owns an uncontrolled input; reset it only for explicit file actions.
     setFilterResetKey((key) => key + 1);
-  }, []);
+  }, [setFilter]);
   const [searchQuery, setSearchQuery] = useState("");
   const [collapsedSearchPaths, setCollapsedSearchPaths] = useState<Set<string>>(new Set());
   const client = useSessionStore((state) => state.sessions[serverId]?.client ?? null);
@@ -564,10 +570,13 @@ export function FileExplorerPane({
         : expandedPaths,
     [collapsedSearchPaths, expandedPaths, searchDirectories, searching],
   );
-  const handleFilterChange = useCallback((value: string) => {
-    setFilter(value);
-    setCollapsedSearchPaths(new Set());
-  }, []);
+  const handleFilterChange = useCallback(
+    (value: string) => {
+      setFilter(value);
+      setCollapsedSearchPaths(new Set());
+    },
+    [setFilter],
+  );
 
   const isDirectoryLoading = useCallback(
     (path: string) => isPendingListForPath({ isExplorerLoading, pendingRequest, path }),

@@ -26,18 +26,21 @@ export function FileToolToolbar({
 }: {
   serverId: string;
   workspaceRoot: string;
-  location: WorkspaceFileLocation;
+  location?: WorkspaceFileLocation;
 }) {
   const { t } = useTranslation();
   const [width, setWidth] = useState(0);
   const scroll = useRef<ScrollView>(null);
-  const paths = resolveWorkspaceFilePaths({ path: location.path, workspaceRoot });
-  const absolutePath = paths?.absolutePath ?? location.path;
+  const paths = location ? resolveWorkspaceFilePaths({ path: location.path, workspaceRoot }) : null;
+  const absolutePath = paths?.absolutePath ?? location?.path ?? workspaceRoot;
   const relativePath = paths?.relativePath;
   const rootName = workspaceRoot.replace(/\\/g, "/").split("/").findLast(Boolean) ?? workspaceRoot;
-  const segments = relativePath
-    ? [rootName, ...relativePath.split("/")]
-    : absolutePath.replace(/\\/g, "/").split("/").filter(Boolean);
+  let segments = [rootName];
+  if (location) {
+    segments = relativePath
+      ? [rootName, ...relativePath.split("/")]
+      : absolutePath.replace(/\\/g, "/").split("/").filter(Boolean);
+  }
   const copyPath = useCallback(async () => {
     await Clipboard.setStringAsync(absolutePath);
   }, [absolutePath]);
@@ -61,22 +64,24 @@ export function FileToolToolbar({
             accessibilityLabel={`${t("workspace.fileActions.moreActions")}: ${absolutePath}`}
             testID="file-path-menu-trigger"
           >
-            <ScrollView
-              ref={scroll}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              onContentSizeChange={revealNearestDirectory}
-              onLayout={revealNearestDirectory}
-              contentContainerStyle={styles.segments}
-              style={styles.parents}
-            >
-              {segments.slice(0, -1).map((segment, index) => (
-                <Fragment key={segments.slice(0, index + 1).join("/")}>
-                  <ThemedChevron size={14} uniProps={mutedColor} />
-                  <Text style={styles.segment}>{segment}</Text>
-                </Fragment>
-              ))}
-            </ScrollView>
+            {location ? (
+              <ScrollView
+                ref={scroll}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                onContentSizeChange={revealNearestDirectory}
+                onLayout={revealNearestDirectory}
+                contentContainerStyle={styles.segments}
+                style={styles.parents}
+              >
+                {segments.slice(0, -1).map((segment, index) => (
+                  <Fragment key={segments.slice(0, index + 1).join("/")}>
+                    <ThemedChevron size={14} uniProps={mutedColor} />
+                    <Text style={styles.segment}>{segment}</Text>
+                  </Fragment>
+                ))}
+              </ScrollView>
+            ) : null}
             <ThemedChevron size={14} uniProps={mutedColor} />
             <Text style={[styles.segment, styles.filename]} numberOfLines={1} ellipsizeMode="head">
               {segments.at(-1)}
@@ -95,13 +100,15 @@ export function FileToolToolbar({
         </DropdownMenu>
       </View>
       <FileTreeToggle />
-      <WorkspaceOpenInEditorButton
-        serverId={serverId}
-        cwd={workspaceRoot}
-        activeFile={location}
-        hideLabels={width > 0 && width < 400}
-        fileToolbar
-      />
+      {location ? (
+        <WorkspaceOpenInEditorButton
+          serverId={serverId}
+          cwd={workspaceRoot}
+          activeFile={location}
+          hideLabels={width > 0 && width < 400}
+          fileToolbar
+        />
+      ) : null}
     </View>
   );
 }

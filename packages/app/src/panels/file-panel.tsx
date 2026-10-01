@@ -67,6 +67,10 @@ function FilePanel() {
     (treeWidth: number) => setFileState({ ...fileState, treeWidth }),
     [fileState, setFileState],
   );
+  const onFilterChange = useCallback(
+    (treeFilter: string) => setFileState({ ...fileState, treeFilter }),
+    [fileState, setFileState],
+  );
   const treeVisible = !isCompact && fileState.treeVisible;
   invariant(target.kind === "file", "FilePanel requires file target");
   if (!workspaceDirectory) {
@@ -99,6 +103,8 @@ function FilePanel() {
           serverId={serverId}
           workspaceId={workspaceId}
           workspaceRoot={workspaceDirectory}
+          filter={fileState.treeFilter ?? ""}
+          onFilterChange={onFilterChange}
           onOpenFile={onOpenFile}
           onOpenFileToSide={openTargetToSide ? onOpenFileToSide : undefined}
           onAddToChat={canAddToChat ? addFile : undefined}
