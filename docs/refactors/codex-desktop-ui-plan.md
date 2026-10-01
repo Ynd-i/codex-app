@@ -1611,7 +1611,15 @@ Appearance captures were inspected in the private artifact directory
 `/private/tmp/paseo-settings-return-final-{format,lint}.log`. The first concurrent
 typecheck raced the dependency build; the final check was run after build completion.
 
-The latest Custom refresh was built from `3d2ee63` on 0.11.0-beta.1 after
+The latest Custom refresh was built from `c57b7da` on 0.11.0-beta.1 after
+upstream merge `34d9f5f`. Startup/CLI/terminal smoke and the native interaction
+runner pass, including chat/composer edge alignment, prose spacing, code wrapping,
+question submission and retained drafts. Logs:
+`/private/tmp/paseo-chat-rail-package-build.log` and
+`/private/tmp/paseo-chat-rail-package.log`; artifacts:
+`/private/tmp/paseo-chat-rail-package-{smoke,qa}`.
+
+The preceding Custom refresh was built from `3d2ee63` on 0.11.0-beta.1 after
 upstream merge `34d9f5f`. Startup/CLI/terminal smoke and the full native custom-link
 runner pass, including 12px prose-to-quote spacing, code wrapping, question
 submission and draft retention across reload/navigation. Logs:
@@ -2174,6 +2182,13 @@ height-cache/virtualization tests pass. Inspected captures:
 [compact](../qa-evidence/codex-desktop/chat-column-compact.png).
 Logs: `/private/tmp/paseo-chat-rail-{red,green,final,units}.log`.
 The actual-package runner includes the same edge-alignment assertion.
+
+Implementation `c57b7da` passes root format/lint/typecheck and commit hooks.
+Its refreshed Custom package passes smoke and the complete native regression,
+including edge alignment and question submission. The
+[native capture](../qa-evidence/codex-desktop/packaged-chat-column.png) was
+inspected. No backend, provider, protocol, remote configuration or production
+daemon was changed by this slice.
 
 ### Upstream refresh to e10f6d2 — 2026-10-01
 
