@@ -2344,6 +2344,15 @@ export const TodoListCard = memo(function TodoListCard({
   );
 });
 
+// Mask the entire card, including its border, into the conversation beneath it.
+const INLINE_DETAIL_FADE_STYLE = isWeb
+  ? inlineUnistylesStyle({
+      overflow: "hidden" as const,
+      maskImage: "linear-gradient(to bottom, #000 calc(100% - 25px), transparent)",
+      WebkitMaskImage: "linear-gradient(to bottom, #000 calc(100% - 25px), transparent)",
+    })
+  : undefined;
+
 interface ExpandableBadgeProps {
   label: string;
   secondaryLabel?: string;
@@ -2359,6 +2368,7 @@ interface ExpandableBadgeProps {
   isLastInSequence?: boolean;
   disableOuterSpacing?: boolean;
   borderlessWhenExpanded?: boolean;
+  fadeDetailsBottom?: boolean;
   testID?: string;
 }
 
@@ -2735,6 +2745,7 @@ export const ExpandableBadge = memo(function ExpandableBadge({
   isLastInSequence = false,
   disableOuterSpacing,
   borderlessWhenExpanded = false,
+  fadeDetailsBottom,
   testID,
 }: ExpandableBadgeProps) {
   const resolvedDisableOuterSpacing = useDisableOuterSpacing(disableOuterSpacing);
@@ -2907,8 +2918,9 @@ export const ExpandableBadge = memo(function ExpandableBadge({
     () => [
       expandableBadgeStylesheet.detailWrapper,
       borderlessWhenExpanded && expandableBadgeStylesheet.detailWrapperBorderless,
+      fadeDetailsBottom && INLINE_DETAIL_FADE_STYLE,
     ],
-    [borderlessWhenExpanded],
+    [borderlessWhenExpanded, fadeDetailsBottom],
   );
 
   const accessibilityState = useMemo(
@@ -3025,6 +3037,7 @@ export const ExpandableBadge = memo(function ExpandableBadge({
       {detailContent ? (
         <Pressable
           ref={detailWrapperRef}
+          testID="tool-call-detail-surface"
           style={detailWrapperStyle}
           onHoverIn={handleDetailHoverIn}
           onHoverOut={handleDetailHoverOut}
@@ -3047,6 +3060,7 @@ function areExpandableBadgePropsEqual(previous: ExpandableBadgeProps, next: Expa
   if (previous.isLastInSequence !== next.isLastInSequence) return false;
   if (previous.disableOuterSpacing !== next.disableOuterSpacing) return false;
   if (previous.borderlessWhenExpanded !== next.borderlessWhenExpanded) return false;
+  if (previous.fadeDetailsBottom !== next.fadeDetailsBottom) return false;
   if (previous.testID !== next.testID) return false;
   if (previous.onToggle !== next.onToggle) return false;
   if (previous.onOpenFile !== next.onOpenFile) return false;
@@ -3097,6 +3111,8 @@ export const ToolCall = memo(function ToolCall({
 
   const isMobile = useIsCompactFormFactor();
   const shouldRenderInline = !isMobile || forceInline;
+  const [shellHasMore, setShellHasMore] = useState(false);
+  const shellInlineFade = getIsElectronMac() && shouldRenderInline && detail?.type === "shell";
 
   const effectiveDetail = useMemo<ToolCallDetail | undefined>(() => {
     if (detail) {
@@ -3201,6 +3217,7 @@ export const ToolCall = memo(function ToolCall({
           detail={effectiveDetail}
           errorText={presentation.errorText}
           maxHeight={maxDetailHeight}
+          onShellOverflowChange={shellInlineFade ? setShellHasMore : undefined}
           showLoadingSkeleton={presentation.isLoadingDetails}
         />
       </>
@@ -3213,6 +3230,7 @@ export const ToolCall = memo(function ToolCall({
     presentation.isLoadingDetails,
     presentation.displayName,
     maxDetailHeight,
+    shellInlineFade,
   ]);
 
   if (presentation.isPlan && effectiveDetail?.type === "plan") {
@@ -3229,6 +3247,7 @@ export const ToolCall = memo(function ToolCall({
   return (
     <ExpandableBadge
       testID="tool-call-badge"
+      fadeDetailsBottom={shellInlineFade && shellHasMore}
       label={presentation.displayName}
       secondaryLabel={presentation.summary}
       icon={presentation.icon}
