@@ -30,6 +30,8 @@ export function createDiffPalette(theme: Theme, codexDark = false): DiffPalette 
           additionGutterBackground: "#122013",
           deletionGutterBackground: "#28150e",
           emptyStripe: "#3c3c3a",
+          additionInlineBackground: "#33633b",
+          deletionInlineBackground: "#774130",
         }
       : {}),
   };
@@ -40,6 +42,8 @@ export function retainDiffPalette(previous: DiffPalette, next: DiffPalette): Dif
     "additionGutterBackground",
     "deletionGutterBackground",
     "emptyStripe",
+    "additionInlineBackground",
+    "deletionInlineBackground",
   ] as const) {
     if (previous[key] !== next[key]) return next;
   }

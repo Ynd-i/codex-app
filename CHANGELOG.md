@@ -8,6 +8,7 @@ distribution and full migration acceptance remain pending; see the
 
 ### Added
 
+- Added grapheme-safe intraline highlights to macOS default-dark diffs, preserving original source/selection data and deferring computation outside the visible materialization window.
 - Added a query-only comparison-base picker to macOS Diff tabs, distinguishing local and origin refs while preserving checkout state, review drafts and fixed worktree bases.
 - Added a searchable file tree to macOS Diff tabs, with comparison totals and retained diff content when the tree is toggled.
 - Added macOS code font weight choices for chat code, file editors and diffs, including preview, persistence and Advanced reset; Default retains each surface's existing style.

@@ -28,6 +28,47 @@ describe("web diff typography", () => {
 });
 
 describe("web diff text shaping", () => {
+  it("paints measured intraline spans behind text without entering inline-review space", () => {
+    const fills: Array<[string, number, number, number, number]> = [];
+    const context = {
+      fillStyle: "",
+      font: "",
+      textBaseline: "alphabetic",
+      setTransform() {},
+      clearRect() {},
+      save() {},
+      restore() {},
+      beginPath() {},
+      rect() {},
+      clip() {},
+      fillText() {},
+      fillRect(x: number, y: number, width: number, height: number) {
+        fills.push([this.fillStyle, x, y, width, height]);
+      },
+    };
+    const row = modelWithReview.rows[0] as DiffLineRow;
+    const cell = row.cells[0]!;
+    paintWebViewport({
+      context: context as unknown as CanvasRenderingContext2D,
+      model: {
+        ...modelWithReview,
+        rows: [{ ...row, cells: [{ ...cell, intralineRanges: [{ start: 0, end: 1 }] }] }],
+      },
+      palette: { ...palette, additionInlineBackground: "inline" },
+      typography: { family: "monospace", size: 12, lineHeight: 18 },
+      headerTypography,
+      measureText: { measure: () => 0 },
+      scrollTop: 0,
+      viewportWidth: 200,
+      viewportHeight: 100,
+      horizontalOffsets: new Map(),
+      selection: null,
+      activeHeaderPath: null,
+      devicePixelRatio: 1,
+    });
+    expect(fills.filter(([color]) => color === "inline")).toEqual([["inline", 28, 0, 10, 18]]);
+  });
+
   it("paints changed gutters and clips empty-side stripes above inline reviews", () => {
     const fills: Array<[string, number, number, number, number]> = [];
     const clips: number[][] = [];

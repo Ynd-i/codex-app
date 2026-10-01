@@ -158,6 +158,8 @@ function paletteKey(palette: DiffPalette): string {
     palette.additionGutterBackground,
     palette.deletionGutterBackground,
     palette.emptyStripe,
+    palette.additionInlineBackground,
+    palette.deletionInlineBackground,
     palette.selection,
     palette.headerActiveSurface,
     palette.headerBorder,

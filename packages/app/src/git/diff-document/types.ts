@@ -1,6 +1,7 @@
 import type { ParsedDiffFile } from "@getpaseo/protocol/messages";
 import type { InlineReviewActions } from "@/review";
 import type { ReviewableDiffTarget } from "@/utils/diff-layout";
+import type { IntralineRange } from "./intraline-ranges";
 
 interface DiffDocumentBaseProps {
   files: ParsedDiffFile[];
@@ -66,6 +67,8 @@ export interface DiffPalette {
   additionGutterBackground?: string;
   deletionGutterBackground?: string;
   emptyStripe?: string;
+  additionInlineBackground?: string;
+  deletionInlineBackground?: string;
   selection: string;
   headerActiveSurface: string;
   headerBorder: string;
@@ -118,6 +121,8 @@ export interface DiffCell {
   fragments: DiffFragment[];
   reviewTarget: ReviewableDiffTarget | null;
   sourceIdentity: DiffSourceIdentity;
+  comparisonText?: string;
+  intralineRanges?: IntralineRange[];
 }
 
 export interface DiffLineRow {

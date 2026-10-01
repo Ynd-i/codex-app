@@ -27,6 +27,8 @@ describe("diff palette retention", () => {
       "additionGutterBackground",
       "deletionGutterBackground",
       "emptyStripe",
+      "additionInlineBackground",
+      "deletionInlineBackground",
     ] as const) {
       const changed = { ...palette, [key]: "changed" };
       expect(retainDiffPalette(palette, changed)).toBe(changed);

@@ -19,17 +19,14 @@ test("macOS diff keeps its canvas and chat while the right file tree toggles", a
     title: "Review code changes",
     repo: {
       files: [
-        { path: "example.ts", content: "export const answer = 42;\n" },
-        { path: "src/other.ts", content: "export const other = false;\n" },
+        { path: "example.ts", content: "const a = 1, b = 2;\n" },
+        { path: "src/other.ts", content: "let x = false;\n" },
       ],
     },
   });
   try {
-    await writeFile(
-      `${fixture.cwd}/example.ts`,
-      "export const answer = 43;\nexport const ready = true;\n",
-    );
-    await writeFile(`${fixture.cwd}/src/other.ts`, "export const other = true;\n");
+    await writeFile(`${fixture.cwd}/example.ts`, "const a = 3, b = 4;\nconst ready = true;\n");
+    await writeFile(`${fixture.cwd}/src/other.ts`, "let x = true;\n");
     await fixture.client.checkoutRefresh(fixture.cwd);
     await installDesktopRuntime(page, {
       serverId: getServerId(),
@@ -48,7 +45,16 @@ test("macOS diff keeps its canvas and chat while the right file tree toggles", a
     const canvas = diff.getByTestId("git-diff-canvas");
     await expect(canvas).toBeVisible();
     await expect(canvas).toHaveCSS("font-weight", "600");
-    const referenceColors = ["#00c853", "#ff5f38", "#334a34", "#55392e", "#122013", "#28150e"];
+    const referenceColors = [
+      "#00c853",
+      "#ff5f38",
+      "#334a34",
+      "#55392e",
+      "#122013",
+      "#28150e",
+      "#33633b",
+      "#774130",
+    ];
     const paintedColors = () =>
       canvas.evaluate((node, wanted) => {
         const element = node as HTMLCanvasElement;
@@ -78,6 +84,7 @@ test("macOS diff keeps its canvas and chat while the right file tree toggles", a
     await diff.getByTestId("changes-options-menu").click();
     await expect(page.getByTestId("changes-toggle-inline-diff")).toHaveCount(0);
     await page.getByTestId("changes-toggle-layout").filter({ visible: true }).click();
+    await expect.poll(paintedColors).toEqual(referenceColors);
     const originalCanvas = await canvas.elementHandle();
     if (!originalCanvas) throw new Error("Missing canvas");
     const closedWidth = (await canvas.boundingBox())!.width;
@@ -110,6 +117,12 @@ test("macOS diff keeps its canvas and chat while the right file tree toggles", a
     await expect(tree).toHaveCount(0);
     expect(await originalCanvas.evaluate((node) => node.isConnected)).toBe(true);
     await expect.poll(async () => (await canvas.boundingBox())!.width).toBe(closedWidth);
+    await diff.getByTestId("changes-options-menu").click();
+    await page.getByTestId("changes-toggle-wrap-lines").filter({ visible: true }).click();
+    await expect.poll(paintedColors).toEqual(referenceColors);
+    expect(await originalCanvas.evaluate((node) => node.isConnected)).toBe(true);
+    await diff.getByTestId("changes-options-menu").click();
+    await page.getByTestId("changes-toggle-wrap-lines").filter({ visible: true }).click();
     await expect(composer).toHaveValue("Keep this review draft.");
     await expect(page.getByTestId("workspace-new-tab-button")).toHaveCount(0);
     await page.screenshot({ path: testInfo.outputPath("diff-tree-closed.png") });

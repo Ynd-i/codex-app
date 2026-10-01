@@ -390,6 +390,15 @@ function paintCellText(
   for (const fragment of input.cell.fragments) {
     const baseline = input.y + fragment.baseline;
     const textX = input.x - offset;
+    paintIntralineRanges(
+      input.context,
+      input.cell,
+      fragment,
+      input.palette,
+      textX,
+      input.y + fragment.top,
+      input.model.lineHeight,
+    );
     for (const band of fragmentColorBands(input.cell, fragment, input.palette)) {
       input.context.save();
       input.context.beginPath();
@@ -406,6 +415,33 @@ function paintCellText(
       input.context.fillText(fragment.text, textX, baseline);
       input.context.restore();
     }
+  }
+}
+
+function paintIntralineRanges(
+  context: CanvasRenderingContext2D,
+  cell: DiffCell,
+  fragment: DiffCell["fragments"][number],
+  palette: DiffPalette,
+  x: number,
+  y: number,
+  height: number,
+): void {
+  if (cell.type !== "add" && cell.type !== "remove") return;
+  const color =
+    cell.type === "add" ? palette.additionInlineBackground : palette.deletionInlineBackground;
+  if (!color) return;
+  context.fillStyle = color;
+  for (const range of cell.intralineRanges ?? []) {
+    const start = Math.max(range.start, fragment.start);
+    const end = Math.min(range.end, fragment.end);
+    if (start >= end) continue;
+    context.fillRect(
+      x + fragmentWidthForRange(fragment, fragment.start, start),
+      y,
+      fragmentWidthForRange(fragment, start, end),
+      height,
+    );
   }
 }
 
