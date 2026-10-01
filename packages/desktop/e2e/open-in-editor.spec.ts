@@ -97,6 +97,7 @@ test.describe("Workspace open in editor", () => {
     const toolbar = page.getByTestId("desktop-workspace-toolbar");
     const editor = toolbar.getByTestId("workspace-open-in-editor-primary");
     await expect(editor).toBeVisible();
+    await expect(page.getByTestId("workspace-tabs-row")).toHaveCount(0);
     await expect(page.getByTestId("composer-dock-header")).toHaveCount(0);
     await editor.click();
     await expectEditorOpened({
@@ -119,6 +120,7 @@ test.describe("Workspace open in editor", () => {
     await explorer.click();
     await expect(explorer).toHaveAttribute("aria-expanded", "true");
     await expect(page.getByTestId("workspace-explorer-sidebar-resize-handle")).toBeVisible();
+    await expect(page.getByTestId("explorer-sidebar-tab-files")).toBeVisible();
     await explorer.click();
     await openSettings(page);
     await expect(editor).toHaveCount(0);
@@ -133,13 +135,26 @@ test.describe("Workspace open in editor", () => {
     });
     await page.screenshot({ path: testInfo.outputPath("workspace-titlebar.png") });
     await page.setViewportSize({ width: 900, height: 680 });
-    await expect(editor).toBeInViewport();
-    await expect(explorer).toBeInViewport();
-    // Compact layouts retain the existing mobile header and its action menu.
+    await expect(editor).toBeInViewport({ ratio: 1 });
+    await expect(explorer).toBeInViewport({ ratio: 1 });
+    // Narrow Mac windows keep the current chat and the desktop titlebar actions.
     await page.setViewportSize({ width: 700, height: 680 });
-    await expect(editor).toHaveCount(0);
-    await expect(page.getByTestId("composer-dock-header")).toBeVisible();
-    await expect(page.getByTestId("workspace-header-menu-trigger")).toBeInViewport();
+    await expect(editor).toBeInViewport({ ratio: 1 });
+    await expect(page.getByTestId("composer-dock-header")).toHaveCount(0);
+    await expect(page.getByTestId("workspace-tabs-row")).toHaveCount(0);
+    await expect(toolbar.getByTestId("workspace-header-menu-trigger")).toBeInViewport({ ratio: 1 });
+    await editor.click();
+    await expectEditorOpened({
+      recordPath,
+      editorId: "vscode",
+      path: second.repoPath,
+      afterCount: 3,
+    });
+    await explorer.click();
+    await expect(page.getByTestId("workspace-explorer-sidebar")).toBeVisible();
+    await expect(page.getByTestId("explorer-sidebar-tab-files")).toBeVisible();
+    await expect(page.getByTestId("workspace-tabs-row")).toHaveCount(0);
+    await explorer.click();
     await page.setViewportSize({ width: 1352, height: 782 });
     await expect(editor).toHaveCount(1);
     await page.keyboard.press("Meta+Shift+f");
@@ -174,6 +189,8 @@ test.describe("Workspace open in editor", () => {
     await workspace.navigateTo();
 
     await openFileExplorer(page);
+    await expect(page.getByTestId("workspace-explorer-sidebar")).toBeVisible();
+    await expect(page.getByTestId("workspace-tabs-row")).toHaveCount(0);
     await expandFolder(page, "repos");
     await page.getByText(childFolderName, { exact: true }).click({ button: "right" });
     const openInEditor = page.getByTestId(/file-explorer-row-\d+-open-in-editor$/);

@@ -176,6 +176,20 @@ Merge upstream source changes and review server, protocol, and client compatibil
 together. Keep custom changes at the presentation boundary. Any required protocol
 change is a separate backward-compatible slice.
 
+The October 1 refresh fetched `upstream/main` at `4893629ff5ff8938c129c322d6328dd183023095`,
+26 commits beyond the accepted `4e9a458` baseline. It is not merged yet. Commit the
+current UI slice first, then integrate that pinned target in an isolated worktree.
+Preserve the upstream runtime model/thinking selection, sidebar Usage preferences
+and footer model, stacked-dialog/host-confirmation behavior, and reactive provider
+icons. Keep provider/tool approval and provider-options changes intact on the
+server/protocol side. Merge both locale key sets rather than choosing one side.
+
+Rebuild client/server declarations before checking consumers. Focus validation on
+composer selection, settings/usage/sidebar models, host confirmation, and the
+changed Codex/OpenCode/plugin-provider option and approval paths, plus the custom
+desktop regressions. The source review found no blocking upstream defect; actual
+merge resolution and its validation remain outstanding.
+
 The upstream desktop updater targets `getpaseo/paseo`. Use the
 [custom macOS package command](../release.md#custom-macos-development-package)
 for this fork: automatic updates stay disabled until an independent release source
@@ -609,6 +623,13 @@ Logs: `/private/tmp/paseo-single-chat-final-e2e.log`,
 `/private/tmp/paseo-browser-placement-verified.log`,
 `/private/tmp/paseo-hidden-explorer-browser.log`, and
 `/private/tmp/paseo-layout-final-{format,lint,typecheck}.log`.
+
+The legacy desktop editor tests still waited for the removed main tab bar through
+`withWorkspace.navigateTo`. The reproduced timeout is now fixed by one shared
+workspace-readiness helper; tests that actually require a tab bar retain their
+strict tab-bar check. All four desktop editor cases pass, retaining cross-workspace
+and nested-directory IPC path checks and adding the narrow Mac titlebar/right-dock
+expectations. Logs: `/private/tmp/paseo-workspace-ready-{red,e2e,lint,typecheck}.log`.
 
 ### File path and tree controls — 2026-10-01
 
