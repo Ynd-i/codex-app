@@ -159,6 +159,14 @@ separate bounded subagent assignments; neither changes shared pane state.
 
 ### Work that can continue unattended
 
+On October 1 the regular allowance reached 0% and reported
+`ordinaryUsageAllowed: false`; a new per-redemption reset confirmation was requested.
+Existing prepaid credits were available to finish the two already-started slices;
+no credits were purchased. Their Shell-overflow and real-webview checks are
+recorded below. The last verified Custom bundle was built at `580aa19`; its search,
+Files dock and single-chat route checks pass. Appearance mode previews and Shell
+overflow fading postdate that bundle.
+
 Code inspection, implementation, targeted unit tests, isolated headless renderer
 tests, dependency builds, documentation, and commits can continue while the Mac
 is locked. Native screenshots and window interactions wait for manual unlock.
@@ -506,6 +514,28 @@ and [expanded](../qa-evidence/codex-desktop/phase3-native-activity-expanded.jpg)
 were inspected in the existing mock conversation. This is simulated-provider and
 local native acceptance, not live-provider, remote-device or packaged acceptance.
 
+### Inline Shell overflow — 2026-10-01
+
+Mac inline Shell cards now fade their bottom 25px only while output overflows
+below the visible viewport. A native CSS mask fades text, card background and
+border together into the conversation. Scrolling to the end restores the entire
+card and final line; short output never receives the mask. Complete output remains
+selectable, with both scroll axes intact. Full detail panels and other platforms
+do not subscribe to the new scroll-boundary callback.
+
+The existing tool-interaction case passes after its file-open assertion was moved
+to the right dock. The dedicated overflow case passes long output, full-text
+selection, horizontal scrolling, bottom/top transitions, collapse/reopen and a
+separate short-output agent. Reusing one agent while rewriting its cached detail
+was an invalid fixture and was replaced, without changing production caching.
+The initial red test lacked the new surface locator; it did not separately prove
+a CSS-only regression. Final inspected captures: [overflow](../qa-evidence/codex-desktop/shell-overflow-top.png),
+[last line](../qa-evidence/codex-desktop/shell-overflow-bottom.png), and
+[short output](../qa-evidence/codex-desktop/shell-short-output.png).
+Logs: `/private/tmp/paseo-shell-fade-e2e.log` (existing case green, earlier fixture
+failure) and `/private/tmp/paseo-shell-fade-verified.log` (final overflow/short case
+green). Root checks pass in `/private/tmp/paseo-navigation-fade-final-{format,lint,typecheck}.log`.
+
 ### Attachment menu
 
 The wide macOS attachment popover now matches the composer width and opens above
@@ -664,8 +694,8 @@ On October 1, the live development renderer still showed the old main tabs after
 source changes. A normal frontend reload removed the tabs and plus button while
 preserving the open chat. Native evidence is private at
 `.dev/codex-reference/native-single-chat-after-reload.jpg`; neither daemon was
-restarted. Native right-tab dragging and actual browser-webview navigation remain
-unverified. The file-tool follow-up below adds the path and filtering controls;
+restarted. Native right-tab dragging remains unverified. Actual browser-webview
+navigation now has the isolated Electron evidence below. The file-tool follow-up adds the path and filtering controls;
 these checks do not establish full pixel equality or package acceptance.
 
 Logs: `/private/tmp/paseo-single-chat-final-e2e.log`,
@@ -852,7 +882,7 @@ The extended renderer case went red then green across 1352/900/700px; its simula
 webview observes zero source changes for Escape and one for Enter. The
 [focused capture](../qa-evidence/codex-desktop/browser-toolbar-focused.png) was
 inspected. Logs: `/private/tmp/paseo-browser-focus-{red,e2e,lint,typecheck}.log`.
-Actual webview navigation remains a separate native check.
+Actual webview navigation is covered by the isolated Electron check below.
 
 The start-page follow-up matches the reference's two-column Review, Terminal,
 Files and More tools section. Actions reuse the supporting launch catalog and
@@ -877,6 +907,25 @@ was inspected against the supplied browser reference. Logs:
 `/private/tmp/paseo-browser-new-tab-e2e.log`,
 `/private/tmp/paseo-browser-home-locales.log`, and
 `/private/tmp/paseo-browser-home-final-{format,lint,typecheck}.log`.
+
+### Real local browser navigation — 2026-10-01
+
+The existing real-Electron harness now has a focused Mac navigation mode. A private
+Mock host and temporary user data open a real local HTTP page in the right browser
+dock. Submitting `/two` in the address field navigates the actual guest; Back and
+Forward return between `/one` and `/two` without replacing its WebContents. The
+right titlebar close button removes the tab, resident guest and browser-tool
+listing. The main draft remains intact and the main tab strip stays absent.
+
+The test uses the production deep-link queue to enter the agent route, waits for
+the main inspector, and pins English for its accessible-label selectors. It
+does not inject a browser bridge or send a real-provider prompt. Its environment
+uses an empty temporary home, and ports 6767/6768 are excluded. The
+[real guest capture](../qa-evidence/codex-desktop/browser-navigation-webview.png)
+was inspected. Log: `/private/tmp/paseo-browser-navigation-final.log`; report:
+`/private/tmp/paseo-browser-navigation-final-qa/result.json`. This proves local
+webview navigation and cleanup, not external websites, OS URL dispatch or signing.
+See [the focused command](../testing.md#desktop-browser-regression).
 
 ### Settings frame — 2026-10-01
 

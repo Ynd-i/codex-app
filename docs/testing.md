@@ -148,6 +148,19 @@ Run it locally with the same command owned by the Ubuntu `desktop-tests` require
 npm run test:e2e:browser-tabs --workspace=@getpaseo/desktop
 ```
 
+On macOS, run only actual local-page navigation in the single-chat/right-dock UI:
+
+```bash
+PASEO_DESKTOP_BROWSER_NAVIGATION_ONLY=1 \
+PASEO_DESKTOP_BROWSER_E2E_ARTIFACT_DIR=/tmp/paseo-browser-navigation \
+node packages/desktop/e2e/browser-tabs.e2e.mjs
+```
+
+This starts an isolated Mock host, Metro and real Electron with a temporary home.
+It checks address submission, Back/Forward, guest identity, closing through the
+right titlebar, registry cleanup, retained draft and absence of main tabs. The
+target is a local HTTP fixture; no external website or real-provider turn is used.
+
 The same runner has a macOS-only agent-link mode for an already-built **Paseo Custom**
 bundle. It starts a private Mock host and its own Electron instances, without rebuilding
 the bundle or running the browser suite:
