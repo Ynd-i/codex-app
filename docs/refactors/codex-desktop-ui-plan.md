@@ -1,5 +1,83 @@
 # Codex-style desktop UI
 
+## Paused handoff — 2026-10-02
+
+The user asked to stop and hand off. The Codex goal is **paused**; resume only
+after a new user request. The migration is not complete.
+
+### Checkouts and checkpoints
+
+- Primary: `/Users/yndi/dev/projects/codex-app/paseo`, branch `codex/desktop-ui`.
+  Last integrated UI/evidence checkpoint: `cda57c3`; runtime change: `20f5874`.
+  The primary also contains the user's **215-line Native session fork draft**
+  and **80 private originals** under `context-images/`. Preserve both.
+- Continue the unfinished slice in
+  `/Users/yndi/dev/projects/codex-app/paseo-upstream-4893629`, branch
+  `codex/markdown-spacing-paused-20261002`, based on `cda57c3`.
+  Source checkpoint commit: `0964d59`.
+  This checkpoint contains unfinished work; it is not integrated into the primary UI.
+- Last verified bundle:
+  `paseo-upstream-4893629/packages/desktop/release-custom/mac-arm64/Paseo Custom.app`,
+  built from `20f5874` on upstream `e10f6d2` / 0.11.0-beta.1. Startup/CLI/terminal
+  smoke and native conversation/dock/link checks passed. It does not contain the
+  unfinished cross-block-spacing slice and was not installed to `/Applications`.
+
+### Completed and preserved
+
+Single-chat main area; supporting tools in the right dock/shared titlebar;
+default workspace sidebar plus independent icon rail; settings/font controls;
+provider-backed model/effort controls; browser/file/terminal/Diff presentation;
+approval and question cards with draft retention; styled quotes/code blocks;
+chat/composer edge alignment; plain replies without empty activity headers;
+completion timestamps; 82px default code cards and tighter list rows. Detailed
+commit IDs, evidence and platform limitations remain in their sections below.
+Local commits are not pushed.
+
+### Unfinished slice saved here
+
+Cross-block Markdown spacing now carries display-only `blockKind` metadata from
+the existing definition parse, without an additional parser pass or source-message
+mutation. Mac same-response gaps distinguish paragraph/list/code boundaries.
+The history cache key includes a changing live block kind. Compound blocks retain
+the generic gap. The old string-only splitter API remains available.
+
+Changed areas: `utils/split-markdown-blocks.ts`, `types/stream.ts`, stream
+presentation/spacing/layout, their focused tests and `rich-text-reference.spec.ts`.
+The external Unistyles test stub now supplies the missing runtime argument that
+previously prevented projection tests from loading.
+
+Evidence: 86 focused unit tests passed before the final cache-key helper extraction;
+rerun those four files on resume. The final source passed root format/lint/typecheck
+and three renderer cases (35.6s), including copy/search/fork and measured gaps.
+Logs: `/private/tmp/paseo-block-gap-{units-final,renderer,format,lint,typecheck}.log`.
+Visual review, final unit rerun, package rebuild/native checks and primary integration
+remain. This slice is a resumable checkpoint, not a completed migration milestone.
+
+### Resume order and boundaries
+
+The primary receives this documentation-only handoff after `cda57c3`; reconcile
+that commit before integrating the checkpoint branch.
+
+1. Verify both checkouts, branches, HEADs, index and uncommitted changes. Continue
+   on the checkpoint branch; do not assume a new worktree includes its files.
+2. Use pinned Node with
+   `PATH=/Users/yndi/.local/share/mise/installs/node/22.20.0/bin:$PATH` and existing npm scripts.
+   Rerun the app tests for `agent-stream/{presentation,spacing,layout}.test.ts` and
+   `utils/__tests__/split-markdown-blocks.test.ts`; inspect the final renderer capture.
+3. Finish cross-block reference matching, refresh the Custom package and run its
+   isolated native checks. Never run build/clean concurrently with tests/typecheck.
+   Then integrate only verified work while preserving the primary draft and originals.
+4. Audit the remaining surface and acceptance gaps in Steps below. Full visual
+   parity, provider/remote-device acceptance and distribution gates are not claimed.
+
+Keep backend/protocol/provider behavior unchanged. Do not restart ports 6767/6768.
+Persistent resolved approval/denial history is explicitly deferred by the user;
+native provider-session fork is planning only. Large working-diff per-file paging
+and skipped-untracked counts are unavailable in the existing contract. No new
+real-provider prompts, external publication or signing/distribution decisions were
+made during this handoff. Latest quota read: 2% ordinary allowance, zero banked
+resets; refresh usage when resuming. Each reset redemption requires fresh confirmation.
+
 ## Target and boundaries
 
 Recreate the appearance and core interactions of Codex **26.924.22138** on macOS,
