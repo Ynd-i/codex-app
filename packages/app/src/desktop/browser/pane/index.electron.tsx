@@ -423,6 +423,8 @@ function clearAnnotationMarkers(webview: ElectronWebview): void {
   ).catch(ignoreWebviewJavaScriptError);
 }
 
+const MAC_URL_INPUT_DATA = { browserAddress: "mac" };
+
 function browserAddressText(url: string, macToolbar: boolean): string {
   return macToolbar && url === BROWSER_NEW_TAB_URL ? "" : url;
 }
@@ -1536,6 +1538,9 @@ export function BrowserPane({
 
   return (
     <View style={styles.container}>
+      {macToolbar ? (
+        <style>{'[data-browser-address="mac"]::placeholder { text-align: center; }'}</style>
+      ) : null}
       <View
         style={styles.chromeRow(macToolbar)}
         onLayout={macToolbar ? handleToolbarLayout : undefined}
@@ -1575,6 +1580,7 @@ export function BrowserPane({
         <View style={urlBarStyle}>
           <TextInput
             accessibilityLabel={t("workspace.browser.controls.browserUrl")}
+            dataSet={macToolbar ? MAC_URL_INPUT_DATA : undefined}
             autoFocus={isNewTab && isPresented && isInteractive}
             autoCapitalize="none"
             autoCorrect={false}

@@ -3,6 +3,7 @@ import { seedWorkspace } from "../../app/e2e/support/helpers/seed-client";
 import { buildHostWorkspaceRoute } from "../../app/src/utils/host-routes";
 import { getServerId } from "../../app/e2e/support/helpers/server-id";
 import { getE2EDaemonPort } from "../../app/e2e/support/helpers/daemon-port";
+import { installUsageReportsFixture } from "../../app/e2e/support/helpers/usage-reports";
 import { installDesktopRuntime } from "./support/runtime";
 
 test("macOS browser toolbar retains its address and tools when resized", async ({
@@ -15,6 +16,7 @@ test("macOS browser toolbar retains its address and tools when resized", async (
       manageBuiltInDaemon: false,
       daemonListen: `127.0.0.1:${getE2EDaemonPort()}`,
     });
+    await installUsageReportsFixture(page, { lists: [[]] });
     await page.setViewportSize({ width: 1352, height: 782 });
     await page.emulateMedia({ colorScheme: "dark" });
     await page.goto(buildHostWorkspaceRoute(getServerId(), workspace.workspaceId));
@@ -38,6 +40,12 @@ test("macOS browser toolbar retains its address and tools when resized", async (
     await address.focus();
     await expect(addressFrame).toHaveCSS("background-color", "rgb(110, 110, 108)");
     await expect(addressFrame).toHaveCSS("border-top-color", "rgb(128, 128, 126)");
+    await expect(address).toHaveValue("");
+    await expect
+      .poll(() => address.evaluate((input) => getComputedStyle(input, "::placeholder").textAlign))
+      .toBe("center");
+    await expect(address).toHaveCSS("text-align", /^(left|start)$/);
+    await page.screenshot({ path: testInfo.outputPath("browser-centered-placeholder.png") });
     const originalUrl = await address.inputValue();
     await expect
       .poll(() =>
@@ -54,6 +62,7 @@ test("macOS browser toolbar retains its address and tools when resized", async (
       }).observe(element, { attributes: true, attributeFilter: ["src"] });
     });
     await address.fill("https://example.test/unsubmitted");
+    await expect(address).toHaveCSS("text-align", /^(left|start)$/);
     await page.getByTestId("browser-tools-menu-trigger").focus();
     await expect(address).toHaveValue("https://example.test/unsubmitted");
     await expect(addressFrame).toHaveCSS("background-color", "rgb(69, 69, 67)");
