@@ -19,6 +19,7 @@ import { DropdownTrigger } from "@/components/ui/dropdown-trigger";
 import { SettingsSection } from "@/components/settings/headings/settings-section";
 import { useContributedThemes } from "@/appearance/provider";
 import { Button } from "@/components/ui/button";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   EditingTextInput as TextInput,
   type EditingTextInputHandle,
@@ -636,6 +637,21 @@ export function AppearanceSection() {
     setCodeSizeDraft(String(settings.codeFontSize));
   }, [settings.codeFontSize]);
 
+  const motionOptions = useMemo(
+    () =>
+      (["system", "on", "off"] as const).map((value) => ({
+        value,
+        label: t(`settings.appearance.motion.${value}`),
+      })),
+    [t],
+  );
+  const handleMotionChange = useCallback(
+    (reducedMotion: AppSettings["reducedMotion"]) => {
+      void updateSettings({ reducedMotion });
+    },
+    [updateSettings],
+  );
+
   const handleThemeChange = useCallback(
     (theme: BuiltInThemePreference) => {
       void updateSettings({ theme });
@@ -789,6 +805,25 @@ export function AppearanceSection() {
           />
         </View>
       </SettingsSection>
+      {showThemeModes ? (
+        <View style={settingsStyles.section}>
+          <View style={settingsStyles.card}>
+            <View style={settingsStyles.row}>
+              <View style={settingsStyles.rowContent}>
+                <Text style={settingsStyles.rowTitle}>{t("settings.appearance.motion.title")}</Text>
+                <Text style={settingsStyles.rowHint}>{t("settings.appearance.motion.hint")}</Text>
+              </View>
+              <SegmentedControl
+                options={motionOptions}
+                value={settings.reducedMotion}
+                onValueChange={handleMotionChange}
+                size="sm"
+                testID="appearance-reduced-motion"
+              />
+            </View>
+          </View>
+        </View>
+      ) : null}
       <SettingsSection title={t("settings.appearance.fonts.title")}>
         <View style={settingsStyles.card}>
           {showInterfaceFontFamilyRow ? (

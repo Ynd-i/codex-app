@@ -21,6 +21,7 @@ import {
 } from "@/plugins/themes";
 import { PLUGIN_THEME_NAMES, PLUGIN_THEME_PREFERENCE, THEME_TO_UNISTYLES } from "@/styles/theme";
 import { applyAppearance } from "./apply";
+import { AppReducedMotionProvider } from "./reduced-motion";
 
 interface ContributedThemes {
   options: PluginThemeOption[];
@@ -109,7 +110,11 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
   if (!hasAppliedAppearance) return null;
 
   return (
-    <ContributedThemesContext.Provider value={value}>{children}</ContributedThemesContext.Provider>
+    <AppReducedMotionProvider preference={settings.reducedMotion}>
+      <ContributedThemesContext.Provider value={value}>
+        {children}
+      </ContributedThemesContext.Provider>
+    </AppReducedMotionProvider>
   );
 }
 

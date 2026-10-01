@@ -1,3 +1,5 @@
+import { useAppReducedMotion } from "@/appearance/reduced-motion";
+import { getIsElectronMac } from "@/constants/platform";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import Animated, {
@@ -81,6 +83,9 @@ function ensureWebSplashShimmerKeyframes() {
 
 function LogoShimmer() {
   const { theme } = useUnistyles();
+  const reducedMotion = useAppReducedMotion();
+  if (getIsElectronMac() && reducedMotion)
+    return <PaseoLogo size={LOGO_SIZE} color={theme.colors.foreground} />;
 
   if (isWeb) {
     return <WebLogoShimmer color={theme.colors.foreground} />;

@@ -1,3 +1,4 @@
+import { useAppReducedMotion } from "@/appearance/reduced-motion";
 import { router } from "expo-router";
 import { FolderPlus, GitBranch, Import, Server, Settings, X } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
@@ -24,7 +25,6 @@ import Animated, {
   Easing,
   runOnJS,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
@@ -715,7 +715,7 @@ function DesktopSidebar({
   const startWidthRef = useRef(visibleSidebarWidth);
   const resizeWidth = useSharedValue(visibleSidebarWidth);
   const sidebarVisibility = useSharedValue(active ? 1 : 0);
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useAppReducedMotion();
   const animateSidebarToggle = usesDesktopShell && !prefersReducedMotion;
   const [keepSidebarRendered, setKeepSidebarRendered] = useState(active);
   const [resizePressed, setResizePressed] = useState(false);

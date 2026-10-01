@@ -1,3 +1,4 @@
+import { useAppReducedMotion } from "@/appearance/reduced-motion";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { TaskListRow } from "@/components/task-list-row";
 import {
@@ -2629,6 +2630,7 @@ function renderExpandableBadgeHeaderIcons({
 }
 
 function computeShimmerMetrics(input: {
+  reducedMotion: boolean;
   label: string;
   secondaryLabel: string | undefined;
   isLoading: boolean;
@@ -2649,11 +2651,12 @@ function computeShimmerMetrics(input: {
     32,
     Math.min(120, input.labelRowWidth > 0 ? input.labelRowWidth * 0.28 : 0),
   );
-  const isWebShimmer = input.isLoading && isWeb;
+  const animate = input.isLoading && !(getIsElectronMac() && input.reducedMotion);
+  const isWebShimmer = animate && isWeb;
   // React Native Web only observes a node when onLayout exists at mount. Keep
   // measuring while idle so a retained badge has dimensions when it starts loading.
   const shouldMeasureWebShimmer = isWeb;
-  const shouldMeasureNativeShimmer = input.isLoading && isNative;
+  const shouldMeasureNativeShimmer = animate && isNative;
   const isNativeShimmer =
     shouldMeasureNativeShimmer && input.labelRowWidth > 0 && input.labelRowHeight > 0;
   const webShimmerSpanStartX = input.labelOffsetX;
@@ -2748,6 +2751,7 @@ export const ExpandableBadge = memo(function ExpandableBadge({
   fadeDetailsBottom,
   testID,
 }: ExpandableBadgeProps) {
+  const reducedMotion = useAppReducedMotion();
   const resolvedDisableOuterSpacing = useDisableOuterSpacing(disableOuterSpacing);
   const [isHovered, setIsHovered] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
@@ -2793,6 +2797,7 @@ export const ExpandableBadge = memo(function ExpandableBadge({
     label,
     secondaryLabel,
     isLoading,
+    reducedMotion,
     labelRowWidth,
     labelRowHeight,
     labelOffsetX,

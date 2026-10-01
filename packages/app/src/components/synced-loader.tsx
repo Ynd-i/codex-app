@@ -1,10 +1,10 @@
+import { useAppReducedMotion } from "@/appearance/reduced-motion";
 import { useLayoutEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 import Animated, {
   makeMutable,
   type SharedValue,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
 } from "react-native-reanimated";
 import { scheduleOnUI } from "react-native-worklets";
@@ -94,7 +94,7 @@ function useSyncedLoaderStep(active: boolean, reduceMotion: boolean): SharedValu
 
 export function SyncedLoader({ size = 10, color }: { size?: number; color: string }) {
   const active = useRetainedPanelActive();
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useAppReducedMotion();
   const step = useSyncedLoaderStep(active, reduceMotion);
 
   // The 2x3 grid fills `size` exactly on its long axis: the dot is whatever is left after
@@ -122,7 +122,7 @@ export function SyncedLoader({ size = 10, color }: { size?: number; color: strin
   );
 
   return (
-    <View style={containerStyle}>
+    <View style={containerStyle} testID="synced-loader">
       <View style={gridStyle}>
         {Array.from({ length: SYNCED_LOADER_DOT_COUNT }).map((_, dotIndex) => {
           const rowIndex = Math.floor(dotIndex / GRID_COLUMNS);

@@ -47,6 +47,23 @@ function makeDeps(
 }
 
 describe("loadAppSettingsFromStorage", () => {
+  it("defaults reduced motion to System and persists explicit overrides", async () => {
+    for (const reducedMotion of [undefined, "future-value", null]) {
+      const deps = makeDeps({
+        storage: createInMemoryKeyValueStorage({
+          [APP_SETTINGS_KEY]: JSON.stringify({ reducedMotion }),
+        }),
+      });
+      expect((await loadAppSettingsFromStorage(deps)).reducedMotion).toBe("system");
+    }
+    const deps = makeDeps();
+    const queryClient = new QueryClient();
+    for (const reducedMotion of ["on", "off", "system"] as const) {
+      await saveAppSettings({ deps, queryClient, updates: { reducedMotion } });
+      expect((await loadAppSettingsFromStorage(deps)).reducedMotion).toBe(reducedMotion);
+    }
+  });
+
   it("defaults missing macOS syntax preferences to Codex without changing explicit choices", async () => {
     vi.spyOn(platform, "getIsElectronMac").mockReturnValue(true);
     expect((await loadAppSettingsFromStorage(makeDeps())).syntaxTheme).toBe("codex");
