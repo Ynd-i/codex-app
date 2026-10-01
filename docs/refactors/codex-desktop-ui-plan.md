@@ -162,8 +162,8 @@ separate bounded subagent assignments; neither changes shared pane state.
 On October 1 the regular allowance reached 0% and reported
 `ordinaryUsageAllowed: false`; a new per-redemption reset confirmation was requested.
 Existing prepaid credits remained available for continued authorized work;
-no credits were purchased. The latest account read reports ordinary usage allowed,
-93% of the weekly allowance remaining and zero banked resets. This task did not
+no credits were purchased. The subsequent account read reports ordinary usage
+allowed and zero banked resets. This task did not
 call the reset tool. The Shell-overflow and real-webview checks are recorded below.
 See [Custom package evidence](#custom-agent-links-and-refreshed-package--2026-10-01)
 for the current verified source and real-renderer checks.
@@ -404,6 +404,17 @@ behavior while the overlay prevents those keys reaching background shortcuts.
 Root typecheck, lint and translation parity
 passed (36 locale tests). The macOS combobox frame uses the same rounded surface
 for the preferences and model browser.
+
+The default Mac dark preset now uses the reference's coral emphasis for the
+reasoning range, lightning icon and selected-level text. The reference PNG's
+embedded Display profile converts its sampled color to CSS sRGB `#d97757`;
+using its raw RGB bytes would produce a different color. Other palettes retain
+their existing orange. The composer case first failed on the old bright orange,
+then passed dark/light/dark colors and all existing provider-option, keyboard,
+drag, Reset, attachment and send/stop checks. The refreshed
+[popover capture](../qa-evidence/codex-desktop/model-effort-accent.png) uses an empty
+usage fixture. Logs: `/private/tmp/paseo-effort-accent-red.log` and
+`/private/tmp/paseo-effort-accent-final.log`.
 
 The macOS new-chat page now centers the existing Paseo mark and a project-aware
 26px heading above the bottom composer. Project, host, isolation and launch controls
@@ -1017,6 +1028,15 @@ webview observes zero source changes for Escape and one for Enter. The
 inspected. Logs: `/private/tmp/paseo-browser-focus-{red,e2e,lint,typecheck}.log`.
 Actual webview navigation is covered by the isolated Electron check below.
 
+The empty Mac address hint is centered through its placeholder pseudo-element;
+the input itself retains start alignment for its caret and URL text. No duplicate
+hint element, URL state or navigation path was added. The existing toolbar case
+first failed on start-aligned placeholder text, then passed the new alignment and
+all draft/Escape/submit/resize checks. The
+[empty-address capture](../qa-evidence/codex-desktop/browser-centered-placeholder.png)
+was inspected. Logs: `/private/tmp/paseo-address-placeholder-red.log` and
+`/private/tmp/paseo-address-placeholder-green.log`.
+
 The start-page follow-up matches the reference's two-column Review, Terminal,
 Files and More tools section. Actions reuse the supporting launch catalog and
 right-dock placement, preserving the main chat and draft. Page cards represent
@@ -1445,24 +1465,30 @@ Appearance captures were inspected in the private artifact directory
 `/private/tmp/paseo-settings-return-final-{format,lint}.log`. The first concurrent
 typecheck raced the dependency build; the final check was run after build completion.
 
-The latest Custom refresh matches production source `bfe7bc7`, including Advanced
-appearance, compact size fields, 32px right-tool tabs and submenu keyboard focus.
+The latest Custom refresh matches production source `3028a82`, including the
+centered address hint and reference reasoning accent, plus Advanced appearance,
+compact size fields, 32px right-tool tabs and submenu keyboard focus.
 Startup, real renderer/preload, isolated daemon, CLI and terminal smoke pass in
-`/private/tmp/paseo-native-polish-package-build.log`. The expanded packaged flow
+`/private/tmp/paseo-address-effort-package-build.log`. The expanded packaged flow
 checks ArrowRight/Left/Enter focus, both control heights, keyboard collapse/expand,
 a focused unsaved code-size draft reset to 12, motion reset to System and the
-selected Dark theme. It retains the prior single-chat/right-dock, draft, shell,
-project editor and deep-link checks. Log:
-`/private/tmp/paseo-native-polish-package-final.log`; result and inspected private
-captures: `/private/tmp/paseo-native-polish-package-final-qa`. Source hashes were
+selected Dark theme. It also opens a blank browser, checks placeholder alignment,
+types a URL without navigating, closes the actual selected tab and retains the
+chat draft; the model popover confirms the coral accent with its declared Low
+selection unchanged. The initial close check assumed a browser-prefixed tab ID;
+the corrected test reads the UI-created tab's actual identity. No product change
+was needed for that test failure. It retains the prior single-chat/right-dock,
+shell, project editor and deep-link checks. Log:
+`/private/tmp/paseo-address-effort-package-verified.log`; result and inspected private
+captures: `/private/tmp/paseo-address-effort-package-verified-qa`. Source hashes were
 checked against the build input after the run. Build clean steps must run
-sequentially with renderer tests as well as typechecks; a parallel renderer
-attempt encountered temporary missing protocol output during this build.
+sequentially with renderer tests as well as typechecks; an earlier parallel
+renderer attempt encountered temporary missing protocol output.
 
 Root format, lint and workspace typecheck pass, including the final feature commit
-hooks. Logs: `/private/tmp/paseo-native-polish-final-{format,lint,typecheck}.log`,
-`/private/tmp/paseo-tool-height-commit.log`,
-`/private/tmp/paseo-size-controls-commit.log` and `/private/tmp/paseo-submenu-commit.log`.
+hooks. Logs: `/private/tmp/paseo-address-effort-{format,lint,typecheck}.log`,
+`/private/tmp/paseo-address-placeholder-commit.log` and
+`/private/tmp/paseo-effort-accent-commit.log`.
 
 The corrected ARM64 ad-hoc bundle passes that final declaration check, independent
 bundle identity, disabled update IPC, real renderer/preload startup, isolated
@@ -1501,6 +1527,13 @@ Continue in this checkout on `codex/desktop-ui`; preserve the user's untracked
 native attachment-menu, tab and rail checks. Reuse the live development instance
 after checking its status; user activity may have changed it. The pinned
 Playwright runtime supports isolated renderer tests.
+
+After the subsequent interruption, the former daemon PIDs and listeners on
+6767/6768/8082 were absent. No replacement was started. The empty Electron default
+window opened by the state reader was closed, and validation continued in the
+isolated renderer/package harnesses. Earlier private temporary logs may no longer
+be present; committed captures and the scoped check results above remain the
+durable record.
 
 Keep the independent navigation rail and the default workspace sidebar per the
 October 1 clarification. The custom chat-row sidebar remains deferred.

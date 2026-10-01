@@ -30,6 +30,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- Centered the macOS browser's empty address hint while retaining left-aligned URL editing and caret behavior.
+- Matched the default macOS dark reasoning control to the reference's coral accent, preserving other theme palettes and provider choices.
 - Matched macOS Appearance size fields to the compact reference shape while retaining larger-font sizing and other theme palettes.
 - Matched macOS right-tool tab height to the reference while preserving resizing, close controls and retained sessions.
 - Matched the macOS chat menu's Archive text to the neutral reference color while retaining running-agent confirmation.

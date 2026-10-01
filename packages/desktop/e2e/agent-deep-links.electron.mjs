@@ -86,6 +86,29 @@ export async function runAgentDeepLinksRegression({
   await expectChat("A");
   await expect(composer).toHaveValue(draft);
   await page.screenshot({ path: path.join(artifactDir, "packaged-single-chat-files.png") });
+  await page.getByTestId("explorer-sidebar-new-tab-button").click();
+  await page.getByTestId("workspace-new-tab-menu-browser").click();
+  const address = page.getByRole("textbox", { name: "Browser URL", exact: true });
+  await expect(address).toHaveValue("");
+  await expect
+    .poll(() => address.evaluate((input) => getComputedStyle(input, "::placeholder").textAlign))
+    .toBe("center");
+  await expect(address).toHaveCSS("text-align", /^(left|start)$/);
+  await page.screenshot({ path: path.join(artifactDir, "packaged-browser-placeholder.png") });
+  await address.fill("https://example.test/unsubmitted");
+  await expect(address).toHaveCSS("text-align", /^(left|start)$/);
+  await expect(composer).toHaveValue(draft);
+  const browserTab = page.locator('[data-testid^="explorer-sidebar-tab-"][aria-selected="true"]');
+  await expect(browserTab).toContainText("New tab");
+  const closeBrowserId = (await browserTab.getAttribute("data-testid"))?.replace(
+    "explorer-sidebar-tab-",
+    "explorer-sidebar-tab-close-",
+  );
+  if (!closeBrowserId) throw new Error("New browser tab has no UI identity");
+  await page.getByTestId(closeBrowserId).click();
+  await expect(address).toHaveCount(0);
+  await page.getByTestId("explorer-sidebar-tab-files").click();
+  await expect(files.getByTestId("files-empty-editor").filter({ visible: true })).toBeVisible();
   await page.evaluate(async () => {
     window.__agentLinkEvents = [];
     window.__stopAgentLinkEvents = await window.paseoDesktop.events.on("open-agent", (target) => {
@@ -185,6 +208,13 @@ export async function runAgentDeepLinksRegression({
     .getByText("$", { exact: true });
   await expect(prompt).toHaveCSS("font-size", "22px");
   await expect(prompt).toHaveCSS("line-height", "33px");
+  await page.getByTestId("combined-model-selector").filter({ visible: true }).click();
+  const effort = page.getByTestId("desktop-thinking-range");
+  await expect(effort).toHaveCSS("accent-color", "rgb(217, 119, 87)");
+  await expect(effort).toHaveAttribute("aria-valuetext", "Low");
+  await page.screenshot({ path: path.join(artifactDir, "packaged-effort-accent.png") });
+  await page.keyboard.press("Escape");
+  await expect(effort).toHaveCount(0);
   const card = shell.getByTestId("tool-call-detail-surface");
   await expect(card).toHaveCSS("mask-image", /linear-gradient.*25px/);
   await page.screenshot({ path: path.join(artifactDir, "packaged-shell-overflow.png") });
@@ -224,6 +254,8 @@ export async function runAgentDeepLinksRegression({
     draftPreserved: true,
     packagedChatSearch: true,
     packagedFilesDock: true,
+    packagedBrowserPlaceholder: true,
+    packagedEffortAccent: true,
     packagedAppearanceModes: true,
     packagedAppearanceAdvancedReset: true,
     packagedShellOverflow: true,
