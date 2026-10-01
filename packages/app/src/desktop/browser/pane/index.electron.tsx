@@ -15,6 +15,8 @@ import {
   Text,
   View,
   type LayoutChangeEvent,
+  type NativeSyntheticEvent,
+  type TextInputKeyPressEventData,
   type StyleProp,
   type ViewStyle,
 } from "react-native";
@@ -38,7 +40,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react-native";
-import { StyleSheet, useUnistyles, withUnistyles } from "react-native-unistyles";
+import { StyleSheet, UnistylesRuntime, useUnistyles, withUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import * as Clipboard from "expo-clipboard";
 import { Button } from "@/components/ui/button";
@@ -667,6 +669,8 @@ export function BrowserPane({
   // Screenshot is captured at selection time (overlay already torn down, no
   // scroll drift) and reused when the annotation card is submitted.
   const pendingScreenshotRef = useRef<AttachmentMetadata | undefined>(undefined);
+  const [isUrlBarFocused, setIsUrlBarFocused] = useState(false);
+  const defaultDarkTheme = UnistylesRuntime.themeName === "dark";
   const [draftUrl, setDraftUrl] = useState(browser?.url ?? "https://example.com");
   const workspaceAttachmentScopeKey = useMemo(
     () => buildBrowserAttachmentScopeKey({ cwd, serverId, workspaceId }),
@@ -683,6 +687,13 @@ export function BrowserPane({
   const subtitleStyle = useMemo(
     () => [styles.unavailableSubtitle, { color: theme.colors.foregroundMuted }],
     [theme.colors.foregroundMuted],
+  );
+  const urlBarStyle = useMemo(
+    () => [
+      styles.urlBarWrap(macToolbar),
+      macToolbar && isUrlBarFocused && styles.urlBarFocused(defaultDarkTheme),
+    ],
+    [defaultDarkTheme, isUrlBarFocused, macToolbar],
   );
   const urlInputStyle = useMemo(
     () => [
@@ -726,8 +737,23 @@ export function BrowserPane({
   }, []);
 
   const handleUrlBarFocus = useCallback(() => {
+    if (macToolbar) setIsUrlBarFocused(true);
     selectUrlBar();
-  }, [selectUrlBar]);
+  }, [macToolbar, selectUrlBar]);
+  const handleUrlBarBlur = useCallback(() => setIsUrlBarFocused(false), []);
+  const handleUrlBarKeyPress = useCallback(
+    (event: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
+      if (!macToolbar || event.nativeEvent.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      const committedUrl = browserRef.current?.url ?? initialUrlRef.current;
+      urlInputRef.current?.replaceText(committedUrl);
+      setDraftUrl(committedUrl);
+      urlInputRef.current?.blur();
+      webviewRef.current?.focus?.();
+    },
+    [macToolbar],
+  );
 
   const focusUrlBar = useCallback(() => {
     urlInputRef.current?.focus();
@@ -1526,13 +1552,15 @@ export function BrowserPane({
             </ToolbarButton>
           </View>
         ) : null}
-        <View style={styles.urlBarWrap(macToolbar)}>
+        <View style={urlBarStyle}>
           <TextInput
             accessibilityLabel={t("workspace.browser.controls.browserUrl")}
             autoCapitalize="none"
             autoCorrect={false}
             onChangeText={setDraftUrl}
             onFocus={handleUrlBarFocus}
+            onBlur={handleUrlBarBlur}
+            onKeyPress={handleUrlBarKeyPress}
             onSubmitEditing={handleNavigateDraftUrl}
             placeholder={t("workspace.browser.controls.enterUrl")}
             placeholderTextColor={theme.colors.foregroundMuted}
@@ -1887,6 +1915,11 @@ const styles = StyleSheet.create((theme) => ({
     backgroundColor: macToolbar ? theme.colors.surface2 : theme.colors.surface1,
     borderWidth: 1,
     borderColor: macToolbar ? "transparent" : theme.colors.border,
+  }),
+  urlBarFocused: (defaultDarkTheme: boolean) => ({
+    // Sampled from the supplied focused macOS reference; other palettes keep their own tokens.
+    backgroundColor: defaultDarkTheme ? "#6e6e6c" : theme.colors.surface4,
+    borderColor: defaultDarkTheme ? "#80807e" : theme.colors.foregroundMuted,
   }),
   urlInput: {
     flex: 1,

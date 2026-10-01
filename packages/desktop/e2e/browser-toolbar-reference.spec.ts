@@ -35,15 +35,56 @@ test("macOS browser toolbar retains its address and tools when resized", async (
     await expect(address).toBeVisible();
     await expect(addressFrame).toHaveCSS("height", "32px");
     await expect(addressFrame).toHaveCSS("border-radius", "16px");
+    await address.focus();
+    await expect(addressFrame).toHaveCSS("background-color", "rgb(110, 110, 108)");
+    await expect(addressFrame).toHaveCSS("border-top-color", "rgb(128, 128, 126)");
+    const originalUrl = await address.inputValue();
+    await expect
+      .poll(() =>
+        address.evaluate((input: HTMLInputElement) => [input.selectionStart, input.selectionEnd]),
+      )
+      .toEqual([0, originalUrl.length]);
+    const webview = page.locator("webview");
+    const originalSource = await webview.getAttribute("src");
+    await webview.evaluate((element) => {
+      element.setAttribute("data-navigation-changes", "0");
+      new MutationObserver((records) => {
+        const count = Number(element.getAttribute("data-navigation-changes"));
+        element.setAttribute("data-navigation-changes", String(count + records.length));
+      }).observe(element, { attributes: true, attributeFilter: ["src"] });
+    });
+    await address.fill("https://example.test/unsubmitted");
+    await page.getByTestId("browser-tools-menu-trigger").focus();
+    await expect(address).toHaveValue("https://example.test/unsubmitted");
+    await expect(addressFrame).toHaveCSS("background-color", "rgb(69, 69, 67)");
+    await page.keyboard.press("Meta+l");
+    await expect(address).toBeFocused();
+    await expect
+      .poll(() =>
+        address.evaluate((input: HTMLInputElement) => [input.selectionStart, input.selectionEnd]),
+      )
+      .toEqual([0, "https://example.test/unsubmitted".length]);
+    await address.press("Escape");
+    await expect(address).toHaveValue(originalUrl);
+    await expect(address).not.toBeFocused();
+    expect(await webview.getAttribute("src")).toBe(originalSource);
+    await expect(webview).toHaveAttribute("data-navigation-changes", "0");
     await address.fill("https://example.test/retained-draft");
     await address.press("Enter");
     await expect(address).toHaveValue("https://example.test/retained-draft");
+    await expect(webview).toHaveAttribute("src", "https://example.test/retained-draft");
+    await expect(webview).toHaveAttribute("data-navigation-changes", "1");
     await page.mouse.move(500, 400);
     await page.screenshot({ path: testInfo.outputPath("browser-toolbar-wide.png") });
 
     for (const width of [900, 700, 1352]) {
       await page.setViewportSize({ width, height: 782 });
       await expect(address).toBeInViewport();
+      await expect(address).toHaveValue("https://example.test/retained-draft");
+      await address.focus();
+      await expect(addressFrame).toHaveCSS("background-color", "rgb(110, 110, 108)");
+      await address.fill("https://example.test/temporary");
+      await address.press("Escape");
       await expect(address).toHaveValue("https://example.test/retained-draft");
       const more = page.getByTestId("browser-tools-menu-trigger");
       await expect(more).toBeInViewport();
@@ -73,6 +114,7 @@ test("macOS browser toolbar retains its address and tools when resized", async (
     }
     await page.keyboard.press("Meta+l");
     await expect(address).toBeFocused();
+    await page.screenshot({ path: testInfo.outputPath("browser-toolbar-focused.png") });
   } finally {
     await workspace.cleanup();
   }

@@ -713,9 +713,19 @@ screenshots and then navigation joining that menu as available width shrinks.
 The [updated renderer capture](../qa-evidence/codex-desktop/browser-toolbar-right-dock.png)
 was inspected. The isolated case passes at 1352/900/700px and retains the submitted
 URL and address keyboard shortcut. Its profile bridge is simulated, so this does
-not establish actual webview navigation or native acceptance. Focused-address
-treatment and new-tab content remain to be aligned. The passing log is
+not establish actual webview navigation or native acceptance. New-tab content
+remains to be aligned. The passing log is
 `/private/tmp/paseo-browser-responsive-e2e.log`.
+
+The address-focus follow-up uses the supplied focused screenshot's lighter
+surface and subtle edge on the default Mac dark theme; other themes retain their
+own tokens. Click and the address shortcut select the URL. Blur retains a draft,
+Escape restores the committed URL without navigation, and Enter submits once.
+The extended renderer case went red then green across 1352/900/700px; its simulated
+webview observes zero source changes for Escape and one for Enter. The
+[focused capture](../qa-evidence/codex-desktop/browser-toolbar-focused.png) was
+inspected. Logs: `/private/tmp/paseo-browser-focus-{red,e2e,lint,typecheck}.log`.
+Actual webview navigation remains a separate native check.
 
 ### Settings frame — 2026-10-01
 

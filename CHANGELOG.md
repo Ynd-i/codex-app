@@ -20,6 +20,7 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- Matched the macOS browser address field's focused surface to the reference. Escape restores the committed URL without navigating; clicking or using the address shortcut selects the full URL.
 - Kept one current conversation in the macOS main area and moved supporting tools into the right sidebar. Saved chats, terminal IDs, panel state and drafts survive the layout change; tool tabs share the window titlebar.
 - Removed Terminal profiles and Edit profiles from macOS tool launchers. The right-sidebar plus menu retains ordinary tools; providers remain available through New chat.
 - Added an internal file tree to macOS file tools, preserving unsaved editor content while toggling the tree. New right sidebars default to 576px; saved widths remain unchanged.
