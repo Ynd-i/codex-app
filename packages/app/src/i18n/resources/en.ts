@@ -123,6 +123,10 @@ export const en = {
       close: "Close menu",
     },
     commandCenter: {
+      chatPlaceholder: "Search chats",
+      chats: "Chats",
+      quickActions: "Quick actions",
+      openFolder: "Open folder",
       placeholder: "Search commands, files, workspaces, and agents...",
       filePlaceholder: "Search files...",
       searchingFiles: "Searching files...",
@@ -1948,6 +1952,7 @@ export const en = {
       subtitle: "Workspace files",
       tooltip: "Browse workspace files",
       chooseFile: "Choose a file",
+      emptyDescription: "Select a file from the workspace tree",
     },
     pullRequest: {
       label: "Pull request",

@@ -128,6 +128,10 @@ export const es: TranslationResources = {
       close: "Cerrar menú",
     },
     commandCenter: {
+      chatPlaceholder: "Buscar chats",
+      chats: "Chats",
+      quickActions: "Acciones rápidas",
+      openFolder: "Abrir carpeta",
       placeholder: "Buscar comandos, archivos, espacios de trabajo y agentes...",
       filePlaceholder: "Buscar archivos...",
       searchingFiles: "Buscando archivos...",
@@ -1971,6 +1975,7 @@ export const es: TranslationResources = {
       subtitle: "Archivos del espacio de trabajo",
       tooltip: "Explorar archivos del espacio de trabajo",
       chooseFile: "Elige un archivo",
+      emptyDescription: "Selecciona un archivo del árbol del espacio de trabajo",
     },
     pullRequest: {
       label: "Solicitud de extracción",

@@ -127,6 +127,10 @@ export const ar: TranslationResources = {
       close: "إغلاق القائمة",
     },
     commandCenter: {
+      chatPlaceholder: "البحث في المحادثات",
+      chats: "المحادثات",
+      quickActions: "إجراءات سريعة",
+      openFolder: "فتح مجلد",
       placeholder: "ابحث في الأوامر والملفات ومساحات العمل والوكلاء...",
       filePlaceholder: "البحث في الملفات...",
       searchingFiles: "جارٍ البحث في الملفات...",
@@ -1923,6 +1927,7 @@ export const ar: TranslationResources = {
       subtitle: "ملفات مساحة العمل",
       tooltip: "تصفح ملفات مساحة العمل",
       chooseFile: "اختر ملفًا",
+      emptyDescription: "اختر ملفًا من شجرة مساحة العمل",
     },
     pullRequest: {
       label: "طلب السحب",

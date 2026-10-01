@@ -128,6 +128,10 @@ export const ja: TranslationResources = {
       close: "メニューを閉じる",
     },
     commandCenter: {
+      chatPlaceholder: "チャットを検索",
+      chats: "チャット",
+      quickActions: "クイックアクション",
+      openFolder: "フォルダーを開く",
       placeholder: "コマンド、ファイル、ワークスペース、エージェントを検索...",
       filePlaceholder: "ファイルを検索...",
       searchingFiles: "ファイルを検索中...",
@@ -1942,6 +1946,7 @@ export const ja: TranslationResources = {
       subtitle: "ワークスペースのファイル",
       tooltip: "ワークスペースのファイルを参照",
       chooseFile: "ファイルを選択",
+      emptyDescription: "ワークスペースのツリーからファイルを選択",
     },
     pullRequest: {
       label: "プルリクエスト",

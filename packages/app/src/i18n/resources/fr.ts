@@ -129,6 +129,10 @@ export const fr: TranslationResources = {
       close: "Fermer le menu",
     },
     commandCenter: {
+      chatPlaceholder: "Rechercher des discussions",
+      chats: "Discussions",
+      quickActions: "Actions rapides",
+      openFolder: "Ouvrir un dossier",
       placeholder: "Rechercher des commandes, fichiers, espaces de travail et agents...",
       filePlaceholder: "Rechercher des fichiers...",
       searchingFiles: "Recherche de fichiers...",
@@ -1975,6 +1979,7 @@ export const fr: TranslationResources = {
       subtitle: "Fichiers de l’espace de travail",
       tooltip: "Parcourir les fichiers de l’espace de travail",
       chooseFile: "Choisissez un fichier",
+      emptyDescription: "Sélectionnez un fichier dans l’arborescence de l’espace de travail",
     },
     pullRequest: {
       label: "Demande de fusion",

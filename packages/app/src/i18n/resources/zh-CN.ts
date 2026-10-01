@@ -127,6 +127,10 @@ export const zhCN: TranslationResources = {
       close: "关闭菜单",
     },
     commandCenter: {
+      chatPlaceholder: "搜索聊天",
+      chats: "聊天",
+      quickActions: "快捷操作",
+      openFolder: "打开文件夹",
       placeholder: "搜索命令、文件、工作区和 Agent...",
       filePlaceholder: "搜索文件...",
       searchingFiles: "正在搜索文件...",
@@ -1901,6 +1905,7 @@ export const zhCN: TranslationResources = {
       subtitle: "工作区文件",
       tooltip: "浏览工作区文件",
       chooseFile: "选择文件",
+      emptyDescription: "从工作区目录树中选择文件",
     },
     pullRequest: {
       label: "拉取请求",

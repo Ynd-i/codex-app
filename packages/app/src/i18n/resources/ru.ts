@@ -128,6 +128,10 @@ export const ru: TranslationResources = {
       close: "Закрыть меню",
     },
     commandCenter: {
+      chatPlaceholder: "Поиск чатов",
+      chats: "Чаты",
+      quickActions: "Быстрые действия",
+      openFolder: "Открыть папку",
       placeholder: "Поиск команд, файлов, рабочих пространств и агентов...",
       filePlaceholder: "Поиск файлов...",
       searchingFiles: "Поиск файлов...",
@@ -1956,6 +1960,7 @@ export const ru: TranslationResources = {
       subtitle: "Файлы рабочего пространства",
       tooltip: "Просмотр файлов рабочего пространства",
       chooseFile: "Выберите файл",
+      emptyDescription: "Выберите файл в дереве рабочей области",
     },
     pullRequest: {
       label: "PR",

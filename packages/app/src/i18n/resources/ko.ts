@@ -127,6 +127,10 @@ export const ko: TranslationResources = {
       close: "메뉴 닫기",
     },
     commandCenter: {
+      chatPlaceholder: "채팅 검색",
+      chats: "채팅",
+      quickActions: "빠른 작업",
+      openFolder: "폴더 열기",
       placeholder: "명령, 파일, 워크스페이스 및 에이전트 검색...",
       filePlaceholder: "파일 검색...",
       searchingFiles: "파일 검색 중...",
@@ -1933,6 +1937,7 @@ export const ko: TranslationResources = {
       subtitle: "워크스페이스 파일",
       tooltip: "워크스페이스 파일 탐색",
       chooseFile: "파일 선택",
+      emptyDescription: "작업 공간 트리에서 파일을 선택하세요",
     },
     pullRequest: {
       label: "풀 리퀘스트",
