@@ -1,7 +1,16 @@
 import { router } from "expo-router";
 import { FolderPlus, Gauge, GitBranch, Import, Server, Settings, X } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 import {
   Pressable,
   StyleSheet as RNStyleSheet,
@@ -11,7 +20,14 @@ import {
   type PressableStateCallbackType,
 } from "react-native";
 import { Gesture } from "react-native-gesture-handler";
-import Animated, { runOnJS, useAnimatedStyle, useSharedValue } from "react-native-reanimated";
+import Animated, {
+  Easing,
+  runOnJS,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
@@ -61,6 +77,10 @@ import { SidebarWorkspaceList } from "./sidebar-workspace-list";
 type SidebarTheme = ReturnType<typeof useUnistyles>["theme"];
 
 const DEV_BUILD_LABEL = process.env.EXPO_PUBLIC_PASEO_DEV_BUILD_LABEL?.trim() || null;
+const SIDEBAR_TOGGLE_TIMING = {
+  duration: 220,
+  easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+};
 
 interface SidebarSharedProps {
   theme: SidebarTheme;
@@ -680,6 +700,10 @@ function DesktopSidebar({
 
   const startWidthRef = useRef(visibleSidebarWidth);
   const resizeWidth = useSharedValue(visibleSidebarWidth);
+  const sidebarVisibility = useSharedValue(active ? 1 : 0);
+  const prefersReducedMotion = useReducedMotion();
+  const animateSidebarToggle = usesDesktopShell && !prefersReducedMotion;
+  const [keepSidebarRendered, setKeepSidebarRendered] = useState(active);
   const [resizePressed, setResizePressed] = useState(false);
   const showResizeGrip = useCallback(() => setResizePressed(true), []);
   const hideResizeGrip = useCallback(() => setResizePressed(false), []);
@@ -687,6 +711,24 @@ function DesktopSidebar({
   useEffect(() => {
     resizeWidth.value = visibleSidebarWidth;
   }, [resizeWidth, visibleSidebarWidth]);
+
+  useLayoutEffect(() => {
+    if (active) {
+      setKeepSidebarRendered(true);
+      sidebarVisibility.value = animateSidebarToggle ? withTiming(1, SIDEBAR_TOGGLE_TIMING) : 1;
+      return;
+    }
+
+    if (!animateSidebarToggle) {
+      sidebarVisibility.value = 0;
+      setKeepSidebarRendered(false);
+      return;
+    }
+
+    sidebarVisibility.value = withTiming(0, SIDEBAR_TOGGLE_TIMING, (finished) => {
+      if (finished) runOnJS(setKeepSidebarRendered)(false);
+    });
+  }, [active, animateSidebarToggle, sidebarVisibility]);
 
   const resizeGesture = useMemo(
     () =>
@@ -728,17 +770,17 @@ function DesktopSidebar({
     ],
   );
 
-  const resizeAnimatedStyle = useAnimatedStyle(() => ({
-    width: resizeWidth.value,
+  const desktopSidebarAnimatedStyle = useAnimatedStyle(() => ({
+    width: resizeWidth.value * sidebarVisibility.value,
   }));
 
   const desktopSidebarStyle = useMemo(
     () => [
       staticStyles.desktopSidebar,
-      !active && staticStyles.desktopSidebarHidden,
-      resizeAnimatedStyle,
+      !active && !keepSidebarRendered && staticStyles.desktopSidebarHidden,
+      desktopSidebarAnimatedStyle,
     ],
-    [active, resizeAnimatedStyle],
+    [active, desktopSidebarAnimatedStyle, keepSidebarRendered],
   );
   const desktopSidebarBorderStyle = useMemo(
     () => [styles.desktopSidebarBorder, { flex: 1, paddingTop: insetsTop }],
@@ -750,6 +792,7 @@ function DesktopSidebar({
   );
   return (
     <Animated.View
+      testID="desktop-workspace-sidebar"
       accessibilityElementsHidden={!active}
       importantForAccessibility={active ? "auto" : "no-hide-descendants"}
       pointerEvents={active ? "auto" : "none"}

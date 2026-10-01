@@ -533,6 +533,21 @@ Logs: `/private/tmp/paseo-default-sidebar-newchat.log`,
 `/private/tmp/paseo-default-sidebar-typecheck.log` and
 `/private/tmp/paseo-default-sidebar-lint.log`.
 
+### Sidebar motion and selection — 2026-10-01
+
+The default workspace list remains intact. Its macOS show/hide action now uses
+a 220ms width transition and retains rows until closing finishes. Resize width
+stays independent of visibility; a canceled close cannot hide a reopened list.
+Reduced-motion mode and other platforms retain immediate toggling. Navigation
+rail selection has both a brighter icon and `aria-current="page"`.
+
+Both focused renderer cases pass in `/private/tmp/paseo-content-motion-e2e.log`,
+alongside the separate content-font case. They check rows during collapse, a quick
+reversal, keyboard focus, the rail after navigation and instant reduced-motion
+toggling. The [selection capture](../qa-evidence/codex-desktop/sidebar-navigation-selection.png)
+was inspected. Root format, lint and typecheck pass; native animation timing has
+not been independently measured.
+
 ## Phase 4 progress — 2026-09-30
 
 The workspace menu, scripts, editor, Git and Explorer controls now share the
