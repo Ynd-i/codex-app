@@ -646,8 +646,7 @@ Logs: `/private/tmp/paseo-code-weight-foundation-{red,green}.log`,
 `/private/tmp/paseo-code-weight-advanced-visual.log`, and
 `/private/tmp/paseo-code-weight-surfaces-final.log`.
 
-Independent interface weight remains open work. Content weight is implemented
-below. An isolated
+Content and interface weight are implemented in the sections below. An initial isolated
 probe confirmed that ordinary RN-web text stays at 400 when its parent changes
 to 500, so inherited container styling alone cannot implement the interface
 control. Adding weight to the high-specificity font-family rule would flatten
@@ -683,13 +682,57 @@ isolated daemon, bundled CLI and terminal smoke; this proves package startup,
 while the isolated renderer cases above prove the content-weight interactions.
 Read-only review found no material regression in the final Mac gating, default
 inheritance or code-weight separation.
-These captures were inspected against the typography reference; UI weight remains
-an explicit follow-up rather than a completed control.
+These captures were inspected against the typography reference; the subsequent
+interface-weight section completes the remaining font-weight control.
 Logs: `/private/tmp/paseo-content-weight-red.log`,
 `/private/tmp/paseo-content-weight-green-final.log`,
 `/private/tmp/paseo-content-weight-renderer-final.log`,
 `/private/tmp/paseo-content-weight-advanced.log`, and
 `/private/tmp/paseo-content-weight-{format,lint,typecheck}.log`.
+
+### Interface weight — 2026-10-01
+
+Mac Advanced now includes Interface font style with Default, Regular, Medium and
+SemiBold. It reuses the content/code weight selector, validation and persistence.
+Advanced reset includes this weight but still leaves interface font family alone.
+The normal UI weight token changes with the preference; authored medium/semibold/
+bold weights remain intact. Content and mono defaults keep their own role scope,
+and explicit content/code preferences continue to win. Other platforms store the
+preference without applying it or displaying the Mac control.
+
+RN-web's root Text/TextInput reset assigns a font shorthand, which prevents a
+body-only weight from reaching ordinary labels. The existing font application
+boundary now adjusts only those normal 14px reset rules in place through CSSOM,
+at their original cascade priority. No high-specificity font-weight rule or new
+Text wrapper is added. Default normal weight is scoped away from content/mono
+surfaces; composer and ordered markers keep their own normal fallback. The final
+change adds no dependency patch and leaves installation scripts unchanged.
+
+The [pinned Text source](https://github.com/necolas/react-native-web/blob/0.21.2/packages/react-native-web/src/exports/Text/index.js)
+and [CSS compiler](https://github.com/necolas/react-native-web/blob/0.21.2/packages/react-native-web/src/exports/StyleSheet/compiler/index.js)
+explain the reset and production-only class-name shortening. The implementation
+matches reset declarations, not debug class names or hashes. A runtime probe also
+showed that System expands to a platform font stack, so the matcher does not bind
+to that unnormalized family string. Keep the unit and packaged checks when updating
+RN-web: a changed reset signature needs reevaluation.
+
+The 172 focused settings/application/CSSOM/boundary/Markdown/locale checks pass.
+Three renderer cases pass (30.1s), covering default text, storage/reload, content/
+code independence, Advanced reset and ordinary-browser preservation. A further
+renderer check passes with actual UI TextInput weight and unchanged sidebar width
+(18.2s); drafts persist throughout. [Settings](../qa-evidence/codex-desktop/interface-weight-settings.png)
+and [separate text roles](../qa-evidence/codex-desktop/interface-weight-surfaces.png)
+were visually inspected. Root format, lint and typecheck pass. Implementation:
+`56377ae`; normal commit hooks pass. Read-only review found no material regression.
+The refreshed Custom package passes startup, isolated daemon, CLI/terminal and
+update protection. Its real minified renderer also verifies UI weight 600, composer
+400, code 500 and retained draft after reload. The first package interaction run
+passed these assertions but exposed a harness cleanup callback cleared by reload;
+the callback now runs after its link checks and before reload, and the complete
+package regression passes. No dependency patch or install-script change is shipped.
+Logs: `/private/tmp/paseo-ui-weight-units-final.log`,
+`/private/tmp/paseo-ui-weight-final.log`, `/private/tmp/paseo-ui-weight-layout.log`,
+and `/private/tmp/paseo-ui-weight-{format,lint-final,typecheck-final}.log`.
 
 ### Voice exclusions
 
@@ -1546,12 +1589,14 @@ Appearance captures were inspected in the private artifact directory
 `/private/tmp/paseo-settings-return-final-{format,lint}.log`. The first concurrent
 typecheck raced the dependency build; the final check was run after build completion.
 
-The latest Custom refresh was built from `cae17e9`, including fixed question
-cards, styled quotes/code blocks, content weight, tool approvals and preceding
-Diff changes. Real renderer/preload, custom
+The latest Custom refresh was built from `56377ae`, including interface/content
+weight, fixed question cards, styled quotes/code blocks, tool approvals and
+preceding Diff changes. Real renderer/preload, custom
 identity/update guard, isolated daemon, bundled CLI and terminal smoke pass.
-Log: `/private/tmp/paseo-question-rich-package-build.log`; artifacts:
-`/private/tmp/paseo-question-rich-package-qa`. This smoke establishes package startup;
+Log: `/private/tmp/paseo-ui-weight-package-build.log`; artifacts:
+`/private/tmp/paseo-ui-weight-package-smoke`. The deeper real-package interface/
+code-weight and reload checks pass in `/private/tmp/paseo-ui-weight-package-verified.log`
+with artifacts at `/private/tmp/paseo-ui-weight-package-final-qa`. This smoke establishes package startup;
 approval and populated Diff interactions have separate isolated renderer evidence below.
 
 The preceding Custom refresh matched production source `5b5083b`, including code

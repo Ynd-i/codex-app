@@ -8,6 +8,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Added
 
+- Added independent macOS interface font weight with safe default/Advanced reset, preserving authored emphasis, content/code weights, drafts and sidebar sizing.
+
 - Added a fixed macOS question card above the editable composer, with numbered choices and provider-defined answering/dismiss behavior, plus code-block language headers and working wrap/copy controls.
 
 - Added independent macOS content font weight controls, live preview and Advanced reset, preserving chat drafts, stronger emphasis and separate code/UI typography.
