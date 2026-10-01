@@ -8,6 +8,7 @@ it("customizes only the macOS Electron default dark theme", async () => {
   vi.mocked(getIsElectronMac).mockReturnValue(true);
   const { REGISTERED_THEMES: desktop } = await import("./registered-themes.electron");
   expect(desktop.dark.colors.surface0).toBe("#2c2c2b");
+  expect(desktop.dark.colors.terminal.background).toBe("#262626");
   expect(desktop.dark.colors.statusDanger).toBe(upstream.dark.colors.statusDanger);
   const otherThemeKeys = (Object.keys(upstream) as (keyof typeof upstream)[]).filter(
     (key) => key !== "dark",

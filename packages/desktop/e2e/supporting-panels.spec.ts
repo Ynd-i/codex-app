@@ -1,9 +1,13 @@
 import { test, expect } from "../../app/e2e/support/fixtures";
 import { TerminalE2EHarness } from "../../app/e2e/support/helpers/terminal-dsl";
-import { buildTerminalWorkspaceUrl } from "../../app/e2e/support/helpers/terminal-perf";
+import {
+  buildTerminalWorkspaceUrl,
+  getTerminalBufferText,
+} from "../../app/e2e/support/helpers/terminal-perf";
 import { getServerId } from "../../app/e2e/support/helpers/server-id";
 import { getE2EDaemonPort } from "../../app/e2e/support/helpers/daemon-port";
 import { installDesktopRuntime } from "./support/runtime";
+import { installUsageReportsFixture } from "../../app/e2e/support/helpers/usage-reports";
 
 test("desktop panel tabs keep active controls visible and retain terminals across resizing", async ({
   page,
@@ -113,6 +117,80 @@ test("desktop panel tabs keep active controls visible and retain terminals acros
       .screenshot({ path: testInfo.outputPath("supporting-panels-failure.png"), timeout: 5000 })
       .catch(() => {});
     throw error;
+  } finally {
+    await harness.cleanup();
+  }
+});
+
+test("macOS terminal content inset retains PTY input through resize and reopening", async ({
+  page,
+}, testInfo) => {
+  const harness = await TerminalE2EHarness.create({ tempPrefix: "desktop-terminal-content-" });
+  try {
+    await installDesktopRuntime(page, {
+      serverId: getServerId(),
+      manageBuiltInDaemon: false,
+      daemonListen: `127.0.0.1:${getE2EDaemonPort()}`,
+    });
+    await installUsageReportsFixture(page, { lists: [[]] });
+    await page.setViewportSize({ width: 1352, height: 781 });
+    await page.emulateMedia({ colorScheme: "dark" });
+    const terminal = await harness.createTerminal({
+      name: "Terminal content verification",
+      command: "bash",
+      args: ["--noprofile", "--norc"],
+    });
+    await harness.openTerminal(page, { terminalId: terminal.id });
+    await harness.setupPrompt(page, "TERMINAL_CONTENT_READY");
+    const surface = harness.terminalSurface(page).filter({ visible: true });
+    const dock = page.getByTestId("workspace-explorer-sidebar");
+    const terminalTab = page.getByTestId(`explorer-sidebar-tab-terminal_${terminal.id}`);
+    await surface.pressSequentially(
+      "printf '\\033[2J\\033[H'; printf '%s\\n' 'TERMINAL_WIDE_OK'\n",
+      { delay: 0 },
+    );
+    await expect.poll(() => getTerminalBufferText(page)).toMatch(/^TERMINAL_WIDE_OK$/m);
+    // Save the actual baseline before any visual assertion can fail.
+    await page.screenshot({ path: testInfo.outputPath("terminal-content-wide.png") });
+    await expect(surface).toHaveCSS("background-color", "rgb(38, 38, 38)");
+    await expect(surface.locator("..")).toHaveCSS("background-color", "rgb(38, 38, 38)");
+    const dockBox = await dock.boundingBox();
+    const surfaceBox = await surface.boundingBox();
+    const screenBox = await surface.locator(".xterm-screen").boundingBox();
+    if (!dockBox || !surfaceBox || !screenBox) throw new Error("Missing terminal content geometry");
+    expect(Math.abs(screenBox.x - dockBox.x - 16)).toBeLessThanOrEqual(1);
+    expect(Math.abs(screenBox.y - dockBox.y - 8)).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(dockBox.x + dockBox.width - surfaceBox.x - surfaceBox.width - 16),
+    ).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(dockBox.y + dockBox.height - surfaceBox.y - surfaceBox.height - 8),
+    ).toBeLessThanOrEqual(1);
+    expect(screenBox.width).toBeLessThanOrEqual(surfaceBox.width);
+
+    await page.setViewportSize({ width: 900, height: 781 });
+    await expect(surface).toBeInViewport();
+    await surface.click();
+    await surface.pressSequentially("printf '%s\\n' 'TERMINAL_NARROW_OK'\n", { delay: 0 });
+    await expect.poll(() => getTerminalBufferText(page)).toMatch(/^TERMINAL_NARROW_OK$/m);
+    const narrowDock = await dock.boundingBox();
+    const narrowScreen = await surface.locator(".xterm-screen").boundingBox();
+    if (!narrowDock || !narrowScreen) throw new Error("Missing resized terminal geometry");
+    expect(Math.abs(narrowScreen.x - narrowDock.x - 16)).toBeLessThanOrEqual(1);
+    expect(Math.abs(narrowScreen.y - narrowDock.y - 8)).toBeLessThanOrEqual(1);
+    await page.screenshot({ path: testInfo.outputPath("terminal-content-narrow.png") });
+    await page.getByTestId("workspace-explorer-toggle").click();
+    await expect(dock).toBeHidden();
+    await page.getByTestId("workspace-explorer-toggle").click();
+    await expect(terminalTab).toHaveAttribute("aria-selected", "true");
+    await expect(surface).toBeVisible();
+    await surface.click();
+    await surface.pressSequentially("printf '%s\\n' 'TERMINAL_REOPENED_OK'\n", { delay: 0 });
+    await expect.poll(() => getTerminalBufferText(page)).toMatch(/^TERMINAL_REOPENED_OK$/m);
+    const live = await harness.client.listTerminals(harness.tempRepo.path, undefined, {
+      workspaceId: harness.workspaceId,
+    });
+    expect(live.terminals.map((entry) => entry.id)).toEqual([terminal.id]);
   } finally {
     await harness.cleanup();
   }

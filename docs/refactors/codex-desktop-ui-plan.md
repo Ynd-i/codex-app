@@ -109,7 +109,7 @@ create another task ledger.
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Chat and composer      | Align transcript width, type and spacing; align composer and attachment previews; adapt provider-backed model/effort controls.                                                                   | Targeted action regressions; isolated renderer checks for sibling drafts, navigation, send/stop and attachments; native comparison against the matching supplied state. |
 | Supporting UI          | Inspect the supplied browser and settings states; adapt existing panels one at a time; then tool output, waiting approval and populated diff when their references are available.                | Existing panel navigation and keyboard behavior retained; empty, loading and error states checked; each visual state has its own evidence.                              |
-| Upstream compatibility | Keep presentation in desktop overrides; review each upstream merge; rebuild affected workspace dependencies before checking consumers.                                                           | Small revertible commits, no unintended backend/protocol changes, targeted tests for changed upstream behavior. Last accepted upstream parent: `4e9a458`.               |
+| Upstream compatibility | Keep presentation in desktop overrides; review each upstream merge; rebuild affected workspace dependencies before checking consumers.                                                           | Small revertible commits, no unintended backend/protocol changes, targeted tests for changed upstream behavior. Last accepted upstream parent: `4893629`.               |
 | Distribution           | Inspect existing identity and updater configuration; prevent a custom package from installing official Paseo bundles; prepare a separate identity/channel; build and validate the local package. | Packaged launch and update behavior accepted separately from development. A release destination, signing identity and any publication are resolved before distribution. |
 
 For each slice: inspect its source and reference, make the smallest change, run
@@ -210,8 +210,12 @@ Logs are under `/private/tmp/paseo-upstream-`: `build-server`, `server-final-bui
 `provider-unit`, `ui-contracts`, `usage-unit`, `codex-usage-unit`, `new-providers`,
 `antigravity-unit`, `browser-contracts`, `shortcut-e2e`, `desktop-regression`,
 `usage-ui-e2e`, `usage-overview-verified`, `lint` and `typecheck` (`.log` suffix).
-Native and remote-device checks remain separate. Neither protected daemon was
-restarted; source integration does not claim a running-daemon upgrade.
+The verified merge `37be3a0` was fast-forwarded into `codex/desktop-ui`. The
+primary checkout's 215-line Native session fork draft and all 74 reference files
+were preserved byte-for-byte. Dependency patches and `build:app-deps` then passed
+in that checkout. Native and remote-device checks remain separate. Neither
+protected daemon was restarted; source integration does not claim a running-daemon
+upgrade.
 
 The upstream desktop updater targets `getpaseo/paseo`. Use the
 [custom macOS package command](../release.md#custom-macos-development-package)
@@ -653,6 +657,30 @@ workspace-readiness helper; tests that actually require a tab bar retain their
 strict tab-bar check. All four desktop editor cases pass, retaining cross-workspace
 and nested-directory IPC path checks and adding the narrow Mac titlebar/right-dock
 expectations. Logs: `/private/tmp/paseo-workspace-ready-{red,e2e,lint,typecheck}.log`.
+
+### Terminal content surface — 2026-10-01
+
+The macOS default dark terminal now uses the reference's sampled `#262626`
+background. Its left/top inset is 16/8 CSS pixels at the supplied 2x scale; the
+right/bottom use the same spacing as a symmetric layout choice. Insets live
+outside the emulator so its existing fit logic measures the reduced content box.
+Other platforms, theme palettes, ANSI output, font preferences and terminal
+transport remain under their existing owners.
+
+The existing theme regression failed with the old background and passes with the
+new one, including unchanged non-Mac and other-theme identities. One new case in
+the existing desktop supporting-panel suite uses a real isolated bash PTY. It
+checks the full inset/background, input/output after narrowing to 900px, and the
+same terminal ID after hiding/reopening the dock. The [wide capture](../qa-evidence/codex-desktop/terminal-content-wide.png)
+was compared with `context-images/codex-terminal-side-panel.png` at 1352×781 CSS
+pixels; the [narrow capture](../qa-evidence/codex-desktop/terminal-content-narrow.png)
+was also inspected. This accepts the terminal surface changes in the renderer,
+not full-window pixel equality or native app acceptance. Native inspection remains
+pending while the Mac is locked.
+
+Logs: `/private/tmp/paseo-terminal-theme-{red,green}.log`,
+`/private/tmp/paseo-terminal-reference-verified.log`, and
+`/private/tmp/paseo-terminal-links-{lint,typecheck}.log`.
 
 ### File path and tree controls — 2026-10-01
 

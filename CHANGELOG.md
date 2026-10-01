@@ -22,6 +22,7 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- Matched the macOS terminal content background and inset to the reference while retaining live terminal sessions, resizing and custom fonts.
 - Integrated upstream through `4893629`, retaining runtime model/thinking reporting, provider options and approvals, and configurable sidebar usage alongside the custom desktop presentation.
 - Matched the macOS browser address field's focused surface to the reference. Escape restores the committed URL without navigating; clicking or using the address shortcut selects the full URL.
 - Kept one current conversation in the macOS main area and moved supporting tools into the right sidebar. Saved chats, terminal IDs, panel state and drafts survive the layout change; tool tabs share the window titlebar.
