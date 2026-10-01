@@ -8,6 +8,7 @@ distribution and full migration acceptance remain pending; see the
 
 ### Added
 
+- Added macOS code font weight choices for chat code, file editors and diffs, including preview, persistence and Advanced reset; Default retains each surface's existing style.
 - Grouped macOS typography, motion, content width and syntax controls under a collapsible Advanced section with a scoped reset; theme and interface font selections remain separate.
 - Added a saved macOS Reduce motion preference with live System behavior and consistent sidebar, outline, streaming-loader and decorative shimmer handling.
 - Restored Copy agent id and supported provider resume commands in the current-chat titlebar; unavailable resume commands stay disabled.

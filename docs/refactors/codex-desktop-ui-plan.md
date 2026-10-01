@@ -610,6 +610,48 @@ The [typography capture](../qa-evidence/codex-desktop/transcript-content-font.pn
 predates the latest single-chat main-area correction; it verifies typography,
 not acceptance of the older visible main tab strip.
 
+### Code weight — 2026-10-01
+
+Mac Appearance now exposes Default, Regular, Medium and SemiBold beside the code
+font family. Default stores no override: it retains the editor's existing 600
+and the existing regular/inherited weights in chat code and diffs. Explicit choices
+apply to inline/fenced Markdown, tool code, editable/readonly files and diff bodies.
+Other platforms retain the saved preference without applying it. Terminal/xterm
+normal and ANSI-bold weights remain independent.
+
+Font loading, canvas painting and text measurement use the same font description;
+the diff typography cache also distinguishes weight. A CSS-only canvas change
+would leave painting and selection geometry inconsistent. The existing appearance
+boundary refreshes rendered code without introducing another navigation or editor
+lifecycle. The Advanced reset includes this preference.
+
+Validation: 116 settings/application/boundary checks, 36 locale checks, 11 Markdown
+checks and 15 diff paint/cache checks pass. The Advanced Mac and ordinary-browser
+cases pass. The cross-surface renderer case verifies actual editor and Markdown
+weights, Shell output, canvas draw calls, regular/default restoration and reload;
+ordinary prose, composer text, heading and strong styles retain their prior values.
+The canvas test observes draw calls because the painter restores context state
+afterward; Chromium omits the normal 400 token when serializing a canvas font.
+The [wide control](../qa-evidence/codex-desktop/appearance-code-weight-wide.png),
+[narrow control](../qa-evidence/codex-desktop/appearance-code-weight-narrow.png),
+[code surfaces](../qa-evidence/codex-desktop/code-weight-medium.png) and
+[diff setting](../qa-evidence/codex-desktop/code-weight-diff.png) captures were
+inspected. The diff capture proves preference application, not reference parity
+for the still-unverified populated-diff design.
+
+Logs: `/private/tmp/paseo-code-weight-foundation-{red,green}.log`,
+`/private/tmp/paseo-code-weight-locales.log`,
+`/private/tmp/paseo-code-weight-markdown-green.log`,
+`/private/tmp/paseo-code-weight-diff-green.log`,
+`/private/tmp/paseo-code-weight-advanced-visual.log`, and
+`/private/tmp/paseo-code-weight-surfaces-final.log`.
+
+Independent interface and content weight controls remain open work. An isolated
+probe confirmed that ordinary RN-web text stays at 400 when its parent changes
+to 500, so inherited container styling alone cannot implement the interface
+control. Adding weight to the high-specificity font-family rule would flatten
+authored emphasis; that shortcut was not introduced.
+
 ### Voice exclusions
 
 The custom macOS desktop now hides both composer microphone controls and the
@@ -1171,11 +1213,11 @@ Logs: `/private/tmp/paseo-settings-geometry{-red,,-browser}.log` and
 
 On macOS, Interface font now sits in the upper visual-style card. Advanced starts
 expanded and supports keyboard collapse/expand. It groups the existing size,
-motion, content/code family, width and syntax controls without adding unsupported
-color, weight or platform settings. Other platforms retain their previous layout.
+motion, content/code family and weight, width and syntax controls. Other platforms
+retain their previous layout.
 
-Reset submits only eight fields through the existing save path: interface,
-content and code sizes; content and code families; content width; syntax theme;
+Reset submits only nine fields through the existing save path: interface,
+content and code sizes; content and code families; code weight; content width; syntax theme;
 and reduced motion. Theme, plugin theme, interface family, language and other
 preferences remain unchanged. Uncontrolled inputs use their existing replacement
 refs and a reset key so dirty text and the preview refresh even when stored values
@@ -1183,7 +1225,7 @@ already equal the defaults. A pointer reset avoids blur-saving the discarded
 draft first. Save errors show a localized message and permit retry; the existing
 optimistic settings cache is not rolled back by this feature.
 
-The renderer regression passes all eight saved defaults, one storage write for a
+The renderer regression passes all nine saved defaults, one storage write for a
 focused dirty reset, numeric/family/width drafts when saved defaults are unchanged,
 preview refresh, reload, unrelated preference retention, save failure/retry and
 700px layout. The initial red run proved the missing Advanced entry. A later
@@ -1465,11 +1507,12 @@ Appearance captures were inspected in the private artifact directory
 `/private/tmp/paseo-settings-return-final-{format,lint}.log`. The first concurrent
 typecheck raced the dependency build; the final check was run after build completion.
 
-The latest Custom refresh matches production source `3028a82`, including the
-centered address hint and reference reasoning accent, plus Advanced appearance,
-compact size fields, 32px right-tool tabs and submenu keyboard focus.
+The latest Custom refresh matches production source `5b5083b`, including code
+font weight, the centered address hint and reference reasoning accent, plus
+Advanced appearance, compact size fields, 32px right-tool tabs and submenu
+keyboard focus.
 Startup, real renderer/preload, isolated daemon, CLI and terminal smoke pass in
-`/private/tmp/paseo-address-effort-package-build.log`. The expanded packaged flow
+`/private/tmp/paseo-code-weight-package-build.log`. The expanded packaged flow
 checks ArrowRight/Left/Enter focus, both control heights, keyboard collapse/expand,
 a focused unsaved code-size draft reset to 12, motion reset to System and the
 selected Dark theme. It also opens a blank browser, checks placeholder alignment,
@@ -1478,17 +1521,19 @@ chat draft; the model popover confirms the coral accent with its declared Low
 selection unchanged. The initial close check assumed a browser-prefixed tab ID;
 the corrected test reads the UI-created tab's actual identity. No product change
 was needed for that test failure. It retains the prior single-chat/right-dock,
-shell, project editor and deep-link checks. Log:
-`/private/tmp/paseo-address-effort-package-verified.log`; result and inspected private
-captures: `/private/tmp/paseo-address-effort-package-verified-qa`. Source hashes were
-checked against the build input after the run. Build clean steps must run
+shell, project editor and deep-link checks. It additionally saves Medium code
+weight and verifies actual Shell text at 500 with the saved 22px size and 33px
+line height, then retains the original chat draft. The Shell capture was inspected.
+Log: `/private/tmp/paseo-code-weight-package-final.log`; result and private captures:
+`/private/tmp/paseo-code-weight-package-final-qa`. All 30 changed production files
+match their build-input hashes. Build clean steps must run
 sequentially with renderer tests as well as typechecks; an earlier parallel
 renderer attempt encountered temporary missing protocol output.
 
 Root format, lint and workspace typecheck pass, including the final feature commit
-hooks. Logs: `/private/tmp/paseo-address-effort-{format,lint,typecheck}.log`,
-`/private/tmp/paseo-address-placeholder-commit.log` and
-`/private/tmp/paseo-effort-accent-commit.log`.
+hooks. Logs: `/private/tmp/paseo-code-weight-final-{format,lint,typecheck}.log`,
+`/private/tmp/paseo-code-weight-delivery-helper-lint.log` and
+`/private/tmp/paseo-code-weight-feature-commit.log`.
 
 The corrected ARM64 ad-hoc bundle passes that final declaration check, independent
 bundle identity, disabled update IPC, real renderer/preload startup, isolated
