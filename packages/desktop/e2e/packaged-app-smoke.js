@@ -863,6 +863,27 @@ function assertCustomMacIdentity(appPath) {
   if (identifier.status !== 0 || identifier.stdout.trim() !== "local.paseo.custom.desktop") {
     throw new Error("Custom macOS bundle must have its own application identifier");
   }
+  const protocols = spawnSync(
+    "/usr/bin/plutil",
+    [
+      "-extract",
+      "CFBundleURLTypes",
+      "json",
+      "-o",
+      "-",
+      path.join(appPath, "Contents", "Info.plist"),
+    ],
+    { encoding: "utf8" },
+  );
+  if (protocols.status !== 0) {
+    throw new Error("Custom macOS bundle must declare its operating-system agent link scheme");
+  }
+  const schemes = JSON.parse(protocols.stdout).flatMap((entry) => entry.CFBundleURLSchemes ?? []);
+  if (schemes.length !== 1 || schemes[0] !== "paseo-custom") {
+    throw new Error(
+      `Custom macOS bundle must register only paseo-custom, never the upstream paseo scheme; received ${JSON.stringify(schemes)}`,
+    );
+  }
   if (fs.existsSync(path.join(resourcesPath, "app-update.yml"))) {
     throw new Error("Custom macOS bundle must not contain an upstream update feed");
   }

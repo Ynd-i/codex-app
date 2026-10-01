@@ -8,6 +8,7 @@ distribution and full migration acceptance remain pending; see the
 
 ### Added
 
+- Added independent `paseo-custom://` agent links for Paseo Custom, using the existing route validation and leaving official links and internal app routes unchanged.
 - Added a macOS browser start page with working Review, Terminal, Files and More tools actions, plus pages actually open in the current workspace. Ordinary blank documents and browser automation retain their existing behavior.
 - Added an independent Codex syntax-color preset for macOS defaults, preserving explicitly saved themes and custom font choices. Other platforms retain their existing default.
 - Added a Codex-style macOS titlebar, rounded content frame, and dark palette while retaining the existing themes and providers.
@@ -50,6 +51,7 @@ distribution and full migration acceptance remain pending; see the
 
 ### Fixed
 
+- Prevented custom packaging from inheriting the official operating-system URL scheme through concatenated configuration arrays. The package smoke now checks the final scheme declaration.
 - Kept Antigravity's authentication error visible when macOS has not yet reaped its failed CLI process. Cleanup waits for the owned child and still reports genuine permission failures.
 - Removed inactive macOS panel-placement selectors from General settings while retaining service URL behavior and other platforms' saved placement choices.
 - Anchored the titlebar's top resize edge to its container, preventing horizontal overflow that could clip Settings navigation after menu interactions.

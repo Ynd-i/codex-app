@@ -10,10 +10,24 @@ Custom**, bundle ID `local.paseo.custom.desktop`, output in
 `packages/desktop/release-custom/`. The ordinary desktop build keeps the upstream
 identity and feed; use the custom command for this fork's local artifacts.
 
-The custom profile has no publisher or automatic updates. It does not register the
-upstream `paseo://` operating-system handler. Internal app routes keep their existing
-scheme. Configure a separate release source, deep-link ownership and signing before
-distribution. Do not enable updates until the replacement bundle is validated.
+The custom profile has no publisher or automatic updates. It declares only the
+`paseo-custom://` operating-system handler, leaving the upstream `paseo://` handler
+to the official application. Internal app routes keep `paseo://app`. Configure a
+separate release source and signing before distribution; do not enable updates
+until the replacement bundle is validated.
+
+Custom agent links use `paseo-custom://h/<serverId>/agent/<agentId>`; percent-encode
+both IDs. Only the **Paseo Custom** identity accepts this alias, with the same
+strict route validation as canonical agent links. Existing canonical links passed
+directly to Custom still work. The named host and agent must be available to that
+application. The shared link builder and CLI desktop launches continue to target
+the official app.
+
+The custom packaged smoke requires the final Info.plist to declare exactly
+`paseo-custom`, with no `paseo` handler. Source and parser unit tests do not prove
+macOS handler coexistence. Before distribution, separately verify that both apps
+can be installed together, each scheme opens its intended app, and custom links
+reach the agent on cold launch and in an existing window.
 
 The local profile uses ad-hoc signing, keeps Hardened Runtime and grants JIT plus
 library-validation relaxation to the app and helpers. The latter is required to

@@ -12,6 +12,8 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { getConfig, validateConfiguration } from "app-builder-lib/out/util/config/config.js";
+import { DebugLogger } from "builder-util";
 
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -125,6 +127,23 @@ describe("desktop packaging", () => {
 
     expect(config).toContain("name: Paseo agent link");
     expect(config).toContain("- paseo");
+  });
+
+  it("declares only the custom operating-system agent scheme after configuration inheritance", async () => {
+    const config = await getConfig(
+      packageRoot,
+      join(packageRoot, "electron-builder.custom.yml"),
+      null,
+    );
+    await validateConfiguration(config, new DebugLogger(false));
+    expect(config.protocols).toEqual({
+      name: "Paseo Custom agent link",
+      schemes: ["paseo-custom"],
+    });
+    expect(config.mac?.protocols).toBeUndefined();
+    const official = await getConfig(packageRoot, join(packageRoot, "electron-builder.yml"), null);
+    expect(official.protocols).toEqual([{ name: "Paseo agent link", schemes: ["paseo"] }]);
+    expect(official.mac?.protocols).toBeUndefined();
   });
 
   // electron-builder packs production dependencies declared in package.json into

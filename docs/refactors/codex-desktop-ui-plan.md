@@ -91,7 +91,7 @@ scope; it does not remove runtime code or add new provider integrations.
 | 2. Chat navigation               | Single-chat layout verified locally                   | Main tabs removed; tools route right with saved state retained. Default sidebar, current-chat actions, draft isolation and Back/Forward remain. Custom chat sidebar stays deferred.          |
 | 3. Transcript and composer       | Composer and activity verified; visual polish pending | Column, input/model controls, tool cards and completed-turn activity are checked in native development. Attachment-menu renderer checks pass; native follow-up and transcript polish remain. |
 | 4. Supporting panels             | Right tools and shared titlebar verified locally      | Terminal, browser, file and diff routing pass. Internal file tree and responsive browser controls pass; detailed panel styling and native tool acceptance remain.                            |
-| 5. Custom distribution           | Local macOS package verified; distribution pending    | Independent identity, update guard, renderer/daemon/CLI startup and isolated defaults pass. Release source, signing, deep-link ownership and distribution remain.                            |
+| 5. Custom distribution           | Local macOS package verified; distribution pending    | Independent identity, exclusive custom scheme, update guard and isolated renderer/daemon/CLI startup pass. Release source, signing, OS handler coexistence and distribution remain.          |
 
 Each slice leaves a runnable app and a small independently revertible commit.
 Update this table and its evidence before moving to the next slice. Local startup
@@ -975,6 +975,38 @@ Logs: `/private/tmp/paseo-custom-distribution-unit.log`,
 `/private/tmp/paseo-custom-package-defaults.log`,
 `/private/tmp/paseo-custom-typecheck.log` and `/private/tmp/paseo-custom-lint.log`.
 
+### Custom agent links and refreshed package — 2026-10-01
+
+Paseo Custom accepts `paseo-custom://h/<serverId>/agent/<agentId>` at cold-start
+arguments, the open-URL event and second-instance arguments. The desktop adapter
+passes this alias through the existing strict agent-link parser. The official app
+and shared link builder retain `paseo://`; internal packaged pages retain
+`paseo://app`. No daemon or shared protocol change is required.
+
+The real package check caught an inherited configuration defect: electron-builder
+26.8.1 concatenates arrays, so the previous `protocols: []` did not remove the
+parent's `paseo` declaration. A single protocol object replaces that array. The
+regression now loads both configurations through the actual builder and runs its
+schema validation; the packaged smoke requires the final bundle to declare
+exactly `paseo-custom`. It rejected the mixed-scheme package before launching it.
+
+The corrected ARM64 ad-hoc bundle passes that final declaration check, independent
+bundle identity, disabled update IPC, real renderer/preload startup, isolated
+daemon cold start, bundled CLI status, terminal/hook execution and cleanup.
+The [packaged startup capture](../qa-evidence/codex-desktop/custom-package-protocol-startup.png)
+was inspected; it shows only the isolated smoke workspace. The initial 28 focused
+navigation/packaging checks passed; all 13 packaging checks passed again with the
+stronger resolved-config and schema regression. Root lint, typecheck and formatting
+pass; commit hooks run again before promotion.
+
+This is bundle/startup acceptance, not installation or OS-handler coexistence.
+Actual OS dispatch to an installed app, cold/warm agent navigation, signed
+notarized distribution, live-provider turns and remote pairing remain pending.
+Neither protected 6767/6768 daemon was restarted. Logs:
+`/private/tmp/paseo-custom-links-{unit,schemes-red,package-build}.log`,
+`/private/tmp/paseo-terminal-links-custom-build.log` (the rejected mixed-scheme
+package), and `/private/tmp/paseo-custom-links-final-{lint,typecheck}.log`.
+
 ## Resume checkpoint
 
 Continue in this checkout on `codex/desktop-ui`; preserve the user's untracked
@@ -997,9 +1029,9 @@ the current chat and refreshed the layout without restarting either daemon.
 Inline tool output, completed-turn activity, the attachment menu and panel tabs
 have local native evidence above. The usage overview passes its focused frontend
 checks. Continue matching the supplied Codex images through frontend changes,
-preserving Paseo backend behavior. The earlier local custom-package smoke passes,
-but that bundle predates these latest frontend changes. Distribution and
-live-provider/remote acceptance remain separate outstanding work.
+preserving Paseo backend behavior. The refreshed local custom package includes the latest upstream, terminal and
+independent-link changes and passes the bundle/startup smoke above. Distribution,
+OS dispatch and live-provider/remote acceptance remain separate outstanding work.
 
 Latest composer evidence is recorded above; the earlier theme/settings tests pass (81).
 The extended chat-action browser case passed in 56.2 seconds. Earlier navigation

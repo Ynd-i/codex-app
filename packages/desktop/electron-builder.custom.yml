@@ -4,7 +4,11 @@ appId: local.paseo.custom.desktop
 productName: Paseo Custom
 executableName: Paseo Custom
 publish: null
-protocols: []
+# Object form replaces the parent protocol array; another array would concatenate it.
+protocols:
+  name: Paseo Custom agent link
+  schemes:
+    - paseo-custom
 extraMetadata:
   productName: Paseo Custom
 directories:
