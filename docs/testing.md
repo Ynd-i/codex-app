@@ -161,7 +161,9 @@ node packages/desktop/e2e/browser-tabs.e2e.mjs
 
 This verifies custom-link cold argv, a real secondary process handing its URL to the
 existing window, the Electron `open-url` handler, preservation of another chat's
-unsent draft, and rejection of invalid URLs. It keeps the single-instance lock enabled
+unsent draft, and rejection of invalid URLs. It also opens the packaged chat-search
+panel and Files dock, asserting that the main tab strip and main plus stay absent
+while the dock and draft survive chat switching. It keeps the single-instance lock enabled
 inside private user data and does not invoke OS handler registration. The `open-url` event is
 injected through the test process's own debugger; OS dispatch and coexistence with the
 official app remain separate acceptance checks. Screenshots and logs stay in the

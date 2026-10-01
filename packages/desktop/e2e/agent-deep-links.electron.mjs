@@ -43,6 +43,28 @@ export async function runAgentDeepLinksRegression({
   await page.screenshot({ path: path.join(artifactDir, "agent-link-cold-argv.png") });
   const draft = "Keep chat A's unsent draft while opening chat B.";
   await composer.fill(draft);
+  await page.keyboard.press("Meta+k");
+  const search = page.getByTestId("command-center-panel");
+  await expect(search.getByTestId("command-center-input")).toHaveAttribute(
+    "placeholder",
+    "Search chats",
+  );
+  await expect(search.getByText("Deep link chat A", { exact: true })).toBeVisible();
+  await expect(search.getByText("Deep link chat B", { exact: true })).toBeVisible();
+  await page.screenshot({ path: path.join(artifactDir, "packaged-chat-search.png") });
+  await page.keyboard.press("Escape");
+  await expect(search).toHaveCount(0);
+  await expect(composer).toHaveValue(draft);
+
+  await page.getByTestId("workspace-explorer-toggle").click();
+  await page.getByTestId("explorer-sidebar-tab-files").click();
+  const files = page.getByTestId("workspace-explorer-sidebar");
+  await expect(files.getByTestId("file-tool-toolbar").filter({ visible: true })).toBeVisible();
+  await expect(files.getByTestId("files-empty-editor").filter({ visible: true })).toBeVisible();
+  await expect(files.getByTestId("files-filter").filter({ visible: true })).toBeEditable();
+  await expectChat("A");
+  await expect(composer).toHaveValue(draft);
+  await page.screenshot({ path: path.join(artifactDir, "packaged-single-chat-files.png") });
   await page.evaluate(async () => {
     window.__agentLinkEvents = [];
     window.__stopAgentLinkEvents = await window.paseoDesktop.events.on("open-agent", (target) => {
@@ -69,6 +91,7 @@ export async function runAgentDeepLinksRegression({
   await expect.poll(events).toEqual([targetB, targetA]);
   await expectChat("A");
   await expect(composer).toHaveValue(draft);
+  await expect(files.getByTestId("files-empty-editor").filter({ visible: true })).toBeVisible();
 
   // A valid same-chat event is a delivery barrier: an invalid B event must never reach preload.
   await evaluateMain(openUrl(`${link(agentB)}?message=not-allowed`) + openUrl(link(agentA)));
@@ -88,6 +111,8 @@ export async function runAgentDeepLinksRegression({
     retainedWebContentsId: initial.windows[0],
     openUrlEvent: true,
     draftPreserved: true,
+    packagedChatSearch: true,
+    packagedFilesDock: true,
     invalidUrlRejected: true,
     osProtocolDispatch: "not tested",
   };

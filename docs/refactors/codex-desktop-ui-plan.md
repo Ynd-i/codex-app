@@ -1114,7 +1114,21 @@ The real renderer/preload, isolated daemon, bundled CLI, terminal hooks, exclusi
 custom scheme and cleanup smoke passed again. Log:
 `/private/tmp/paseo-current-custom-package-build.log`; isolated startup capture:
 `/private/tmp/paseo-current-custom-package-qa/renderer.png`. The shortcut-search,
-Files-empty-state and chat-search changes above are newer than this bundle.
+Files-empty-state and chat-search changes were added after that build. A second
+refresh at `580aa19` now includes all three. Its isolated packaged smoke passes;
+log: `/private/tmp/paseo-search-files-package-build.log`.
+
+The expanded real-Electron agent-link regression also passes on the `580aa19`
+bundle. It opens the actual packaged chat-search panel and Files initial view,
+then checks that the Files dock and chat draft survive the second-instance and
+open-URL chat switches. No main tabs or main plus appear. The
+[packaged Files capture](../qa-evidence/codex-desktop/packaged-single-chat-files.png)
+and [packaged search capture](../qa-evidence/codex-desktop/packaged-chat-search.png)
+were inspected; their Light theme follows this isolated runtime's default and
+does not substitute for the dark reference comparison. The test uses synthetic
+Mock chat content and a private host. Log:
+`/private/tmp/paseo-search-files-packaged-links.log`; result and captures:
+`/private/tmp/paseo-search-files-packaged-links-qa`.
 
 The corrected ARM64 ad-hoc bundle passes that final declaration check, independent
 bundle identity, disabled update IPC, real renderer/preload startup, isolated
