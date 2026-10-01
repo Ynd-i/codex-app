@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import * as Clipboard from "expo-clipboard";
 import { MoreHorizontal } from "lucide-react-native";
 import { ActivityIndicator } from "react-native";
 import { useTranslation } from "react-i18next";
@@ -8,19 +9,67 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
+  DropdownMenuItem,
+  type MenuPageDefinition,
 } from "@/components/ui/dropdown-menu";
 import { iconButtonChromeStyle, mutedIconColorMapping } from "@/components/ui/icon-button-chrome";
 import { useSessionStore } from "@/stores/session-store";
+import { useToast } from "@/contexts/toast-context";
 import type { DesktopChatTarget } from "./desktop-chat-actions";
 import { DesktopChatMenuItems, useDesktopChatMenu } from "./desktop-chat-menu";
+import { desktopChatResumeCommand } from "./desktop-chat-copy";
 
 const MoreIcon = withUnistyles(MoreHorizontal);
 const Progress = withUnistyles(ActivityIndicator);
 
-function ChatToolbarMenu({ agent }: { agent: DesktopChatTarget }) {
+function ChatToolbarMenu({
+  agent,
+  resumeCommand,
+}: {
+  agent: DesktopChatTarget;
+  resumeCommand: string | null;
+}) {
   const { t } = useTranslation();
+  const toast = useToast();
   const { busy, menuProps, renameModal } = useDesktopChatMenu(agent);
   const [open, setOpen] = useState(false);
+  const copy = useCallback(
+    async (value: string, label: string) => {
+      try {
+        await Clipboard.setStringAsync(value);
+        toast.copied(label);
+      } catch {
+        toast.error(t("workspace.tabs.toasts.copyFailed"));
+      }
+    },
+    [t, toast],
+  );
+  const copyAgentId = useCallback(() => {
+    void copy(agent.id, t("workspace.tabs.toasts.agentIdCopiedLabel"));
+  }, [agent.id, copy, t]);
+  const copyResumeCommand = useCallback(() => {
+    if (resumeCommand)
+      void copy(resumeCommand, t("workspace.tabs.toasts.resumeCommandCopiedLabel"));
+  }, [copy, resumeCommand, t]);
+  const pages = useMemo<MenuPageDefinition[]>(
+    () => [
+      {
+        id: "copy",
+        title: t("common.actions.copy"),
+        content: (
+          <>
+            <DropdownMenuItem onSelect={copyAgentId}>
+              {t("workspace.tabs.menu.copyAgentId")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={copyResumeCommand} disabled={!resumeCommand}>
+              {t("workspace.tabs.menu.copyResumeCommand")}
+            </DropdownMenuItem>
+          </>
+        ),
+      },
+    ],
+    [copyAgentId, copyResumeCommand, resumeCommand, t],
+  );
   const buttonStyle = useMemo(
     () =>
       ({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) =>
@@ -43,8 +92,8 @@ function ChatToolbarMenu({ agent }: { agent: DesktopChatTarget }) {
             <MoreIcon size={18} uniProps={mutedIconColorMapping} />
           )}
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" width={220}>
-          <DesktopChatMenuItems {...menuProps} />
+        <DropdownMenuContent align="end" width={220} pages={pages}>
+          <DesktopChatMenuItems {...menuProps} copyPage="copy" />
         </DropdownMenuContent>
       </DropdownMenu>
       {renameModal}
@@ -54,7 +103,7 @@ function ChatToolbarMenu({ agent }: { agent: DesktopChatTarget }) {
 
 export function DesktopChatToolbar({ serverId, agentId }: { serverId: string; agentId: string }) {
   const agent = useSessionStore(
-    useShallow((state): DesktopChatTarget | null => {
+    useShallow((state): (DesktopChatTarget & { resumeCommand: string | null }) | null => {
       const session = state.sessions[serverId];
       const source = session?.agents.get(agentId) ?? session?.agentDetails.get(agentId);
       if (!source || source.archivedAt) return null;
@@ -67,8 +116,15 @@ export function DesktopChatToolbar({ serverId, agentId }: { serverId: string; ag
         requiresAttention: source.requiresAttention,
         attentionReason: source.attentionReason,
         turn: source.turn,
+        resumeCommand: desktopChatResumeCommand(source),
       };
     }),
   );
-  return agent ? <ChatToolbarMenu key={`${serverId}:${agentId}`} agent={agent} /> : null;
+  return agent ? (
+    <ChatToolbarMenu
+      key={`${serverId}:${agentId}`}
+      agent={agent}
+      resumeCommand={agent.resumeCommand}
+    />
+  ) : null;
 }

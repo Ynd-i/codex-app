@@ -1,10 +1,14 @@
 import { useCallback, useState } from "react";
-import { Archive, Circle, CircleCheck, Pencil, Pin, PinOff } from "lucide-react-native";
+import { Archive, Circle, CircleCheck, Copy, Pencil, Pin, PinOff } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { withUnistyles } from "react-native-unistyles";
 import { AdaptiveRenameModal } from "@/components/rename-modal";
 import { ContextMenuItem } from "@/components/ui/context-menu";
-import { DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSubTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/contexts/toast-context";
 import { useArchiveAgent } from "@/hooks/use-archive-agent";
 import type { Theme } from "@/styles/theme";
@@ -19,6 +23,7 @@ const PinIcon = withUnistyles(Pin);
 const UnpinIcon = withUnistyles(PinOff);
 const ReadIcon = withUnistyles(CircleCheck);
 const UnreadIcon = withUnistyles(Circle);
+const CopyIcon = withUnistyles(Copy);
 const mutedIcon = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
 const renameLeading = <RenameIcon size={16} uniProps={mutedIcon} />;
 const pinLeading = <PinIcon size={16} uniProps={mutedIcon} />;
@@ -26,6 +31,7 @@ const unpinLeading = <UnpinIcon size={16} uniProps={mutedIcon} />;
 const archiveLeading = <ArchiveIcon size={16} uniProps={mutedIcon} />;
 const readLeading = <ReadIcon size={16} uniProps={mutedIcon} />;
 const unreadLeading = <UnreadIcon size={16} uniProps={mutedIcon} />;
+const copyLeading = <CopyIcon size={16} uniProps={mutedIcon} />;
 
 export function DesktopChatMenuItems({
   context,
@@ -36,6 +42,7 @@ export function DesktopChatMenuItems({
   onRead,
   onRename,
   onArchive,
+  copyPage,
 }: {
   context?: boolean;
   pinned: boolean;
@@ -45,6 +52,7 @@ export function DesktopChatMenuItems({
   onRead: () => void;
   onRename: () => void;
   onArchive: () => void;
+  copyPage?: string;
 }) {
   const { t } = useTranslation();
   const Item = context ? ContextMenuItem : DropdownMenuItem;
@@ -60,6 +68,14 @@ export function DesktopChatMenuItems({
         {t("agentList.archiveSheet.archive")}
       </Item>
       <DropdownMenuSeparator />
+      {copyPage ? (
+        <>
+          <DropdownMenuSubTrigger id={copyPage} leading={copyLeading} disabled={disabled}>
+            {t("common.actions.copy")}
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSeparator />
+        </>
+      ) : null}
       <Item onSelect={onRead} disabled={disabled} leading={unread ? readLeading : unreadLeading}>
         {t(unread ? "desktopChat.markRead" : "desktopChat.markUnread")}
       </Item>
