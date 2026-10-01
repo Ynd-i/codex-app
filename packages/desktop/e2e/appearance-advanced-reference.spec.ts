@@ -68,6 +68,15 @@ test("macOS Advanced resets only its fields and refreshes dirty controls", async
     monoFontFamily: page.getByRole("textbox", { name: "Code font family", exact: true }),
     contentMaxWidth: page.getByRole("textbox", { name: "Content width in pixels", exact: true }),
   };
+  // Claude keeps its semantic palette; only the default macOS dark preset uses reference colors.
+  const semanticColors = await fields.contentMaxWidth.evaluate((node) => {
+    const css = getComputedStyle(node);
+    return { border: css.borderColor, background: css.backgroundColor };
+  });
+  for (const field of [fields.uiBaseFontSize, fields.codeFontSize, fields.contentFontSize]) {
+    await expect(field).toHaveCSS("border-color", semanticColors.border);
+    await expect(field).toHaveCSS("background-color", semanticColors.background);
+  }
   const keys = [...Object.keys(fields), "syntaxTheme", "reducedMotion"];
   const readSettings = () =>
     page.evaluate(
@@ -211,6 +220,34 @@ test("macOS Advanced resets only its fields and refreshes dirty controls", async
   await expect.poll(() => beforeTheme.evaluate((node) => node.isConnected)).toBe(false);
   await beforeTheme.dispose();
   await expect(page.getByLabel("Theme: Dark", { exact: true })).toBeVisible();
+  const sizeControls = [fields.uiBaseFontSize, fields.codeFontSize, fields.contentFontSize];
+  const readSizeControls = () =>
+    Promise.all(
+      sizeControls.map((field) =>
+        field.evaluate((node) => {
+          const css = getComputedStyle(node);
+          const rect = node.getBoundingClientRect();
+          return {
+            width: rect.width,
+            height: rect.height,
+            align: css.textAlign,
+            radius: css.borderRadius,
+            border: css.borderColor,
+            background: css.backgroundColor,
+          };
+        }),
+      ),
+    );
+  expect(await readSizeControls()).toEqual(
+    Array(3).fill({
+      width: 64,
+      height: 28,
+      align: "left",
+      radius: "8px",
+      border: "rgb(116, 116, 114)",
+      background: "rgb(75, 75, 73)",
+    }),
+  );
   await expect(
     page.getByTestId("settings-sidebar").getByText("localhost", { exact: true }),
   ).toBeVisible();
@@ -228,4 +265,21 @@ test("macOS Advanced resets only its fields and refreshes dirty controls", async
   await expect
     .poll(() => page.evaluate(() => document.documentElement.scrollWidth - innerWidth))
     .toBe(0);
+  const beforeLargeType = await fields.uiBaseFontSize.elementHandle();
+  if (!beforeLargeType) throw new Error("Missing UI size input before large-type check");
+  await fields.uiBaseFontSize.fill("21");
+  await fields.uiBaseFontSize.press("Tab");
+  await expect.poll(() => beforeLargeType.evaluate((node) => node.isConnected)).toBe(false);
+  await beforeLargeType.dispose();
+  for (const field of sizeControls) {
+    await expect(field).toHaveCSS("min-height", "28px");
+    await expect(field).toHaveCSS("font-size", "21px");
+    const geometry = await field.evaluate((node) => ({
+      height: node.getBoundingClientRect().height,
+      scroll: node.scrollHeight,
+      client: node.clientHeight,
+    }));
+    expect(geometry.height).toBeGreaterThan(28);
+    expect(geometry.scroll).toBeLessThanOrEqual(geometry.client);
+  }
 });

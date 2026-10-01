@@ -26,6 +26,7 @@ import { DropdownTrigger } from "@/components/ui/dropdown-trigger";
 import { SettingsSection } from "@/components/settings/headings/settings-section";
 import { useContributedThemes } from "@/appearance/provider";
 import { Button } from "@/components/ui/button";
+import { CONTROL_HEIGHTS } from "@/components/ui/control-geometry";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   EditingTextInput as TextInput,
@@ -1073,7 +1074,7 @@ export function AppearanceSection() {
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   advancedGroup: { marginTop: theme.spacing[6] },
   advancedHeader: {
     flexDirection: "row",
@@ -1201,16 +1202,17 @@ const styles = StyleSheet.create((theme) => ({
   },
   sizeInput: {
     width: 64,
-    minHeight: APPEARANCE_INPUT_HEIGHT,
-    paddingVertical: theme.spacing[2],
-    paddingHorizontal: theme.spacing[3],
-    borderRadius: theme.borderRadius.md,
+    minHeight: getIsElectronMac() ? CONTROL_HEIGHTS.tight : APPEARANCE_INPUT_HEIGHT,
+    paddingVertical: getIsElectronMac() ? theme.spacing[1] : theme.spacing[2],
+    paddingHorizontal: getIsElectronMac() ? theme.spacing[2] : theme.spacing[3],
+    borderRadius: getIsElectronMac() ? theme.borderRadius.lg : theme.borderRadius.md,
     borderWidth: theme.borderWidth[1],
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface2,
+    borderColor: getIsElectronMac() && rt.themeName === "dark" ? "#747472" : theme.colors.border,
+    backgroundColor:
+      getIsElectronMac() && rt.themeName === "dark" ? "#4b4b49" : theme.colors.surface2,
     color: theme.colors.foreground,
     fontSize: theme.fontSize.base,
-    textAlign: "right",
+    textAlign: getIsElectronMac() ? "left" : "right",
   },
   widthInput: {
     width: 80,
