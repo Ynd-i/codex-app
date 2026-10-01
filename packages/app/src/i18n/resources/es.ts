@@ -2272,6 +2272,11 @@ export const es: TranslationResources = {
       },
     },
     appearance: {
+      advanced: {
+        title: "Avanzado",
+        reset: "Restablecer valores predeterminados",
+        resetLabel: "Restablecer los ajustes avanzados de apariencia",
+      },
       motion: {
         title: "Reducir movimiento",
         hint: "Reduce las animaciones o sigue la configuración del sistema.",

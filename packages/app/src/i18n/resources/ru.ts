@@ -2258,6 +2258,11 @@ export const ru: TranslationResources = {
       },
     },
     appearance: {
+      advanced: {
+        title: "Дополнительно",
+        reset: "Восстановить по умолчанию",
+        resetLabel: "Сбросить дополнительные настройки оформления",
+      },
       motion: {
         title: "Уменьшить движение",
         hint: "Уменьшать анимацию или следовать настройке системы.",

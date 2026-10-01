@@ -1,11 +1,18 @@
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { Pressable, Text, View, type PressableStateCallbackType } from "react-native";
+import {
+  Pressable,
+  Text,
+  View,
+  type PressableStateCallbackType,
+  type PointerEvent,
+} from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import { Monitor, Moon, Sun } from "lucide-react-native";
+import { ChevronDown, Monitor, Moon, Sun } from "lucide-react-native";
 import {
   SYNTAX_THEME_OPTIONS,
+  getDefaultSyntaxTheme,
   type SyntaxThemeId,
   type SyntaxThemeOption,
 } from "@/appearance/syntax-theme";
@@ -38,6 +45,7 @@ import {
   useAppSettings,
   type AppSettings,
   DEFAULT_THEME_PREFERENCE,
+  DEFAULT_APP_SETTINGS,
 } from "@/hooks/use-settings";
 import {
   DEFAULT_MONO_FONT_STACK,
@@ -52,6 +60,7 @@ import { getIsElectronMac, isNative } from "@/constants/platform";
 import type { PluginThemeOption } from "@/plugins/themes";
 import { settingsStyles } from "@/styles/settings";
 import { REGISTERED_THEMES } from "@/styles/registered-themes";
+import { useToast } from "@/contexts/toast-context";
 import { AppearancePreview } from "./appearance-preview";
 
 // ---------------------------------------------------------------------------
@@ -60,6 +69,7 @@ import { AppearancePreview } from "./appearance-preview";
 // feature does not scale icons.
 // ---------------------------------------------------------------------------
 
+const ThemedChevronDown = withUnistyles(ChevronDown);
 const ThemedSun = withUnistyles(Sun);
 const ThemedMoon = withUnistyles(Moon);
 const ThemedMonitor = withUnistyles(Monitor);
@@ -368,6 +378,7 @@ function ThemeRow({
 // ---------------------------------------------------------------------------
 
 interface FontFamilyRowProps {
+  resetKey?: number;
   title: string;
   hint: string;
   accessibilityLabel: string;
@@ -380,6 +391,7 @@ interface FontFamilyRowProps {
 }
 
 function FontFamilyRow({
+  resetKey = 0,
   title,
   hint,
   accessibilityLabel,
@@ -390,6 +402,7 @@ function FontFamilyRow({
   onChangeDraft,
   onCommit,
 }: FontFamilyRowProps) {
+  const input = useRef<EditingTextInputHandle>(null);
   const handleCommit = useCallback(() => {
     onCommit(draft);
   }, [draft, onCommit]);
@@ -397,9 +410,8 @@ function FontFamilyRow({
   // Resync from the committed value when it changes elsewhere.
   useEffect(() => {
     onChangeDraft(value);
-    // Only resync on external value changes, not on local keystrokes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
+    input.current?.replaceText(value);
+  }, [value, resetKey, onChangeDraft]);
 
   return (
     <View style={withBorder ? styles.rowWithBorder : settingsStyles.row}>
@@ -408,6 +420,7 @@ function FontFamilyRow({
         <Text style={settingsStyles.rowHint}>{hint}</Text>
       </View>
       <TextInput
+        ref={input}
         initialValue={draft}
         onChangeText={onChangeDraft}
         onBlur={handleCommit}
@@ -425,6 +438,8 @@ function FontFamilyRow({
 }
 
 interface FontSizeRowProps {
+  value: number;
+  resetKey?: number;
   title: string;
   hint: string;
   accessibilityLabel: string;
@@ -435,6 +450,8 @@ interface FontSizeRowProps {
 }
 
 function FontSizeRow({
+  value,
+  resetKey = 0,
   title,
   hint,
   accessibilityLabel,
@@ -443,6 +460,10 @@ function FontSizeRow({
   onChangeDraft,
   onCommit,
 }: FontSizeRowProps) {
+  const input = useRef<EditingTextInputHandle>(null);
+  useEffect(() => {
+    input.current?.replaceText(String(value));
+  }, [value, resetKey]);
   return (
     <View style={withBorder ? styles.rowWithBorder : settingsStyles.row}>
       <View style={settingsStyles.rowContent}>
@@ -451,6 +472,7 @@ function FontSizeRow({
       </View>
       <View style={styles.sizeField}>
         <TextInput
+          ref={input}
           initialValue={draft}
           onChangeText={onChangeDraft}
           onBlur={onCommit}
@@ -472,11 +494,12 @@ function FontSizeRow({
 // ---------------------------------------------------------------------------
 
 interface ContentWidthRowProps {
+  resetKey?: number;
   value: AppSettings["contentMaxWidth"];
   onChange: (value: AppSettings["contentMaxWidth"]) => void;
 }
 
-function ContentWidthRow({ value, onChange }: ContentWidthRowProps) {
+function ContentWidthRow({ value, onChange, resetKey = 0 }: ContentWidthRowProps) {
   const { t } = useTranslation();
   const width = resolveContentMaxWidth({ contentMaxWidth: value });
   // The field is uncontrolled, so a saved or reset width is written into it directly.
@@ -484,7 +507,7 @@ function ContentWidthRow({ value, onChange }: ContentWidthRowProps) {
 
   useEffect(() => {
     input.current?.replaceText(String(width));
-  }, [width]);
+  }, [width, resetKey]);
 
   const commit = useCallback(() => {
     const next = parseContentMaxWidth(input.current?.getText()) ?? width;
@@ -606,9 +629,76 @@ function SyntaxRow({ value, onChange }: SyntaxRowProps) {
 // Page
 // ---------------------------------------------------------------------------
 
+const ADVANCED_DEFAULTS = {
+  uiBaseFontSize: DEFAULT_APP_SETTINGS.uiBaseFontSize,
+  contentFontSize: DEFAULT_APP_SETTINGS.contentFontSize,
+  codeFontSize: DEFAULT_APP_SETTINGS.codeFontSize,
+  contentFontFamily: DEFAULT_APP_SETTINGS.contentFontFamily,
+  monoFontFamily: DEFAULT_APP_SETTINGS.monoFontFamily,
+  contentMaxWidth: DEFAULT_APP_SETTINGS.contentMaxWidth,
+  reducedMotion: DEFAULT_APP_SETTINGS.reducedMotion,
+};
+
+function AppearanceAdvanced({
+  children,
+  resetting,
+  onReset,
+}: {
+  children: ReactNode;
+  resetting: boolean;
+  onReset: () => void;
+}) {
+  const { t } = useTranslation();
+  const [expanded, setExpanded] = useState(true);
+  const toggle = useCallback(() => setExpanded((current) => !current), []);
+  // A pointer reset must discard the focused draft, not blur-save it first.
+  const keepDraftFocused = useCallback((event: PointerEvent) => event.preventDefault(), []);
+  return (
+    <View style={styles.advancedGroup}>
+      <View style={styles.advancedHeader}>
+        <Pressable
+          onPress={toggle}
+          style={styles.advancedToggle}
+          accessibilityRole="button"
+          aria-expanded={expanded}
+          testID="appearance-advanced-toggle"
+        >
+          <Text style={settingsStyles.rowTitle}>{t("settings.appearance.advanced.title")}</Text>
+          <ThemedChevronDown
+            size={14}
+            uniProps={mutedColorMapping}
+            style={!expanded ? styles.collapsedChevron : undefined}
+          />
+        </Pressable>
+        <Button
+          variant="ghost"
+          size="sm"
+          onPress={onReset}
+          onPointerDown={keepDraftFocused}
+          loading={resetting}
+          accessibilityLabel={t("settings.appearance.advanced.resetLabel")}
+          testID="appearance-advanced-reset"
+        >
+          {t("settings.appearance.advanced.reset")}
+        </Button>
+      </View>
+      <View
+        style={!expanded ? styles.advancedHidden : undefined}
+        testID="appearance-advanced-content"
+      >
+        {children}
+      </View>
+    </View>
+  );
+}
+
 export function AppearanceSection() {
   const { t } = useTranslation();
   const { settings, updateSettings } = useAppSettings();
+  const toast = useToast();
+  const [resetKey, setResetKey] = useState(0);
+  const [resetting, setResetting] = useState(false);
+  const resetInFlight = useRef(false);
   const {
     options: pluginThemes,
     selected: selectedPluginTheme,
@@ -625,6 +715,26 @@ export function AppearanceSection() {
   const [uiBaseSizeDraft, setUiBaseSizeDraft] = useState(String(settings.uiBaseFontSize));
   const [contentSizeDraft, setContentSizeDraft] = useState(String(settings.contentFontSize));
   const [codeSizeDraft, setCodeSizeDraft] = useState(String(settings.codeFontSize));
+
+  const resetAdvanced = useCallback(async () => {
+    if (resetInFlight.current) return;
+    resetInFlight.current = true;
+    setResetting(true);
+    try {
+      await updateSettings({ ...ADVANCED_DEFAULTS, syntaxTheme: getDefaultSyntaxTheme() });
+      setUiBaseSizeDraft(String(ADVANCED_DEFAULTS.uiBaseFontSize));
+      setContentSizeDraft(String(ADVANCED_DEFAULTS.contentFontSize));
+      setCodeSizeDraft(String(ADVANCED_DEFAULTS.codeFontSize));
+      setContentFontDraft(ADVANCED_DEFAULTS.contentFontFamily);
+      setMonoFontDraft(ADVANCED_DEFAULTS.monoFontFamily);
+      setResetKey((current) => current + 1);
+    } catch {
+      toast.error(t("common.errors.unableToSave"));
+    } finally {
+      resetInFlight.current = false;
+      setResetting(false);
+    }
+  }, [t, toast, updateSettings]);
 
   // Resync numeric drafts when the committed value changes elsewhere.
   useEffect(() => {
@@ -785,6 +895,124 @@ export function AppearanceSection() {
     [codeSizeDraft, contentSizeDraft, monoFontDraft],
   );
 
+  const interfaceFont = (
+    <FontFamilyRow
+      title={t("settings.appearance.fonts.interfaceFont")}
+      hint={t("settings.appearance.fonts.interfaceFontHint")}
+      accessibilityLabel={t("settings.appearance.fonts.interfaceFontAccessibility")}
+      placeholder={uiFontPlaceholder}
+      value={settings.uiFontFamily}
+      draft={uiFontDraft}
+      withBorder={showThemeModes}
+      onChangeDraft={setUiFontDraft}
+      onCommit={commitUiFontFamily}
+    />
+  );
+  const contentFont = (
+    <FontFamilyRow
+      resetKey={resetKey}
+      title={t("settings.appearance.fonts.contentFont")}
+      hint={t("settings.appearance.fonts.contentFontHint")}
+      accessibilityLabel={t("settings.appearance.fonts.contentFontAccessibility")}
+      placeholder={settings.uiFontFamily || uiFontPlaceholder}
+      value={settings.contentFontFamily}
+      draft={contentFontDraft}
+      withBorder={!showThemeModes}
+      onChangeDraft={setContentFontDraft}
+      onCommit={commitContentFontFamily}
+    />
+  );
+  const codeFont = (
+    <FontFamilyRow
+      resetKey={resetKey}
+      title={t("settings.appearance.fonts.codeFont")}
+      hint={t("settings.appearance.fonts.codeFontHint")}
+      accessibilityLabel={t("settings.appearance.fonts.codeFontAccessibility")}
+      placeholder={monoFontPlaceholder}
+      value={settings.monoFontFamily}
+      draft={monoFontDraft}
+      withBorder
+      onChangeDraft={setMonoFontDraft}
+      onCommit={commitMonoFontFamily}
+    />
+  );
+  const interfaceSize = (
+    <FontSizeRow
+      value={settings.uiBaseFontSize}
+      resetKey={resetKey}
+      title={t("settings.appearance.fonts.interfaceSize")}
+      hint={t("settings.appearance.fonts.interfaceSizeHint")}
+      accessibilityLabel={t("settings.appearance.fonts.interfaceSizeAccessibility")}
+      draft={uiBaseSizeDraft}
+      withBorder={showInterfaceFontFamilyRow && !showThemeModes}
+      onChangeDraft={handleUiBaseSizeChange}
+      onCommit={commitUiBaseSize}
+    />
+  );
+  const contentSize = (
+    <FontSizeRow
+      value={settings.contentFontSize}
+      resetKey={resetKey}
+      title={t("settings.appearance.fonts.contentSize")}
+      hint={t("settings.appearance.fonts.contentSizeHint")}
+      accessibilityLabel={t("settings.appearance.fonts.contentSizeAccessibility")}
+      draft={contentSizeDraft}
+      onChangeDraft={handleContentSizeChange}
+      onCommit={commitContentSize}
+    />
+  );
+  const codeSize = (
+    <FontSizeRow
+      value={settings.codeFontSize}
+      resetKey={resetKey}
+      title={t("settings.appearance.fonts.codeSize")}
+      hint={t("settings.appearance.fonts.codeSizeHint")}
+      accessibilityLabel={t("settings.appearance.fonts.codeSizeAccessibility")}
+      draft={codeSizeDraft}
+      onChangeDraft={handleCodeSizeChange}
+      onCommit={commitCodeSize}
+    />
+  );
+  const layoutSection = (
+    <SettingsSection title={t("settings.appearance.layout.title")}>
+      <View style={settingsStyles.card}>
+        <ContentWidthRow
+          resetKey={resetKey}
+          value={settings.contentMaxWidth}
+          onChange={handleContentMaxWidthChange}
+        />
+      </View>
+    </SettingsSection>
+  );
+  const syntaxSection = (
+    <SettingsSection title={t("settings.appearance.syntax.title")}>
+      <View style={settingsStyles.card}>
+        <SyntaxRow value={settings.syntaxTheme} onChange={handleSyntaxThemeChange} />
+      </View>
+      <View style={styles.preview}>
+        <AppearancePreview overrides={previewOverrides} />
+      </View>
+    </SettingsSection>
+  );
+  const motionCard = (
+    <View style={settingsStyles.section}>
+      <View style={settingsStyles.card}>
+        <View style={settingsStyles.row}>
+          <View style={settingsStyles.rowContent}>
+            <Text style={settingsStyles.rowTitle}>{t("settings.appearance.motion.title")}</Text>
+            <Text style={settingsStyles.rowHint}>{t("settings.appearance.motion.hint")}</Text>
+          </View>
+          <SegmentedControl
+            options={motionOptions}
+            value={settings.reducedMotion}
+            onValueChange={handleMotionChange}
+            size="sm"
+            testID="appearance-reduced-motion"
+          />
+        </View>
+      </View>
+    </View>
+  );
   return (
     <View>
       <SettingsSection
@@ -803,114 +1031,66 @@ export function AppearanceSection() {
             onChange={handleThemeChange}
             onSelectPluginTheme={handlePluginThemeChange}
           />
+          {showThemeModes ? interfaceFont : null}
         </View>
       </SettingsSection>
       {showThemeModes ? (
-        <View style={settingsStyles.section}>
-          <View style={settingsStyles.card}>
-            <View style={settingsStyles.row}>
-              <View style={settingsStyles.rowContent}>
-                <Text style={settingsStyles.rowTitle}>{t("settings.appearance.motion.title")}</Text>
-                <Text style={settingsStyles.rowHint}>{t("settings.appearance.motion.hint")}</Text>
-              </View>
-              <SegmentedControl
-                options={motionOptions}
-                value={settings.reducedMotion}
-                onValueChange={handleMotionChange}
-                size="sm"
-                testID="appearance-reduced-motion"
-              />
+        <AppearanceAdvanced resetting={resetting} onReset={resetAdvanced}>
+          <View style={settingsStyles.section}>
+            <View style={settingsStyles.card}>
+              {interfaceSize}
+              {codeSize}
+              {contentSize}
             </View>
           </View>
-        </View>
-      ) : null}
-      <SettingsSection title={t("settings.appearance.fonts.title")}>
-        <View style={settingsStyles.card}>
-          {showInterfaceFontFamilyRow ? (
-            <FontFamilyRow
-              title={t("settings.appearance.fonts.interfaceFont")}
-              hint={t("settings.appearance.fonts.interfaceFontHint")}
-              accessibilityLabel={t("settings.appearance.fonts.interfaceFontAccessibility")}
-              placeholder={uiFontPlaceholder}
-              value={settings.uiFontFamily}
-              draft={uiFontDraft}
-              withBorder={false}
-              onChangeDraft={setUiFontDraft}
-              onCommit={commitUiFontFamily}
-            />
-          ) : null}
-          <FontSizeRow
-            title={t("settings.appearance.fonts.interfaceSize")}
-            hint={t("settings.appearance.fonts.interfaceSizeHint")}
-            accessibilityLabel={t("settings.appearance.fonts.interfaceSizeAccessibility")}
-            draft={uiBaseSizeDraft}
-            withBorder={showInterfaceFontFamilyRow}
-            onChangeDraft={handleUiBaseSizeChange}
-            onCommit={commitUiBaseSize}
-          />
-          {showInterfaceFontFamilyRow ? (
-            <FontFamilyRow
-              title={t("settings.appearance.fonts.contentFont")}
-              hint={t("settings.appearance.fonts.contentFontHint")}
-              accessibilityLabel={t("settings.appearance.fonts.contentFontAccessibility")}
-              placeholder={settings.uiFontFamily || uiFontPlaceholder}
-              value={settings.contentFontFamily}
-              draft={contentFontDraft}
-              withBorder
-              onChangeDraft={setContentFontDraft}
-              onCommit={commitContentFontFamily}
-            />
-          ) : null}
-          <FontSizeRow
-            title={t("settings.appearance.fonts.contentSize")}
-            hint={t("settings.appearance.fonts.contentSizeHint")}
-            accessibilityLabel={t("settings.appearance.fonts.contentSizeAccessibility")}
-            draft={contentSizeDraft}
-            onChangeDraft={handleContentSizeChange}
-            onCommit={commitContentSize}
-          />
-          <FontFamilyRow
-            title={t("settings.appearance.fonts.codeFont")}
-            hint={t("settings.appearance.fonts.codeFontHint")}
-            accessibilityLabel={t("settings.appearance.fonts.codeFontAccessibility")}
-            placeholder={monoFontPlaceholder}
-            value={settings.monoFontFamily}
-            draft={monoFontDraft}
-            withBorder
-            onChangeDraft={setMonoFontDraft}
-            onCommit={commitMonoFontFamily}
-          />
-          <FontSizeRow
-            title={t("settings.appearance.fonts.codeSize")}
-            hint={t("settings.appearance.fonts.codeSizeHint")}
-            accessibilityLabel={t("settings.appearance.fonts.codeSizeAccessibility")}
-            draft={codeSizeDraft}
-            onChangeDraft={handleCodeSizeChange}
-            onCommit={commitCodeSize}
-          />
-        </View>
-      </SettingsSection>
-      <SettingsSection title={t("settings.appearance.layout.title")}>
-        <View style={settingsStyles.card}>
-          <ContentWidthRow
-            value={settings.contentMaxWidth}
-            onChange={handleContentMaxWidthChange}
-          />
-        </View>
-      </SettingsSection>
-      <SettingsSection title={t("settings.appearance.syntax.title")}>
-        <View style={settingsStyles.card}>
-          <SyntaxRow value={settings.syntaxTheme} onChange={handleSyntaxThemeChange} />
-        </View>
-        <View style={styles.preview}>
-          <AppearancePreview overrides={previewOverrides} />
-        </View>
-      </SettingsSection>
+          {motionCard}
+          <View style={settingsStyles.section}>
+            <View style={settingsStyles.card}>
+              {contentFont}
+              {codeFont}
+            </View>
+          </View>
+          {layoutSection}
+          {syntaxSection}
+        </AppearanceAdvanced>
+      ) : (
+        <>
+          <SettingsSection title={t("settings.appearance.fonts.title")}>
+            <View style={settingsStyles.card}>
+              {showInterfaceFontFamilyRow ? interfaceFont : null}
+              {interfaceSize}
+              {showInterfaceFontFamilyRow ? contentFont : null}
+              {contentSize}
+              {codeFont}
+              {codeSize}
+            </View>
+          </SettingsSection>
+          {layoutSection}
+          {syntaxSection}
+        </>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create((theme) => ({
+  advancedGroup: { marginTop: theme.spacing[6] },
+  advancedHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: theme.spacing[2],
+    marginBottom: theme.spacing[3],
+  },
+  advancedToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing[1],
+    paddingVertical: theme.spacing[1],
+    borderRadius: theme.borderRadius.md,
+  },
+  collapsedChevron: { transform: [{ rotate: "-90deg" }] },
+  advancedHidden: { display: "none" },
   modeCard: {
     height: 78,
     marginBottom: theme.spacing[1],

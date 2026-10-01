@@ -2195,6 +2195,11 @@ export const zhCN: TranslationResources = {
       },
     },
     appearance: {
+      advanced: {
+        title: "高级",
+        reset: "重置为默认设置",
+        resetLabel: "重置高级外观设置",
+      },
       motion: {
         title: "减少动态效果",
         hint: "减少动画效果或遵循系统设置。",

@@ -2344,6 +2344,11 @@ export const en = {
       },
     },
     appearance: {
+      advanced: {
+        title: "Advanced",
+        reset: "Reset to defaults",
+        resetLabel: "Reset advanced appearance settings",
+      },
       motion: {
         title: "Reduce motion",
         hint: "Reduce animations or follow the system setting.",

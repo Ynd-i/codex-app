@@ -127,16 +127,33 @@ export async function runAgentDeepLinksRegression({
     "true",
   );
   await expect(page.getByLabel("Theme: Dark", { exact: true })).toBeVisible();
+  const advanced = page.getByTestId("appearance-advanced-toggle");
+  await expect(advanced).toHaveAttribute("aria-expanded", "true");
+  await advanced.focus();
+  await advanced.press("Enter");
+  await expect(page.getByTestId("appearance-advanced-content")).toBeHidden();
+  await expect(
+    page.getByRole("textbox", { name: "Interface font family", exact: true }),
+  ).toBeVisible();
+  await advanced.press("Space");
+  await expect(advanced).toHaveAttribute("aria-expanded", "true");
   const motion = page.getByTestId("appearance-reduced-motion");
   await motion.getByRole("button", { name: "On", exact: true }).click();
   await expect(motion.getByRole("button", { name: "On", exact: true })).toHaveAttribute(
     "aria-selected",
     "true",
   );
-  await motion.getByRole("button", { name: "System", exact: true }).click();
+  const codeSize = page.getByRole("textbox", { name: "Code font size", exact: true });
+  await codeSize.fill("21");
+  await page.getByTestId("appearance-advanced-reset").click();
+  await expect(codeSize).toHaveValue("12");
+  await expect(motion.getByRole("button", { name: "System", exact: true })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await expect(page.getByLabel("Theme: Dark", { exact: true })).toBeVisible();
   await page.screenshot({ path: path.join(artifactDir, "packaged-appearance-modes.png") });
   // Exercise overflow through a real saved appearance preference, without rewriting the timeline.
-  const codeSize = page.getByRole("textbox", { name: "Code font size", exact: true });
   await codeSize.fill("22");
   await codeSize.press("Tab");
   await page.getByTestId("settings-back-to-workspace").filter({ visible: true }).click();
@@ -199,6 +216,7 @@ export async function runAgentDeepLinksRegression({
     packagedChatSearch: true,
     packagedFilesDock: true,
     packagedAppearanceModes: true,
+    packagedAppearanceAdvancedReset: true,
     packagedShellOverflow: true,
     packagedMotionControl: true,
     packagedCopyMenu: true,

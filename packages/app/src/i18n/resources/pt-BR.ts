@@ -2255,6 +2255,11 @@ export const ptBR: TranslationResources = {
       },
     },
     appearance: {
+      advanced: {
+        title: "Avançado",
+        reset: "Restaurar padrões",
+        resetLabel: "Redefinir configurações avançadas de aparência",
+      },
       motion: {
         title: "Reduzir movimento",
         hint: "Reduz as animações ou segue a configuração do sistema.",

@@ -2220,6 +2220,11 @@ export const ar: TranslationResources = {
       },
     },
     appearance: {
+      advanced: {
+        title: "إعدادات متقدمة",
+        reset: "استعادة الإعدادات الافتراضية",
+        resetLabel: "إعادة ضبط إعدادات المظهر المتقدمة",
+      },
       motion: {
         title: "تقليل الحركة",
         hint: "تقليل الرسوم المتحركة أو اتباع إعداد النظام.",

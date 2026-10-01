@@ -2239,6 +2239,11 @@ export const ja: TranslationResources = {
       },
     },
     appearance: {
+      advanced: {
+        title: "詳細設定",
+        reset: "既定値に戻す",
+        resetLabel: "外観の詳細設定をリセット",
+      },
       motion: {
         title: "視差効果を減らす",
         hint: "アニメーションを減らすか、システム設定に従います。",

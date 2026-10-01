@@ -2231,6 +2231,11 @@ export const ko: TranslationResources = {
       },
     },
     appearance: {
+      advanced: {
+        title: "고급",
+        reset: "기본값으로 재설정",
+        resetLabel: "고급 모양 설정 재설정",
+      },
       motion: {
         title: "동작 줄이기",
         hint: "애니메이션을 줄이거나 시스템 설정을 따릅니다.",
