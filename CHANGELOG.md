@@ -59,6 +59,7 @@ distribution and full migration acceptance remain pending; see the
 
 ### Fixed
 
+- Scaled tool-output and diagnostic code line spacing with the saved code font size, preventing overlapping lines at larger sizes while keeping the default spacing unchanged.
 - Removed the floating focus hint from the macOS composer so it cannot overlap the empty placeholder in narrow chat columns. The focus shortcut and other platforms remain unchanged.
 - Prevented custom packaging from inheriting the official operating-system URL scheme through concatenated configuration arrays. The package smoke now checks the final scheme declaration.
 - Kept Antigravity's authentication error visible when macOS has not yet reaped its failed CLI process. Cleanup waits for the owned child and still reports genuine permission failures.

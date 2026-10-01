@@ -163,9 +163,9 @@ On October 1 the regular allowance reached 0% and reported
 `ordinaryUsageAllowed: false`; a new per-redemption reset confirmation was requested.
 Existing prepaid credits were available to finish the two already-started slices;
 no credits were purchased. Their Shell-overflow and real-webview checks are
-recorded below. The last verified Custom bundle was built at `580aa19`; its search,
-Files dock and single-chat route checks pass. Appearance mode previews and Shell
-overflow fading postdate that bundle.
+recorded below. The latest verified Custom bundle matches production source at
+`968b8d9`, including settings geometry, Appearance previews and Shell overflow.
+Its real renderer, deep-link, saved-preference and large-code-font checks pass.
 
 Code inspection, implementation, targeted unit tests, isolated headless renderer
 tests, dependency builds, documentation, and commits can continue while the Mac
@@ -535,6 +535,18 @@ a CSS-only regression. Final inspected captures: [overflow](../qa-evidence/codex
 Logs: `/private/tmp/paseo-shell-fade-e2e.log` (existing case green, earlier fixture
 failure) and `/private/tmp/paseo-shell-fade-verified.log` (final overflow/short case
 green). Root checks pass in `/private/tmp/paseo-navigation-fade-final-{format,lint,typecheck}.log`.
+
+The packaged large-font check found that tool output still used a fixed 18px line
+height after the saved code font grew to its supported maximum of 22px. Tool
+detail text and the shared diagnostic code surface now derive their line height
+from the code size at 1.5×; the default 12px font retains its 18px line height.
+The real Custom regression went red on 18px instead of 33px, then passed after
+rebuilding. Inspected [overflow](../qa-evidence/codex-desktop/packaged-shell-large-font-top.png)
+and [final-line](../qa-evidence/codex-desktop/packaged-shell-large-font-bottom.png)
+captures show legible spacing and the retained bottom-boundary behavior. These
+use a deliberately enlarged font to check readability, not the default reference
+typography. Logs: `/private/tmp/paseo-shell-line-height-red-22.log` and
+`/private/tmp/paseo-code-line-height-final.log`.
 
 ### Attachment menu
 
@@ -965,8 +977,9 @@ installation/selection/reload of the Catppuccin fixture, returning to built-in
 themes and 700px layout. The [mode-card capture](../qa-evidence/codex-desktop/settings-appearance-modes.png)
 was inspected. The existing ordinary-browser Pure black selector case also passes
 (`/private/tmp/paseo-appearance-mode-browser.log`). Log: `/private/tmp/paseo-appearance-mode.log`; 36 locale checks
-also pass in `/private/tmp/paseo-appearance-mode-locales.log`. This slice postdates
-the `580aa19` Custom bundle and still needs native/package comparison.
+also pass in `/private/tmp/paseo-appearance-mode-locales.log`. The refreshed Custom
+bundle now includes this slice and passes the real-Electron checks below;
+comparison with the user's live window still waits for manual unlock.
 
 The next settings comparison measured both original 2704px-wide references at
 2× scale: their cards span 728 CSS pixels with approximately 16px corners. Mac
@@ -1195,7 +1208,7 @@ custom scheme and cleanup smoke passed again. Log:
 `/private/tmp/paseo-current-custom-package-build.log`; isolated startup capture:
 `/private/tmp/paseo-current-custom-package-qa/renderer.png`. The shortcut-search,
 Files-empty-state and chat-search changes were added after that build. A second
-refresh at `580aa19` now includes all three. Its isolated packaged smoke passes;
+refresh at `580aa19` included all three. Its isolated packaged smoke passes;
 log: `/private/tmp/paseo-search-files-package-build.log`.
 
 The expanded real-Electron agent-link regression also passes on the `580aa19`
@@ -1209,6 +1222,19 @@ does not substitute for the dark reference comparison. The test uses synthetic
 Mock chat content and a private host. Log:
 `/private/tmp/paseo-search-files-packaged-links.log`; result and captures:
 `/private/tmp/paseo-search-files-packaged-links-qa`.
+
+The latest refresh matches the production source committed as `968b8d9`, including
+the settings geometry and the code-line-height repair found during screenshot
+review. The source diff used for the build was compared with the final production
+diff before committing. The full custom startup/CLI/terminal smoke passes in
+`/private/tmp/paseo-tool-line-height-package-build.log`. The expanded agent-link
+case passes in `/private/tmp/paseo-code-line-height-final.log`: it also opens real
+Appearance controls, changes to Dark, saves code size 22, returns to the retained
+draft, and checks 33px Shell line height plus fade removal at the final line.
+The older `580aa19` package failed the added Appearance check; `8ed7135` failed the
+added line-height check before the final rebuild. Result and inspected private
+captures are under `/private/tmp/paseo-code-line-height-final-qa`. Root checks pass
+in `/private/tmp/paseo-code-line-height-final-{format,lint,typecheck}.log`.
 
 The corrected ARM64 ad-hoc bundle passes that final declaration check, independent
 bundle identity, disabled update IPC, real renderer/preload startup, isolated
