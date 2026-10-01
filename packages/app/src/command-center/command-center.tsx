@@ -32,7 +32,7 @@ import {
   useIsolatedBottomSheetVisibility,
 } from "@/components/ui/isolated-bottom-sheet-modal";
 import { useIsCompactFormFactor } from "@/constants/layout";
-import { isNative, isWeb } from "@/constants/platform";
+import { getIsElectronMac, isNative, isWeb } from "@/constants/platform";
 import { useAggregatedAgents, type AggregatedAgent } from "@/hooks/use-aggregated-agents";
 import { useProjects } from "@/hooks/use-projects";
 import {
@@ -130,7 +130,10 @@ function agentSearchFields(result: CommandCenterAgentResult): CommandCenterSearc
  * The cost is that `formatTimeAgo` is baked into the agent subtitle here, so relative timestamps
  * now refresh when agents or projects change rather than on every keystroke.
  */
-function useBuiltInRows(open: boolean): {
+function useBuiltInRows(
+  open: boolean,
+  macChat: boolean,
+): {
   workspaces: CommandCenterWorkspaceResult[];
   agents: CommandCenterAgentResult[];
 } {
@@ -142,10 +145,12 @@ function useBuiltInRows(open: boolean): {
   return useMemo(() => {
     if (!open) return { workspaces: [], agents: [] };
     const allWorkspaces: CommandCenterWorkspaceResult[] = [];
+    const projectNameByWorkspace = new Map<string, string>();
     for (const project of projects) {
       for (const host of project.hosts) {
         for (const workspace of host.workspaces) {
           if (workspace.archivingAt) continue;
+          projectNameByWorkspace.set(`${host.serverId}:${workspace.id}`, project.projectName);
           allWorkspaces.push({
             kind: "workspace",
             id: `workspace:${host.serverId}:${workspace.id}`,
@@ -180,8 +185,11 @@ function useBuiltInRows(open: boolean): {
           title: agent.title || t("shell.commandCenter.newAgent"),
           subtitle: joinSubtitleParts([
             showHost ? agent.serverLabel : null,
-            workspaceTitle ?? shortenPath(agent.cwd),
-            formatTimeAgo(agent.lastActivityAt),
+            macChat
+              ? (projectNameByWorkspace.get(`${agent.serverId}:${agent.workspaceId}`) ??
+                shortenPath(agent.cwd))
+              : (workspaceTitle ?? shortenPath(agent.cwd)),
+            macChat ? null : formatTimeAgo(agent.lastActivityAt),
           ]),
           run: () => {
             clearCommandCenterFocusRestoreElement();
@@ -191,12 +199,16 @@ function useBuiltInRows(open: boolean): {
       })
       .sort((left, right) => sortAgents(left.agent, right.agent));
     return { workspaces: allWorkspaces, agents: agentRows };
-  }, [agents, open, projects, showHost, t]);
+  }, [agents, macChat, open, projects, showHost, t]);
 }
 
-function useBuiltInSections(open: boolean, query: string): CommandCenterResultSection[] {
+function useBuiltInSections(
+  open: boolean,
+  query: string,
+  macChat: boolean,
+): CommandCenterResultSection[] {
   const { t } = useTranslation();
-  const rows = useBuiltInRows(open);
+  const rows = useBuiltInRows(open, macChat);
 
   return useMemo(() => {
     if (!open) return [];
@@ -212,13 +224,16 @@ function useBuiltInSections(open: boolean, query: string): CommandCenterResultSe
         id: "agents",
         band: PINNED_SECTION_BAND,
         rank: 3,
-        title: t("shell.commandCenter.agents"),
-        results: filterAndRankBuiltInResults(rows.agents, query, agentSearchFields, (left, right) =>
-          sortAgents(left.agent, right.agent),
-        ),
+        title: t(macChat ? "shell.commandCenter.chats" : "shell.commandCenter.agents"),
+        results:
+          macChat && !query.trim()
+            ? rows.agents.slice(0, 9)
+            : filterAndRankBuiltInResults(rows.agents, query, agentSearchFields, (left, right) =>
+                sortAgents(left.agent, right.agent),
+              ),
       },
     ];
-  }, [open, query, rows, t]);
+  }, [macChat, open, query, rows, t]);
 }
 
 interface CommandCenterState {
@@ -240,7 +255,7 @@ interface CommandCenterState {
   key(key: string): boolean;
 }
 
-function useCommandCenterState(): CommandCenterState {
+function useCommandCenterState(macChat: boolean): CommandCenterState {
   const keyboardActionDispatcher = useKeyboardActionDispatcher();
   const { t } = useTranslation();
   const open = useKeyboardShortcutsStore((state) => state.commandCenterOpen);
@@ -252,7 +267,7 @@ function useCommandCenterState(): CommandCenterState {
   const previousOpenRef = useRef(open);
   const [query, setQueryState] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
-  const builtInSections = useBuiltInSections(open, query);
+  const builtInSections = useBuiltInSections(open, query, macChat);
   const {
     entries: fileSearchEntries,
     loading: fileSearchLoading,
@@ -294,8 +309,9 @@ function useCommandCenterState(): CommandCenterState {
         scope === "files"
           ? fileSections
           : [...contributionSections, ...fileSections, ...builtInSections],
+        macChat && scope !== "files" ? { presentation: "mac-chat", query } : undefined,
       ),
-    [builtInSections, contributionSections, fileSections, scope],
+    [builtInSections, contributionSections, fileSections, macChat, query, scope],
   );
   const resolvedActiveId = preserveActiveResultId(activeId, projection.selectableResults);
 
@@ -310,10 +326,12 @@ function useCommandCenterState(): CommandCenterState {
   const close = useCallback(() => setOpen(false), [setOpen]);
   const select = useCallback(
     (result: CommandCenterResult) => {
+      inputRef.current?.replaceText("");
+      setQuery("");
       setOpen(false);
       void result.run();
     },
-    [setOpen],
+    [setOpen, setQuery],
   );
   const key = useCallback(
     (pressed: string): boolean => {
@@ -361,7 +379,7 @@ function useCommandCenterState(): CommandCenterState {
         keyboardActionDispatcher.dispatch({ id: "message-input.focus", scope: "message-input" }),
     });
     return cancel;
-  }, [keyboardActionDispatcher, open]);
+  }, [keyboardActionDispatcher, open, scope]);
 
   return {
     open,
@@ -386,10 +404,20 @@ function useCommandCenterState(): CommandCenterState {
 interface ResultRowProps {
   result: CommandCenterResult;
   active: boolean;
+  height: number;
+  macChat: boolean;
+  chatIndex?: number;
   onSelect(result: CommandCenterResult): void;
 }
 
-const ResultRow = memo(function ResultRow({ result, active, onSelect }: ResultRowProps) {
+const ResultRow = memo(function ResultRow({
+  result,
+  active,
+  height,
+  macChat,
+  chatIndex,
+  onSelect,
+}: ResultRowProps) {
   const press = useCallback(() => onSelect(result), [onSelect, result]);
   const choice =
     result.kind === "contribution" && result.contribution.presentation.kind === "choice"
@@ -412,9 +440,11 @@ const ResultRow = memo(function ResultRow({ result, active, onSelect }: ResultRo
           result.contribution.presentation.kind === "action" &&
           Boolean(result.contribution.presentation.subtitle))) &&
         styles.tallRow,
-      (Boolean(hovered) || pressed || active) && styles.activeRow,
+      macChat && styles.macRow,
+      { height },
+      (Boolean(hovered) || pressed || active) && (macChat ? styles.macActiveRow : styles.activeRow),
     ],
-    [active, result],
+    [active, height, macChat, result],
   );
   return (
     <Pressable
@@ -428,12 +458,20 @@ const ResultRow = memo(function ResultRow({ result, active, onSelect }: ResultRo
         result.kind === "file" ? `command-center-file-row-${result.filePath}` : choice?.testId
       }
     >
-      <ResultContent result={result} />
+      <ResultContent result={result} macChat={macChat} chatIndex={chatIndex} />
     </Pressable>
   );
 });
 
-function ResultContent({ result }: { result: CommandCenterResult }) {
+function ResultContent({
+  result,
+  macChat,
+  chatIndex,
+}: {
+  result: CommandCenterResult;
+  macChat: boolean;
+  chatIndex?: number;
+}) {
   if (result.kind === "file") {
     return (
       <View style={styles.rowContent}>
@@ -465,18 +503,25 @@ function ResultContent({ result }: { result: CommandCenterResult }) {
             <AgentStatusDot
               status={agent.status}
               requiresAttention={agent.requiresAttention}
-              showInactive
+              showInactive={!macChat}
             />
           </View>
-          <View style={styles.textContent}>
-            <Text style={styles.title} numberOfLines={1}>
+          <View style={[styles.textContent, macChat && styles.macChatText]}>
+            <Text style={[styles.title, macChat && styles.macChatTitle]} numberOfLines={1}>
               {result.title}
             </Text>
-            <Text style={styles.subtitle} numberOfLines={1} testID="command-center-agent-subtitle">
+            <Text
+              style={[styles.subtitle, macChat && styles.macChatSubtitle]}
+              numberOfLines={1}
+              testID="command-center-agent-subtitle"
+            >
               {result.subtitle}
             </Text>
           </View>
         </View>
+        {chatIndex !== undefined && chatIndex < 9 ? (
+          <Shortcut keys={["ctrl", String(chatIndex + 1)]} style={styles.macShortcut} />
+        ) : null}
       </View>
     );
   }
@@ -566,21 +611,35 @@ function ResultContent({ result }: { result: CommandCenterResult }) {
   );
 }
 
-function SectionRow({ row }: { row: Extract<CommandCenterListRow, { kind: "section" }> }) {
+function SectionRow({
+  row,
+  macChat,
+}: {
+  row: Extract<CommandCenterListRow, { kind: "section" }>;
+  macChat: boolean;
+}) {
   let sizeStyle = styles.dividerSection;
   if (row.title && row.divider) sizeStyle = styles.dividedSection;
   if (row.title && !row.divider) sizeStyle = styles.titledSection;
   return (
-    <View style={sizeStyle}>
+    <View style={[sizeStyle, macChat && styles.macSection, { height: row.height }]}>
       {row.divider ? <View style={styles.sectionDivider} /> : null}
-      {row.title ? <Text style={styles.sectionLabel}>{row.title}</Text> : null}
+      {row.title ? (
+        <Text style={[styles.sectionLabel, macChat && styles.macSectionLabel]}>{row.title}</Text>
+      ) : null}
     </View>
   );
 }
 
 export function CommandCenter() {
   const { t } = useTranslation();
-  const state = useCommandCenterState();
+  const macChat = getIsElectronMac();
+  const state = useCommandCenterState(macChat);
+  const compactRows = macChat && state.scope !== "files";
+  const chatResults = useMemo(
+    () => state.results.filter((result) => result.kind === "agent"),
+    [state.results],
+  );
   const isCompact = useIsCompactFormFactor();
   const showBottomSheet = isCompact && isNative;
   const modalLayer = useGlobalWebOverlayLayer("modal", isWeb && state.open && !showBottomSheet);
@@ -644,15 +703,22 @@ export function CommandCenter() {
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<CommandCenterListRow>) =>
       item.kind === "section" ? (
-        <SectionRow row={item} />
+        <SectionRow row={item} macChat={compactRows} />
       ) : (
         <ResultRow
           result={item.result}
+          height={item.height}
+          macChat={compactRows}
+          chatIndex={
+            compactRows && item.result.kind === "agent"
+              ? chatResults.findIndex((result) => result.id === item.result.id)
+              : undefined
+          }
           active={item.result.id === state.activeId}
           onSelect={state.select}
         />
       ),
-    [state.activeId, state.select],
+    [chatResults, compactRows, state.activeId, state.select],
   );
   const getItemLayout = useCallback(
     (_data: ArrayLike<CommandCenterListRow> | null | undefined, index: number) => ({
@@ -707,11 +773,27 @@ export function CommandCenter() {
   const submit = useCallback(() => state.key("Enter"), [state]);
   const handleWebOverlayKeyDown = useCallback(
     (event: KeyboardEvent) => {
+      if (
+        compactRows &&
+        event.ctrlKey &&
+        !event.metaKey &&
+        !event.altKey &&
+        !event.shiftKey &&
+        !event.isComposing &&
+        /^[1-9]$/.test(event.key)
+      ) {
+        const result = chatResults[Number(event.key) - 1];
+        if (result) {
+          event.preventDefault();
+          state.select(result);
+          return true;
+        }
+      }
       if (!state.key(event.key)) return false;
       event.preventDefault();
       return true;
     },
-    [state],
+    [chatResults, compactRows, state],
   );
   const setWebOverlayScope = useWebOverlayRegistration({
     active: isWeb && state.open && !showBottomSheet,
@@ -779,10 +861,20 @@ export function CommandCenter() {
   return (
     <OverlayLayerProvider layer={isWeb ? modalLayer : 0}>
       <Modal visible transparent animationType="fade" onRequestClose={state.close}>
-        <View style={styles.overlay}>
-          <Pressable style={styles.backdrop} onPress={state.close} />
-          <View ref={setWebOverlayScope} testID="command-center-panel" style={styles.panel}>
-            <View style={[styles.header, styles.searchRow]} testID="command-center-header">
+        <View style={[styles.overlay, macChat && styles.macOverlay]}>
+          <Pressable
+            style={[styles.backdrop, macChat && styles.macBackdrop]}
+            onPress={state.close}
+          />
+          <View
+            ref={setWebOverlayScope}
+            testID="command-center-panel"
+            style={[styles.panel, macChat && styles.macPanel]}
+          >
+            <View
+              style={[styles.header, styles.searchRow, macChat && styles.macHeader]}
+              testID="command-center-header"
+            >
               {state.scope === "files" ? (
                 <ScopeChip label={t("shell.commandCenter.files")} onRemove={state.clearScope} />
               ) : null}
@@ -794,7 +886,11 @@ export function CommandCenter() {
                 placeholder={
                   state.scope === "files"
                     ? t("shell.commandCenter.filePlaceholder")
-                    : t("shell.commandCenter.placeholder")
+                    : t(
+                        macChat
+                          ? "shell.commandCenter.chatPlaceholder"
+                          : "shell.commandCenter.placeholder",
+                      )
                 }
                 style={[styles.input, styles.growingInput]}
                 autoCapitalize="none"
@@ -850,7 +946,25 @@ function ScopeChip({ label, onRemove }: { label: string; onRemove(): void }) {
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
+  macOverlay: { justifyContent: "center", paddingTop: 0, paddingBottom: 16 },
+  macBackdrop: { backgroundColor: "transparent" },
+  macPanel: {
+    width: 520,
+    height: 486,
+    borderRadius: 20,
+    backgroundColor: rt.themeName === "dark" ? "#4c4c4a" : theme.colors.surface0,
+    borderColor: rt.themeName === "dark" ? "#636361" : theme.colors.border,
+  },
+  macHeader: { height: 44, paddingHorizontal: 14, paddingVertical: 8, borderBottomWidth: 0 },
+  macRow: { marginHorizontal: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12 },
+  macActiveRow: { backgroundColor: rt.themeName === "dark" ? "#60605e" : theme.colors.surface1 },
+  macChatText: { flexDirection: "row", alignItems: "center", gap: 8 },
+  macChatTitle: { flex: 1, minWidth: 0 },
+  macChatSubtitle: { maxWidth: "35%", fontSize: theme.fontSize.base, lineHeight: 18 },
+  macShortcut: { flexShrink: 0, borderRadius: 8, paddingVertical: 0 },
+  macSection: { justifyContent: "center" },
+  macSectionLabel: { paddingHorizontal: 12, paddingBottom: 0 },
   overlay: {
     flex: 1,
     justifyContent: "flex-start",

@@ -293,10 +293,32 @@ export function buildContributionSections(
 
 export function projectCommandCenterRows(
   sections: readonly CommandCenterResultSection[],
+  options?: { presentation: "mac-chat"; query: string },
 ): CommandCenterListProjection {
+  const compact = options?.presentation === "mac-chat";
+  const primaryIds = [
+    "root:new-workspace",
+    "root:add-project",
+    "root:search-files",
+    "root:settings",
+  ];
   const populated = sections
+    .map((section) => {
+      if (!compact || options.query.trim()) return section;
+      if (section.id === "agents") return { ...section, results: section.results.slice(0, 9) };
+      if (section.id !== "actions") return { ...section, results: [] };
+      return {
+        ...section,
+        results: primaryIds.flatMap((id) => section.results.filter((result) => result.id === id)),
+      };
+    })
     .filter((section) => section.results.length > 0)
-    .sort(compareResultSections);
+    .sort((left, right) => {
+      if (compact && (left.id === "agents") !== (right.id === "agents")) {
+        return left.id === "agents" ? -1 : 1;
+      }
+      return compareResultSections(left, right);
+    });
   const rows: CommandCenterListRow[] = [];
   const selectableResults: CommandCenterResult[] = [];
   const rowIndexByResultId = new Map<string, number>();
@@ -304,11 +326,12 @@ export function projectCommandCenterRows(
   let offset = 0;
 
   for (const [sectionIndex, section] of populated.entries()) {
-    const divider = sectionIndex > 0;
+    const divider = !compact && sectionIndex > 0;
     let sectionHeight = 0;
     if (section.title && divider) sectionHeight = 49;
     if (section.title && !divider) sectionHeight = 32;
     if (!section.title && divider) sectionHeight = 17;
+    if (compact && section.title) sectionHeight = 24;
     if (sectionHeight > 0) {
       offsets.push(offset);
       rows.push({
@@ -321,7 +344,9 @@ export function projectCommandCenterRows(
       offset += sectionHeight;
     }
     for (const result of section.results) {
-      const height = resultHeight(result);
+      const standardHeight = resultHeight(result);
+      const height =
+        compact && (result.kind === "agent" || standardHeight === 36) ? 30 : standardHeight;
       offsets.push(offset);
       rowIndexByResultId.set(result.id, rows.length);
       rows.push({ kind: "result", key: result.id, result, height });

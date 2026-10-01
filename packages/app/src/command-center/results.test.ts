@@ -9,6 +9,7 @@ import {
   preserveActiveResultId,
   projectCommandCenterRows,
   type CommandCenterWorkspaceResult,
+  type CommandCenterAgentResult,
 } from "./results";
 
 function contribution(input: {
@@ -121,6 +122,62 @@ function sectionResultIds(sections: ReturnType<typeof buildContributionSections>
 }
 
 describe("Command Center result projection", () => {
+  it("projects compact Mac chats before primary actions with shared scroll offsets", () => {
+    const agents = Array.from({ length: 12 }, (_, index) => ({
+      kind: "agent" as const,
+      id: `agent:${index}`,
+      title: `Chat ${index}`,
+      subtitle: "project",
+      agent: {} as CommandCenterAgentResult["agent"],
+      run: () => undefined,
+    }));
+    const sections = [
+      ...buildContributionSections(
+        [
+          "add-project",
+          "new-workspace",
+          "history",
+          "search-files",
+          "settings",
+          "plugin-action",
+        ].map((id) => contribution({ id: `root:${id}`, group: "actions", groupRank: 0 })),
+        "",
+      ),
+      {
+        id: "workspaces",
+        band: PINNED_SECTION_BAND,
+        rank: 2,
+        title: "Workspaces",
+        results: [workspace("workspace:1")],
+      },
+      { id: "agents", band: PINNED_SECTION_BAND, rank: 3, title: "Chats", results: agents },
+    ];
+    const compact = projectCommandCenterRows(sections, { presentation: "mac-chat", query: "" });
+    expect(compact.selectableResults.map((result) => result.id)).toEqual([
+      ...agents.slice(0, 9).map((agent) => agent.id),
+      "root:new-workspace",
+      "root:add-project",
+      "root:search-files",
+      "root:settings",
+    ]);
+    expect(compact.rows.filter((row) => row.kind === "result").map((row) => row.height)).toEqual(
+      Array(13).fill(30),
+    );
+    expect(compact.offsets).toEqual([
+      0, 24, 54, 84, 114, 144, 174, 204, 234, 264, 294, 318, 348, 378, 408,
+    ]);
+    expect(compact.rowIndexByResultId.get("agent:8")).toBe(9);
+    const queried = projectCommandCenterRows(sections, { presentation: "mac-chat", query: "chat" });
+    expect(queried.selectableResults.slice(0, 12).map((result) => result.id)).toEqual(
+      agents.map((agent) => agent.id),
+    );
+    expect(queried.selectableResults.map((result) => result.id)).toContain("root:plugin-action");
+    expect(queried.selectableResults.map((result) => result.id)).toContain("workspace:1");
+    const standard = projectCommandCenterRows(sections);
+    expect(standard.selectableResults[0].id).toBe("root:add-project");
+    expect(standard.rows.find((row) => row.key === "agent:0")?.height).toBe(56);
+  });
+
   it("query-gates model choices and creates one flat row index", () => {
     const contributions = [
       contribution({ id: "settings", group: "actions", groupRank: 0 }),
