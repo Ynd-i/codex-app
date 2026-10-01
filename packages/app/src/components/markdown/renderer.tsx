@@ -33,7 +33,7 @@ import { createCompactMarkdownStyles, createMarkdownStyles } from "@/styles/mark
 import { CONTENT_SURFACE_DATASET } from "@/styles/content-surface";
 import type { Theme } from "@/styles/theme";
 import { openExternalUrl } from "@/utils/open-external-url";
-import { isNative } from "@/constants/platform";
+import { getIsElectronMac, isNative } from "@/constants/platform";
 import {
   splitHtmlishMarkdown,
   type MarkdownDisplayPart,
@@ -691,12 +691,19 @@ export function createSharedMarkdownRules(): RenderRules {
     paragraph: (
       node: ASTNode,
       children: ReactNode[],
-      _parent: ASTNode[],
+      parent: ASTNode[],
       styles: MarkdownStyles,
     ) => (
       <MarkdownParagraphView
         key={node.key}
-        paragraphStyle={styles.paragraph}
+        paragraphStyle={
+          getIsElectronMac() &&
+          parent.some(
+            (ancestor) => ancestor.type === "blockquote" && ancestor.children?.at(-1) === node,
+          )
+            ? styles.paragraphLastInQuote
+            : styles.paragraph
+        }
         containsImage={markdownNodeContainsType(node, "image")}
       >
         {children}

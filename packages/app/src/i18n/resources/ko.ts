@@ -377,6 +377,7 @@ export const ko: TranslationResources = {
     },
     actions: {
       copyCode: "코드 복사",
+      plainText: "일반 텍스트",
       copyTurn: "턴 복사",
       copyMessage: "메시지 복사",
       forkMenu: "여기에서 채팅 분기",

@@ -1,0 +1,91 @@
+import { test, expect } from "../../app/e2e/support/fixtures";
+import { seedMockAgentWorkspace, openAgentRoute } from "../../app/e2e/support/helpers/mock-agent";
+import { submitMessage } from "../../app/e2e/support/helpers/composer";
+import { getServerId } from "../../app/e2e/support/helpers/server-id";
+import { getE2EDaemonPort } from "../../app/e2e/support/helpers/daemon-port";
+import { installDesktopRuntime } from "./support/runtime";
+
+for (const platform of ["darwin", "win32"] as const) {
+  test(`${platform} styled text preserves Markdown and code actions`, async ({
+    page,
+    context,
+  }, testInfo) => {
+    const longCode = 'const message = "' + "long code content ".repeat(14) + '";';
+    const markdown =
+      "例如，带格式的回复会显示成这样：\n\n> 这是一段引用文字。\n\n这部分是**加粗**，这部分是*斜体*，这部分是~~删除线~~，这里是`行内代码`。\n\n- 项目一\n- 项目二\n\n代码块也可以这样显示：\n\n```\n这是一段代码或纯文本\n```\n\n```ts\n" +
+      longCode +
+      "\n```\n";
+    const fixture = await seedMockAgentWorkspace({
+      repoPrefix: "rich-text-",
+      title: "Styled text",
+      featureValues: { mockAssistantResponse: markdown },
+    });
+    try {
+      await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+      await installDesktopRuntime(page, {
+        platform,
+        serverId: getServerId(),
+        manageBuiltInDaemon: false,
+        daemonListen: `127.0.0.1:${getE2EDaemonPort()}`,
+      });
+      await page.setViewportSize({ width: 1352, height: 1000 });
+      await page.emulateMedia({ colorScheme: "dark" });
+      await openAgentRoute(page, fixture);
+      await submitMessage(page, "Show styled text.");
+      const assistant = page.getByTestId("assistant-message");
+      const quote = assistant.locator('[data-paseo-markdown-tag="blockquote"]');
+      await expect(quote).toContainText("这是一段引用文字。");
+      await expect(assistant.getByText("斜体", { exact: true })).toHaveCSS("font-style", "italic");
+      await expect(assistant.getByText("删除线", { exact: true })).toHaveCSS(
+        "text-decoration-line",
+        "line-through",
+      );
+      const plain = assistant
+        .locator('[data-paseo-markdown-tag="pre"]')
+        .filter({ hasText: "这是一段代码或纯文本" });
+      const typed = assistant
+        .locator('[data-paseo-markdown-tag="pre"]')
+        .filter({ hasText: "const message" });
+      if (platform === "darwin") {
+        await expect(quote).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+        await expect(quote).toHaveCSS("border-left-width", "3px");
+        await expect(quote).toHaveCSS("border-left-color", "rgb(93, 93, 90)");
+        await expect(quote.locator('[data-paseo-markdown-tag="p"]')).toHaveCSS(
+          "margin-bottom",
+          "0px",
+        );
+        await expect(plain).toHaveCSS("border-radius", "20px");
+        await expect(plain).toHaveCSS("background-color", "rgb(69, 69, 67)");
+        await expect(plain.getByText("Plain text", { exact: true })).toBeVisible();
+        await expect(typed.getByText("ts", { exact: true })).toBeVisible();
+        const scroll = typed.getByTestId("markdown-code-scroll");
+        const code = typed.locator('[data-paseo-markdown-tag="code"]').first();
+        await expect(code).toHaveCSS("white-space", "pre-wrap");
+        const wrappedHeight = (await code.boundingBox())!.height;
+        await typed.getByRole("button", { name: "Scroll long lines", exact: true }).click();
+        await expect(code).toHaveCSS("white-space", "pre");
+        expect((await code.boundingBox())!.height).toBeLessThan(wrappedHeight);
+        expect(await scroll.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(true);
+        await typed.getByRole("button", { name: "Wrap long lines", exact: true }).click();
+        await expect(code).toHaveCSS("white-space", "pre-wrap");
+        await page.screenshot({ path: testInfo.outputPath("styled-text.png") });
+      } else {
+        await expect(plain.getByText("Plain text", { exact: true })).toHaveCount(0);
+        await expect(quote).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+        await typed.hover();
+      }
+      await typed.getByRole("button", { name: "Copy code", exact: true }).click();
+      await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(longCode);
+      await page.getByRole("button", { name: "Copy turn", exact: true }).last().click();
+      await expect
+        .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+        .toContain("**加粗**");
+      const copied = await page.evaluate(() => navigator.clipboard.readText());
+      expect(copied).toContain(longCode);
+      expect(copied).not.toContain("Plain text");
+      expect(copied).not.toContain("Wrap long lines");
+    } finally {
+      await fixture.cleanup();
+    }
+  });
+}

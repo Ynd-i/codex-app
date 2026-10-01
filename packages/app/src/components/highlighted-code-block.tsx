@@ -1,12 +1,20 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, View, type StyleProp, type TextStyle, type ViewStyle } from "react-native";
+import {
+  Pressable,
+  Text,
+  View,
+  type StyleProp,
+  type TextStyle,
+  type ViewStyle,
+} from "react-native";
 import { StyleSheet } from "react-native-unistyles";
+import { ScrollView } from "@/components/ui/scroll-view";
 import { MarkdownTextSpan } from "@/components/markdown-text";
 import * as Clipboard from "expo-clipboard";
-import { Check, Copy } from "lucide-react-native";
+import { Check, Copy, Code, WrapText } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import type { HighlightToken } from "@getpaseo/highlight";
-import { isNative, isWeb } from "@/constants/platform";
+import { getIsElectronMac, isNative, isWeb } from "@/constants/platform";
 import { useIsCompactFormFactor } from "@/constants/layout";
 import { syntaxTokenStyleFor } from "@/styles/syntax-token-styles";
 import { CODE_SURFACE_DATASET } from "@/styles/code-surface";
@@ -79,6 +87,10 @@ export const HighlightedCodeBlock = React.memo(function HighlightedCodeBlock({
   );
 
   const isCompact = useIsCompactFormFactor();
+  const isMac = getIsElectronMac();
+  const { t } = useTranslation();
+  const [wrap, setWrap] = useState(true);
+  const toggleWrap = useCallback(() => setWrap((value) => !value), []);
   const [isHovered, setIsHovered] = useState(false);
   const handlePointerEnter = useCallback(() => setIsHovered(true), []);
   const handlePointerLeave = useCallback(() => setIsHovered(false), []);
@@ -88,23 +100,51 @@ export const HighlightedCodeBlock = React.memo(function HighlightedCodeBlock({
   // fence; pasting any of them into a terminal runs the last line.
   const getCode = useCallback(() => code.replace(TRAILING_CODE_LINE_BREAKS, ""), [code]);
 
+  const codeText = (
+    <MarkdownTextSpan
+      style={[innerTextStyle, isMac && (wrap ? macStyles.wrappedText : macStyles.scrollingText)]}
+      copyTag="code"
+    >
+      {keyedLines ? renderCodeSegments(keyedLines) : renderedCode}
+    </MarkdownTextSpan>
+  );
   return (
     <View
-      style={containerStyle}
+      style={[containerStyle, isMac && macStyles.container]}
       dataSet={copyDataSet}
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
     >
-      {keyedLines ? (
-        <MarkdownTextSpan style={innerTextStyle} copyTag="code">
-          {renderCodeSegments(keyedLines)}
-        </MarkdownTextSpan>
+      {isMac ? (
+        <>
+          <View style={macStyles.header} dataSet={markdownCopyDataSet.ignore}>
+            <Code size={16} color={macStyles.headerText.color} />
+            <Text style={macStyles.headerText}>{language || t("message.actions.plainText")}</Text>
+            <View style={macStyles.actions}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t(
+                  wrap ? "workspace.git.diff.scrollLongLines" : "workspace.git.diff.wrapLongLines",
+                )}
+                aria-pressed={wrap}
+                onPress={toggleWrap}
+                style={macStyles.action}
+              >
+                <WrapText size={16} color={macStyles.headerText.color} />
+              </Pressable>
+              <CopyButton getCode={getCode} visible inline />
+            </View>
+          </View>
+          <ScrollView horizontal={!wrap} style={macStyles.codeScroll} testID="markdown-code-scroll">
+            {codeText}
+          </ScrollView>
+        </>
       ) : (
-        <MarkdownTextSpan style={innerTextStyle} copyTag="code">
-          {renderedCode}
-        </MarkdownTextSpan>
+        <>
+          {codeText}
+          <CopyButton getCode={getCode} visible={controlsVisible} />
+        </>
       )}
-      <CopyButton getCode={getCode} visible={controlsVisible} />
     </View>
   );
 });
@@ -171,11 +211,16 @@ function splitFenceStyle(inheritedStyles: TextStyle, textStyle: TextStyle): Spli
 interface CopyButtonProps {
   getCode: () => string;
   visible: boolean;
+  inline?: boolean;
 }
 
 const COPIED_RESET_MS = 1500;
 
-const CopyButton = React.memo(function CopyButton({ getCode, visible }: CopyButtonProps) {
+const CopyButton = React.memo(function CopyButton({
+  getCode,
+  visible,
+  inline = false,
+}: CopyButtonProps) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const resetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -203,8 +248,8 @@ const CopyButton = React.memo(function CopyButton({ getCode, visible }: CopyButt
     ? copyButtonStyles.containerVisible
     : copyButtonStyles.containerHidden;
   const wrapperStyle = useMemo(
-    () => [copyButtonStyles.container, visibilityStyle],
-    [visibilityStyle],
+    () => [copyButtonStyles.container, inline && copyButtonStyles.inline, visibilityStyle],
+    [inline, visibilityStyle],
   );
 
   return (
@@ -238,6 +283,7 @@ const copyButtonStyles = StyleSheet.create((theme) => ({
     right: theme.spacing[2],
     padding: theme.spacing[1],
   },
+  inline: { position: "relative", top: 0, right: 0, padding: 6 },
   containerVisible: {
     opacity: 1,
   },
@@ -250,4 +296,32 @@ const copyButtonStyles = StyleSheet.create((theme) => ({
   iconHoveredColor: {
     color: theme.colors.foreground,
   },
+}));
+
+const macStyles = StyleSheet.create((theme, rt) => ({
+  container: {
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: rt.themeName === "dark" ? "#555553" : theme.colors.border,
+    backgroundColor: rt.themeName === "dark" ? "#454543" : theme.colors.surface2,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 14,
+    gap: 16,
+    minWidth: 0,
+    overflow: "hidden",
+  },
+  header: { flexDirection: "row", alignItems: "center", gap: 8 },
+  headerText: {
+    fontFamily: theme.fontFamily.ui,
+    fontWeight: theme.fontWeight.normal,
+    fontSize: theme.fontSize.base,
+    color: theme.colors.foreground,
+    flexShrink: 1,
+  },
+  actions: { marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 12 },
+  action: { padding: 6 },
+  codeScroll: { flexGrow: 0, minWidth: 0 },
+  wrappedText: { whiteSpace: "pre-wrap", overflowWrap: "anywhere", minWidth: 0 },
+  scrollingText: { whiteSpace: "pre", overflowWrap: "normal", minWidth: 0 },
 }));

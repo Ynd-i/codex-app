@@ -376,6 +376,7 @@ export const zhCN: TranslationResources = {
     },
     actions: {
       copyCode: "复制代码",
+      plainText: "纯文本",
       copyTurn: "复制回合",
       copyMessage: "复制消息",
       forkMenu: "分叉消息",

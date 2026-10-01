@@ -373,6 +373,7 @@ export const en = {
     },
     actions: {
       copyCode: "Copy code",
+      plainText: "Plain text",
       copyTurn: "Copy turn",
       copyMessage: "Copy message",
       forkMenu: "Fork chat from here",

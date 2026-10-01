@@ -1,5 +1,5 @@
 import { FONT_SIZE, type Theme } from "./theme";
-import { isWeb } from "@/constants/platform";
+import { getIsElectronMac, isWeb } from "@/constants/platform";
 
 const webSelectableTextStyle = isWeb ? { userSelect: "text" as const } : {};
 
@@ -24,6 +24,18 @@ function contentHeadingLineHeight(contentSize: number, tier: keyof typeof FONT_S
  */
 export function createMarkdownStyles(theme: Theme) {
   const codeFontWeight = theme.codeFontWeight ?? (theme.contentFontWeight ? "400" : null);
+  const paragraph = {
+    marginTop: 0,
+    marginBottom: theme.spacing[3],
+    flexWrap: "wrap" as const,
+    flexDirection: "row" as const,
+    alignItems: "flex-start" as const,
+    justifyContent: "flex-start" as const,
+    flexShrink: 1,
+    minWidth: 0,
+    width: "100%" as const,
+  };
+
   return {
     // =========================================================================
     // BASE STYLES
@@ -51,17 +63,8 @@ export function createMarkdownStyles(theme: Theme) {
       overflowWrap: "anywhere" as const,
     },
 
-    paragraph: {
-      marginTop: 0,
-      marginBottom: theme.spacing[3],
-      flexWrap: "wrap" as const,
-      flexDirection: "row" as const,
-      alignItems: "flex-start" as const,
-      justifyContent: "flex-start" as const,
-      flexShrink: 1,
-      minWidth: 0,
-      width: "100%" as const,
-    },
+    paragraph,
+    paragraphLastInQuote: { ...paragraph, marginBottom: 0 },
 
     // =========================================================================
     // HEADINGS
@@ -335,6 +338,16 @@ export function createMarkdownStyles(theme: Theme) {
       borderRadius: theme.borderRadius.md,
       borderTopLeftRadius: 0,
       borderBottomLeftRadius: 0,
+      ...(getIsElectronMac()
+        ? {
+            backgroundColor: "transparent",
+            borderLeftWidth: 3,
+            borderLeftColor:
+              theme.colors.surface0 === "#2c2c2b" ? "#5d5d5a" : theme.colors.foregroundExtraMuted,
+            paddingTop: 0,
+            borderRadius: 0,
+          }
+        : {}),
     },
 
     // =========================================================================

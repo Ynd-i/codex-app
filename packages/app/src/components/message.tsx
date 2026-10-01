@@ -1936,12 +1936,19 @@ export const AssistantMessage = memo(function AssistantMessage({
       paragraph: (
         node: ASTNode,
         children: ReactNode[],
-        _parent: ASTNode[],
+        parent: ASTNode[],
         styles: MarkdownStyles,
       ) => (
         <MarkdownParagraphView
           key={node.key}
-          paragraphStyle={styles.paragraph}
+          paragraphStyle={
+            getIsElectronMac() &&
+            parent.some(
+              (ancestor) => ancestor.type === "blockquote" && ancestor.children?.at(-1) === node,
+            )
+              ? styles.paragraphLastInQuote
+              : styles.paragraph
+          }
           containsImage={markdownNodeContainsType(node, "image")}
         >
           {children}
