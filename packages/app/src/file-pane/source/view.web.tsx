@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { FileFind, FileFindModel } from "../find/index.web";
 import { Compartment, EditorState } from "@codemirror/state";
-import { EditorView } from "@codemirror/view";
+import { EditorView, lineNumbers } from "@codemirror/view";
 import { getLanguageForFile } from "@getpaseo/highlight";
 import { getIsElectronMac } from "@/constants/platform";
 import type { WorkspaceFileLocation } from "@/workspace/file-open";
@@ -81,7 +81,7 @@ function ReadonlyCodeMirror({
             "aria-label": `Source for ${values.filename}`,
           }),
           EditorView.editable.of(false),
-          getIsElectronMac() ? EditorView.lineWrapping : [],
+          getIsElectronMac() ? [EditorView.lineWrapping, lineNumbers()] : [],
           languageCompartment.of(
             languageFor({ filename: values.filename, presentation: values.presentation }),
           ),

@@ -1,4 +1,8 @@
-import { isSyntaxThemeId, type SyntaxThemeId } from "@getpaseo/highlight";
+import {
+  getDefaultSyntaxTheme,
+  isSyntaxThemeId,
+  type SyntaxThemeId,
+} from "@/appearance/syntax-theme";
 import type { ActiveTurnBehavior } from "@getpaseo/protocol/messages";
 import type { QueryClient } from "@tanstack/react-query";
 import type { DesktopSettings } from "@/desktop/settings/desktop-settings";
@@ -85,7 +89,7 @@ export interface AppSettings {
   codeFontSize: number; // clamped px, default 12
   /** Max width of chat and markdown content in px; null follows the current default. */
   contentMaxWidth: number | null;
-  syntaxTheme: SyntaxThemeId; // default "one"
+  syntaxTheme: SyntaxThemeId;
   workspaceTitleSource: WorkspaceTitleSource;
   sidebarWorkspaceTrailing: SidebarWorkspaceTrailing;
   sidebarRowItems: SidebarRowItems;
@@ -141,7 +145,7 @@ export const DEFAULT_CLIENT_SETTINGS: AppSettings = {
   contentFontSize: DEFAULT_CONTENT_FONT_SIZE,
   codeFontSize: DEFAULT_CODE_FONT_SIZE,
   contentMaxWidth: null,
-  syntaxTheme: "one",
+  syntaxTheme: getDefaultSyntaxTheme(),
   workspaceTitleSource: "title",
   sidebarWorkspaceTrailing: "diff",
   sidebarRowItems: DEFAULT_SIDEBAR_ROW_ITEMS,
@@ -232,7 +236,7 @@ const StoredAppSettingsSchema = z
       .null()
       .or(clampedNumber(MIN_CONTENT_MAX_WIDTH, MAX_CONTENT_MAX_WIDTH))
       .catch(null),
-    syntaxTheme: z.string().refine(isSyntaxThemeId).catch("one"),
+    syntaxTheme: z.string().refine(isSyntaxThemeId).catch(getDefaultSyntaxTheme),
     workspaceTitleSource: z.enum(["title", "branch"]).catch("title"),
     sidebarWorkspaceTrailing: z.enum(["diff", "timestamp", "none"]).catch("diff"),
     sidebarRowItems: SidebarRowItemsSchema,
@@ -404,7 +408,11 @@ async function readAppSettings(
   }
 
   const defaultStored = StoredAppSettingsSchema.parse({});
-  return { settings: DEFAULT_CLIENT_SETTINGS, needsWrite: true, stored: defaultStored };
+  return {
+    settings: { ...DEFAULT_CLIENT_SETTINGS, syntaxTheme: defaultStored.syntaxTheme },
+    needsWrite: true,
+    stored: defaultStored,
+  };
 }
 
 export async function loadSettingsFromStorage(deps: SettingsDeps): Promise<Settings> {

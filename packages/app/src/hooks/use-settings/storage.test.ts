@@ -1,4 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import * as platform from "@/constants/platform";
+import { SYNTAX_THEME_IDS } from "@getpaseo/highlight";
 import { QueryClient } from "@tanstack/react-query";
 import {
   APP_SETTINGS_KEY,
@@ -27,6 +29,8 @@ import { DEFAULT_CONTENT_MAX_WIDTH, THEME_OPTIONS } from "@/styles/theme";
 
 const LEGACY_SETTINGS_KEY = "@paseo:settings";
 
+afterEach(() => vi.restoreAllMocks());
+
 function makeDeps(
   overrides: {
     storage?: ReturnType<typeof createInMemoryKeyValueStorage>;
@@ -43,6 +47,28 @@ function makeDeps(
 }
 
 describe("loadAppSettingsFromStorage", () => {
+  it("defaults missing macOS syntax preferences to Codex without changing explicit choices", async () => {
+    vi.spyOn(platform, "getIsElectronMac").mockReturnValue(true);
+    expect((await loadAppSettingsFromStorage(makeDeps())).syntaxTheme).toBe("codex");
+    for (const syntaxTheme of [undefined, ...SYNTAX_THEME_IDS, "codex"] as const) {
+      const deps = makeDeps({
+        storage: createInMemoryKeyValueStorage({
+          [APP_SETTINGS_KEY]: JSON.stringify({ syntaxTheme }),
+        }),
+      });
+      expect((await loadAppSettingsFromStorage(deps)).syntaxTheme).toBe(syntaxTheme ?? "codex");
+    }
+  });
+
+  it("persists Codex as a named preset and restores an explicit One selection", async () => {
+    const deps = makeDeps();
+    const queryClient = new QueryClient();
+    await saveAppSettings({ deps, queryClient, updates: { syntaxTheme: "codex" } });
+    expect((await loadAppSettingsFromStorage(deps)).syntaxTheme).toBe("codex");
+    await saveAppSettings({ deps, queryClient, updates: { syntaxTheme: "one" } });
+    expect((await loadAppSettingsFromStorage(deps)).syntaxTheme).toBe("one");
+  });
+
   it("preserves a persisted steer send behavior", async () => {
     const deps = makeDeps({
       storage: createInMemoryKeyValueStorage({

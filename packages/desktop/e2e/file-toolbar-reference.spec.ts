@@ -104,9 +104,12 @@ test("macOS file toolbar keeps the path and editor actions above both file colum
 
     const editor = dock.locator('.cm-content[contenteditable="true"]').filter({ visible: true });
     await expect(editor).toBeVisible();
+    await expect(editor).toHaveCSS("font-weight", "600");
+    await expect(editor).toHaveCSS("padding-top", "0px");
     const editedSource = source.replace("answer = 42", "answer = 43");
     await editor.fill(editedSource);
     const scroller = dock.locator(".cm-scroller").filter({ visible: true });
+    await expect(scroller).toHaveCSS("line-height", "21.6px");
     await expect
       .poll(() => scroller.evaluate((element) => element.scrollWidth <= element.clientWidth))
       .toBe(true);
@@ -159,6 +162,9 @@ test("macOS file toolbar keeps the path and editor actions above both file colum
       .locator('.cm-content[contenteditable="false"]')
       .filter({ visible: true });
     await expect(readonlyEditor).toBeVisible();
+    await expect(dock.locator(".cm-gutters").filter({ visible: true })).toBeVisible({
+      timeout: 2_000,
+    });
     await expect
       .poll(() => scroller.evaluate((element) => element.scrollWidth <= element.clientWidth))
       .toBe(true);

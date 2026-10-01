@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { darkHighlightColors, resolveSyntaxColors } from "@getpaseo/highlight";
+import { darkHighlightColors, resolveSyntaxColors, SYNTAX_THEME_IDS } from "@getpaseo/highlight";
+import { resolveSyntaxColors as resolveAppSyntaxColors } from "./syntax-theme";
 import { DEFAULT_UI_FONT_STACK, REGISTERED_THEMES } from "@/styles/theme";
 import { applyAppearance, type AppearanceInput } from "./apply";
 
@@ -232,5 +233,51 @@ describe("applyAppearance", () => {
     // makeFakeTheme().colorScheme === "dark" -> github resolves to the dark palette.
     expect(runCapturedUpdater().colors.syntax).toEqual(darkHighlightColors);
     expect(runCapturedUpdater().colors.syntax).toEqual(resolveSyntaxColors("github", "dark"));
+  });
+
+  it.each(SYNTAX_THEME_IDS)("preserves the shared %s preset in both color schemes", (id) => {
+    for (const mode of ["light", "dark"] as const) {
+      expect(resolveAppSyntaxColors(id, mode)).toEqual(resolveSyntaxColors(id, mode));
+    }
+  });
+
+  it("applies Codex colors in both modes without replacing custom font choices", () => {
+    applyAppearance(
+      makeInput({ syntaxTheme: "codex", monoFontFamily: "Courier New", codeFontSize: 16 }),
+    );
+    const updater = updateTheme.mock.calls[0][1] as ThemeUpdater;
+    for (const colorScheme of ["light", "dark"] as const) {
+      const result = updater({ ...makeFakeTheme(), colorScheme });
+      expect(result.colors.syntax).toEqual(resolveAppSyntaxColors("codex", colorScheme));
+      expect(result.colors.foreground).toBe("#fff");
+      expect(result.fontFamily.mono).toBe("Courier New");
+      expect(result.fontSize.code).toBe(16);
+    }
+    expect(resolveAppSyntaxColors("codex", "dark").keyword).not.toBe(
+      resolveAppSyntaxColors("codex", "light").keyword,
+    );
+  });
+
+  it("keeps unsampled Codex roles on the shared GitHub palette", () => {
+    for (const mode of ["light", "dark"] as const) {
+      const palette = resolveAppSyntaxColors("codex", mode);
+      const base = resolveSyntaxColors("github", mode);
+      for (const role of [
+        "attribute",
+        "class",
+        "type",
+        "heading",
+        "tag",
+        "regexp",
+        "link",
+        "comment",
+        "number",
+        "literal",
+        "escape",
+        "meta",
+      ] as const) {
+        expect(palette[role]).toBe(base[role]);
+      }
+    }
   });
 });

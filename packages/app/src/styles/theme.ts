@@ -1,6 +1,7 @@
 import { Platform } from "react-native";
 import { darkHighlightColors, lightHighlightColors } from "@getpaseo/highlight";
 import { getIsElectronMac } from "@/constants/platform";
+import { resolveSyntaxColors } from "@/appearance/syntax-theme";
 
 export const baseColors = {
   // Base colors
@@ -707,7 +708,7 @@ export function buildDarkTheme(semanticColors: ReturnType<typeof buildDarkSemant
     colors: {
       ...semanticColors,
       palette: baseColors,
-      syntax: darkHighlightColors,
+      syntax: getIsElectronMac() ? resolveSyntaxColors("codex", "dark") : darkHighlightColors,
     },
     shadow: darkShadow,
     ...commonTheme,
@@ -769,7 +770,7 @@ export function buildLightTheme(semanticColors: ReturnType<typeof buildLightSema
     colors: {
       ...semanticColors,
       palette: baseColors,
-      syntax: lightHighlightColors,
+      syntax: getIsElectronMac() ? resolveSyntaxColors("codex", "light") : lightHighlightColors,
     },
     shadow: lightShadow,
     ...commonTheme,

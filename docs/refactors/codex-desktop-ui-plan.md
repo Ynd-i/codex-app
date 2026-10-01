@@ -637,9 +637,8 @@ comparison, not a claim of whole-window pixel equality. Existing typography,
 theme tokens and real editor icons remain configurable. The default left
 workspace sidebar is intentionally retained per the user's scope clarification.
 The [latest file-tool capture](../qa-evidence/codex-desktop/file-toolbar-and-tree.png)
-records this state. Full file-tool fidelity remains open: source keyword/string
-colors and code weight differ visibly from the supplied reference. Align those
-defaults in a subsequent slice while retaining custom themes/font preferences.
+records this structural state. The source-appearance follow-up below addresses
+the measured keyword/string colors, code weight and visual-row spacing.
 
 The file-toolbar renderer case verifies path copying, file-specific editor bridge
 arguments, tree-toggle editor identity and unsaved content, full-width geometry,
@@ -662,6 +661,40 @@ pass in `/private/tmp/paseo-file-tools-final-{format,lint,typecheck}.log`.
 Native inspection was attempted on October 1 but the Mac was locked. Native
 file-tool acceptance and real editor launching remain pending; no daemon restart
 was attempted.
+
+### Source appearance — 2026-10-01
+
+The independent Codex syntax preset lives in the app. The shared highlighter,
+daemon and protocol remain unchanged. Its dark keyword, string and ordinary
+identifier colors come from sampled reference pixels: `#e66845`, `#5ac461` and
+`#f0f0ee`. Roles without usable samples retain the shared GitHub palette; the
+light variant is adapted for legibility and is not an exact light-reference match.
+Mac settings without a saved syntax choice default to Codex. Explicit One,
+GitHub and other choices are retained, and the non-Mac default stays One. Existing
+installations with a saved preset can choose Codex in Appearance; no user setting
+was forcibly replaced.
+
+Measured source rows were roughly 22px at the default code size. Mac file views
+now use 1.8 line-height, semibold text, a wider number gutter and no extra top
+padding. Font family and code size remain user-controlled. Read-only source also
+has line numbers; its missing-gutter regression failed before the fix and passes
+afterward. The first comparison still placed the first code row 8px too low;
+removing that padding produced the [final default capture](../qa-evidence/codex-desktop/file-code-reference.png).
+The full reference and focused crops were inspected at the same 1352×782 CSS size.
+Different dock origins reflect the retained workspace sidebar and resizable dock;
+relative gutter/content spacing is aligned.
+
+Focused appearance/storage checks pass (105, plus the added inherited-role case).
+The syntax renderer case checks sampled colors, Codex/One selection and reload
+persistence, light/dark switching and a custom Courier New/16px font. The file
+renderer case retains path/editor actions, byte-for-byte saves, editable/readonly
+wrapping and narrow-window checks. The ordinary-browser wrapping regression also
+passes. Logs: `/private/tmp/paseo-codex-syntax-{red,unit,e2e,lint,typecheck}.log`,
+`/private/tmp/paseo-codex-syntax-scoped-unit.log`,
+`/private/tmp/paseo-source-gutter-red.log`,
+`/private/tmp/paseo-code-geometry-final.log`, and
+`/private/tmp/paseo-code-geometry-web.log`.
+Native confirmation is still pending: the Mac remained locked at the latest check.
 
 ### Earlier panel-tab styling
 

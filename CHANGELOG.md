@@ -8,6 +8,7 @@ distribution and full migration acceptance remain pending; see the
 
 ### Added
 
+- Added an independent Codex syntax-color preset for macOS defaults, preserving explicitly saved themes and custom font choices. Other platforms retain their existing default.
 - Added a Codex-style macOS titlebar, rounded content frame, and dark palette while retaining the existing themes and providers.
 - Added rename, archive, pinning, and unread actions in the current-chat titlebar.
 - Added Back/Forward chat navigation and the current-chat title, preserving independent drafts when switching between sibling chats.
@@ -26,6 +27,7 @@ distribution and full migration acceptance remain pending; see the
 - Added an internal file tree to macOS file tools, preserving unsaved editor content while toggling the tree. New right sidebars default to 576px; saved widths remain unchanged.
 - Added a shared path capsule, folder-tree toggle and file-specific editor action above macOS file tools. File metadata stays in a compact bottom status row.
 - Soft-wrapped editable and read-only source files in the macOS right dock without changing saved file contents or other platforms' wrapping defaults.
+- Matched macOS source text to the reference's heavier weight, taller visual rows and tighter top spacing, and added consistent line numbers to read-only source views.
 - Replaced the macOS file tree's toolbar with a workspace menu and file filter. Search reveals matching files and their ancestors, preserves saved expansion state, and keeps create, sort, hidden-file and refresh actions available.
 - Matched the macOS Settings navigation frame with a narrower category sidebar, compact rows, a Settings heading and a category search field. Existing setting values and host navigation remain available.
 - Restored Paseo's default workspace sidebar, navigation and footer; deferred the custom chat sidebar. New sidebar preferences use the default 320px width, while saved widths remain unchanged.
