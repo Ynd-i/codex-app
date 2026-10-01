@@ -553,6 +553,10 @@ export const es: TranslationResources = {
         hideHiddenFiles: "Ocultar archivos ocultos",
         showHiddenFiles: "Mostrar archivos ocultos",
       },
+      filter: {
+        placeholder: "Filtrar archivos...",
+        noResults: "No hay archivos coincidentes",
+      },
       empty: {
         noFiles: "Sin archivos",
         noVisibleFiles: "No hay archivos visibles",

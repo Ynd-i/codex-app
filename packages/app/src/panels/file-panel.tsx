@@ -3,6 +3,7 @@ import { useCallback, useMemo } from "react";
 import invariant from "tiny-invariant";
 import { useTranslation } from "react-i18next";
 import { FilePane } from "@/file-pane/pane";
+import { FileToolToolbar } from "@/file-pane/toolbar";
 import { usePaneContext } from "@/panels/pane-context";
 import { definePanel } from "@/panels/panel-registry";
 import { useWorkspaceDirectory } from "@/stores/session-store-hooks";
@@ -15,6 +16,7 @@ import { defaultFileState, fileStateForFilesView, fileStateSchema } from "@/pane
 import { useAddFileToChat } from "@/panels/use-add-file-to-chat";
 import { usePanelState } from "@/panels/use-panel-state";
 
+const FILE_PANEL_STYLE = { flex: 1 } as const;
 const CENTERED_PADDED_STYLE = {
   flex: 1,
   alignItems: "center",
@@ -84,22 +86,25 @@ function FilePanel() {
   );
   if (!isMac) return filePane;
   return (
-    <TreeRail
-      testID="file-tree-rail"
-      visible={treeVisible}
-      width={fileState.treeWidth ?? 256}
-      onWidthChange={onTreeWidthChange}
-    >
-      {filePane}
-      <FileExplorerPane
-        serverId={serverId}
-        workspaceId={workspaceId}
-        workspaceRoot={workspaceDirectory}
-        onOpenFile={onOpenFile}
-        onOpenFileToSide={openTargetToSide ? onOpenFileToSide : undefined}
-        onAddToChat={canAddToChat ? addFile : undefined}
-      />
-    </TreeRail>
+    <View style={FILE_PANEL_STYLE}>
+      <FileToolToolbar serverId={serverId} workspaceRoot={workspaceDirectory} location={target} />
+      <TreeRail
+        testID="file-tree-rail"
+        visible={treeVisible}
+        width={fileState.treeWidth ?? 256}
+        onWidthChange={onTreeWidthChange}
+      >
+        {filePane}
+        <FileExplorerPane
+          serverId={serverId}
+          workspaceId={workspaceId}
+          workspaceRoot={workspaceDirectory}
+          onOpenFile={onOpenFile}
+          onOpenFileToSide={openTargetToSide ? onOpenFileToSide : undefined}
+          onAddToChat={canAddToChat ? addFile : undefined}
+        />
+      </TreeRail>
+    </View>
   );
 }
 

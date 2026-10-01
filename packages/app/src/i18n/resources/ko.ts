@@ -548,6 +548,10 @@ export const ko: TranslationResources = {
         hideHiddenFiles: "숨겨진 파일 숨기기",
         showHiddenFiles: "숨겨진 파일 표시",
       },
+      filter: {
+        placeholder: "파일 필터링...",
+        noResults: "일치하는 파일이 없습니다",
+      },
       empty: {
         noFiles: "파일 없음",
         noVisibleFiles: "표시되는 파일이 없습니다.",

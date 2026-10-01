@@ -547,6 +547,10 @@ export const zhCN: TranslationResources = {
         hideHiddenFiles: "隐藏隐藏文件",
         showHiddenFiles: "显示隐藏文件",
       },
+      filter: {
+        placeholder: "筛选文件…",
+        noResults: "没有匹配的文件",
+      },
       empty: {
         noFiles: "没有文件",
         noVisibleFiles: "没有可见文件",

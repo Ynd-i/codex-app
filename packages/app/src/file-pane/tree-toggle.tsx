@@ -1,16 +1,18 @@
-import { TreeRailToggle } from "@/components/tree-rail-toggle";
+import { Folders } from "lucide-react-native";
+import { StyleSheet, withUnistyles } from "react-native-unistyles";
+import { useTranslation } from "react-i18next";
+import { ToolbarButton } from "@/components/ui/pane-content-toolbar";
+import { extraMutedIconColorMapping } from "@/components/ui/icon-button-chrome";
 import { useCallback } from "react";
 import { useIsCompactFormFactor } from "@/constants/layout";
 import { getIsElectronMac } from "@/constants/platform";
 import { defaultFileState, fileStateForFilesView, fileStateSchema } from "@/panels/file/state";
 import { usePanelState } from "@/panels/use-panel-state";
 
-/**
- * Self-wired so `FilePanelBar` stays a leaf of the file pane tree — the bar is
- * rendered several components below `FilePanel`, which is where the rail lives,
- * and threading a callback down that path buys nothing.
- */
+const ThemedFolders = withUnistyles(Folders);
+
 export function FileTreeToggle() {
+  const { t } = useTranslation();
   const isCompact = useIsCompactFormFactor();
   const isMac = getIsElectronMac();
   const [fileState, setFileState] = usePanelState(
@@ -27,5 +29,26 @@ export function FileTreeToggle() {
   if (!isMac || isCompact) {
     return null;
   }
-  return <TreeRailToggle visible={visible} testID="file-toggle-tree" onToggle={toggle} />;
+  return (
+    <ToolbarButton
+      label={t(visible ? "workspace.tree.hideFolderTree" : "workspace.tree.showFolderTree")}
+      selected={visible}
+      aria-expanded={visible}
+      testID="file-toggle-tree"
+      onPress={toggle}
+      style={styles.toggle}
+    >
+      <ThemedFolders size={16} uniProps={extraMutedIconColorMapping} />
+    </ToolbarButton>
+  );
 }
+
+const styles = StyleSheet.create((theme) => ({
+  toggle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.borderAccent,
+  },
+}));

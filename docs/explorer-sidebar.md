@@ -24,7 +24,16 @@ On wide macOS windows, tool tabs and their plus menu share the window titlebar.
 The dock keeps its tabs inline in compact windows, while the main area remains a
 chat. Hiding the dock or leaving the workspace also removes its titlebar controls.
 File tools contain their own tree on the right; toggling it preserves the editor
-instance and unsaved text. Panel content and backend ownership are unchanged.
+instance and unsaved text. One path/action row spans both columns. Its path menu
+copies absolute or workspace-relative paths, and its editor action targets the
+current file using the existing local/remote open-target rules.
+
+The macOS tree's root menu retains creation, sorting, hidden-file and refresh
+actions. The filter uses the existing directory-suggestions service, including
+its 100-result limit and ignore rules; it can discover files in unopened folders.
+Results include real ancestor entries without changing saved expansion state.
+Clearing the filter restores the normal tree. File mutations also clear the
+visible filter so input text and results stay consistent. Backend ownership is unchanged.
 
 These placement rules override the desktop open-location preferences on macOS.
 The inactive placement selectors are hidden there without deleting saved choices;

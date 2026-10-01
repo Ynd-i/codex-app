@@ -552,6 +552,10 @@ export const ru: TranslationResources = {
         hideHiddenFiles: "Скрыть скрытые файлы",
         showHiddenFiles: "Показать скрытые файлы",
       },
+      filter: {
+        placeholder: "Фильтровать файлы...",
+        noResults: "Нет совпадающих файлов",
+      },
       empty: {
         noFiles: "Нет файлов",
         noVisibleFiles: "Нет видимых файлов",

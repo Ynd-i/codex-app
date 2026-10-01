@@ -553,6 +553,10 @@ export const ja: TranslationResources = {
         hideHiddenFiles: "隠しファイルを非表示",
         showHiddenFiles: "隠しファイルを表示",
       },
+      filter: {
+        placeholder: "ファイルを絞り込む...",
+        noResults: "一致するファイルはありません",
+      },
       empty: {
         noFiles: "ファイルなし",
         noVisibleFiles: "表示可能なファイルなし",

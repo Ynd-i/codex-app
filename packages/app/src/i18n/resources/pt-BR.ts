@@ -552,6 +552,10 @@ export const ptBR: TranslationResources = {
         hideHiddenFiles: "Ocultar arquivos ocultos",
         showHiddenFiles: "Mostrar arquivos ocultos",
       },
+      filter: {
+        placeholder: "Filtrar arquivos...",
+        noResults: "Nenhum arquivo correspondente",
+      },
       empty: {
         noFiles: "Nenhum arquivo",
         noVisibleFiles: "Nenhum arquivo visível",

@@ -547,6 +547,10 @@ export const ar: TranslationResources = {
         hideHiddenFiles: "إخفاء الملفات المخفية",
         showHiddenFiles: "إظهار الملفات المخفية",
       },
+      filter: {
+        placeholder: "تصفية الملفات...",
+        noResults: "لا توجد ملفات مطابقة",
+      },
       empty: {
         noFiles: "لا توجد ملفات",
         noVisibleFiles: "لا توجد ملفات مرئية",

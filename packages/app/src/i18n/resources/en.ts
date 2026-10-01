@@ -544,6 +544,10 @@ export const en = {
         hideHiddenFiles: "Hide hidden files",
         showHiddenFiles: "Show hidden files",
       },
+      filter: {
+        placeholder: "Filter files...",
+        noResults: "No matching files",
+      },
       empty: {
         noFiles: "No files",
         noVisibleFiles: "No visible files",

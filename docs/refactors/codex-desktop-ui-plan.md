@@ -601,14 +601,67 @@ source changes. A normal frontend reload removed the tabs and plus button while
 preserving the open chat. Native evidence is private at
 `.dev/codex-reference/native-single-chat-after-reload.jpg`; neither daemon was
 restarted. Native right-tab dragging and actual browser-webview navigation remain
-unverified. File breadcrumbs, directory selection and filtering still need visual
-alignment; these checks do not establish full pixel equality or package acceptance.
+unverified. The file-tool follow-up below adds the path and filtering controls;
+these checks do not establish full pixel equality or package acceptance.
 
 Logs: `/private/tmp/paseo-single-chat-final-e2e.log`,
 `/private/tmp/paseo-supporting-titlebar-e2e.log`,
 `/private/tmp/paseo-browser-placement-verified.log`,
 `/private/tmp/paseo-hidden-explorer-browser.log`, and
 `/private/tmp/paseo-layout-final-{format,lint,typecheck}.log`.
+
+### File path and tree controls — 2026-10-01
+
+The supplied right-tools screenshot now guides one 48px file toolbar across the
+editor and tree, with 32px path/editor capsules and a round tree toggle. The path
+menu copies actual absolute or relative paths; the editor split button reuses
+Paseo's current-file target planner. File size, cursor, save/error and preview-mode
+controls remain in the bottom status row. The tree has a root action menu and
+filter, with its search scope documented in the [Explorer contract](../explorer-sidebar.md).
+
+Editable and read-only source files now soft-wrap in the macOS dock, matching the
+reference's long import lines. The same fixture name and representative imports
+exercise visual wrapping, with byte-for-byte save checks proving that no physical
+newlines are inserted. The existing ordinary-browser regression still keeps
+TypeScript horizontally scrollable and Markdown wrapped. Logs:
+`/private/tmp/paseo-source-wrap-{red,e2e,web,lint,typecheck}.log`.
+
+The source `context-images/codex-right-tools-titlebar.png` is 2704×1564 at 2×;
+comparison uses a 1352×782 copy and a 1352×782 renderer capture. Both full views
+and focused path/tree-header crops were opened together. That comparison caught
+oversized path/root text; both now use the 12px small-text token. The shared row,
+capsule heights, column boundaries and tree-header spacing follow the reference.
+The fixture uses English labels and a temporary workspace; the source uses
+Chinese labels and different file contents. This is a scoped structural/visual
+comparison, not a claim of whole-window pixel equality. Existing typography,
+theme tokens and real editor icons remain configurable. The default left
+workspace sidebar is intentionally retained per the user's scope clarification.
+The [latest file-tool capture](../qa-evidence/codex-desktop/file-toolbar-and-tree.png)
+records this state. Full file-tool fidelity remains open: source keyword/string
+colors and code weight differ visibly from the supplied reference. Align those
+defaults in a subsequent slice while retaining custom themes/font preferences.
+
+The file-toolbar renderer case verifies path copying, file-specific editor bridge
+arguments, tree-toggle editor identity and unsaved content, full-width geometry,
+and controls at 1352/900/700px. The file-tree case verifies an unopened nested
+match with ancestors, Enter to open, no results/clear, error/retry, and creation
+and rename against the isolated daemon's filesystem. One injected response
+tests search failure; successful file operations use the real daemon. Review
+caught a stale-input bug after file actions: the shared search input uses an
+initial value, so resetting React state did not clear its text. A local explicit
+reset fixes this without changing shared input behavior; its new regression went
+red then green. The ancestor-tree unit case and 36 locale checks pass.
+
+Logs: `/private/tmp/paseo-file-toolbar-{red,e2e,lint,typecheck}.log`,
+`/private/tmp/paseo-file-tree-{e2e,unit,locales}.log`,
+`/private/tmp/paseo-file-filter-reset-{red,e2e,lint,typecheck}.log`, and
+`/private/tmp/paseo-file-tools-integration.log` (single-chat integration passed).
+The final capture and long-filename visibility checks pass in
+`/private/tmp/paseo-file-tool-visual-final.log`; root format, lint and typecheck
+pass in `/private/tmp/paseo-file-tools-final-{format,lint,typecheck}.log`.
+Native inspection was attempted on October 1 but the Mac was locked. Native
+file-tool acceptance and real editor launching remain pending; no daemon restart
+was attempted.
 
 ### Earlier panel-tab styling
 
