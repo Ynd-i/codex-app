@@ -32,7 +32,7 @@ import { HostPicker } from "@/components/hosts/host-picker";
 import { useOpenAddProject } from "@/hooks/use-open-add-project";
 import { openHostOverview } from "@/navigation/settings-navigation";
 import { useHosts } from "@/runtime/host-runtime";
-import { useOpenUsageScreen } from "@/usage";
+import { UsageRailPopover } from "@/usage";
 import { getIsElectronMac } from "@/constants/platform";
 import { SETTINGS_DESKTOP_SPLIT_MIN_WIDTH, useIsCompactFormFactor } from "@/constants/layout";
 import {
@@ -204,10 +204,22 @@ function hostOptionTestID(serverId: string): string {
 }
 
 function DesktopNavigationRail({ pathname }: { pathname: string }) {
+  const { t } = useTranslation();
   const openAddProject = useOpenAddProject();
   const addProject = useCallback(() => void openAddProject(), [openAddProject]);
-  const openUsage = useOpenUsageScreen();
-  const { t } = useTranslation();
+  const renderUsageTrigger = useCallback(
+    (onPress: () => void) => (
+      <RailButton
+        onPress={onPress}
+        label={t("sidebar.footer.usage")}
+        active={false}
+        testID="sidebar-usage-icon"
+      >
+        <UsageIcon size={20} uniProps={railIconProps(false)} />
+      </RailButton>
+    ),
+    [t],
+  );
   const homeActive =
     !pathname.includes("/settings") &&
     !pathname.includes("/sessions") &&
@@ -245,14 +257,7 @@ function DesktopNavigationRail({ pathname }: { pathname: string }) {
       >
         <AddProjectIcon size={20} uniProps={railIconProps(false)} />
       </RailButton>
-      <RailButton
-        onPress={openUsage}
-        label={t("sidebar.footer.usage")}
-        active={false}
-        testID="sidebar-usage-icon"
-      >
-        <UsageIcon size={20} uniProps={railIconProps(false)} />
-      </RailButton>
+      <UsageRailPopover renderTrigger={renderUsageTrigger} />
       <RailHostPicker />
       <SidebarHelpMenu />
       <RailButton

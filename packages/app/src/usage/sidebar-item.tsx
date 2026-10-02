@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { CircleGauge } from "lucide-react-native";
-import { Fragment, useCallback, useMemo, useState } from "react";
+import { Fragment, useCallback, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Pressable,
@@ -11,7 +11,11 @@ import {
 } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { SidebarHeaderRow } from "@/components/sidebar/sidebar-header-row";
-import { SidebarPopoverRoot, SidebarPopoverSurface } from "@/components/sidebar/sidebar-popover";
+import {
+  SidebarPopoverRoot,
+  SidebarPopoverSurface,
+  useSidebarPopoverAnchor,
+} from "@/components/sidebar/sidebar-popover";
 import { useIsCompactFormFactor } from "@/constants/layout";
 import { builtinSidebarNavLabelKey } from "@/sidebar-nav/model";
 import { usePanelStore } from "@/stores/panel-store";
@@ -78,6 +82,48 @@ function PinnedUsageItem({
   return <UsageEntry serverId={serverId} sources={sources} display={display} />;
 }
 
+/**
+ * The Mac rail's usage button: the usage summary in a popover beside the rail instead of the
+ * Usage screen. Without a host there are no reports, so it opens the screen, which says so.
+ */
+export function UsageRailPopover({
+  renderTrigger,
+}: {
+  renderTrigger: (onPress: () => void) => ReactNode;
+}) {
+  const { t } = useTranslation();
+  const { display } = useUsagePreferences();
+  const serverId = useUsageHostId();
+  const openUsageScreen = useOpenUsageScreen();
+  const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const show = useCallback(() => {
+    setMounted(true);
+    setOpen(true);
+  }, []);
+  return (
+    <SidebarPopoverRoot open={open} onOpenChange={setOpen}>
+      <RailUsageAnchor>{renderTrigger(serverId ? show : openUsageScreen)}</RailUsageAnchor>
+      {mounted ? (
+        <UsageSheet
+          title={t(builtinSidebarNavLabelKey("usage"))}
+          display={display}
+          section="rail"
+        />
+      ) : null}
+    </SidebarPopoverRoot>
+  );
+}
+
+function RailUsageAnchor({ children }: { children: ReactNode }) {
+  const { anchorTo } = useSidebarPopoverAnchor("UsageRailPopover");
+  return (
+    <View ref={anchorTo} collapsable={false}>
+      {children}
+    </View>
+  );
+}
+
 /** Opens the Usage screen, over the sidebar on compact layouts. */
 export function useOpenUsageScreen(): () => void {
   const isCompact = useIsCompactFormFactor();
@@ -140,7 +186,15 @@ function UsageEntry({
  * The compact usage sheet: the Usage screen's host, reports with pins, and controls, the controls
  * in its title row.
  */
-function UsageSheet({ title, display }: { title: string; display: UsageDisplay }) {
+function UsageSheet({
+  title,
+  display,
+  section = "footer",
+}: {
+  title: string;
+  display: UsageDisplay;
+  section?: "footer" | "rail";
+}) {
   const { serverId, connectedHosts, select } = useUsageHostSelection();
   if (!serverId) return null;
   return (
@@ -151,6 +205,7 @@ function UsageSheet({ title, display }: { title: string; display: UsageDisplay }
       hosts={connectedHosts}
       onSelectHost={select}
       display={display}
+      section={section}
     />
   );
 }
@@ -161,12 +216,14 @@ function HostUsageSheet({
   hosts,
   onSelectHost,
   display,
+  section,
 }: {
   title: string;
   serverId: string;
   hosts: UsageHost[];
   onSelectHost: (serverId: string) => void;
   display: UsageDisplay;
+  section: "footer" | "rail";
 }) {
   const hostSelection = useMemo(
     () => ({ hosts, serverId, onSelect: onSelectHost }),
@@ -175,7 +232,7 @@ function HostUsageSheet({
   const { view, refresh, controls } = useHostUsageWithControls(hostSelection, display);
   return (
     <SidebarPopoverSurface
-      section="footer"
+      section={section}
       title={title}
       sheetTrailing={controls}
       testID="sidebar-usage-sheet"

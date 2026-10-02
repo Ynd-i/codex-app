@@ -42,6 +42,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- The macOS rail's Usage button opens the usage summary beside the rail instead of leaving the current chat; without a connected host it still opens the Usage screen.
+
 - The macOS navigation rail now holds Add project, Usage, Hosts, Help and Settings instead of the sidebar footer, and project chats show a folder before their titlebar title.
 
 - macOS no longer shows the worktree-script setup prompt or the Import session button below the new-chat composer; import stays in History and Cmd+K, and scripts in project settings.

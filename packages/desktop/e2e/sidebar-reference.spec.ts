@@ -6,6 +6,7 @@ import { gotoAppShell } from "../../app/e2e/support/helpers/app";
 import { getE2EDaemonPort } from "../../app/e2e/support/helpers/daemon-port";
 import { getServerId } from "../../app/e2e/support/helpers/server-id";
 import { seedWorkspace } from "../../app/e2e/support/helpers/seed-client";
+import { installUsageReportsFixture } from "../../app/e2e/support/helpers/usage-reports";
 import { installDesktopRuntime } from "./support/runtime";
 
 async function waitForTwoFrames(page: Page): Promise<void> {
@@ -133,4 +134,51 @@ test("desktop workspace sidebar skips its transition for reduced motion", async 
   await waitForTwoFrames(page);
   const reopenedWidth = await width();
   expect(reopenedWidth).toBe(expandedWidth);
+});
+
+test("macOS rail usage opens its summary beside the rail", async ({ page }, testInfo) => {
+  const now = Date.now();
+  await installDesktopRuntime(page, {
+    serverId: getServerId(),
+    manageBuiltInDaemon: false,
+    daemonListen: `127.0.0.1:${getE2EDaemonPort()}`,
+  });
+  await installUsageReportsFixture(page, {
+    lists: [
+      [
+        {
+          id: "monthly:quota",
+          sourceId: "monthly",
+          sourceLabel: "Monthly plan",
+          account: {},
+          fetchedAt: new Date(now).toISOString(),
+          report: {
+            status: "available",
+            windows: [
+              {
+                id: "month",
+                label: "1 month",
+                usedPct: 99,
+                resetsAt: new Date(now + 29 * 86_400_000).toISOString(),
+              },
+            ],
+          },
+        },
+      ],
+    ],
+  });
+  await page.setViewportSize({ width: 1352, height: 782 });
+  await page.emulateMedia({ colorScheme: "dark" });
+  await gotoAppShell(page);
+  const rail = page.getByTestId("desktop-shell-rail");
+  await rail.getByTestId("sidebar-usage-icon").click();
+  // Like the reference account menu, usage opens in place instead of leaving the chat.
+  const summary = page.getByTestId("sidebar-usage-sheet");
+  await expect(summary.getByTestId("usage-report-monthly:quota")).toBeVisible();
+  await expect(page).not.toHaveURL(/\/usage(?:[/?]|$)/);
+  const railBox = (await rail.boundingBox())!;
+  expect((await summary.boundingBox())!.x).toBeGreaterThanOrEqual(railBox.x + railBox.width);
+  await page.screenshot({ path: testInfo.outputPath("rail-usage-popover.png") });
+  await page.keyboard.press("Escape");
+  await expect(summary).toHaveCount(0);
 });
