@@ -42,6 +42,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- Matched Mac list markers to the reference's larger full-contrast dots and 26px text indent, and widened inline code chips; other platforms are unchanged.
+
 - New macOS appearance defaults use the reference's 13px interface and conversation text, with a 1.6 prose line height that keeps the 21px reading rhythm; saved font sizes are unchanged until Advanced reset.
 
 - Kept Mac inline code chips from enlarging their line of prose and matched the reference's 16px chip height; other platforms keep their existing chip.

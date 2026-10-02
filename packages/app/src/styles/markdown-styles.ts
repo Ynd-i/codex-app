@@ -196,7 +196,11 @@ export function createMarkdownStyles(theme: Theme) {
       // The inherited prose line height would enlarge any line containing a chip. File
       // and URL chips are blockified by their tooltip wrapper, so this also sizes them.
       ...(getIsElectronMac()
-        ? { paddingVertical: 1, lineHeight: Math.round(theme.fontSize.code * 1.2) }
+        ? {
+            paddingHorizontal: theme.spacing[1.5],
+            paddingVertical: 1,
+            lineHeight: Math.round(theme.fontSize.code * 1.2),
+          }
         : {}),
     },
 
@@ -314,11 +318,19 @@ export function createMarkdownStyles(theme: Theme) {
       marginRight: 4,
       fontSize: theme.fontSize.content,
       lineHeight: getContentLineHeight(theme.fontSize.content),
+      // The reference uses a larger, full-contrast dot with the ordered-list text indent.
+      ...(getIsElectronMac()
+        ? {
+            color: theme.colors.foreground,
+            fontSize: Math.round(theme.fontSize.content * 1.4),
+            minWidth: 12,
+          }
+        : {}),
     },
 
     ordered_list_icon: {
       ...webSelectableTextStyle,
-      color: theme.colors.foregroundMuted,
+      color: getIsElectronMac() ? theme.colors.foreground : theme.colors.foregroundMuted,
       fontFamily: theme.fontFamily.content,
       marginRight: 4,
       fontSize: theme.fontSize.content,

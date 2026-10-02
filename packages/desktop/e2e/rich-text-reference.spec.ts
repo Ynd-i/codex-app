@@ -92,6 +92,15 @@ for (const platform of ["darwin", "win32"] as const) {
         }
         const inlineCode = paragraph.locator('[data-paseo-markdown-tag="code"]');
         await expect(inlineCode).toHaveCSS("padding-top", "1px");
+        await expect(inlineCode).toHaveCSS("padding-left", "6px");
+        // Bullets use the ordered-list indent so item text starts 26px into the column.
+        await expect
+          .poll(async () => {
+            const item = await assistant.getByText("项目一", { exact: true }).boundingBox();
+            const column = await list.boundingBox();
+            return item && column ? item.x - column.x : null;
+          })
+          .toBe(26);
         await expect.poll(async () => (await inlineCode.boundingBox())?.height).toBe(16);
         await expect
           .poll(async () => (await paragraph.boundingBox())?.height)
