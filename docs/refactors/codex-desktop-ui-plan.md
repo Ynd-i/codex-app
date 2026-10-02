@@ -9,16 +9,16 @@ complete; this section replaces that handoff.
 
 - Primary: `/Users/yndi/dev/projects/codex-app/paseo`, branch `codex/desktop-ui`.
   It contains the integrated Markdown block-spacing and inline-code commits
-  `2b4e52e` and `6e335c1`. The user's uncommitted **Native session fork draft**
+  `2b4e52e`, `6e335c1` and `fb46652`. The user's uncommitted **Native session fork draft**
   in this file and the private `context-images/` directory (79 reference images
   plus a Finder `.DS_Store`) remain untouched. Preserve both.
 - Isolated checkout: `/Users/yndi/dev/projects/codex-app/paseo-upstream-4893629`,
-  branch `codex/markdown-spacing-paused-20261002`. Its commits `78a5f32` and
-  `63071b9` replace checkpoint `0964d59` on `cda57c3`; the checkpoint's handoff
+  branch `codex/markdown-spacing-paused-20261002`. Its commits `78a5f32`,
+  `63071b9` and `d46ba1f` replace checkpoint `0964d59` on `cda57c3`; the checkpoint's handoff
   text was dropped there because primary `3e3ba6d` already contained it.
 - Last verified bundle:
   `paseo-upstream-4893629/packages/desktop/release-custom/mac-arm64/Paseo Custom.app`,
-  built from `63071b9` on upstream `e10f6d2` / 0.11.0-beta.1. Its source matches
+  built from `d46ba1f` on upstream `e10f6d2` / 0.11.0-beta.1. Its source matches
   the primary commits above. It was not installed to `/Applications`.
 
 ### Completed and preserved
@@ -1667,12 +1667,11 @@ Appearance captures were inspected in the private artifact directory
 `/private/tmp/paseo-settings-return-final-{format,lint}.log`. The first concurrent
 typecheck raced the dependency build; the final check was run after build completion.
 
-The latest Custom refresh was built from `63071b9` in the isolated checkout,
-source-identical to primary `6e335c1`. Startup/CLI/terminal smoke and the native
+The latest Custom refresh was built from `d46ba1f` in the isolated checkout,
+source-identical to primary `fb46652`. Startup/CLI/terminal smoke and the native
 interaction runner pass, including the Markdown block gaps and inline-code line
-height. Logs: `/private/tmp/paseo-block-gap-package-build.log` and
-`/private/tmp/paseo-block-gap-package.log`; artifacts:
-`/private/tmp/paseo-block-gap-package-{smoke,qa}`.
+height for plain and file-path chips. Log: `/private/tmp/paseo-chip-path-package.log`;
+artifacts: `/private/tmp/paseo-chip-path-package-{smoke,qa}`.
 
 The preceding Custom refresh was built from `20f5874` on 0.11.0-beta.1 after
 upstream merge `34d9f5f`. Startup/CLI/terminal smoke and the native interaction
@@ -1900,8 +1899,8 @@ reference was supplied at 14:48:25 on October 1 and copied byte-for-byte from
 `~/Desktop/截屏2026-10-01 14.48.25.png`. It shows a question card above the ordinary
 composer, numbered choices with the first highlighted, free-text reply, Skip and
 Send controls. It is a user-input question, not a command-permission approval.
-The reference directory now contains 79 original files; all previous 78 hashes
-remain unchanged. Existing Paseo question actions and answer formats govern the
+The reference directory then contained 79 files, 78 images plus Finder
+metadata; all previous hashes remained unchanged. Existing Paseo question actions and answer formats govern the
 implementation; the screenshot does not add voice or backend capabilities.
 
 The [styled response](../../context-images/codex-chat-styled-text.png) reference
@@ -1909,7 +1908,7 @@ was supplied at 14:54:16 on October 1 and copied byte-for-byte from
 `~/Desktop/截屏2026-10-01 14.54.16.png`. It shows a transparent quote with a narrow
 left bar, bold/italic/strikethrough spans, inline code, compact bullet spacing and
 a rounded plain-text code block with a language header and copy/wrap actions.
-The directory now contains 80 originals; the preceding 79 remain unchanged.
+The directory then contained 80 files, 79 images plus Finder metadata.
 This is additional evidence for transcript polish, not proof that those surfaces
 already match. The question and rich-text implementation below addresses these surfaces.
 
@@ -2332,27 +2331,32 @@ A 2× capture of the same fixture was compared with the reference's ink rows.
 List→paragraph and paragraph→code pitches agree within 1px. The remaining
 paragraph→list excess (about 3px) came from inline code, not the gap rule: the
 12px chip inherited the 21px prose line height and grew its line to 23px. Mac
-chips now use their own line height and 1px vertical padding. The chip measures
-16px like the reference, and its line keeps ordinary prose height. Non-Mac chips
-are unchanged.
+chips now use a 1.2× code-size line height and 1px vertical padding. Plain chips
+measure 16px like the reference and keep the prose line height. File and URL
+chips are blockified by their tooltip wrapper; a code-size line height left them
+14px tall, so the same 1.2× value sizes both paths alike. Non-Mac chips are
+unchanged.
 
 Validation: 86 stream/splitter unit tests and 12 Markdown style tests pass. The
-chip assertion failed first on 2px padding; three renderer cases then passed
-(34.7s), covering both platform branches and activity copy/search/fork. Root
+chip assertion failed first on 2px padding, and a file-path chip measured 14px
+before the line-height correction. The final three renderer cases pass (35.0s),
+covering both platform branches, a file-path chip and activity copy/search/fork. Root
 format/lint/typecheck and commit hooks pass. The [block gaps](../qa-evidence/codex-desktop/markdown-block-gaps.png)
 and [inline code](../qa-evidence/codex-desktop/inline-code-line-height.png)
 captures were inspected. Logs: `/private/tmp/paseo-block-gap-units-resume.log`,
 `/private/tmp/paseo-block-gap-renderer-resume.log`,
 `/private/tmp/paseo-block-gap-resume-{format,lint,typecheck}.log`,
-`/private/tmp/paseo-inline-code-{red,green,units}.log`.
-Implementation: `2b4e52e` and `6e335c1` (isolated checkout `78a5f32`, `63071b9`).
-Its Custom package, rebuilt from `63071b9`, passes startup/CLI/terminal smoke and
+`/private/tmp/paseo-inline-code-{red,green,units}.log`,
+`/private/tmp/paseo-chip-path-renderer.log`.
+Implementation: `2b4e52e`, `6e335c1` and `fb46652` (isolated checkout `78a5f32`,
+`63071b9`, `d46ba1f`).
+Its Custom package, rebuilt from `d46ba1f`, passes startup/CLI/terminal smoke and
 the native interaction runner, which now asserts the three gaps, the 1px chip
-padding and equal prose/chip line heights. The
+padding, equal prose/chip line heights and a 16px file-path chip. The
 [native capture](../qa-evidence/codex-desktop/packaged-block-gaps.png) was inspected.
-Logs: `/private/tmp/paseo-block-gap-package-build.log` and
-`/private/tmp/paseo-block-gap-package.log`; artifacts:
-`/private/tmp/paseo-block-gap-package-{smoke,qa}`.
+Log: `/private/tmp/paseo-chip-path-package.log`; artifacts:
+`/private/tmp/paseo-chip-path-package-{smoke,qa}`. The `63071b9` package passed
+the same runner before the file-path check was added.
 
 Residual differences, measured on the same 2× fixture and not claimed as parity:
 
