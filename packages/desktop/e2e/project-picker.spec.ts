@@ -98,7 +98,7 @@ test("desktop new chat retains project selection and creates a chat", async ({
     await expect(page).toHaveURL(/\/sessions(?:[/?]|$)/);
     await page.getByTestId("desktop-shell-schedules").click();
     await expect(page).toHaveURL(/\/schedules(?:[/?]|$)/);
-    await page.getByTestId("desktop-shell-settings").click();
+    await page.getByTestId("sidebar-settings").click();
     await expect(page).toHaveURL(/\/settings(?:[/?]|$)/);
     await expect(page.getByTestId("desktop-shell-rail")).toBeVisible();
     await page.getByTestId("desktop-shell-home").click();

@@ -44,6 +44,8 @@ test("macOS keeps one main conversation while tools open in the right sidebar", 
     await composerLocator(page).fill(draft);
     const chatTitle = page.getByTestId("desktop-chat-title");
     const originalTitle = await chatTitle.textContent();
+    // A project chat shows the folder before its title, as in the reference titlebar.
+    await expect(page.getByTestId("desktop-chat-project-icon")).toBeVisible();
     await expect(page.getByTestId("workspace-new-tab-button")).toHaveCount(0);
     await expect(page.getByTestId("desktop-shell-rail")).toBeVisible();
 

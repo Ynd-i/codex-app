@@ -440,44 +440,48 @@ function SidebarFooter({
   const newAgentKeys = useShortcutKeys("new-agent");
   const settingsKeys = useShortcutKeys("toggle-settings");
   const openUsageScreen = useOpenUsageScreen();
+  const isCompact = useIsCompactFormFactor();
 
   // One line of icons: Add project, Usage, Hosts, then Help and Settings at the end.
+  // The Mac navigation rail carries these actions whenever it is visible.
   return (
     <View style={styles.footerContainer} testID="sidebar-footer">
       <SidebarFooterRows onBeforeNavigate={onBeforeNavigate} />
-      <View style={styles.sidebarFooter} testID="sidebar-footer-bottom-line">
-        <FooterIconButton
-          onPress={handleOpenProject}
-          testID="sidebar-add-project"
-          label={labels.addProject}
-          icon={FolderPlus}
-          shortcutKeys={newAgentKeys}
-          theme={theme}
-        />
-        <FooterIconButton
-          onPress={openUsageScreen}
-          testID="sidebar-usage-icon"
-          label={labels.usage}
-          icon={CircleGauge}
-          theme={theme}
-        />
-        <SidebarHostPicker
-          theme={theme}
-          label={labels.hosts}
-          onAddHost={handleAddHost}
-          onOpenHostSettings={handleOpenHostSettings}
-        />
-        <View style={styles.footerSpacer} />
-        <SidebarHelpMenu />
-        <FooterIconButton
-          onPress={handleSettings}
-          testID="sidebar-settings"
-          label={labels.settings}
-          icon={Settings}
-          shortcutKeys={settingsKeys}
-          theme={theme}
-        />
-      </View>
+      {usesDesktopShell && !isCompact ? null : (
+        <View style={styles.sidebarFooter} testID="sidebar-footer-bottom-line">
+          <FooterIconButton
+            onPress={handleOpenProject}
+            testID="sidebar-add-project"
+            label={labels.addProject}
+            icon={FolderPlus}
+            shortcutKeys={newAgentKeys}
+            theme={theme}
+          />
+          <FooterIconButton
+            onPress={openUsageScreen}
+            testID="sidebar-usage-icon"
+            label={labels.usage}
+            icon={CircleGauge}
+            theme={theme}
+          />
+          <SidebarHostPicker
+            theme={theme}
+            label={labels.hosts}
+            onAddHost={handleAddHost}
+            onOpenHostSettings={handleOpenHostSettings}
+          />
+          <View style={styles.footerSpacer} />
+          <SidebarHelpMenu />
+          <FooterIconButton
+            onPress={handleSettings}
+            testID="sidebar-settings"
+            label={labels.settings}
+            icon={Settings}
+            shortcutKeys={settingsKeys}
+            theme={theme}
+          />
+        </View>
+      )}
     </View>
   );
 }

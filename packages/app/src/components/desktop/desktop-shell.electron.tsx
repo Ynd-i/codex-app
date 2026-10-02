@@ -1,7 +1,9 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useMemo,
+  useRef,
   useState,
   type CSSProperties,
   type ReactNode,
@@ -12,8 +14,12 @@ import {
   ArrowLeft,
   ArrowRight,
   CalendarClock,
+  CircleGauge,
+  Folder,
+  FolderPlus,
   History,
   House,
+  Server,
   Settings,
 } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
@@ -22,6 +28,11 @@ import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { WindowSidebarMenuToggle } from "@/components/headers/menu-header";
 import { HeaderToggleButton } from "@/components/headers/header-toggle-button";
 import { SidebarHelpMenu } from "@/components/sidebar/sidebar-help-menu";
+import { HostPicker } from "@/components/hosts/host-picker";
+import { useOpenAddProject } from "@/hooks/use-open-add-project";
+import { openHostOverview } from "@/navigation/settings-navigation";
+import { useHosts } from "@/runtime/host-runtime";
+import { useOpenUsageScreen } from "@/usage";
 import { getIsElectronMac } from "@/constants/platform";
 import { SETTINGS_DESKTOP_SPLIT_MIN_WIDTH, useIsCompactFormFactor } from "@/constants/layout";
 import {
@@ -44,6 +55,7 @@ import {
   buildOpenProjectRoute,
   buildSchedulesRoute,
   buildSessionsRoute,
+  buildSettingsAddHostRoute,
   buildSettingsRoute,
 } from "@/utils/host-routes";
 
@@ -63,6 +75,10 @@ const HomeIcon = withUnistyles(House);
 const HistoryIcon = withUnistyles(History);
 const SchedulesIcon = withUnistyles(CalendarClock);
 const SettingsIcon = withUnistyles(Settings);
+const AddProjectIcon = withUnistyles(FolderPlus);
+const ProjectIcon = withUnistyles(Folder);
+const UsageIcon = withUnistyles(CircleGauge);
+const HostsIcon = withUnistyles(Server);
 const iconProps = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
 const railIconProps = (active: boolean) => (theme: Theme) => ({
   color: active ? theme.colors.foreground : theme.colors.foregroundMuted,
@@ -80,6 +96,9 @@ function openSchedules() {
 }
 function openSettings() {
   router.navigate(buildSettingsRoute());
+}
+function addHost() {
+  router.push(buildSettingsAddHostRoute(Date.now()));
 }
 
 function RailButton({
@@ -114,7 +133,80 @@ function RailButton({
   );
 }
 
+function ChatTitle({ chatTitle }: { chatTitle: string }) {
+  const selection = useActiveWorkspaceSelection();
+  const serverId = selection?.serverId ?? null;
+  const workspaceId = selection?.workspaceId ?? null;
+  const workspaceTitle = useWorkspaceFields(serverId, workspaceId, (workspace) => workspace.name);
+  // Like Codex, the folder marks a chat that belongs to a project.
+  const inProject = useWorkspaceFields(
+    serverId,
+    workspaceId,
+    (workspace) => workspace.projectId.trim() !== "",
+  );
+  const title = chatTitle || workspaceTitle;
+  if (!title) return null;
+  return (
+    <View style={styles.titleRow}>
+      {inProject ? (
+        <View testID="desktop-chat-project-icon">
+          <ProjectIcon size={16} uniProps={iconProps} />
+        </View>
+      ) : null}
+      <Text style={styles.chatTitle} numberOfLines={1} testID="desktop-chat-title">
+        {title}
+      </Text>
+    </View>
+  );
+}
+
+// The rail owns the sidebar footer actions; their test IDs match the footer they replace.
+function RailHostPicker() {
+  const { t } = useTranslation();
+  const hosts = useHosts();
+  const anchorRef = useRef<View | null>(null);
+  const [open, setOpen] = useState(false);
+  const show = useCallback(() => setOpen(true), []);
+  return (
+    <HostPicker
+      hosts={hosts}
+      value=""
+      onSelect={openHostOverview}
+      open={open}
+      onOpenChange={setOpen}
+      anchorRef={anchorRef}
+      includeAddHost
+      onAddHost={addHost}
+      showActiveConnection
+      onOpenHostSettings={openHostOverview}
+      searchable
+      desktopPlacement="top-start"
+      desktopMinWidth={240}
+      addHostTestID="sidebar-host-add"
+      hostOptionTestID={hostOptionTestID}
+    >
+      <View ref={anchorRef} collapsable={false}>
+        <RailButton
+          onPress={show}
+          label={t("sidebar.actions.hosts")}
+          active={false}
+          testID="sidebar-hosts-trigger"
+        >
+          <HostsIcon size={19} uniProps={railIconProps(false)} />
+        </RailButton>
+      </View>
+    </HostPicker>
+  );
+}
+
+function hostOptionTestID(serverId: string): string {
+  return `sidebar-host-row-${serverId}`;
+}
+
 function DesktopNavigationRail({ pathname }: { pathname: string }) {
+  const openAddProject = useOpenAddProject();
+  const addProject = useCallback(() => void openAddProject(), [openAddProject]);
+  const openUsage = useOpenUsageScreen();
   const { t } = useTranslation();
   const homeActive =
     !pathname.includes("/settings") &&
@@ -145,12 +237,29 @@ function DesktopNavigationRail({ pathname }: { pathname: string }) {
         <SchedulesIcon size={20} uniProps={railIconProps(schedulesActive)} />
       </RailButton>
       <View style={styles.railSpacer} />
+      <RailButton
+        onPress={addProject}
+        label={t("sidebar.actions.addProject")}
+        active={false}
+        testID="sidebar-add-project"
+      >
+        <AddProjectIcon size={20} uniProps={railIconProps(false)} />
+      </RailButton>
+      <RailButton
+        onPress={openUsage}
+        label={t("sidebar.footer.usage")}
+        active={false}
+        testID="sidebar-usage-icon"
+      >
+        <UsageIcon size={20} uniProps={railIconProps(false)} />
+      </RailButton>
+      <RailHostPicker />
       <SidebarHelpMenu />
       <RailButton
         onPress={openSettings}
         label={t("sidebar.actions.settings")}
         active={settingsActive}
-        testID="desktop-shell-settings"
+        testID="sidebar-settings"
       >
         <SettingsIcon size={20} uniProps={railIconProps(settingsActive)} />
       </RailButton>
@@ -187,12 +296,6 @@ export function DesktopShell({
   const [toolbarHost, setToolbarHost] = useState<HTMLDivElement | null>(null);
   const pathname = usePathname();
   const navigation = useDesktopNavigationHistory();
-  const selection = useActiveWorkspaceSelection();
-  const workspaceTitle = useWorkspaceFields(
-    selection?.serverId ?? null,
-    selection?.workspaceId ?? null,
-    (workspace) => workspace.name,
-  );
   const sidebarWidth = usePanelStore((state) => state.sidebarWidth);
   const sidebarOpen = usePanelStore((state) => state.desktop.agentListOpen);
   const hasTrafficLights = useHasWindowChromeObstruction("top-left");
@@ -263,11 +366,7 @@ export function DesktopShell({
             ) : null}
           </View>
           <View style={styles.titleFill}>
-            {chatTitle || workspaceTitle ? (
-              <Text style={styles.chatTitle} numberOfLines={1} testID="desktop-chat-title">
-                {chatTitle || workspaceTitle}
-              </Text>
-            ) : null}
+            <ChatTitle chatTitle={chatTitle} />
           </View>
           {navigation.chat ? (
             <DesktopChatToolbar
@@ -315,13 +414,19 @@ const styles = StyleSheet.create((theme) => ({
   },
   navigationButton: { width: 28, height: 28, marginLeft: 0 },
   titleFill: { flex: 1, minWidth: 0, justifyContent: "center", paddingRight: 12 },
-  chatTitle: {
-    color: theme.colors.foreground,
-    fontSize: theme.fontSize.base,
-    lineHeight: 24,
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
     borderLeftWidth: 1,
     borderLeftColor: theme.colors.border,
     paddingLeft: 12,
+  },
+  chatTitle: {
+    flexShrink: 1,
+    color: theme.colors.foreground,
+    fontSize: theme.fontSize.base,
+    lineHeight: 24,
   },
   body: { flex: 1, flexDirection: "row", paddingRight: 4, paddingBottom: 4 },
   rail: { width: 50, alignItems: "center", paddingTop: 8, paddingBottom: 8, gap: 8 },

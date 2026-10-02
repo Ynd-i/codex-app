@@ -37,6 +37,10 @@ test("desktop navigation rail stays visible and marks the current destination", 
     const homeIconPath = home.locator("svg path").first();
     const historyIconPath = history.locator("svg path").first();
     await expect(rail).toBeVisible();
+    // The rail carries the sidebar footer actions, so the footer drops its icon line.
+    for (const testID of ["sidebar-add-project", "sidebar-usage-icon", "sidebar-hosts-trigger"])
+      await expect(rail.getByTestId(testID)).toBeVisible();
+    await expect(page.locator('[data-testid="sidebar-footer-bottom-line"]:visible')).toHaveCount(0);
     await expect(workspaceSidebar).toBeVisible();
     await expect(projectList).toBeVisible();
     await expect(home).toHaveAttribute("aria-current", "page");
