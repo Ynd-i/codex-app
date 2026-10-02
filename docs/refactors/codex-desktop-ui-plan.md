@@ -10,17 +10,18 @@ complete; this section replaces that handoff.
 - Primary: `/Users/yndi/dev/projects/codex-app/paseo`, branch `codex/desktop-ui`.
   It contains the integrated Markdown block-spacing and inline-code commits
   `2b4e52e`, `6e335c1` and `fb46652`, the 13px text scale `f51630f`, list markers
-  `a54288d`, and the chat sidebar `009bdea`, `94f0b05` and `c52b0ef`. The user's uncommitted **Native session fork draft**
+  `a54288d`, the chat sidebar `009bdea`, `94f0b05` and `c52b0ef`, and rail actions
+  `1e8b5fa`. The user's uncommitted **Native session fork draft**
   in this file and the private `context-images/` directory (79 reference images
   plus a Finder `.DS_Store`) remain untouched. Preserve both.
 - Isolated checkout: `/Users/yndi/dev/projects/codex-app/paseo-upstream-4893629`,
   branch `codex/markdown-spacing-paused-20261002`. Its commits `78a5f32`,
-  `63071b9`, `d46ba1f`, `e66eb9a`, `ef2e515`, `f06f026`, `29c8053` and `8ba5126`
+  `63071b9`, `d46ba1f`, `e66eb9a`, `ef2e515`, `f06f026`, `29c8053`, `8ba5126` and `e8a72bf`
   replace checkpoint `0964d59` on `cda57c3`; the checkpoint's handoff
   text was dropped there because primary `3e3ba6d` already contained it.
 - Last verified bundle:
   `paseo-upstream-4893629/packages/desktop/release-custom/mac-arm64/Paseo Custom.app`,
-  built from `8ba5126` on upstream `e10f6d2` / 0.11.0-beta.1. Its source matches
+  built from `e8a72bf` on upstream `e10f6d2` / 0.11.0-beta.1. Its source matches
   the primary commits above. It was not installed to `/Applications`.
 
 ### Completed and preserved
@@ -869,9 +870,14 @@ suite opens the caller chat instead.
 Mac also drops two Paseo-only surfaces Codex lacks: the worktree-script setup
 callout (scripts stay in project settings; update and Rosetta callouts remain)
 and the Import session button below the new-chat composer (import stays in History
-and Cmd+K). The composer now sits at the window bottom like the reference. The
-footer keeps its Help and Settings buttons because shared helpers open Settings
-through `sidebar-settings`; they duplicate the rail.
+and Cmd+K). The composer now sits at the window bottom like the reference.
+
+At the user's request the rail also holds the footer's Add project, Usage and Hosts
+actions above Help and Settings, so the footer keeps only its Usage and plugin rows
+while the rail is visible; compact layouts keep the footer icon line. Rail buttons
+reuse the footer test IDs, including `sidebar-settings`, so shared e2e helpers work
+unchanged. Chats in a project show a folder before their titlebar title; the user
+confirmed Codex shows it only for project chats.
 
 Validation: the sidebar, new-chat, pinning, import, command-center, settings,
 usage, single-chat, shortcut and refresh-splash specs pass (21 renderer cases).
@@ -887,10 +893,19 @@ Logs: `/private/tmp/paseo-chat-sidebar-renderer{,-2}.log`,
 `/private/tmp/paseo-chat-sidebar-navigation.log` and
 `/private/tmp/paseo-chat-sidebar-package.log`.
 
-Remaining differences: the selected chat is highlighted in both Recent and its
-project group, while Codex highlights one row; the header reads Paseo without the
-Codex workspace menu or notifications bell; the reference titlebar sometimes shows
-a folder icon before the chat title. The full native browser suite was not rerun.
+The rail and titlebar slice passes 21 renderer cases across the sidebar,
+single-chat, project-picker, shortcut, settings, Advanced, usage and rich-text
+specs, including rail actions, a hidden footer icon line and the project folder.
+Its Custom package passes the same smoke and native runner.
+[Rail and titlebar](../qa-evidence/codex-desktop/rail-actions-project-title.png) and
+[packaged capture](../qa-evidence/codex-desktop/packaged-rail-actions.png) were
+inspected. Logs: `/private/tmp/paseo-rail-renderer{,-2}.log` and
+`/private/tmp/paseo-rail-package.log`.
+
+Remaining difference: the selected chat is highlighted in both Recent and its
+project group, while Codex highlights one row. The user does not want the Codex
+workspace menu or notifications bell in the header. The full native browser suite
+was not rerun.
 
 ### Sidebar motion and selection — 2026-10-01
 
@@ -1705,9 +1720,9 @@ Appearance captures were inspected in the private artifact directory
 `/private/tmp/paseo-settings-return-final-{format,lint}.log`. The first concurrent
 typecheck raced the dependency build; the final check was run after build completion.
 
-The latest Custom refresh was built from `8ba5126` in the isolated checkout,
-source-identical to primary `c52b0ef`, adding the Mac chat sidebar; see
-[its section](#chat-sidebar-restoration--2026-10-02). The refresh before it was built
+The latest Custom refresh was built from `e8a72bf` in the isolated checkout,
+source-identical to primary `1e8b5fa`, adding the Mac chat sidebar, rail actions
+and project titlebar folder; see [its section](#chat-sidebar-restoration--2026-10-02). The refresh before it was built
 from `ef2e515`, source-identical to primary `a54288d`, adding the 13px text scale and
 list markers. The preceding refresh was built from `d46ba1f`, source-identical to primary `fb46652`. Startup/CLI/terminal smoke and the native
 interaction runner pass, including the Markdown block gaps and inline-code line
