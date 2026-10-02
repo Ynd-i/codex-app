@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Search } from "lucide-react-native";
+import { Bell, Search } from "lucide-react-native";
 import { ScrollView, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
@@ -11,6 +11,7 @@ import { useAggregatedAgents } from "@/hooks/use-aggregated-agents";
 import { useKeyboardShortcutsStore } from "@/stores/keyboard-shortcuts-store";
 import type { Theme } from "@/styles/theme";
 import { buildDesktopChatSidebar, partitionChatSections } from "./desktop-chat-model";
+import { ChatInbox } from "./desktop-chat-inbox";
 import { SectionDialogsProvider } from "./desktop-chat-section-menus";
 import {
   CustomSection,
@@ -23,7 +24,9 @@ import { useActiveDesktopChat } from "./use-desktop-chat";
 import { usesDesktopShell } from "./desktop-shell";
 
 const SearchIcon = withUnistyles(Search);
+const BellIcon = withUnistyles(Bell);
 const mutedIcon = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
+const activeIcon = (theme: Theme) => ({ color: theme.colors.foreground });
 function openSearch() {
   useKeyboardShortcutsStore.getState().setCommandCenterOpen(true);
 }
@@ -43,11 +46,27 @@ export function DesktopChatSidebar(props: { onAddProject: () => void }) {
 
 function ChatSidebarHeader() {
   const { t } = useTranslation();
+  const inboxOpen = useChatSectionsStore((state) => state.inboxOpen);
+  const toggleInbox = useChatSectionsStore((state) => state.toggleInbox);
+  const inboxState = useMemo(() => ({ selected: inboxOpen }), [inboxOpen]);
   return (
     <View style={styles.header}>
       <Text style={styles.brand}>Paseo</Text>
       <View style={styles.spacer} />
       <SidebarDisplayPreferencesMenu chatMode />
+      <HeaderToggleButton
+        onPress={toggleInbox}
+        tooltipLabel={t("desktopChat.sections.notifications")}
+        tooltipKeys={[]}
+        tooltipSide="bottom"
+        accessibilityRole="button"
+        accessibilityLabel={t("desktopChat.sections.notifications")}
+        accessibilityState={inboxState}
+        style={inboxOpen ? styles.activeHeaderButton : undefined}
+        testID="desktop-chat-inbox-toggle"
+      >
+        <BellIcon size={18} uniProps={inboxOpen ? activeIcon : mutedIcon} />
+      </HeaderToggleButton>
       <HeaderToggleButton
         onPress={openSearch}
         tooltipLabel={t("sidebar.sections.search")}
@@ -74,6 +93,7 @@ function ChatSidebarList({ onAddProject }: { onAddProject: () => void }) {
   const chatSection = useChatSectionsStore((state) => state.chatSection);
   const projectSection = useChatSectionsStore((state) => state.projectSection);
   const hideProjects = useChatSectionsStore((state) => state.hideProjects);
+  const inboxOpen = useChatSectionsStore((state) => state.inboxOpen);
   const model = useMemo(() => buildDesktopChatSidebar({ projects, agents }), [projects, agents]);
   const partition = useMemo(
     () =>
@@ -86,23 +106,30 @@ function ChatSidebarList({ onAddProject }: { onAddProject: () => void }) {
       }),
     [chatSection, model.projects, model.recent, projectSection, sections],
   );
+  const inboxChats = useMemo(() => [...model.pinned, ...model.recent], [model]);
   return (
     <ScrollView
       style={styles.list}
       contentContainerStyle={styles.listContent}
       testID="sidebar-project-list"
     >
-      <PinnedSection chats={model.pinned} selectedKey={selectedKey} />
-      {partition.custom.map((section) => (
-        <CustomSection key={section.id} section={section} selectedKey={selectedKey} />
-      ))}
-      <RecentSection chats={partition.recent} selectedKey={selectedKey} />
-      {hideProjects ? null : (
-        <ProjectsSection
-          projects={partition.projects}
-          selectedKey={selectedKey}
-          onAddProject={onAddProject}
-        />
+      {inboxOpen ? (
+        <ChatInbox chats={inboxChats} selectedKey={selectedKey} />
+      ) : (
+        <>
+          <PinnedSection chats={model.pinned} selectedKey={selectedKey} />
+          {partition.custom.map((section) => (
+            <CustomSection key={section.id} section={section} selectedKey={selectedKey} />
+          ))}
+          <RecentSection chats={partition.recent} selectedKey={selectedKey} />
+          {hideProjects ? null : (
+            <ProjectsSection
+              projects={partition.projects}
+              selectedKey={selectedKey}
+              onAddProject={onAddProject}
+            />
+          )}
+        </>
       )}
       {model.projects.length === 0 ? (
         <View style={styles.empty}>
@@ -128,6 +155,7 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.foreground,
   },
   spacer: { flex: 1 },
+  activeHeaderButton: { backgroundColor: theme.colors.surfaceSidebarSelected, borderRadius: 8 },
   list: { flex: 1 },
   listContent: { paddingHorizontal: 8, paddingBottom: 16 },
   secondaryText: {

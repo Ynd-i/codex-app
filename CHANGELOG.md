@@ -42,6 +42,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- Added a notification bell beside macOS sidebar search: Priority lists chats waiting on a permission or an error, then finished chats follow by day across every section, with reply previews for chats this window has loaded.
+
 - Added custom macOS sidebar sections: create them from the Recent right-click menu or a chat or project's Section menu, rename, mark read, archive or remove them, and hide Projects. Removing a section returns its chats and projects; sections are stored on this Mac.
 
 - macOS chat sidebar sections collapse from their titles and reveal a sort menu on hover: recently updated, or a manual order you drag, with new chats still arriving on top. Projects add a project from their header.

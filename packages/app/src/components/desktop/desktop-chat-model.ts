@@ -6,6 +6,12 @@ import type {
 } from "@/hooks/use-sidebar-workspaces-list";
 import { isWorkspaceRootAgent } from "@/subagents/policies";
 import { applyStoredOrdering } from "@/hooks/sidebar-workspaces-view-model";
+import type { StreamItem } from "@/types/stream";
+import {
+  DATE_SECTION_ORDER,
+  deriveDateSectionKey,
+  type DateSectionKey,
+} from "@/utils/date-sections";
 
 // Generic agent metadata keeps these preferences synced without changing the daemon protocol.
 export const DESKTOP_CHAT_PINNED_AT = "codex-ui.pinned-at";
@@ -160,4 +166,49 @@ export function partitionChatSections({
     else remainingProjects.push(entry);
   }
   return { recent: remainingRecent, projects: remainingProjects, custom: [...custom.values()] };
+}
+
+export interface ChatInbox {
+  /** Chats waiting on the user: a pending permission or an error; finished chats are not. */
+  priority: AggregatedAgent[];
+  /** Everything else that is not running, newest first, by day. */
+  groups: { key: DateSectionKey; chats: AggregatedAgent[] }[];
+}
+
+function needsAttention(agent: AggregatedAgent): boolean {
+  if ((agent.pendingPermissionCount ?? 0) > 0) return true;
+  return Boolean(agent.requiresAttention) && agent.attentionReason !== "finished";
+}
+
+/** The notification view: across every section, what needs the user, then what finished. */
+export function buildChatInbox(chats: readonly AggregatedAgent[]): ChatInbox {
+  const sorted = [...chats].sort(byLatestActivity);
+  const groups = new Map<DateSectionKey, AggregatedAgent[]>();
+  for (const agent of sorted) {
+    if (needsAttention(agent) || agent.turn.phase === "open") continue;
+    const key = deriveDateSectionKey(agent.lastActivityAt);
+    groups.set(key, [...(groups.get(key) ?? []), agent]);
+  }
+  return {
+    priority: sorted.filter(needsAttention),
+    groups: DATE_SECTION_ORDER.flatMap((key) => {
+      const entries = groups.get(key);
+      return entries ? [{ key, chats: entries }] : [];
+    }),
+  };
+}
+
+/** The last reply of a chat whose timeline this client already holds, as one plain line. */
+export function latestReplyPreview(items: readonly StreamItem[] | undefined): string | null {
+  for (let index = (items?.length ?? 0) - 1; index >= 0; index -= 1) {
+    const item = items![index];
+    if (item.kind !== "assistant_message") continue;
+    const text = item.text
+      .replace(/```[\s\S]*?```/g, " ")
+      .replace(/[#>*_`~[\]]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (text) return text.slice(0, 200);
+  }
+  return null;
 }

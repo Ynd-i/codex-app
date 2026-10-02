@@ -35,6 +35,9 @@ interface ChatSectionsPersistedState {
 }
 
 interface ChatSectionsState extends ChatSectionsPersistedState {
+  /** The notification view replaces the sections while open; it is not persisted. */
+  inboxOpen: boolean;
+  toggleInbox: () => void;
   setSort: (sectionId: string, sort: ChatSectionSort) => void;
   setChatOrder: (sectionId: string, keys: string[]) => void;
   toggleCollapsed: (sectionId: string) => void;
@@ -87,6 +90,8 @@ export const useChatSectionsStore = create<ChatSectionsState>()(
       hideProjects: false,
       chatSection: {},
       projectSection: {},
+      inboxOpen: false,
+      toggleInbox: () => set((state) => ({ inboxOpen: !state.inboxOpen })),
       setSort: (sectionId, sort) =>
         set((state) => ({ sortBySection: { ...state.sortBySection, [sectionId]: sort } })),
       setChatOrder: (sectionId, keys) =>

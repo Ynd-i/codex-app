@@ -3,10 +3,12 @@ import { PARENT_AGENT_ID_LABEL } from "@getpaseo/protocol/agent-labels";
 import type { AggregatedAgent } from "@/hooks/use-aggregated-agents";
 import type { SidebarProjectEntry } from "@/hooks/use-sidebar-workspaces-list";
 import {
+  buildChatInbox,
   buildDesktopChatSidebar,
   DESKTOP_CHAT_PINNED_AT,
   DESKTOP_CHAT_UNREAD,
   isDesktopChatUnread,
+  latestReplyPreview,
   orderSectionChats,
   orderSectionProjects,
   partitionChatSections,
@@ -165,4 +167,37 @@ it("moves assigned chats and projects into existing custom sections only", () =>
   expect(result.recent.map((entry) => entry.id)).toEqual(["kept", "orphaned"]);
   expect(result.projects.map((entry) => entry.project.viewKey)).toEqual(["app"]);
   expect(result.custom).toEqual([{ id: "work", name: "Work", chats: [moved], projects: [docs] }]);
+});
+
+it("puts chats needing the user first and groups finished chats by day", () => {
+  const now = Date.now();
+  const waiting = chat("waiting", "local", "one");
+  waiting.pendingPermissionCount = 1;
+  const running = chat("running", "local", "one");
+  running.turn = { phase: "open", cancellationRequestId: null } as AggregatedAgent["turn"];
+  const failed = chat("failed", "local", "one");
+  failed.requiresAttention = true;
+  failed.attentionReason = "error";
+  const today = chat("today", "local", "one");
+  today.lastActivityAt = new Date(now);
+  // A finished turn the user has not seen yet is news, not a task.
+  today.requiresAttention = true;
+  today.attentionReason = "finished";
+  const old = chat("old", "local", "one");
+  old.lastActivityAt = new Date(now - 40 * 86_400_000);
+  const inbox = buildChatInbox([old, running, today, waiting, failed]);
+  expect(inbox.priority.map((entry) => entry.id).sort()).toEqual(["failed", "waiting"]);
+  expect(inbox.groups.map((group) => [group.key, group.chats.map((entry) => entry.id)])).toEqual([
+    ["today", ["today"]],
+    ["older", ["old"]],
+  ]);
+});
+
+it("previews the last reply as one plain line", () => {
+  const reply = (text: string) =>
+    ({ kind: "assistant_message", id: text, text, timestamp: new Date() }) as never;
+  expect(latestReplyPreview(undefined)).toBeNull();
+  expect(
+    latestReplyPreview([reply("first"), reply("**Done.** Fixed `the bug`.\n\n```ts\ncode\n```")]),
+  ).toBe("Done. Fixed the bug.");
 });

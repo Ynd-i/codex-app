@@ -8,6 +8,7 @@ import { getServerId } from "../../app/e2e/support/helpers/server-id";
 import { seedWorkspace } from "../../app/e2e/support/helpers/seed-client";
 import { installUsageReportsFixture } from "../../app/e2e/support/helpers/usage-reports";
 import { openAgentRoute, seedMockAgentWorkspace } from "../../app/e2e/support/helpers/mock-agent";
+import { submitMessage } from "../../app/e2e/support/helpers/composer";
 import { installDesktopRuntime } from "./support/runtime";
 
 async function waitForTwoFrames(page: Page): Promise<void> {
@@ -312,6 +313,45 @@ test("macOS custom sections hold chats and return them when removed", async ({
     await page.locator('[data-testid$="-remove"]').click();
     await expect(work).toHaveCount(0);
     await expect.poll(() => above(firstRow, recent)).toBe(false);
+  } finally {
+    await fixture.cleanup();
+  }
+});
+
+test("macOS notification bell lists what needs attention, then finished chats by day", async ({
+  page,
+}, testInfo) => {
+  const fixture = await seedMockAgentWorkspace({
+    repoPrefix: "chat-inbox-",
+    title: "Inbox chat",
+    featureValues: { mockAssistantResponse: "Finished the **inbox** check." },
+  });
+  try {
+    const serverId = getServerId();
+    await installDesktopRuntime(page, {
+      serverId,
+      manageBuiltInDaemon: false,
+      daemonListen: `127.0.0.1:${getE2EDaemonPort()}`,
+    });
+    await page.setViewportSize({ width: 1352, height: 782 });
+    await page.emulateMedia({ colorScheme: "dark" });
+    await openAgentRoute(page, fixture);
+    await submitMessage(page, "Check the inbox.");
+    await expect(page.getByTestId("assistant-message")).toContainText("Finished the inbox check.");
+
+    const bell = page.getByTestId("desktop-chat-inbox-toggle");
+    await bell.click();
+    await expect(page.getByTestId("desktop-section-recent")).toHaveCount(0);
+    await expect(page.getByTestId("desktop-inbox-priority")).toBeVisible();
+    await expect(page.getByText("No tasks need attention", { exact: true })).toBeVisible();
+    const row = page
+      .getByTestId("desktop-inbox-today")
+      .getByTestId(`desktop-inbox-${serverId}:${fixture.agentId}`);
+    // The reply preview comes from the timeline this window already loaded.
+    await expect(row).toContainText("Finished the inbox check.");
+    await page.screenshot({ path: testInfo.outputPath("notification-inbox.png") });
+    await bell.click();
+    await expect(page.getByTestId("desktop-section-recent")).toBeVisible();
   } finally {
     await fixture.cleanup();
   }
