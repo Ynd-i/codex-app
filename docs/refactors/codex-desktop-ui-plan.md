@@ -9,16 +9,17 @@ complete; this section replaces that handoff.
 
 - Primary: `/Users/yndi/dev/projects/codex-app/paseo`, branch `codex/desktop-ui`.
   It contains the integrated Markdown block-spacing and inline-code commits
-  `2b4e52e`, `6e335c1` and `fb46652`. The user's uncommitted **Native session fork draft**
+  `2b4e52e`, `6e335c1` and `fb46652`, then the 13px text scale `f51630f` and
+  list markers `a54288d`. The user's uncommitted **Native session fork draft**
   in this file and the private `context-images/` directory (79 reference images
   plus a Finder `.DS_Store`) remain untouched. Preserve both.
 - Isolated checkout: `/Users/yndi/dev/projects/codex-app/paseo-upstream-4893629`,
   branch `codex/markdown-spacing-paused-20261002`. Its commits `78a5f32`,
-  `63071b9` and `d46ba1f` replace checkpoint `0964d59` on `cda57c3`; the checkpoint's handoff
+  `63071b9`, `d46ba1f`, `e66eb9a` and `ef2e515` replace checkpoint `0964d59` on `cda57c3`; the checkpoint's handoff
   text was dropped there because primary `3e3ba6d` already contained it.
 - Last verified bundle:
   `paseo-upstream-4893629/packages/desktop/release-custom/mac-arm64/Paseo Custom.app`,
-  built from `d46ba1f` on upstream `e10f6d2` / 0.11.0-beta.1. Its source matches
+  built from `ef2e515` on upstream `e10f6d2` / 0.11.0-beta.1. Its source matches
   the primary commits above. It was not installed to `/Applications`.
 
 ### Completed and preserved
@@ -30,7 +31,7 @@ approval and question cards with draft retention; styled quotes/code blocks;
 chat/composer edge alignment; plain replies without empty activity headers;
 completion timestamps; 82px default code cards and tighter list rows; reference
 gaps between paragraphs, lists and code cards; inline code that keeps the prose
-line height. Detailed commit IDs, evidence and platform limitations remain in
+line height; the reference 13px text scale and list markers. Detailed commit IDs, evidence and platform limitations remain in
 their sections below. Local commits are not pushed.
 
 ### Next work and boundaries
@@ -40,9 +41,10 @@ their sections below. Local commits are not pushed.
    `PATH=/Users/yndi/.local/share/mise/installs/node/22.20.0/bin:$PATH` and call
    that directory's `npm` by absolute path: the interactive shell aliases `npm`
    to pnpm. Never run build/clean concurrently with tests or typecheck.
-2. Transcript typography is the next measured gap; see
-   [the residuals](#markdown-block-kinds-and-inline-code). Treat font size as its
-   own slice, not as further spacing tuning.
+2. On 2026-10-02 the user asked for overall Codex similarity rather than pixel
+   equality. Fix visible differences at the reference viewport; do not reopen
+   sub-pixel ink fitting. The workspace sidebar stays per the October 1 decision;
+   the earlier chat-row sidebar (`4a66271`) is only a proposal to raise again.
 3. Audit the remaining surface and acceptance gaps in Steps below. Full visual
    parity, provider/remote-device acceptance and distribution gates are not claimed.
 
@@ -1667,8 +1669,9 @@ Appearance captures were inspected in the private artifact directory
 `/private/tmp/paseo-settings-return-final-{format,lint}.log`. The first concurrent
 typecheck raced the dependency build; the final check was run after build completion.
 
-The latest Custom refresh was built from `d46ba1f` in the isolated checkout,
-source-identical to primary `fb46652`. Startup/CLI/terminal smoke and the native
+The latest Custom refresh was built from `ef2e515` in the isolated checkout,
+source-identical to primary `a54288d`, adding the 13px text scale and list markers.
+The preceding refresh was built from `d46ba1f`, source-identical to primary `fb46652`. Startup/CLI/terminal smoke and the native
 interaction runner pass, including the Markdown block gaps and inline-code line
 height for plain and file-path chips. Log: `/private/tmp/paseo-chip-path-package.log`;
 artifacts: `/private/tmp/paseo-chip-path-package-{smoke,qa}`.
@@ -2362,14 +2365,41 @@ Residual differences, measured on the same 2× fixture and not claimed as parity
 
 | Surface     | Reference                                                              | Current                             |
 | ----------- | ---------------------------------------------------------------------- | ----------------------------------- |
-| Prose size  | Same intro line 198px wide; glyph ink about 0.9× as tall               | 227px wide                          |
 | Quote       | About 2px closer to the preceding paragraph, 1px further from the next | 12px on both sides (from `3d2ee63`) |
-| List        | 4.5px bullet ink; text starts 26px from the column                     | 3px bullet ink; text starts at 21px |
-| Inline code | 62.5px wide for `行内代码`                                             | 56px wide                           |
+| Inline code | 62.5px wide for `行内代码`                                             | 60px wide                           |
 
-The size ratio is consistent with a smaller content font or another family; this
-was not verified. The quote offsets are within the font-metric uncertainty, so
-the earlier 12px rule stays.
+The prose-size and list rows were resolved by the following slice. The quote
+offsets are within the font-metric uncertainty, so the earlier 12px rule stays.
+
+#### Reference text scale and list markers
+
+The Codex Appearance reference sets one 13px interface size and 12px code, and its
+conversation text measures the same 13px (the intro line is 198px wide; ours was
+227px at 15px). New Mac preferences now default interface and content sizes to
+13px. Prose uses a 1.6 line height on Mac through `getContentLineHeight`, so the
+21px rhythm, list pitch, code cards and block gaps keep their assertions. Scaled
+interface tokens follow the smaller base; the project editor title is now 17px.
+Saved sizes are not migrated: an existing install keeps its stored 14/15px until
+Advanced reset. Other platforms keep 14/15px and a 1.4 line height.
+
+Mac bullets now use full-contrast dots at 1.4× the content size with the ordered-list
+minimum width, so item text starts 26px into the column as in the reference.
+Ordered markers share the foreground color, and inline chips gain 6px side padding.
+
+Validation: 400 settings/style/stream unit tests pass. Seventeen Mac renderer
+specs (35 cases) ran against the new defaults; two stale expectations written
+for the old 14/15px defaults were updated, and their rerun passes. The list
+slice passes ten rich-text/activity/content-font/question cases, including the
+26px indent and 6px chip padding. [Text scale](../qa-evidence/codex-desktop/typography-defaults.png),
+[list markers](../qa-evidence/codex-desktop/list-markers.png) and the
+[packaged capture](../qa-evidence/codex-desktop/packaged-typography.png) were
+inspected. The Custom package rebuilt from `ef2e515` passes startup/CLI/terminal
+smoke and the native interaction runner. Logs:
+`/private/tmp/paseo-typography-renderer{,-2}.log`,
+`/private/tmp/paseo-list-marker-renderer.log` and
+`/private/tmp/paseo-typography-package.log`; artifacts:
+`/private/tmp/paseo-typography-package-{smoke,qa}`.
+Implementation: `f51630f` and `a54288d` (isolated checkout `e66eb9a`, `ef2e515`).
 
 ### Upstream refresh to e10f6d2 — 2026-10-01
 
