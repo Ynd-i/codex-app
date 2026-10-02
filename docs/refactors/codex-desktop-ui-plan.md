@@ -1,26 +1,25 @@
 # Codex-style desktop UI
 
-## Paused handoff — 2026-10-02
+## Current checkpoint — 2026-10-02
 
-The user asked to stop and hand off. The Codex goal is **paused**; resume only
-after a new user request. The migration is not complete.
+Work resumed from the paused handoff on user request. The migration is not
+complete; this section replaces that handoff.
 
 ### Checkouts and checkpoints
 
 - Primary: `/Users/yndi/dev/projects/codex-app/paseo`, branch `codex/desktop-ui`.
-  Last integrated UI/evidence checkpoint: `cda57c3`; runtime change: `20f5874`.
-  The primary also contains the user's **215-line Native session fork draft**
-  and **80 private originals** under `context-images/`. Preserve both.
-- Continue the unfinished slice in
-  `/Users/yndi/dev/projects/codex-app/paseo-upstream-4893629`, branch
-  `codex/markdown-spacing-paused-20261002`, based on `cda57c3`.
-  Source checkpoint commit: `0964d59`.
-  This checkpoint contains unfinished work; it is not integrated into the primary UI.
+  It contains the integrated Markdown block-spacing and inline-code commits
+  `2b4e52e` and `6e335c1`. The user's uncommitted **Native session fork draft**
+  in this file and the private `context-images/` directory (79 reference images
+  plus a Finder `.DS_Store`) remain untouched. Preserve both.
+- Isolated checkout: `/Users/yndi/dev/projects/codex-app/paseo-upstream-4893629`,
+  branch `codex/markdown-spacing-paused-20261002`. Its commits `78a5f32` and
+  `63071b9` replace checkpoint `0964d59` on `cda57c3`; the checkpoint's handoff
+  text was dropped there because primary `3e3ba6d` already contained it.
 - Last verified bundle:
   `paseo-upstream-4893629/packages/desktop/release-custom/mac-arm64/Paseo Custom.app`,
-  built from `20f5874` on upstream `e10f6d2` / 0.11.0-beta.1. Startup/CLI/terminal
-  smoke and native conversation/dock/link checks passed. It does not contain the
-  unfinished cross-block-spacing slice and was not installed to `/Applications`.
+  built from `63071b9` on upstream `e10f6d2` / 0.11.0-beta.1. Its source matches
+  the primary commits above. It was not installed to `/Applications`.
 
 ### Completed and preserved
 
@@ -29,54 +28,31 @@ default workspace sidebar plus independent icon rail; settings/font controls;
 provider-backed model/effort controls; browser/file/terminal/Diff presentation;
 approval and question cards with draft retention; styled quotes/code blocks;
 chat/composer edge alignment; plain replies without empty activity headers;
-completion timestamps; 82px default code cards and tighter list rows. Detailed
-commit IDs, evidence and platform limitations remain in their sections below.
-Local commits are not pushed.
+completion timestamps; 82px default code cards and tighter list rows; reference
+gaps between paragraphs, lists and code cards; inline code that keeps the prose
+line height. Detailed commit IDs, evidence and platform limitations remain in
+their sections below. Local commits are not pushed.
 
-### Unfinished slice saved here
+### Next work and boundaries
 
-Cross-block Markdown spacing now carries display-only `blockKind` metadata from
-the existing definition parse, without an additional parser pass or source-message
-mutation. Mac same-response gaps distinguish paragraph/list/code boundaries.
-The history cache key includes a changing live block kind. Compound blocks retain
-the generic gap. The old string-only splitter API remains available.
-
-Changed areas: `utils/split-markdown-blocks.ts`, `types/stream.ts`, stream
-presentation/spacing/layout, their focused tests and `rich-text-reference.spec.ts`.
-The external Unistyles test stub now supplies the missing runtime argument that
-previously prevented projection tests from loading.
-
-Evidence: 86 focused unit tests passed before the final cache-key helper extraction;
-rerun those four files on resume. The final source passed root format/lint/typecheck
-and three renderer cases (35.6s), including copy/search/fork and measured gaps.
-Logs: `/private/tmp/paseo-block-gap-{units-final,renderer,format,lint,typecheck}.log`.
-Visual review, final unit rerun, package rebuild/native checks and primary integration
-remain. This slice is a resumable checkpoint, not a completed migration milestone.
-
-### Resume order and boundaries
-
-The primary receives this documentation-only handoff after `cda57c3`; reconcile
-that commit before integrating the checkpoint branch.
-
-1. Verify both checkouts, branches, HEADs, index and uncommitted changes. Continue
-   on the checkpoint branch; do not assume a new worktree includes its files.
-2. Use pinned Node with
-   `PATH=/Users/yndi/.local/share/mise/installs/node/22.20.0/bin:$PATH` and existing npm scripts.
-   Rerun the app tests for `agent-stream/{presentation,spacing,layout}.test.ts` and
-   `utils/__tests__/split-markdown-blocks.test.ts`; inspect the final renderer capture.
-3. Finish cross-block reference matching, refresh the Custom package and run its
-   isolated native checks. Never run build/clean concurrently with tests/typecheck.
-   Then integrate only verified work while preserving the primary draft and originals.
-4. Audit the remaining surface and acceptance gaps in Steps below. Full visual
+1. Verify both checkouts, branches, HEADs and uncommitted changes before editing.
+   Use pinned Node with
+   `PATH=/Users/yndi/.local/share/mise/installs/node/22.20.0/bin:$PATH` and call
+   that directory's `npm` by absolute path: the interactive shell aliases `npm`
+   to pnpm. Never run build/clean concurrently with tests or typecheck.
+2. Transcript typography is the next measured gap; see
+   [the residuals](#markdown-block-kinds-and-inline-code). Treat font size as its
+   own slice, not as further spacing tuning.
+3. Audit the remaining surface and acceptance gaps in Steps below. Full visual
    parity, provider/remote-device acceptance and distribution gates are not claimed.
 
 Keep backend/protocol/provider behavior unchanged. Do not restart ports 6767/6768.
 Persistent resolved approval/denial history is explicitly deferred by the user;
 native provider-session fork is planning only. Large working-diff per-file paging
 and skipped-untracked counts are unavailable in the existing contract. No new
-real-provider prompts, external publication or signing/distribution decisions were
-made during this handoff. Latest quota read: 2% ordinary allowance, zero banked
-resets; refresh usage when resuming. Each reset redemption requires fresh confirmation.
+real-provider prompts, external publication or signing/distribution decisions
+were made. This continuation ran in Claude Code and did not read the Codex
+account quota; each reset redemption still requires fresh confirmation.
 
 ## Target and boundaries
 
@@ -1691,7 +1667,14 @@ Appearance captures were inspected in the private artifact directory
 `/private/tmp/paseo-settings-return-final-{format,lint}.log`. The first concurrent
 typecheck raced the dependency build; the final check was run after build completion.
 
-The latest Custom refresh was built from `20f5874` on 0.11.0-beta.1 after
+The latest Custom refresh was built from `63071b9` in the isolated checkout,
+source-identical to primary `6e335c1`. Startup/CLI/terminal smoke and the native
+interaction runner pass, including the Markdown block gaps and inline-code line
+height. Logs: `/private/tmp/paseo-block-gap-package-build.log` and
+`/private/tmp/paseo-block-gap-package.log`; artifacts:
+`/private/tmp/paseo-block-gap-package-{smoke,qa}`.
+
+The preceding Custom refresh was built from `20f5874` on 0.11.0-beta.1 after
 upstream merge `34d9f5f`. Startup/CLI/terminal smoke and the native interaction
 runner pass, including the 82px code-card assertion, wrap/scroll controls, reply
 timing, column alignment, question submission and retained drafts.
@@ -2326,13 +2309,63 @@ Two renderer cases pass (18.4s), covering density, wide/compact alignment, neste
 quote paragraphs, code wrap/copy and timing controls. Twenty Markdown style/list
 tests pass. [Updated density](../qa-evidence/codex-desktop/code-list-density.png)
 was inspected. Logs: `/private/tmp/paseo-code-density-{red,green,units}.log`.
-Non-Mac density is unchanged. Paragraph/list/fence boundaries still share the
-stream's generic gap, so this does not claim full cross-block spacing parity.
+Non-Mac density is unchanged. Paragraph/list/fence boundaries are handled in the
+following slice.
 
 Implementation `20f5874` passes root format/lint/typecheck and normal hooks.
 Its rebuilt Custom package passes smoke and the native regression, including
 the 82px card assertion. The [native capture](../qa-evidence/codex-desktop/packaged-code-density.png)
 was inspected. This slice changes frontend presentation only.
+
+#### Markdown block kinds and inline code
+
+The density slice left paragraph, list and code-card boundaries on the stream's
+generic 12px gap. Presentation rows now carry a display-only `blockKind` taken
+from the existing definition parse; source messages and the string-only
+splitter are unchanged. Within one Mac reply, paragraph→list, list→paragraph
+and paragraph→code measure 4, 6 and 16px, including the list's and code card's
+own top margins. Compound blocks, other boundaries and other platforms keep
+their gaps. The history-layout cache key includes the live boundary's block kind,
+so a growing paragraph that becomes a list refreshes the boundary gap.
+
+A 2× capture of the same fixture was compared with the reference's ink rows.
+List→paragraph and paragraph→code pitches agree within 1px. The remaining
+paragraph→list excess (about 3px) came from inline code, not the gap rule: the
+12px chip inherited the 21px prose line height and grew its line to 23px. Mac
+chips now use their own line height and 1px vertical padding. The chip measures
+16px like the reference, and its line keeps ordinary prose height. Non-Mac chips
+are unchanged.
+
+Validation: 86 stream/splitter unit tests and 12 Markdown style tests pass. The
+chip assertion failed first on 2px padding; three renderer cases then passed
+(34.7s), covering both platform branches and activity copy/search/fork. Root
+format/lint/typecheck and commit hooks pass. The [block gaps](../qa-evidence/codex-desktop/markdown-block-gaps.png)
+and [inline code](../qa-evidence/codex-desktop/inline-code-line-height.png)
+captures were inspected. Logs: `/private/tmp/paseo-block-gap-units-resume.log`,
+`/private/tmp/paseo-block-gap-renderer-resume.log`,
+`/private/tmp/paseo-block-gap-resume-{format,lint,typecheck}.log`,
+`/private/tmp/paseo-inline-code-{red,green,units}.log`.
+Implementation: `2b4e52e` and `6e335c1` (isolated checkout `78a5f32`, `63071b9`).
+Its Custom package, rebuilt from `63071b9`, passes startup/CLI/terminal smoke and
+the native interaction runner, which now asserts the three gaps, the 1px chip
+padding and equal prose/chip line heights. The
+[native capture](../qa-evidence/codex-desktop/packaged-block-gaps.png) was inspected.
+Logs: `/private/tmp/paseo-block-gap-package-build.log` and
+`/private/tmp/paseo-block-gap-package.log`; artifacts:
+`/private/tmp/paseo-block-gap-package-{smoke,qa}`.
+
+Residual differences, measured on the same 2× fixture and not claimed as parity:
+
+| Surface     | Reference                                                              | Current                             |
+| ----------- | ---------------------------------------------------------------------- | ----------------------------------- |
+| Prose size  | Same intro line 198px wide; glyph ink about 0.9× as tall               | 227px wide                          |
+| Quote       | About 2px closer to the preceding paragraph, 1px further from the next | 12px on both sides (from `3d2ee63`) |
+| List        | 4.5px bullet ink; text starts 26px from the column                     | 3px bullet ink; text starts at 21px |
+| Inline code | 62.5px wide for `行内代码`                                             | 56px wide                           |
+
+The size ratio is consistent with a smaller content font or another family; this
+was not verified. The quote offsets are within the font-metric uncertainty, so
+the earlier 12px rule stays.
 
 ### Upstream refresh to e10f6d2 — 2026-10-01
 
