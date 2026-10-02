@@ -318,6 +318,14 @@ export async function runAgentDeepLinksRegression({
       })
       .toBe(gap);
   }
+  const chipParagraph = assistant
+    .locator('[data-paseo-markdown-tag="p"]')
+    .filter({ hasText: /^这部分是/ });
+  const inlineCode = chipParagraph.locator('[data-paseo-markdown-tag="code"]');
+  await expect(inlineCode).toHaveCSS("padding-top", "1px");
+  await expect
+    .poll(async () => (await chipParagraph.boundingBox())?.height)
+    .toBe((await intro.boundingBox())?.height);
   await expect(assistant.getByText("斜体", { exact: true })).toHaveCSS("font-style", "italic");
   await expect(assistant.getByText("删除线", { exact: true })).toHaveCSS(
     "text-decoration-line",
@@ -419,6 +427,7 @@ export async function runAgentDeepLinksRegression({
     packagedStyledText: true,
     packagedProseSpacing: true,
     packagedMarkdownBlockSpacing: true,
+    packagedInlineCodeLineHeight: true,
     packagedChatColumnAlignment: true,
     packagedPlainReplyTiming: true,
     packagedCodeCardDensity: true,

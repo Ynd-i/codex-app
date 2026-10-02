@@ -90,6 +90,12 @@ for (const platform of ["darwin", "win32"] as const) {
             })
             .toBe(gap);
         }
+        const inlineCode = paragraph.locator('[data-paseo-markdown-tag="code"]');
+        await expect(inlineCode).toHaveCSS("padding-top", "1px");
+        await expect.poll(async () => (await inlineCode.boundingBox())?.height).toBe(16);
+        await expect
+          .poll(async () => (await paragraph.boundingBox())?.height)
+          .toBe((await intro.boundingBox())?.height);
         await expect
           .poll(async () => {
             const before = await intro.boundingBox();

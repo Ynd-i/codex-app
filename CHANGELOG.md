@@ -42,6 +42,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- Kept Mac inline code chips from enlarging their line of prose and matched the reference's 16px chip height; other platforms keep their existing chip.
+
 - Matched Mac spacing between paragraphs, lists and code blocks within one reply to the reference, using the existing Markdown parse; other boundaries and platforms keep their spacing.
 
 - Matched Mac code-card padding, line height and wrap-action icons to the reference, and removed extra spacing between tight Markdown list rows.
