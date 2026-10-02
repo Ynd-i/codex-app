@@ -10,18 +10,18 @@ complete; this section replaces that handoff.
 - Primary: `/Users/yndi/dev/projects/codex-app/paseo`, branch `codex/desktop-ui`.
   It contains the integrated Markdown block-spacing and inline-code commits
   `2b4e52e`, `6e335c1` and `fb46652`, the 13px text scale `f51630f`, list markers
-  `a54288d`, the chat sidebar `009bdea`, `94f0b05` and `c52b0ef`, and rail actions
-  `1e8b5fa`. The user's uncommitted **Native session fork draft**
+  `a54288d`, the chat sidebar `009bdea`, `94f0b05` and `c52b0ef`, rail actions `1e8b5fa`
+  and the rail usage popover `bd43b54`. The user's uncommitted **Native session fork draft**
   in this file and the private `context-images/` directory (79 reference images
   plus a Finder `.DS_Store`) remain untouched. Preserve both.
 - Isolated checkout: `/Users/yndi/dev/projects/codex-app/paseo-upstream-4893629`,
   branch `codex/markdown-spacing-paused-20261002`. Its commits `78a5f32`,
-  `63071b9`, `d46ba1f`, `e66eb9a`, `ef2e515`, `f06f026`, `29c8053`, `8ba5126` and `e8a72bf`
+  `63071b9`, `d46ba1f`, `e66eb9a`, `ef2e515`, `f06f026`, `29c8053`, `8ba5126`, `e8a72bf` and `64f7f74`
   replace checkpoint `0964d59` on `cda57c3`; the checkpoint's handoff
   text was dropped there because primary `3e3ba6d` already contained it.
 - Last verified bundle:
   `paseo-upstream-4893629/packages/desktop/release-custom/mac-arm64/Paseo Custom.app`,
-  built from `e8a72bf` on upstream `e10f6d2` / 0.11.0-beta.1. Its source matches
+  built from `64f7f74` on upstream `e10f6d2` / 0.11.0-beta.1. Its source matches
   the primary commits above. It was not installed to `/Applications`.
 
 ### Completed and preserved
@@ -879,6 +879,18 @@ reuse the footer test IDs, including `sidebar-settings`, so shared e2e helpers w
 unchanged. Chats in a project show a folder before their titlebar title; the user
 confirmed Codex shows it only for project chats.
 
+The user then asked rail actions to open popups in place where the existing client
+supports it. Usage reuses the compact usage sheet as a popover beside the rail, like
+the reference account menu; without a connected host it still opens the Usage
+screen. Hosts and Help were already popovers, Add project already opens its flow
+dialog, and Settings navigates, as requested. No backend or protocol change was
+needed. The renderer case seeds a usage report, opens the popover beside the rail
+without leaving the current route, and closes it with Escape; its
+[capture](../qa-evidence/codex-desktop/rail-usage-popover.png) was inspected. The
+Custom package rebuilt from `64f7f74` passes smoke and the native runner. Logs:
+`/private/tmp/paseo-usage-popover-renderer.log` and
+`/private/tmp/paseo-usage-package.log`.
+
 Validation: the sidebar, new-chat, pinning, import, command-center, settings,
 usage, single-chat, shortcut and refresh-splash specs pass (21 renderer cases).
 The refresh-splash case now runs on the win32 runtime: since the October 1
@@ -1720,9 +1732,9 @@ Appearance captures were inspected in the private artifact directory
 `/private/tmp/paseo-settings-return-final-{format,lint}.log`. The first concurrent
 typecheck raced the dependency build; the final check was run after build completion.
 
-The latest Custom refresh was built from `e8a72bf` in the isolated checkout,
-source-identical to primary `1e8b5fa`, adding the Mac chat sidebar, rail actions
-and project titlebar folder; see [its section](#chat-sidebar-restoration--2026-10-02). The refresh before it was built
+The latest Custom refresh was built from `64f7f74` in the isolated checkout,
+source-identical to primary `bd43b54`, adding the Mac chat sidebar, rail actions,
+the rail usage popover and project titlebar folder; see [its section](#chat-sidebar-restoration--2026-10-02). The refresh before it was built
 from `ef2e515`, source-identical to primary `a54288d`, adding the 13px text scale and
 list markers. The preceding refresh was built from `d46ba1f`, source-identical to primary `fb46652`. Startup/CLI/terminal smoke and the native
 interaction runner pass, including the Markdown block gaps and inline-code line
