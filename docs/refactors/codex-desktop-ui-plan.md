@@ -9,17 +9,18 @@ complete; this section replaces that handoff.
 
 - Primary: `/Users/yndi/dev/projects/codex-app/paseo`, branch `codex/desktop-ui`.
   It contains the integrated Markdown block-spacing and inline-code commits
-  `2b4e52e`, `6e335c1` and `fb46652`, then the 13px text scale `f51630f` and
-  list markers `a54288d`. The user's uncommitted **Native session fork draft**
+  `2b4e52e`, `6e335c1` and `fb46652`, the 13px text scale `f51630f`, list markers
+  `a54288d`, and the chat sidebar `009bdea`, `94f0b05` and `c52b0ef`. The user's uncommitted **Native session fork draft**
   in this file and the private `context-images/` directory (79 reference images
   plus a Finder `.DS_Store`) remain untouched. Preserve both.
 - Isolated checkout: `/Users/yndi/dev/projects/codex-app/paseo-upstream-4893629`,
   branch `codex/markdown-spacing-paused-20261002`. Its commits `78a5f32`,
-  `63071b9`, `d46ba1f`, `e66eb9a` and `ef2e515` replace checkpoint `0964d59` on `cda57c3`; the checkpoint's handoff
+  `63071b9`, `d46ba1f`, `e66eb9a`, `ef2e515`, `f06f026`, `29c8053` and `8ba5126`
+  replace checkpoint `0964d59` on `cda57c3`; the checkpoint's handoff
   text was dropped there because primary `3e3ba6d` already contained it.
 - Last verified bundle:
   `paseo-upstream-4893629/packages/desktop/release-custom/mac-arm64/Paseo Custom.app`,
-  built from `ef2e515` on upstream `e10f6d2` / 0.11.0-beta.1. Its source matches
+  built from `8ba5126` on upstream `e10f6d2` / 0.11.0-beta.1. Its source matches
   the primary commits above. It was not installed to `/Applications`.
 
 ### Completed and preserved
@@ -43,8 +44,8 @@ their sections below. Local commits are not pushed.
    to pnpm. Never run build/clean concurrently with tests or typecheck.
 2. On 2026-10-02 the user asked for overall Codex similarity rather than pixel
    equality. Fix visible differences at the reference viewport; do not reopen
-   sub-pixel ink fitting. The workspace sidebar stays per the October 1 decision;
-   the earlier chat-row sidebar (`4a66271`) is only a proposal to raise again.
+   sub-pixel ink fitting. The user then asked for the Codex chat sidebar on Mac;
+   see [its restoration](#chat-sidebar-restoration--2026-10-02).
 3. Audit the remaining surface and acceptance gaps in Steps below. Full visual
    parity, provider/remote-device acceptance and distribution gates are not claimed.
 
@@ -77,14 +78,13 @@ in the same top window bar as the chat title. Supporting content starts below
 that shared bar; a file tree belongs inside the supporting tool, not beside the
 main chat as a separate main tab strip.
 
-**Sidebar and navigation rail scope — 2026-10-01:** keep Paseo's default workspace
-sidebar, including its navigation rows, project/workspace groups, footer, resizing
-and workspace pin shortcut. The user clarified that the separate thin icon rail
-should be restored. Keep that rail independent of the workspace sidebar toggle;
-hide it in compact layouts and constrained settings windows. The custom chat-row
-sidebar remains outside the current scope. Keep the default 320px width for new
-preferences and retain saved widths. Earlier sidebar screenshots and phase-2
-results below are historical; this clarification governs the current layout.
+**Sidebar and navigation rail scope — 2026-10-02:** the Mac desktop shell uses the
+Codex-style chat sidebar (Pinned, Recent, project chat groups) again, at the user's
+request for maximum Codex similarity; this replaces the October 1 decision to keep
+the workspace sidebar. Other platforms and compact layouts keep the workspace
+sidebar. Keep the thin icon rail independent of the sidebar toggle and hidden in
+compact layouts and constrained settings windows. Keep the 320px default width
+for new preferences and retain saved widths.
 
 The upstream baseline is `getpaseo/paseo` commit `53ee9cd` on `main`. Work lives on
 `codex/desktop-ui`. This document owns the steps, decisions, progress, and evidence.
@@ -144,7 +144,7 @@ scope; it does not remove runtime code or add new provider integrations.
 | 0. Upstream baseline             | Complete for local startup                            | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                                      |
 | 1. Window and sidebar appearance | Frame and Appearance controls checked                 | Window frame, navigation, Advanced collapse and motion selection have native evidence. Scoped reset passes isolated renderer and packaged checks; full reference matching remains.           |
 | 1a. Upstream integration check   | Refreshed and verified                                | Upstream `e10f6d2` integrated in isolation; provider, usage, sheet, navigation and custom desktop checks pass. Protected daemons are not restarted.                                          |
-| 2. Chat navigation               | Single-chat layout verified locally                   | Main tabs removed; tools route right with saved state retained. Default sidebar, current-chat actions, draft isolation and Back/Forward remain. Custom chat sidebar stays deferred.          |
+| 2. Chat navigation               | Single-chat layout verified locally                   | Main tabs removed; tools route right with saved state retained. Mac chat sidebar, current-chat actions, draft isolation and Back/Forward pass; other platforms keep the workspace list.      |
 | 3. Transcript and composer       | Composer and activity verified; visual polish pending | Column, input/model controls, tool cards and completed-turn activity are checked in native development. Attachment-menu renderer checks pass; native follow-up and transcript polish remain. |
 | 4. Supporting panels             | Right tools and shared titlebar verified locally      | Terminal, browser, file and diff routing pass. Internal file tree and responsive browser controls pass; detailed panel styling and native tool acceptance remain.                            |
 | 5. Custom distribution           | Local macOS package verified; distribution pending    | Independent identity, exclusive custom scheme, update guard and isolated renderer/daemon/CLI startup pass. Release source, signing, OS handler coexistence and distribution remain.          |
@@ -855,6 +855,42 @@ Logs: `/private/tmp/paseo-default-sidebar-newchat.log`,
 `/private/tmp/paseo-default-sidebar-layout-tests.log`,
 `/private/tmp/paseo-default-sidebar-typecheck.log` and
 `/private/tmp/paseo-default-sidebar-lint.log`.
+
+### Chat sidebar restoration — 2026-10-02
+
+The chat sidebar from `4a66271` stayed in the tree after the October 1 restoration;
+it is mounted again on the Mac desktop shell with its current-chat pin shortcut.
+The Mac gate lives inside the sidebar components, keeping `DesktopSidebar` under the
+lint complexity limit. Its search button and empty-workspace rows keep the shared
+`sidebar-search` and `sidebar-workspace-row-*` test IDs that e2e helpers use.
+Chats that have a workspace appear as chat rows, not workspace rows, so the native
+suite opens the caller chat instead.
+
+Mac also drops two Paseo-only surfaces Codex lacks: the worktree-script setup
+callout (scripts stay in project settings; update and Rosetta callouts remain)
+and the Import session button below the new-chat composer (import stays in History
+and Cmd+K). The composer now sits at the window bottom like the reference. The
+footer keeps its Help and Settings buttons because shared helpers open Settings
+through `sidebar-settings`; they duplicate the rail.
+
+Validation: the sidebar, new-chat, pinning, import, command-center, settings,
+usage, single-chat, shortcut and refresh-splash specs pass (21 renderer cases).
+The refresh-splash case now runs on the win32 runtime: since the October 1
+single-chat layout it could not pass on Mac, which has no workspace tabs or
+header, and it checks platform-neutral splash continuity. The native
+navigation-only regression passes. The Custom package rebuilt from `8ba5126`
+passes startup/CLI/terminal smoke and the native interaction runner.
+[Packaged chat sidebar](../qa-evidence/codex-desktop/packaged-chat-sidebar.png) and
+[new chat](../qa-evidence/codex-desktop/chat-sidebar-new-chat.png) were inspected.
+Logs: `/private/tmp/paseo-chat-sidebar-renderer{,-2}.log`,
+`/private/tmp/paseo-batch-b-renderer{,-2,-3}.log`,
+`/private/tmp/paseo-chat-sidebar-navigation.log` and
+`/private/tmp/paseo-chat-sidebar-package.log`.
+
+Remaining differences: the selected chat is highlighted in both Recent and its
+project group, while Codex highlights one row; the header reads Paseo without the
+Codex workspace menu or notifications bell; the reference titlebar sometimes shows
+a folder icon before the chat title. The full native browser suite was not rerun.
 
 ### Sidebar motion and selection — 2026-10-01
 
@@ -1669,9 +1705,11 @@ Appearance captures were inspected in the private artifact directory
 `/private/tmp/paseo-settings-return-final-{format,lint}.log`. The first concurrent
 typecheck raced the dependency build; the final check was run after build completion.
 
-The latest Custom refresh was built from `ef2e515` in the isolated checkout,
-source-identical to primary `a54288d`, adding the 13px text scale and list markers.
-The preceding refresh was built from `d46ba1f`, source-identical to primary `fb46652`. Startup/CLI/terminal smoke and the native
+The latest Custom refresh was built from `8ba5126` in the isolated checkout,
+source-identical to primary `c52b0ef`, adding the Mac chat sidebar; see
+[its section](#chat-sidebar-restoration--2026-10-02). The refresh before it was built
+from `ef2e515`, source-identical to primary `a54288d`, adding the 13px text scale and
+list markers. The preceding refresh was built from `d46ba1f`, source-identical to primary `fb46652`. Startup/CLI/terminal smoke and the native
 interaction runner pass, including the Markdown block gaps and inline-code line
 height for plain and file-path chips. Log: `/private/tmp/paseo-chip-path-package.log`;
 artifacts: `/private/tmp/paseo-chip-path-package-{smoke,qa}`.
