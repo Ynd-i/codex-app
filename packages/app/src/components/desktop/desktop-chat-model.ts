@@ -5,6 +5,7 @@ import type {
   SidebarWorkspacePlacement,
 } from "@/hooks/use-sidebar-workspaces-list";
 import { isWorkspaceRootAgent } from "@/subagents/policies";
+import { applyStoredOrdering } from "@/hooks/sidebar-workspaces-view-model";
 
 // Generic agent metadata keeps these preferences synced without changing the daemon protocol.
 export const DESKTOP_CHAT_PINNED_AT = "codex-ui.pinned-at";
@@ -88,4 +89,33 @@ export function buildDesktopChatSidebar({
       .sort((left, right) => desktopChatPinnedAt(right)! - desktopChatPinnedAt(left)!),
     recent: visible.filter((agent) => desktopChatPinnedAt(agent) === null),
   };
+}
+
+export type ChatSectionSort = "latest" | "manual";
+
+function byLatestActivity(left: AggregatedAgent, right: AggregatedAgent): number {
+  return right.lastActivityAt.getTime() - left.lastActivityAt.getTime();
+}
+
+/**
+ * Latest follows activity. Manual applies the stored drag order and leaves chats it has never
+ * seen where `chats` puts them, so a new chat still arrives on top of a hand-ordered section.
+ */
+export function orderSectionChats(
+  chats: AggregatedAgent[],
+  sort: ChatSectionSort,
+  storedOrder: string[],
+): AggregatedAgent[] {
+  if (sort === "latest") return [...chats].sort(byLatestActivity);
+  return applyStoredOrdering({ items: chats, storedOrder, getKey: desktopChatKey });
+}
+
+/** Manual keeps the sidebar's stored project order; latest ranks by each project's newest chat. */
+export function orderSectionProjects(
+  projects: DesktopChatProject[],
+  sort: ChatSectionSort,
+): DesktopChatProject[] {
+  if (sort === "manual") return projects;
+  const newest = (entry: DesktopChatProject) => entry.chats[0]?.lastActivityAt.getTime() ?? 0;
+  return [...projects].sort((left, right) => newest(right) - newest(left));
 }

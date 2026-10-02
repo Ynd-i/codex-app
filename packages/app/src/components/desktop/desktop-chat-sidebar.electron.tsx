@@ -1,57 +1,47 @@
-import { memo, useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState, type Ref } from "react";
 import { router } from "expo-router";
-import {
-  ChevronDown,
-  ChevronRight,
-  FolderOpen,
-  MoreHorizontal,
-  Plus,
-  Search,
-  Settings2,
-} from "lucide-react-native";
-import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
+import { FolderOpen, Plus, Search, Settings2 } from "lucide-react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import { AgentStatusDot } from "@/components/agent-status-dot";
+import { DraggableList } from "@/components/draggable-list";
+import type {
+  DraggableListDragHandleProps,
+  DraggableRenderItemInfo,
+} from "@/components/draggable-list.types";
 import { HeaderToggleButton } from "@/components/headers/header-toggle-button";
 import { SidebarDisplayPreferencesMenu } from "@/components/sidebar/display-preferences/menu";
-import { SidebarGroupToggleRow } from "@/components/sidebar/sidebar-group-toggle-row";
 import { useSidebarModel } from "@/components/sidebar/sidebar-model";
-import { useLimitedSidebarGroup } from "@/components/sidebar/use-limited-sidebar-group";
 import { Button } from "@/components/ui/button";
-import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from "@/components/ui/context-menu";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useAggregatedAgents, type AggregatedAgent } from "@/hooks/use-aggregated-agents";
 import type { SidebarWorkspacePlacement } from "@/hooks/use-sidebar-workspaces-list";
 import { openProjectSettings } from "@/navigation/settings-navigation";
 import { useKeyboardShortcutsStore } from "@/stores/keyboard-shortcuts-store";
 import { navigateToWorkspace } from "@/stores/navigation-active-workspace-store";
 import { useSidebarCollapsedSectionsStore } from "@/stores/sidebar-collapsed-sections-store";
+import { useSidebarOrderStore } from "@/stores/sidebar-order-store";
 import type { Theme } from "@/styles/theme";
 import { buildNewWorkspaceRoute } from "@/utils/host-routes";
-import { navigateToAgent } from "@/utils/navigate-to-agent";
+import { hasVisibleOrderChanged, mergeWithRemainder } from "@/utils/sidebar-reorder";
 import {
   buildDesktopChatSidebar,
-  desktopChatKey,
+  orderSectionChats,
+  orderSectionProjects,
+  type ChatSectionSort,
   type DesktopChatProject,
 } from "./desktop-chat-model";
+import { ChatSectionHeader } from "./desktop-chat-section-header";
+import { SectionChatList } from "./desktop-chat-section-list";
+import { CHAT_SECTION, sectionSort, useChatSectionsStore } from "./desktop-chat-sections-store";
 import { useActiveDesktopChat } from "./use-desktop-chat";
 import { usesDesktopShell } from "./desktop-shell";
-import { DesktopChatMenuItems, useDesktopChatMenu } from "./desktop-chat-menu";
 
 const SearchIcon = withUnistyles(Search);
 const FolderIcon = withUnistyles(FolderOpen);
-const DownIcon = withUnistyles(ChevronDown);
-const RightIcon = withUnistyles(ChevronRight);
-const MoreIcon = withUnistyles(MoreHorizontal);
 const PlusIcon = withUnistyles(Plus);
 const SettingsIcon = withUnistyles(Settings2);
-const Progress = withUnistyles(ActivityIndicator);
 const mutedIcon = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
+const NO_ORDER: string[] = [];
 function openSearch() {
   useKeyboardShortcutsStore.getState().setCommandCenterOpen(true);
 }
@@ -87,98 +77,23 @@ function ChatSidebarHeader() {
   );
 }
 
-const ChatRow = memo(function ChatRow({
-  agent,
-  selectedKey,
-  indented = false,
-}: {
-  agent: AggregatedAgent;
-  selectedKey: string | null;
-  indented?: boolean;
-}) {
-  const { t } = useTranslation();
-  const { busy, unread, markRead, menuProps, renameModal } = useDesktopChatMenu(agent);
-  const [hovered, setHovered] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [contextOpen, setContextOpen] = useState(false);
-  const key = desktopChatKey(agent);
-  const selected = selectedKey === key;
-  const title = agent.title || t("agentList.fallbackTitle");
-  const enter = useCallback(() => setHovered(true), []);
-  const leave = useCallback(() => setHovered(false), []);
-  const open = useCallback(() => {
-    if (unread) markRead();
-    navigateToAgent({
-      serverId: agent.serverId,
-      agentId: agent.id,
-      workspaceId: agent.workspaceId,
-      pin: true,
-    });
-  }, [agent, unread, markRead]);
-  const accessibilityState = useMemo(() => ({ selected, busy }), [selected, busy]);
-
-  return (
-    <>
-      <ContextMenu open={contextOpen} onOpenChange={setContextOpen}>
-        <ContextMenuTrigger contextOnly>
-          <View
-            onPointerEnter={enter}
-            onPointerLeave={leave}
-            style={[
-              styles.chatRow,
-              indented && styles.indented,
-              (hovered || contextOpen || menuOpen) && styles.rowHovered,
-              selected && styles.rowSelected,
-            ]}
-          >
-            <Pressable
-              onPress={open}
-              disabled={busy}
-              style={styles.chatButton}
-              accessibilityRole="button"
-              accessibilityLabel={`${title} — ${agent.serverLabel}`}
-              accessibilityState={accessibilityState}
-              testID={`desktop-chat-${key}`}
-            >
-              <Text numberOfLines={1} style={[styles.chatTitle, unread && styles.unreadTitle]}>
-                {title}
-              </Text>
-              {busy ? (
-                <Progress size="small" uniProps={mutedIcon} />
-              ) : (
-                <AgentStatusDot
-                  status={agent.turn.phase === "open" ? "running" : agent.status}
-                  requiresAttention={unread}
-                  attentionReason={agent.attentionReason}
-                  pendingPermissionCount={agent.pendingPermissionCount}
-                />
-              )}
-            </Pressable>
-            <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
-              <DropdownMenuTrigger
-                onFocus={enter}
-                onBlur={leave}
-                style={[styles.menuButton, !hovered && !menuOpen && styles.menuHidden]}
-                accessibilityRole="button"
-                accessibilityLabel={t("desktopChat.actions")}
-                testID={`desktop-chat-menu-${key}`}
-              >
-                <MoreIcon size={16} uniProps={mutedIcon} />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" width={210}>
-                <DesktopChatMenuItems {...menuProps} />
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </View>
-        </ContextMenuTrigger>
-        <ContextMenuContent width={210}>
-          <DesktopChatMenuItems {...menuProps} context />
-        </ContextMenuContent>
-      </ContextMenu>
-      {renameModal}
-    </>
+function useSectionSort(sectionId: string) {
+  const sort = useChatSectionsStore((state) => sectionSort(state, sectionId));
+  const order = useChatSectionsStore((state) => state.chatOrderBySection[sectionId] ?? NO_ORDER);
+  const setSortFor = useChatSectionsStore((state) => state.setSort);
+  const setSort = useCallback(
+    (next: ChatSectionSort) => setSortFor(sectionId, next),
+    [sectionId, setSortFor],
   );
-});
+  return { sort, order, setSort };
+}
+
+function useSectionCollapsed(sectionId: string) {
+  const collapsed = useChatSectionsStore((state) => state.collapsedSections.includes(sectionId));
+  const toggleFor = useChatSectionsStore((state) => state.toggleCollapsed);
+  const toggle = useCallback(() => toggleFor(sectionId), [sectionId, toggleFor]);
+  return { collapsed, toggle };
+}
 
 function EmptyWorkspaceRow({ workspace }: { workspace: SidebarWorkspacePlacement }) {
   const open = useCallback(
@@ -204,9 +119,11 @@ function EmptyWorkspaceRow({ workspace }: { workspace: SidebarWorkspacePlacement
 const ChatProject = memo(function ChatProject({
   entry,
   selectedKey,
+  dragHandleProps,
 }: {
   entry: DesktopChatProject;
   selectedKey: string | null;
+  dragHandleProps?: DraggableListDragHandleProps;
 }) {
   const { t } = useTranslation();
   const { project, chats, emptyWorkspaces } = entry;
@@ -214,7 +131,6 @@ const ChatProject = memo(function ChatProject({
     state.collapsedProjectKeys.has(project.viewKey),
   );
   const toggleCollapsed = useSidebarCollapsedSectionsStore((state) => state.toggleProjectCollapsed);
-  const { visibleItems, expanded, canToggle, toggleExpanded } = useLimitedSidebarGroup(chats);
   const [hovered, setHovered] = useState(false);
   const enter = useCallback(() => setHovered(true), []);
   const leave = useCallback(() => setHovered(false), []);
@@ -238,9 +154,23 @@ const ChatProject = memo(function ChatProject({
     if (target) openProjectSettings(target.serverId, target.projectId);
   }, [target]);
   const accessibilityState = useMemo(() => ({ expanded: !collapsed }), [collapsed]);
+  // A manually ordered project list drags by the header; dnd-kit's role would replace its button.
+  const {
+    role: _dragRole,
+    tabIndex: _dragTabIndex,
+    "aria-roledescription": _dragRoleDescription,
+    ...dragAttributes
+  } = dragHandleProps?.attributes ?? {};
   return (
     <View style={styles.project}>
-      <View style={styles.projectHeader} onPointerEnter={enter} onPointerLeave={leave}>
+      <View
+        {...dragAttributes}
+        {...dragHandleProps?.listeners}
+        ref={dragHandleProps?.setActivatorNodeRef as unknown as Ref<View>}
+        style={styles.projectHeader}
+        onPointerEnter={enter}
+        onPointerLeave={leave}
+      >
         <Pressable
           onPress={toggle}
           style={styles.projectButton}
@@ -254,7 +184,7 @@ const ChatProject = memo(function ChatProject({
             {project.projectName}
           </Text>
         </Pressable>
-        <View style={[styles.projectActions, !hovered && styles.menuHidden]}>
+        <View style={[styles.projectActions, !hovered && styles.hidden]}>
           <HeaderToggleButton
             onPress={create}
             onFocus={enter}
@@ -285,17 +215,14 @@ const ChatProject = memo(function ChatProject({
       </View>
       {!collapsed ? (
         <>
-          {visibleItems.map((agent) => (
-            <ChatRow key={desktopChatKey(agent)} agent={agent} selectedKey={selectedKey} indented />
-          ))}
-          {canToggle ? (
-            <SidebarGroupToggleRow
-              expanded={expanded}
-              onPress={toggleExpanded}
-              indented
-              testID={`desktop-project-more-${project.viewKey}`}
-            />
-          ) : null}
+          <SectionChatList
+            sectionId={`project:${project.viewKey}`}
+            chats={chats}
+            sort="latest"
+            selectedKey={selectedKey}
+            indented
+            moreTestID={`desktop-project-more-${project.viewKey}`}
+          />
           {emptyWorkspaces.map((workspace) => (
             <EmptyWorkspaceRow key={workspace.workspaceKey} workspace={workspace} />
           ))}
@@ -305,65 +232,159 @@ const ChatProject = memo(function ChatProject({
   );
 });
 
-function ChatSections({
-  pinned,
-  recent,
+function PinnedSection({
+  chats,
   selectedKey,
 }: {
-  pinned: AggregatedAgent[];
-  recent: AggregatedAgent[];
+  chats: AggregatedAgent[];
   selectedKey: string | null;
 }) {
   const { t } = useTranslation();
   const pinnedCollapsed = useSidebarCollapsedSectionsStore((state) => state.collapsedPinned);
   const togglePinned = useSidebarCollapsedSectionsStore((state) => state.togglePinnedCollapsed);
-  const { visibleItems, expanded, canToggle, toggleExpanded } = useLimitedSidebarGroup(recent, 10);
-  const collapsed = pinnedCollapsed || pinned.length === 0;
-  const accessibilityState = useMemo(() => ({ expanded: !collapsed }), [collapsed]);
+  const { sort, order, setSort } = useSectionSort(CHAT_SECTION.pinned);
+  const ordered = useMemo(() => orderSectionChats(chats, sort, order), [chats, order, sort]);
+  const collapsed = pinnedCollapsed || chats.length === 0;
   return (
-    <View>
-      <Pressable
-        onPress={togglePinned}
-        disabled={pinned.length === 0}
-        style={styles.sectionHeading}
-        accessibilityRole="button"
-        accessibilityLabel={t("sidebar.pinned.title")}
-        accessibilityState={accessibilityState}
-      >
-        <Text style={styles.sectionTitle}>{t("sidebar.pinned.title")}</Text>
-        {collapsed ? (
-          <RightIcon size={13} uniProps={mutedIcon} />
-        ) : (
-          <DownIcon size={13} uniProps={mutedIcon} />
-        )}
-      </Pressable>
-      {!collapsed
-        ? pinned.map((agent) => (
-            <ChatRow key={desktopChatKey(agent)} agent={agent} selectedKey={selectedKey} />
-          ))
-        : null}
-      <View style={styles.sectionHeading}>
-        <Text style={styles.sectionTitle}>{t("agentList.dateSections.recent")}</Text>
-      </View>
-      {visibleItems.map((agent) => (
-        <ChatRow key={desktopChatKey(agent)} agent={agent} selectedKey={selectedKey} />
-      ))}
-      {canToggle ? (
-        <SidebarGroupToggleRow
-          expanded={expanded}
-          onPress={toggleExpanded}
-          testID="desktop-recent-more"
+    <>
+      <ChatSectionHeader
+        title={t("sidebar.pinned.title")}
+        collapsed={collapsed}
+        onToggle={chats.length > 0 ? togglePinned : undefined}
+        sort={sort}
+        onSortChange={setSort}
+        testID="desktop-section-pinned"
+      />
+      {collapsed ? null : (
+        <SectionChatList
+          sectionId={CHAT_SECTION.pinned}
+          chats={ordered}
+          sort={sort}
+          selectedKey={selectedKey}
+          limit={Number.POSITIVE_INFINITY}
+          moreTestID="desktop-pinned-more"
         />
-      ) : null}
-      <View style={styles.sectionHeading}>
-        <Text style={styles.sectionTitle}>{t("settings.hostSections.projects")}</Text>
-      </View>
-    </View>
+      )}
+    </>
   );
 }
 
-function projectKey(entry: DesktopChatProject) {
+function RecentSection({
+  chats,
+  selectedKey,
+}: {
+  chats: AggregatedAgent[];
+  selectedKey: string | null;
+}) {
+  const { t } = useTranslation();
+  const { collapsed, toggle } = useSectionCollapsed(CHAT_SECTION.recent);
+  const { sort, order, setSort } = useSectionSort(CHAT_SECTION.recent);
+  const ordered = useMemo(() => orderSectionChats(chats, sort, order), [chats, order, sort]);
+  return (
+    <>
+      <ChatSectionHeader
+        title={t("agentList.dateSections.recent")}
+        collapsed={collapsed}
+        onToggle={toggle}
+        sort={sort}
+        onSortChange={setSort}
+        testID="desktop-section-recent"
+      />
+      {collapsed ? null : (
+        <SectionChatList
+          sectionId={CHAT_SECTION.recent}
+          chats={ordered}
+          sort={sort}
+          selectedKey={selectedKey}
+          limit={10}
+          moreTestID="desktop-recent-more"
+        />
+      )}
+    </>
+  );
+}
+
+function projectKeyExtractor(entry: DesktopChatProject): string {
   return entry.project.viewKey;
+}
+
+function ProjectsSection({
+  projects,
+  selectedKey,
+  onAddProject,
+}: {
+  projects: DesktopChatProject[];
+  selectedKey: string | null;
+  onAddProject: () => void;
+}) {
+  const { t } = useTranslation();
+  const { collapsed, toggle } = useSectionCollapsed(CHAT_SECTION.projects);
+  const { sort, setSort } = useSectionSort(CHAT_SECTION.projects);
+  const ordered = useMemo(() => orderSectionProjects(projects, sort), [projects, sort]);
+  const getProjectOrder = useSidebarOrderStore((state) => state.getProjectOrder);
+  const setProjectOrder = useSidebarOrderStore((state) => state.setProjectOrder);
+  // Manual order is the sidebar's shared project order, so both sidebars agree on it.
+  const handleDragEnd = useCallback(
+    (reordered: DesktopChatProject[]) => {
+      const reorderedVisibleKeys = reordered.map(projectKeyExtractor);
+      const currentOrder = getProjectOrder();
+      if (!hasVisibleOrderChanged({ currentOrder, reorderedVisibleKeys })) return;
+      setProjectOrder(mergeWithRemainder({ currentOrder, reorderedVisibleKeys }));
+    },
+    [getProjectOrder, setProjectOrder],
+  );
+  const renderProject = useCallback(
+    ({ item, dragHandleProps }: DraggableRenderItemInfo<DesktopChatProject>) => (
+      <ChatProject entry={item} selectedKey={selectedKey} dragHandleProps={dragHandleProps} />
+    ),
+    [selectedKey],
+  );
+  const addProject = useMemo(
+    () => (
+      <HeaderToggleButton
+        onPress={onAddProject}
+        tooltipLabel={t("sidebar.actions.addProject")}
+        tooltipKeys={[]}
+        tooltipSide="top"
+        accessibilityRole="button"
+        accessibilityLabel={t("sidebar.actions.addProject")}
+        testID="desktop-section-projects-add"
+      >
+        <PlusIcon size={16} uniProps={mutedIcon} />
+      </HeaderToggleButton>
+    ),
+    [onAddProject, t],
+  );
+  const list =
+    sort === "manual" ? (
+      <DraggableList
+        testID="desktop-section-list-projects"
+        data={ordered}
+        keyExtractor={projectKeyExtractor}
+        renderItem={renderProject}
+        onDragEnd={handleDragEnd}
+        scrollEnabled={false}
+        useDragHandle
+      />
+    ) : (
+      ordered.map((entry) => (
+        <ChatProject key={entry.project.viewKey} entry={entry} selectedKey={selectedKey} />
+      ))
+    );
+  return (
+    <>
+      <ChatSectionHeader
+        title={t("desktopChat.sections.projects")}
+        collapsed={collapsed}
+        onToggle={toggle}
+        sort={sort}
+        onSortChange={setSort}
+        actions={addProject}
+        testID="desktop-section-projects"
+      />
+      {collapsed ? null : list}
+    </>
+  );
 }
 
 function ChatSidebarList({ onAddProject }: { onAddProject: () => void }) {
@@ -373,42 +394,32 @@ function ChatSidebarList({ onAddProject }: { onAddProject: () => void }) {
   const selected = useActiveDesktopChat();
   const selectedKey = selected ? `${selected.serverId}:${selected.agentId}` : null;
   const model = useMemo(() => buildDesktopChatSidebar({ projects, agents }), [projects, agents]);
-  const renderProject = useCallback(
-    ({ item }: { item: DesktopChatProject }) => (
-      <ChatProject entry={item} selectedKey={selectedKey} />
-    ),
-    [selectedKey],
-  );
-  const header = useMemo(
-    () => <ChatSections pinned={model.pinned} recent={model.recent} selectedKey={selectedKey} />,
-    [model.pinned, model.recent, selectedKey],
-  );
-  const empty = useMemo(
-    () => (
-      <View style={styles.empty}>
-        <Text style={styles.secondaryText}>
-          {t(allProjects.length > 0 ? "sidebar.filterEmpty.description" : "sessions.empty")}
-        </Text>
-        {allProjects.length === 0 ? (
-          <Button variant="ghost" onPress={onAddProject}>
-            {t("sidebar.actions.addProject")}
-          </Button>
-        ) : null}
-      </View>
-    ),
-    [allProjects.length, onAddProject, t],
-  );
   return (
-    <FlatList
-      data={model.projects}
-      renderItem={renderProject}
-      keyExtractor={projectKey}
-      ListHeaderComponent={header}
-      ListEmptyComponent={empty}
+    <ScrollView
       style={styles.list}
       contentContainerStyle={styles.listContent}
       testID="sidebar-project-list"
-    />
+    >
+      <PinnedSection chats={model.pinned} selectedKey={selectedKey} />
+      <RecentSection chats={model.recent} selectedKey={selectedKey} />
+      <ProjectsSection
+        projects={model.projects}
+        selectedKey={selectedKey}
+        onAddProject={onAddProject}
+      />
+      {model.projects.length === 0 ? (
+        <View style={styles.empty}>
+          <Text style={styles.secondaryText}>
+            {t(allProjects.length > 0 ? "sidebar.filterEmpty.description" : "sessions.empty")}
+          </Text>
+          {allProjects.length === 0 ? (
+            <Button variant="ghost" onPress={onAddProject}>
+              {t("sidebar.actions.addProject")}
+            </Button>
+          ) : null}
+        </View>
+      ) : null}
+    </ScrollView>
   );
 }
 
@@ -422,50 +433,7 @@ const styles = StyleSheet.create((theme) => ({
   spacer: { flex: 1 },
   list: { flex: 1 },
   listContent: { paddingHorizontal: 8, paddingBottom: 16 },
-  sectionHeading: {
-    height: 44,
-    paddingTop: 12,
-    paddingHorizontal: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  sectionTitle: { color: theme.colors.foregroundExtraMuted, fontSize: theme.fontSize.base },
-  chatRow: {
-    minHeight: 32,
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 10,
-    paddingLeft: 8,
-    paddingRight: 4,
-  },
-  indented: { paddingLeft: 32 },
-  rowHovered: { backgroundColor: theme.colors.surfaceSidebarHover },
-  rowSelected: { backgroundColor: theme.colors.surfaceSidebarSelected },
-  chatButton: {
-    flex: 1,
-    minWidth: 0,
-    minHeight: 32,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  chatTitle: {
-    flex: 1,
-    minWidth: 0,
-    color: theme.colors.foreground,
-    fontSize: theme.fontSize.base,
-    lineHeight: 20,
-  },
-  unreadTitle: { color: theme.colors.foreground, fontWeight: theme.fontWeight.medium },
-  menuButton: {
-    width: 24,
-    height: 28,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 6,
-  },
-  menuHidden: { opacity: 0 },
+  hidden: { opacity: 0 },
   project: { paddingBottom: 6 },
   projectHeader: { minHeight: 32, flexDirection: "row", alignItems: "center", paddingLeft: 8 },
   projectButton: {

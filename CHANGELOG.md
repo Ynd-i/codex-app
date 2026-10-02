@@ -42,6 +42,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- macOS chat sidebar sections collapse from their titles and reveal a sort menu on hover: recently updated, or a manual order you drag, with new chats still arriving on top. Projects add a project from their header.
+
 - The macOS rail's Usage button opens the usage summary beside the rail instead of leaving the current chat; without a connected host it still opens the Usage screen.
 
 - The macOS navigation rail now holds Add project, Usage, Hosts, Help and Settings instead of the sidebar footer, and project chats show a folder before their titlebar title.

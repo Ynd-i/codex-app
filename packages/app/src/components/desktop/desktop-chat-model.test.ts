@@ -7,6 +7,9 @@ import {
   DESKTOP_CHAT_PINNED_AT,
   DESKTOP_CHAT_UNREAD,
   isDesktopChatUnread,
+  orderSectionChats,
+  orderSectionProjects,
+  type DesktopChatProject,
 } from "./desktop-chat-model";
 
 function chat(id: string, serverId: string, workspaceId: string): AggregatedAgent {
@@ -97,4 +100,42 @@ it("keeps chat and host identities distinct without losing empty workspaces", ()
   expect(isDesktopChatUnread(sibling)).toBe(false);
   sibling.requiresAttention = true;
   expect(isDesktopChatUnread(sibling)).toBe(true);
+});
+
+it("keeps new chats on top of a manually ordered section", () => {
+  const older = chat("older", "local", "one");
+  const middle = chat("middle", "local", "one");
+  const fresh = chat("fresh", "local", "one");
+  older.lastActivityAt = new Date("2026-09-30T08:00:00Z");
+  middle.lastActivityAt = new Date("2026-09-30T09:00:00Z");
+  fresh.lastActivityAt = new Date("2026-09-30T10:00:00Z");
+  const byActivity = [fresh, middle, older];
+  const keys = (chats: AggregatedAgent[]) => chats.map((entry) => entry.id);
+  expect(keys(orderSectionChats(byActivity, "manual", ["local:older", "local:middle"]))).toEqual([
+    "fresh",
+    "older",
+    "middle",
+  ]);
+  expect(keys(orderSectionChats([older, fresh, middle], "latest", ["local:older"]))).toEqual([
+    "fresh",
+    "middle",
+    "older",
+  ]);
+});
+
+it("ranks projects by their newest chat only in latest order", () => {
+  const quiet: DesktopChatProject = {
+    project: project("quiet", "local", []),
+    chats: [],
+    emptyWorkspaces: [],
+  };
+  const busyChat = chat("busy", "local", "one");
+  const busy: DesktopChatProject = {
+    project: project("busy", "local", ["one"]),
+    chats: [busyChat],
+    emptyWorkspaces: [],
+  };
+  const names = (entries: DesktopChatProject[]) => entries.map((entry) => entry.project.viewKey);
+  expect(names(orderSectionProjects([quiet, busy], "manual"))).toEqual(["quiet", "busy"]);
+  expect(names(orderSectionProjects([quiet, busy], "latest"))).toEqual(["busy", "quiet"]);
 });

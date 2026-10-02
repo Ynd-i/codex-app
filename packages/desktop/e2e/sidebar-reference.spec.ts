@@ -7,6 +7,7 @@ import { getE2EDaemonPort } from "../../app/e2e/support/helpers/daemon-port";
 import { getServerId } from "../../app/e2e/support/helpers/server-id";
 import { seedWorkspace } from "../../app/e2e/support/helpers/seed-client";
 import { installUsageReportsFixture } from "../../app/e2e/support/helpers/usage-reports";
+import { openAgentRoute, seedMockAgentWorkspace } from "../../app/e2e/support/helpers/mock-agent";
 import { installDesktopRuntime } from "./support/runtime";
 
 async function waitForTwoFrames(page: Page): Promise<void> {
@@ -181,4 +182,69 @@ test("macOS rail usage opens its summary beside the rail", async ({ page }, test
   await page.screenshot({ path: testInfo.outputPath("rail-usage-popover.png") });
   await page.keyboard.press("Escape");
   await expect(summary).toHaveCount(0);
+});
+
+test("macOS chat sections sort, reorder, collapse and add projects from their headers", async ({
+  page,
+}) => {
+  const fixture = await seedMockAgentWorkspace({
+    repoPrefix: "chat-sections-",
+    title: "First chat",
+  });
+  try {
+    const second = await fixture.client.createAgent({
+      provider: "mock",
+      cwd: fixture.cwd,
+      workspaceId: fixture.workspaceId,
+      title: "Second chat",
+      model: "e2e-fast-stream",
+      modeId: "load-test",
+    });
+    const serverId = getServerId();
+    await installDesktopRuntime(page, {
+      serverId,
+      manageBuiltInDaemon: false,
+      daemonListen: `127.0.0.1:${getE2EDaemonPort()}`,
+    });
+    await page.setViewportSize({ width: 1352, height: 782 });
+    await page.emulateMedia({ colorScheme: "dark" });
+    await openAgentRoute(page, fixture);
+    // Recent lists each chat before the project groups do, so the first row is Recent's.
+    const firstRow = page.getByTestId(`desktop-chat-${serverId}:${fixture.agentId}`).first();
+    const secondRow = page.getByTestId(`desktop-chat-${serverId}:${second.id}`).first();
+    const top = async (row: typeof firstRow) => (await row.boundingBox())!.y;
+    await expect.poll(async () => (await top(secondRow)) < (await top(firstRow))).toBe(true);
+
+    const recent = page.getByTestId("desktop-section-recent");
+    await recent.hover();
+    await recent.getByTestId("desktop-section-recent-menu").click();
+    await page.getByTestId("desktop-section-recent-sort-manual").click();
+    await expect(page.getByTestId("desktop-section-recent-sort-manual")).toHaveCount(0);
+    // Drag the newer chat below the older one; manual order keeps it there.
+    const from = (await secondRow.boundingBox())!;
+    const to = (await firstRow.boundingBox())!;
+    await page.mouse.move(from.x + 40, from.y + from.height / 2);
+    await page.mouse.down();
+    for (let step = 1; step <= 8; step += 1)
+      await page.mouse.move(from.x + 40, from.y + from.height / 2 + (step * (to.height + 6)) / 4);
+    await page.mouse.up();
+    await expect.poll(async () => (await top(firstRow)) < (await top(secondRow))).toBe(true);
+    await page.reload();
+    await expect(secondRow).toBeVisible();
+    await expect.poll(async () => (await top(firstRow)) < (await top(secondRow))).toBe(true);
+
+    // Collapsing Recent leaves only the project group's row for each chat.
+    const secondRows = page.getByTestId(`desktop-chat-${serverId}:${second.id}`);
+    await page.getByTestId("desktop-section-recent-toggle").click();
+    await expect(secondRows).toHaveCount(1);
+    await page.getByTestId("desktop-section-recent-toggle").click();
+    await expect(secondRows).toHaveCount(2);
+
+    const projects = page.getByTestId("desktop-section-projects");
+    await projects.hover();
+    await projects.getByTestId("desktop-section-projects-add").click();
+    await expect(page.getByTestId("add-project-flow")).toBeVisible();
+  } finally {
+    await fixture.cleanup();
+  }
 });
