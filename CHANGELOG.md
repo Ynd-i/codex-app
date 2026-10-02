@@ -42,6 +42,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- Matched Mac spacing between paragraphs, lists and code blocks within one reply to the reference, using the existing Markdown parse; other boundaries and platforms keep their spacing.
+
 - Matched Mac code-card padding, line height and wrap-action icons to the reference, and removed extra spacing between tight Markdown list rows.
 
 - Removed empty activity headers from plain Mac replies and restored completion timestamps beside reply actions; hovering reveals elapsed time without shifting the controls.

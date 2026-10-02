@@ -1,5 +1,15 @@
 import type { StreamItem } from "@/types/stream";
 import { SPACING } from "@/styles/theme";
+import type { MarkdownBlockKind } from "@/utils/split-markdown-blocks";
+
+// Lists and code cards add their own 4px and 12px top margins; together these match
+// the reference's 4px paragraph-list, 6px list-paragraph and 16px paragraph-code gaps.
+function getMacMarkdownGap(before?: MarkdownBlockKind, after?: MarkdownBlockKind): number {
+  if (before === "paragraph" && after === "list") return SPACING[0];
+  if (before === "list" && after === "paragraph") return SPACING[1.5];
+  if (before === "paragraph" && after === "code") return SPACING[1];
+  return SPACING[3];
+}
 
 export function isSameAssistantBlockGroup(params: {
   item: StreamItem | null | undefined;
@@ -39,6 +49,7 @@ const isToolSequenceItem = (item?: StreamItem | null) =>
 export function getGapBetweenStreamItems(
   item: StreamItem | null,
   belowItem: StreamItem | null,
+  isMac = false,
 ): number {
   if (!item || !belowItem) {
     return 0;
@@ -63,6 +74,9 @@ export function getGapBetweenStreamItems(
     return SPACING[1];
   }
   if (isSameAssistantBlockGroup({ item, other: belowItem })) {
+    if (isMac && item.kind === "assistant_message" && belowItem.kind === "assistant_message") {
+      return getMacMarkdownGap(item.blockKind, belowItem.blockKind);
+    }
     return SPACING[3];
   }
   return SPACING[4];

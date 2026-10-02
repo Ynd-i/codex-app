@@ -124,6 +124,16 @@ function rows(result: { tail: StreamItem[]; head: StreamItem[] }): StreamItem[] 
 }
 
 describe("stream presentation through installed plugins", () => {
+  it("retains parsed Markdown kinds on display rows without changing source messages", () => {
+    const harness = streamHarness();
+    const rendered = rows(
+      harness.send(assistant("Intro\n\n- One\n- Two\n\nAfter\n\n```ts\nconst x = 1;\n```\n\n---")),
+    );
+    expect(
+      rendered.map((item) => (item.kind === "assistant_message" ? item.blockKind : null)),
+    ).toEqual(["paragraph", "list", "paragraph", "code", "other"]);
+    expect(rows(harness.source())[0]).not.toHaveProperty("blockKind");
+  });
   it("offers every source tool call to an installed transformer in Overview mode", () => {
     const calls = [toolCall("call-1", "bash"), toolCall("call-2", "read")];
     const rendered = createStreamPresentation()({
@@ -549,7 +559,13 @@ describe("timeline presentation", () => {
     expect(projectTimelineItems(items)).toEqual(
       items.map((item) =>
         item.kind === "assistant_message"
-          ? { ...item, id: `${item.id}:block:0`, blockGroupId: item.id, blockIndex: 0 }
+          ? {
+              ...item,
+              id: `${item.id}:block:0`,
+              blockGroupId: item.id,
+              blockIndex: 0,
+              blockKind: "paragraph",
+            }
           : item,
       ),
     );

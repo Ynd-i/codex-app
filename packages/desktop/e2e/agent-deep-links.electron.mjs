@@ -3,7 +3,7 @@ import { expect } from "playwright/test";
 
 const longCode = 'const message = "' + "long code content ".repeat(14) + '";';
 export const styledResponse =
-  "例如，带格式的回复会显示成这样：\n\n> 这是一段引用文字。\n\n这部分是**加粗**，这部分是*斜体*，这部分是~~删除线~~，这里是`行内代码`。\n\n- 项目一\n- 项目二\n\n```\n这是一段代码或纯文本\n```\n\n```ts\n" +
+  "例如，带格式的回复会显示成这样：\n\n> 这是一段引用文字。\n\n这部分是**加粗**，这部分是*斜体*，这部分是~~删除线~~，这里是`行内代码`。\n\n- 项目一\n- 项目二\n\n代码块也可以这样显示：\n\n```\n这是一段代码或纯文本\n```\n\n```ts\n" +
   longCode +
   "\n```\n";
 
@@ -298,6 +298,26 @@ export async function runAgentDeepLinksRegression({
       return after.y - before.y - before.height;
     })
     .toBe(12);
+  const blockGaps = [
+    [/^这部分是/, "ul", 4],
+    ["ul", /^代码块也可以/, 6],
+    [/^代码块也可以/, "pre", 16],
+  ].map(([before, after, gap]) => {
+    const locate = (target) =>
+      typeof target === "string"
+        ? assistant.locator(`[data-paseo-markdown-tag="${target}"]`).first()
+        : assistant.locator('[data-paseo-markdown-tag="p"]').filter({ hasText: target });
+    return [locate(before), locate(after), gap];
+  });
+  for (const [before, after, gap] of blockGaps) {
+    await expect
+      .poll(async () => {
+        const upper = await before.boundingBox();
+        const lower = await after.boundingBox();
+        return upper && lower ? lower.y - upper.y - upper.height : null;
+      })
+      .toBe(gap);
+  }
   await expect(assistant.getByText("斜体", { exact: true })).toHaveCSS("font-style", "italic");
   await expect(assistant.getByText("删除线", { exact: true })).toHaveCSS(
     "text-decoration-line",
@@ -398,6 +418,7 @@ export async function runAgentDeepLinksRegression({
     packagedProjectEditor: true,
     packagedStyledText: true,
     packagedProseSpacing: true,
+    packagedMarkdownBlockSpacing: true,
     packagedChatColumnAlignment: true,
     packagedPlainReplyTiming: true,
     packagedCodeCardDensity: true,

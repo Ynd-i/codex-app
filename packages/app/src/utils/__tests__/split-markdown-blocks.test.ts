@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { splitMarkdownBlocks } from "../split-markdown-blocks";
+import { splitMarkdownBlocks, splitMarkdownBlocksWithKinds } from "../split-markdown-blocks";
 
 describe("splitMarkdownBlocks", () => {
+  it("uses parser kinds without treating rules, compound blocks or definitions as lists", () => {
+    expect(
+      splitMarkdownBlocksWithKinds(
+        "[r]: https://example.test\n\nIntro [r]\n\n- item\n\n---\n\nMixed\n- item\n\n    code",
+      ).map((block) => block.kind),
+    ).toEqual(["paragraph", "list", "other", "other"]);
+    expect(splitMarkdownBlocksWithKinds("    code")).toEqual([{ text: "    code", kind: "code" }]);
+  });
   it("returns a single block for a single paragraph", () => {
     expect(splitMarkdownBlocks("Hello world")).toEqual(["Hello world"]);
   });

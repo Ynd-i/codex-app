@@ -1,4 +1,5 @@
 import type { TurnTiming } from "@/timeline/turn-time";
+import { getIsElectronMac } from "@/constants/platform";
 import type { StreamItem } from "@/types/stream";
 import { getAssistantBlockSpacing, getGapBetweenStreamItems } from "./spacing";
 import type { StreamFrameChildOrder, StreamStrategy } from "./strategy";
@@ -322,7 +323,7 @@ function layoutSegmentItem(
     item,
     aboveItem,
     belowItem,
-    gapBelow: completedFooter ? 0 : getGapBetweenStreamItems(item, belowItem),
+    gapBelow: completedFooter ? 0 : getGapBetweenStreamItems(item, belowItem, getIsElectronMac()),
     assistantSpacing,
     completedFooter,
     toolSequence: getToolSequence({ item, aboveItem, belowItem }),
@@ -338,8 +339,18 @@ function layoutSegmentItem(
 
 // Keyed by history array identity; inner key encodes the inputs that affect history layout.
 // History layout is stable across text-chunk flushes because the liveHead boundary item's
-// kind and id don't change when only its text grows.
+// kind and id don't change when only its text grows within the same Markdown construct.
 const historyLayoutCache = new WeakMap<StreamItem[], Map<string, StreamLayoutItem[]>>();
+
+function getBoundaryLayoutKey(item: StreamItem | null): string {
+  if (!item) return "none";
+  return [
+    item.id,
+    item.kind,
+    item.turnId ?? "null",
+    item.kind === "assistant_message" ? (item.blockKind ?? "unknown") : "none",
+  ].join(":");
+}
 
 export function layoutStream(input: StreamLayoutInput): StreamLayout {
   const auxiliaryTurnFooter = resolveAuxiliaryTurnFooter(input);
@@ -359,9 +370,7 @@ export function layoutStream(input: StreamLayoutInput): StreamLayout {
     const historyCacheKey = [
       frameOrder,
       historyBoundaryIndex ?? "null",
-      liveHeadBoundaryItem?.id ?? "null",
-      liveHeadBoundaryItem?.kind ?? "null",
-      liveHeadBoundaryItem?.turnId ?? "null",
+      getBoundaryLayoutKey(liveHeadBoundaryItem),
       auxiliaryTurnFooter?.itemId ?? "null",
       hasAuxiliaryFooter ? "footer" : "no-footer",
     ].join(":");

@@ -1,7 +1,7 @@
 import type { AssistantMessageItem, StreamItem, UserMessageItem } from "@/types/stream";
 import type { TimelineItemTransform } from "@/plugins/timeline/model";
 import { projectPluginTimelineItems } from "@/plugins/timeline/projection";
-import { splitMarkdownBlocks } from "@/utils/split-markdown-blocks";
+import { splitMarkdownBlocksWithKinds } from "@/utils/split-markdown-blocks";
 import {
   prepareToolCallHistory,
   projectToolCallDetailLevel,
@@ -103,12 +103,13 @@ export function createStreamPresentation() {
       growingText =
         previous[previous.length - 1]!.text + item.text.slice(previousSource.text.length);
     }
-    const parsed = splitMarkdownBlocks(growingText);
+    const parsed = splitMarkdownBlocksWithKinds(growingText);
     // Whitespace-only text has no block, and a message still owns exactly one row.
-    const textBlocks = parsed.length > 0 || prefix.length > 0 ? parsed : [""];
+    const textBlocks =
+      parsed.length > 0 || prefix.length > 0 ? parsed : [{ text: "", kind: "other" as const }];
 
     const blocks = [...prefix];
-    for (const [offset, text] of textBlocks.entries()) {
+    for (const [offset, { text, kind }] of textBlocks.entries()) {
       const index = prefix.length + offset;
       let blockText = text;
       if (offset === textBlocks.length - 1) {
@@ -128,6 +129,7 @@ export function createStreamPresentation() {
         id,
         blockGroupId: item.id,
         blockIndex: index,
+        blockKind: kind,
         text: blockText,
       });
     }

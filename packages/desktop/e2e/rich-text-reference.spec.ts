@@ -71,6 +71,25 @@ for (const platform of ["darwin", "win32"] as const) {
         const paragraph = assistant
           .locator('[data-paseo-markdown-tag="p"]')
           .filter({ hasText: /^这部分是/ });
+        const list = assistant
+          .locator('[data-paseo-markdown-tag="ul"]')
+          .filter({ hasText: "项目一" });
+        const codeIntro = assistant
+          .locator('[data-paseo-markdown-tag="p"]')
+          .filter({ hasText: "代码块也可以这样显示：" });
+        for (const [before, after, gap] of [
+          [paragraph, list, 4],
+          [list, codeIntro, 6],
+          [codeIntro, plain, 16],
+        ] as const) {
+          await expect
+            .poll(async () => {
+              const first = await before.boundingBox();
+              const second = await after.boundingBox();
+              return first && second ? second.y - first.y - first.height : null;
+            })
+            .toBe(gap);
+        }
         await expect
           .poll(async () => {
             const before = await intro.boundingBox();

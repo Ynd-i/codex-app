@@ -7,6 +7,7 @@ import type {
 import { timelineItemIdentity } from "@getpaseo/protocol/timeline-identity";
 import type { AgentAttachment, AgentStreamEventPayload } from "@getpaseo/protocol/messages";
 import type { AttachmentMetadata } from "@/attachments/types";
+import type { MarkdownBlockKind } from "@/utils/split-markdown-blocks";
 import { extractTaskEntriesFromToolCall } from "../utils/tool-call-parsers";
 
 /**
@@ -713,6 +714,7 @@ export interface AssistantMessageItem {
   /** Display-only fields, assigned after source-item plugin transforms. */
   blockGroupId?: string;
   blockIndex?: number;
+  blockKind?: MarkdownBlockKind;
 }
 
 export interface TimelinePosition {

@@ -149,6 +149,31 @@ function findLayoutItem(layout: StreamLayout, id: string): StreamLayoutItem {
 }
 
 describe("layoutStream", () => {
+  it("revises the history boundary when growing Markdown changes block kind", () => {
+    const previous = {
+      ...assistantMessage("previous", 1, { groupId: "reply", index: 0 }),
+      blockKind: "paragraph" as const,
+    };
+    const history = [previous];
+    const liveHead: StreamItem[] = [
+      { ...assistantMessage("head", 2, { groupId: "reply", index: 1 }), blockKind: "paragraph" },
+    ];
+    const input = {
+      strategy: strategyFor("web"),
+      isTurnActive: true,
+      history,
+      liveHead,
+      timingByAssistantId: new Map(),
+    };
+    const first = layoutStream(input);
+    liveHead[0] = {
+      ...assistantMessage("head", 2, { groupId: "reply", index: 1 }),
+      blockKind: "list",
+    };
+    const second = layoutStream(input);
+    expect(second.history).not.toBe(first.history);
+    expect(second.history[0]?.belowItem).toMatchObject({ blockKind: "list" });
+  });
   it("places one response footer after an adjacent tagged tool-only turn", () => {
     const priorAssistant = assistantMessage("prior", 1, undefined, "turn-1");
     const nextTool = toolCall("next-tool", 2, "turn-2");

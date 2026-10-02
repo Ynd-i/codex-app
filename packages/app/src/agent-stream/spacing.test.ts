@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { StreamItem } from "@/types/stream";
-import { getAssistantBlockSpacing, isSameAssistantBlockGroup } from "./spacing";
+import {
+  getAssistantBlockSpacing,
+  getGapBetweenStreamItems,
+  isSameAssistantBlockGroup,
+} from "./spacing";
 
 function assistantBlock(params: {
   id: string;
@@ -37,6 +41,26 @@ function toolCallBlock(id: string): Extract<StreamItem, { kind: "tool_call" }> {
 }
 
 describe("isSameAssistantBlockGroup", () => {
+  it("uses parsed Mac block kinds only within the same response", () => {
+    const paragraph = {
+      ...assistantBlock({ id: "p", blockGroupId: "reply", blockIndex: 0 }),
+      blockKind: "paragraph" as const,
+    };
+    const list = {
+      ...assistantBlock({ id: "l", blockGroupId: "reply", blockIndex: 1 }),
+      blockKind: "list" as const,
+    };
+    const code = {
+      ...assistantBlock({ id: "c", blockGroupId: "reply", blockIndex: 2 }),
+      blockKind: "code" as const,
+    };
+    expect(getGapBetweenStreamItems(paragraph, list, true)).toBe(0);
+    expect(getGapBetweenStreamItems(list, paragraph, true)).toBe(6);
+    expect(getGapBetweenStreamItems(paragraph, code, true)).toBe(4);
+    expect(getGapBetweenStreamItems(paragraph, paragraph, true)).toBe(12);
+    expect(getGapBetweenStreamItems(paragraph, list, false)).toBe(12);
+    expect(getGapBetweenStreamItems(paragraph, { ...list, blockGroupId: "other" }, true)).toBe(16);
+  });
   it("returns true for two assistant blocks with the same blockGroupId", () => {
     const a = assistantBlock({ id: "a", blockGroupId: "group-1", blockIndex: 0 });
     const b = assistantBlock({ id: "b", blockGroupId: "group-1", blockIndex: 1 });
