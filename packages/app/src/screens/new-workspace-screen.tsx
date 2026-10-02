@@ -2498,8 +2498,8 @@ function NewWorkspaceLayout({
         <View style={styles.desktopSetupRail}>
           <View style={styles.desktopSetup}>{formStack}</View>
         </View>
+        {/* Mac imports through History and Cmd+K, like Codex keeping this area clear. */}
         {composer}
-        <View style={styles.desktopImportRow}>{importSessionButton}</View>
       </View>
     );
   } else {
@@ -2535,12 +2535,6 @@ function NewWorkspaceLayout({
 
 const styles = StyleSheet.create((theme) => ({
   desktopLayout: { flex: 1 },
-  desktopImportRow: {
-    width: "100%",
-    maxWidth: theme.contentMaxWidth + 32,
-    alignSelf: "center",
-    paddingBottom: theme.spacing[4],
-  },
   desktopHero: {
     flex: 1,
     minHeight: 0,

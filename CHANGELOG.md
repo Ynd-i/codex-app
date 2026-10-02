@@ -42,6 +42,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- macOS no longer shows the worktree-script setup prompt or the Import session button below the new-chat composer; import stays in History and Cmd+K, and scripts in project settings.
+
 - Restored the Codex-style macOS chat sidebar with Pinned, Recent and project chat groups; Cmd+Shift+P pins the current chat. Other platforms keep the workspace sidebar.
 
 - Matched Mac list markers to the reference's larger full-contrast dots and 26px text indent, and widened inline code chips; other platforms are unchanged.

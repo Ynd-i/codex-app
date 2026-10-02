@@ -79,7 +79,7 @@ function ChatSidebarHeader() {
         tooltipSide="bottom"
         accessibilityRole="button"
         accessibilityLabel={t("sidebar.sections.search")}
-        testID="desktop-chat-search"
+        testID="sidebar-search"
       >
         <SearchIcon size={18} uniProps={mutedIcon} />
       </HeaderToggleButton>
@@ -191,6 +191,7 @@ function EmptyWorkspaceRow({ workspace }: { workspace: SidebarWorkspacePlacement
       style={styles.emptyWorkspace}
       accessibilityRole="button"
       accessibilityLabel={workspace.name}
+      testID={`sidebar-workspace-row-${workspace.workspaceKey}`}
     >
       <FolderIcon size={14} uniProps={mutedIcon} />
       <Text numberOfLines={1} style={styles.secondaryText}>
