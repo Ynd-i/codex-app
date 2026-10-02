@@ -647,9 +647,12 @@ async function runRegression({
 }) {
   const failures = [];
   const originalWorkspaceId = workspaceIds[0];
-  const originalWorkspaceRow = page.getByTestId(
-    `sidebar-workspace-row-${serverId}:${originalWorkspaceId}`,
-  );
+  // The Mac chat sidebar lists the caller chat instead of a row for its workspace.
+  const originalWorkspaceRow = page
+    .locator(
+      `[data-testid="sidebar-workspace-row-${serverId}:${originalWorkspaceId}"], [data-testid="desktop-chat-${serverId}:${callerAgentId}"]`,
+    )
+    .first();
   await originalWorkspaceRow.waitFor({ state: "visible", timeout: timeoutMs });
   await originalWorkspaceRow.click();
 
@@ -1088,8 +1091,6 @@ async function runRegression({
 
 async function runWebviewNavigationRegression({ page, client, serverId, targetUrl, artifactDir }) {
   const workspaceId = workspaceIds[0];
-  const originalWorkspaceRow = page.getByTestId(`sidebar-workspace-row-${serverId}:${workspaceId}`);
-  await originalWorkspaceRow.waitFor({ state: "visible", timeout: timeoutMs });
   await assertNoVisibleMainTabs(page);
 
   const originalDeck = page.getByTestId(`workspace-deck-entry-${serverId}:${workspaceId}`);
