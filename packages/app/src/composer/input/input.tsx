@@ -21,7 +21,7 @@ import {
 } from "react";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import { ICON_SIZE, type Theme } from "@/styles/theme";
+import { ICON_SIZE, getContentLineHeight, type Theme } from "@/styles/theme";
 import { CONTENT_SURFACE_DATASET } from "@/styles/content-surface";
 import { CODE_SURFACE_DATASET } from "@/styles/code-surface";
 import { ArrowUp, Mic, MicOff, CornerDownLeft, Plus, Square } from "lucide-react-native";
@@ -2026,7 +2026,7 @@ const styles = StyleSheet.create((theme: Theme) => ({
     // line box is the same for every line. Web keeps the CSS value.
     ...(isWeb
       ? ({
-          lineHeight: theme.fontSize.content * 1.4,
+          lineHeight: getContentLineHeight(theme.fontSize.content),
           outlineStyle: "none",
           outlineWidth: 0,
           outlineColor: "transparent",

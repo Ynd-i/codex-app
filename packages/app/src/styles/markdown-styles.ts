@@ -1,4 +1,4 @@
-import { FONT_SIZE, type Theme } from "./theme";
+import { FONT_SIZE, getContentLineHeight, type Theme } from "./theme";
 import { getIsElectronMac, isWeb } from "@/constants/platform";
 
 const webSelectableTextStyle = isWeb ? { userSelect: "text" as const } : {};
@@ -49,7 +49,7 @@ export function createMarkdownStyles(theme: Theme) {
       ...(theme.contentFontWeight ? { fontWeight: theme.contentFontWeight } : {}),
       // Prose line-height scales with the content size, not the
       // code-size-coupled lineHeight.diff token used by code/diff surfaces.
-      lineHeight: Math.round(theme.fontSize.content * 1.4),
+      lineHeight: getContentLineHeight(theme.fontSize.content),
       flexShrink: 1,
       minWidth: 0,
       width: "100%" as const,
@@ -313,7 +313,7 @@ export function createMarkdownStyles(theme: Theme) {
       fontFamily: theme.fontFamily.content,
       marginRight: 4,
       fontSize: theme.fontSize.content,
-      lineHeight: Math.round(theme.fontSize.content * 1.4),
+      lineHeight: getContentLineHeight(theme.fontSize.content),
     },
 
     ordered_list_icon: {
@@ -323,7 +323,7 @@ export function createMarkdownStyles(theme: Theme) {
       marginRight: 4,
       fontSize: theme.fontSize.content,
       fontWeight: theme.contentFontWeight ?? "normal",
-      lineHeight: Math.round(theme.fontSize.content * 1.4),
+      lineHeight: getContentLineHeight(theme.fontSize.content),
       minWidth: 12,
     },
 
@@ -399,7 +399,7 @@ export function createCompactMarkdownStyles(theme: Theme) {
     body: {
       ...baseStyles.body,
       fontSize: theme.fontSize.content,
-      lineHeight: Math.round(theme.fontSize.content * 1.4),
+      lineHeight: getContentLineHeight(theme.fontSize.content),
     },
 
     heading1: {

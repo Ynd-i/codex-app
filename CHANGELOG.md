@@ -42,6 +42,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- New macOS appearance defaults use the reference's 13px interface and conversation text, with a 1.6 prose line height that keeps the 21px reading rhythm; saved font sizes are unchanged until Advanced reset.
+
 - Kept Mac inline code chips from enlarging their line of prose and matched the reference's 16px chip height; other platforms keep their existing chip.
 
 - Matched Mac spacing between paragraphs, lists and code blocks within one reply to the reference, using the existing Markdown parse; other boundaries and platforms keep their spacing.

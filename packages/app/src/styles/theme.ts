@@ -592,6 +592,11 @@ export const LINE_HEIGHT = {
   diff: 22,
 } as const;
 
+/** Prose line height; macOS keeps the Codex reference's 21px rhythm at its 13px size. */
+export function getContentLineHeight(fontSize: number): number {
+  return Math.round(fontSize * (getIsElectronMac() ? 1.6 : 1.4));
+}
+
 export const ICON_SIZE = {
   xs: 12,
   sm: 14,

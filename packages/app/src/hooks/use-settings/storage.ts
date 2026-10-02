@@ -22,7 +22,7 @@ import {
   isChecksHiddenByLegacyRowItem,
   type SidebarRowItems,
 } from "@/components/sidebar/display-preferences/row-items";
-import { isNative } from "@/constants/platform";
+import { getIsElectronMac, isNative } from "@/constants/platform";
 import {
   DEFAULT_CONTENT_MAX_WIDTH,
   FONT_SIZE,
@@ -56,15 +56,20 @@ export const DEFAULT_THEME_PREFERENCE = "auto" satisfies ThemePreference;
 export const DEFAULT_TERMINAL_SCROLLBACK_LINES = 10_000;
 export const MIN_TERMINAL_SCROLLBACK_LINES = 0;
 export const MAX_TERMINAL_SCROLLBACK_LINES = 1_000_000;
+// Codex on macOS uses one 13px base for interface and conversation text.
+const MAC_BASE_FONT_SIZE = 13;
+
 export function defaultUiBaseFontSize(native: boolean): number {
-  return native ? 15 : FONT_SIZE.base;
+  if (native) return 15;
+  return getIsElectronMac() ? MAC_BASE_FONT_SIZE : FONT_SIZE.base;
 }
 
 export const DEFAULT_UI_BASE_FONT_SIZE = defaultUiBaseFontSize(isNative);
 export const MIN_UI_BASE_FONT_SIZE = 10;
 export const MAX_UI_BASE_FONT_SIZE = 21;
 export function defaultContentFontSize(native: boolean): number {
-  return native ? 16 : FONT_SIZE.content;
+  if (native) return 16;
+  return getIsElectronMac() ? MAC_BASE_FONT_SIZE : FONT_SIZE.content;
 }
 
 export const DEFAULT_CONTENT_FONT_SIZE = defaultContentFontSize(isNative);

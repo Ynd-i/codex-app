@@ -21,7 +21,7 @@ test("macOS Advanced resets only its fields and refreshes dirty controls", async
       localStorage.setItem(
         key,
         JSON.stringify({
-          contentFontSize: 15,
+          contentFontSize: 13,
           theme: "claude",
           pluginThemeId: "preserve-plugin-choice",
           uiFontFamily: "Georgia",

@@ -45,7 +45,7 @@ import {
   FileSymlink,
 } from "lucide-react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import { ICON_SIZE, type Theme } from "@/styles/theme";
+import { ICON_SIZE, getContentLineHeight, type Theme } from "@/styles/theme";
 import { CONTENT_SURFACE_DATASET } from "@/styles/content-surface";
 import { useIsCompactFormFactor } from "@/constants/layout";
 import Animated, {
@@ -363,7 +363,7 @@ const userMessageStylesheet = StyleSheet.create((theme) => ({
     fontSize: theme.fontSize.content,
     ...(isWeb
       ? {
-          lineHeight: Math.round(theme.fontSize.content * 1.4),
+          lineHeight: getContentLineHeight(theme.fontSize.content),
           overflowWrap: "anywhere" as const,
         }
       : {}),
@@ -2098,7 +2098,7 @@ const speakMessageStylesheet = StyleSheet.create((theme) => ({
     fontFamily: theme.fontFamily.content,
     ...(theme.contentFontWeight ? { fontWeight: theme.contentFontWeight } : {}),
     fontSize: theme.fontSize.content,
-    lineHeight: Math.round(theme.fontSize.content * 1.4),
+    lineHeight: getContentLineHeight(theme.fontSize.content),
     color: theme.colors.foreground,
   },
 }));
