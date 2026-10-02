@@ -38,9 +38,11 @@ test("desktop new chat retains project selection and creates a chat", async ({
     await page.emulateMedia({ colorScheme: "dark" });
     await openAgentRoute(page, { workspaceId: workspace.workspaceId, agentId: existing.id });
     await expect(page.getByTestId("desktop-chat-title")).toHaveText("Existing chat");
-    const workspaceRow = page.getByTestId(
-      `sidebar-workspace-row-${getServerId()}:${workspace.workspaceId}`,
-    );
+    // Recent and the project group both list the chat; either row opens it.
+    const workspaceRow = page
+      .getByTestId(`desktop-chat-${getServerId()}:${existing.id}`)
+      .filter({ visible: true })
+      .first();
     await expect(workspaceRow).toBeVisible();
     await expect(page.getByTestId("desktop-shell-rail")).toBeVisible();
     await page.getByTestId("sidebar-global-new-workspace").click();
@@ -361,14 +363,18 @@ test("desktop chat navigation preserves sibling drafts and scopes pinning", asyn
           ],
       )
       .toBe("");
-    // The default sidebar keeps the workspace pin shortcut; it must not pin a chat.
+    // The chat sidebar's pin shortcut targets the current chat, not its workspace.
+    const pinnedAt = async () =>
+      (await fixture.client.fetchAgent({ agentId: second.id }))?.agent.labels[
+        "codex-ui.pinned-at"
+      ] ?? "";
     await page.keyboard.press("Meta+Shift+P");
-    await expect(page.getByTestId("sidebar-pinned-section-header")).toBeVisible();
-    expect(
-      (await fixture.client.fetchAgent({ agentId: second.id }))?.agent.labels["codex-ui.pinned-at"],
-    ).toBe("");
+    await expect.poll(pinnedAt).toMatch(/^\d{4}-\d\d-\d\dT/);
+    expect((await fixture.client.fetchAgent({ agentId: fixture.agentId }))?.agent.labels).toEqual(
+      {},
+    );
     await page.keyboard.press("Meta+Shift+P");
-    await expect(page.getByTestId("sidebar-pinned-section-header")).toHaveCount(0);
+    await expect.poll(pinnedAt).toBe("");
     await selectChat(fixture.agentId, "First chat");
     await expect(title).toHaveText("First chat");
     await expect(composerLocator(page)).toHaveValue("Draft stays with first chat");

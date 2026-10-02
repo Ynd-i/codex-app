@@ -37,6 +37,7 @@ import { useWorkspaceFields } from "@/stores/session-store-hooks";
 import { inlineUnistylesStyle } from "@/styles/unistyles-inline-style";
 import { TitlebarDragRegion } from "./titlebar-drag-region";
 import type { Theme } from "@/styles/theme";
+import { DesktopChatShortcuts } from "./desktop-chat-shortcuts";
 import { DesktopChatToolbar } from "./desktop-chat-toolbar";
 import { useDesktopNavigationHistory } from "./use-desktop-navigation-history";
 import {
@@ -225,6 +226,7 @@ export function DesktopShell({
   return (
     <WorkspaceToolbarHostContext.Provider value={toolbarHost}>
       <View style={styles.root} testID="desktop-shell">
+        <DesktopChatShortcuts />
         <WindowChromeSafeArea placement="inline" style={styles.titlebar}>
           <TitlebarDragRegion />
           <View style={[styles.navigationControls, inlineUnistylesStyle({ width: controlsWidth })]}>

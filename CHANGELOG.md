@@ -42,6 +42,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- Restored the Codex-style macOS chat sidebar with Pinned, Recent and project chat groups; Cmd+Shift+P pins the current chat. Other platforms keep the workspace sidebar.
+
 - Matched Mac list markers to the reference's larger full-contrast dots and 26px text indent, and widened inline code chips; other platforms are unchanged.
 
 - New macOS appearance defaults use the reference's 13px interface and conversation text, with a 1.6 prose line height that keeps the 21px reading rhythm; saved font sizes are unchanged until Advanced reset.

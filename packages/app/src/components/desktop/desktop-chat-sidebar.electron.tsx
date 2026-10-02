@@ -40,6 +40,7 @@ import {
   type DesktopChatProject,
 } from "./desktop-chat-model";
 import { useActiveDesktopChat } from "./use-desktop-chat";
+import { usesDesktopShell } from "./desktop-shell";
 import { DesktopChatMenuItems, useDesktopChatMenu } from "./desktop-chat-menu";
 
 const SearchIcon = withUnistyles(Search);
@@ -55,7 +56,16 @@ function openSearch() {
   useKeyboardShortcutsStore.getState().setCommandCenterOpen(true);
 }
 
+// Electron on Windows and Linux keeps the workspace sidebar.
 export function DesktopChatSidebarHeader() {
+  return usesDesktopShell ? <ChatSidebarHeader /> : null;
+}
+
+export function DesktopChatSidebar(props: { onAddProject: () => void }) {
+  return usesDesktopShell ? <ChatSidebarList {...props} /> : null;
+}
+
+function ChatSidebarHeader() {
   const { t } = useTranslation();
   return (
     <View style={styles.header}>
@@ -355,7 +365,7 @@ function projectKey(entry: DesktopChatProject) {
   return entry.project.viewKey;
 }
 
-export function DesktopChatSidebar({ onAddProject }: { onAddProject: () => void }) {
+function ChatSidebarList({ onAddProject }: { onAddProject: () => void }) {
   const { t } = useTranslation();
   const { projects, allProjects } = useSidebarModel();
   const { agents } = useAggregatedAgents({ demand: false });

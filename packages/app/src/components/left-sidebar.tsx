@@ -32,6 +32,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { TitlebarDragRegion } from "@/components/desktop/titlebar-drag-region";
 import { desktopShellInset, usesDesktopShell } from "@/components/desktop/desktop-shell";
+import {
+  DesktopChatSidebar,
+  DesktopChatSidebarHeader,
+} from "@/components/desktop/desktop-chat-sidebar";
 import { resolveDesktopSidebarWidth } from "@/components/desktop-sidebar-layout";
 import {
   SIDEBAR_RESIZE_ACTIVATION_OFFSET,
@@ -749,7 +753,11 @@ function DesktopSidebar({
     [insetsTop],
   );
   const sidebarHeaderGroupStyle = useMemo(
-    () => [styles.sidebarHeaderGroup, ownsTopLeft ? styles.sidebarHeaderGroupBelowChrome : null],
+    () => [
+      styles.sidebarHeaderGroup,
+      ownsTopLeft ? styles.sidebarHeaderGroupBelowChrome : null,
+      usesDesktopShell ? styles.desktopChatNav : null,
+    ],
     [ownsTopLeft],
   );
   return (
@@ -762,6 +770,7 @@ function DesktopSidebar({
     >
       <View style={desktopSidebarBorderStyle}>
         <View style={styles.sidebarDragArea}>
+          <DesktopChatSidebarHeader />
           {!usesDesktopShell && (ownsTopLeft || DEV_BUILD_LABEL) ? (
             <View style={styles.desktopChromeRow}>
               <TitlebarDragRegion />
@@ -781,31 +790,33 @@ function DesktopSidebar({
             </View>
           ) : null}
           {!usesDesktopShell && !ownsTopLeft && !DEV_BUILD_LABEL ? <TitlebarDragRegion /> : null}
-          <SidebarNavRows style={sidebarHeaderGroupStyle} />
+          <SidebarNavRows style={sidebarHeaderGroupStyle} chatMode={usesDesktopShell} />
         </View>
 
-        {isInitialLoad && !hasActiveHostFilter ? (
-          <SidebarAgentListSkeleton />
-        ) : (
-          <SidebarWorkspaceList
-            collapsedProjectKeys={collapsedProjectKeys}
-            onToggleProjectCollapsed={toggleProjectCollapsed}
-            shortcutIndexByWorkspaceKey={shortcutIndexByWorkspaceKey}
-            groupMode={groupMode}
-            workspaceGroups={workspaceGroups}
-            projectIconTargets={projectIconTargets}
-            pinnedGroups={pinnedGroups}
-            projects={projects}
-            hasProjectsBeforeFilter={hasProjectsBeforeFilter}
-            hasActiveProjectFilter={hasActiveProjectFilter}
-            workspaceEntriesByKey={workspaceEntriesByKey}
-            isRefreshing={isManualRefresh && isRevalidating}
-            onRefresh={handleRefresh}
-            onAddProject={handleOpenProject}
-            onImportSession={handleImportSession}
-            listHeaderComponent={workspacesSectionHeaderElement}
-          />
-        )}
+        <DesktopChatSidebar onAddProject={handleOpenProject} />
+        {!usesDesktopShell &&
+          (isInitialLoad && !hasActiveHostFilter ? (
+            <SidebarAgentListSkeleton />
+          ) : (
+            <SidebarWorkspaceList
+              collapsedProjectKeys={collapsedProjectKeys}
+              onToggleProjectCollapsed={toggleProjectCollapsed}
+              shortcutIndexByWorkspaceKey={shortcutIndexByWorkspaceKey}
+              groupMode={groupMode}
+              workspaceGroups={workspaceGroups}
+              projectIconTargets={projectIconTargets}
+              pinnedGroups={pinnedGroups}
+              projects={projects}
+              hasProjectsBeforeFilter={hasProjectsBeforeFilter}
+              hasActiveProjectFilter={hasActiveProjectFilter}
+              workspaceEntriesByKey={workspaceEntriesByKey}
+              isRefreshing={isManualRefresh && isRevalidating}
+              onRefresh={handleRefresh}
+              onAddProject={handleOpenProject}
+              onImportSession={handleImportSession}
+              listHeaderComponent={workspacesSectionHeaderElement}
+            />
+          ))}
 
         <SidebarCalloutSlot />
 
@@ -927,6 +938,7 @@ const styles = StyleSheet.create((theme) => ({
     borderRightColor: theme.colors.border,
     backgroundColor: theme.colors.surfaceSidebar,
   },
+  desktopChatNav: { borderBottomWidth: 0, paddingBottom: 4 },
   sidebarDragArea: {
     position: "relative",
   },

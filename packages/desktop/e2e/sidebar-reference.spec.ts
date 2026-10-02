@@ -31,16 +31,14 @@ test("desktop navigation rail stays visible and marks the current destination", 
 
     const rail = page.getByTestId("desktop-shell-rail");
     const workspaceSidebar = page.getByTestId("desktop-workspace-sidebar");
-    const workspaceRow = page.getByTestId(
-      `sidebar-workspace-row-${getServerId()}:${workspace.workspaceId}`,
-    );
+    const projectList = page.getByTestId("sidebar-project-list");
     const home = page.getByTestId("desktop-shell-home");
     const history = page.getByTestId("desktop-shell-history");
     const homeIconPath = home.locator("svg path").first();
     const historyIconPath = history.locator("svg path").first();
     await expect(rail).toBeVisible();
     await expect(workspaceSidebar).toBeVisible();
-    await expect(workspaceRow).toBeVisible();
+    await expect(projectList).toBeVisible();
     await expect(home).toHaveAttribute("aria-current", "page");
     await expect(history).not.toHaveAttribute("aria-current");
     const selectedIconStroke = await homeIconPath.evaluate((path) => getComputedStyle(path).stroke);
@@ -60,7 +58,7 @@ test("desktop navigation rail stays visible and marks the current destination", 
     );
     expect(closingWidth).toBeGreaterThan(0);
     expect(closingWidth).toBeLessThan(expandedWidth);
-    await expect(workspaceRow).toBeVisible();
+    await expect(projectList).toBeVisible();
 
     await sidebarToggle.press("Enter");
     await expect(sidebarToggle).toHaveAttribute("aria-expanded", "true");
@@ -73,7 +71,7 @@ test("desktop navigation rail stays visible and marks the current destination", 
     await expect(sidebarToggle).toHaveAttribute("aria-expanded", "false");
     await expect(sidebarToggle).toBeFocused();
     await expect(workspaceSidebar).toBeHidden();
-    await expect(workspaceRow).toBeHidden();
+    await expect(projectList).toBeHidden();
     await expect(rail).toBeVisible();
 
     await history.click();
