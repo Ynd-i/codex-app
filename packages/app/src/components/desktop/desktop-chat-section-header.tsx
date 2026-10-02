@@ -3,11 +3,13 @@ import { ChevronDown, ChevronRight, MoreHorizontal } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
+import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from "@/components/ui/context-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  type MenuPageDefinition,
 } from "@/components/ui/dropdown-menu";
 import type { Theme } from "@/styles/theme";
 import type { ChatSectionSort } from "./desktop-chat-model";
@@ -28,6 +30,7 @@ export function ChatSectionHeader({
   sort,
   onSortChange,
   actions,
+  contextMenu,
   testID,
 }: {
   title: string;
@@ -36,23 +39,26 @@ export function ChatSectionHeader({
   sort?: ChatSectionSort;
   onSortChange?: (sort: ChatSectionSort) => void;
   actions?: ReactNode;
+  /** A right-click menu on the header, with any submenu pages it declares. */
+  contextMenu?: { items: ReactNode; pages?: MenuPageDefinition[] };
   testID: string;
 }) {
   const { t } = useTranslation();
   const [hovered, setHovered] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [contextOpen, setContextOpen] = useState(false);
   const enter = useCallback(() => setHovered(true), []);
   const leave = useCallback(() => setHovered(false), []);
   const sortLatest = useCallback(() => onSortChange?.("latest"), [onSortChange]);
   const sortManual = useCallback(() => onSortChange?.("manual"), [onSortChange]);
-  const revealed = hovered || menuOpen;
+  const revealed = hovered || menuOpen || contextOpen;
   const accessibilityState = useMemo(() => ({ expanded: !collapsed }), [collapsed]);
   const chevron = collapsed ? (
     <RightIcon size={13} uniProps={mutedIcon} />
   ) : (
     <DownIcon size={13} uniProps={mutedIcon} />
   );
-  return (
+  const header = (
     <View style={styles.header} onPointerEnter={enter} onPointerLeave={leave} testID={testID}>
       <Pressable
         onPress={onToggle}
@@ -100,6 +106,15 @@ export function ChatSectionHeader({
         {actions}
       </View>
     </View>
+  );
+  if (!contextMenu) return header;
+  return (
+    <ContextMenu open={contextOpen} onOpenChange={setContextOpen}>
+      <ContextMenuTrigger contextOnly>{header}</ContextMenuTrigger>
+      <ContextMenuContent width={220} pages={contextMenu.pages} testID={`${testID}-context`}>
+        {contextMenu.items}
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }
 

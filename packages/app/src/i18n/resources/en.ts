@@ -59,6 +59,7 @@ export const en = {
       edit: "Edit",
       markAllRead: "Mark all as read",
       archiveChats: "Archive chats",
+      archiveConfirm: "Archive {{count}} chats in this section?",
       removeSection: "Remove section",
       createDescription: "Organize chats and projects your way",
       namePlaceholder: "Section name",

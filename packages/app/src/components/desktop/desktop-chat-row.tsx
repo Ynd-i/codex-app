@@ -16,6 +16,8 @@ import type { Theme } from "@/styles/theme";
 import { navigateToAgent } from "@/utils/navigate-to-agent";
 import { desktopChatKey } from "./desktop-chat-model";
 import { DesktopChatMenuItems, useDesktopChatMenu } from "./desktop-chat-menu";
+import { useSectionMovePage } from "./desktop-chat-section-menus";
+import { useChatSectionsStore } from "./desktop-chat-sections-store";
 
 const MoreIcon = withUnistyles(MoreHorizontal);
 const Progress = withUnistyles(ActivityIndicator);
@@ -39,6 +41,11 @@ export const ChatRow = memo(function ChatRow({
   const [contextOpen, setContextOpen] = useState(false);
   const key = desktopChatKey(agent);
   const selected = selectedKey === key;
+  const section = useChatSectionsStore((state) => state.chatSection[key]);
+  const moveChat = useChatSectionsStore((state) => state.moveChat);
+  const move = useCallback((sectionId: string | null) => moveChat(key, sectionId), [key, moveChat]);
+  const sectionPage = useSectionMovePage(`chat-section-${key}`, section, move);
+  const pages = useMemo(() => [sectionPage], [sectionPage]);
   const title = agent.title || t("agentList.fallbackTitle");
   const enter = useCallback(() => setHovered(true), []);
   const leave = useCallback(() => setHovered(false), []);
@@ -112,14 +119,14 @@ export const ChatRow = memo(function ChatRow({
               >
                 <MoreIcon size={16} uniProps={mutedIcon} />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" width={210}>
-                <DesktopChatMenuItems {...menuProps} />
+              <DropdownMenuContent align="end" width={210} pages={pages}>
+                <DesktopChatMenuItems {...menuProps} sectionPage={sectionPage.id} />
               </DropdownMenuContent>
             </DropdownMenu>
           </View>
         </ContextMenuTrigger>
-        <ContextMenuContent width={210}>
-          <DesktopChatMenuItems {...menuProps} context />
+        <ContextMenuContent width={210} pages={pages}>
+          <DesktopChatMenuItems {...menuProps} context sectionPage={sectionPage.id} />
         </ContextMenuContent>
       </ContextMenu>
       {renameModal}

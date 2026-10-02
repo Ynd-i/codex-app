@@ -62,6 +62,7 @@ export const es: TranslationResources = {
       edit: "Editar",
       markAllRead: "Marcar todo como leído",
       archiveChats: "Archivar chats",
+      archiveConfirm: "¿Archivar {{count}} chats de esta sección?",
       removeSection: "Quitar sección",
       createDescription: "Organiza chats y proyectos a tu manera",
       namePlaceholder: "Nombre de la sección",

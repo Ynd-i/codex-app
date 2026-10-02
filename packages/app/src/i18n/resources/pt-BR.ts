@@ -62,6 +62,7 @@ export const ptBR: TranslationResources = {
       edit: "Editar",
       markAllRead: "Marcar tudo como lido",
       archiveChats: "Arquivar chats",
+      archiveConfirm: "Arquivar {{count}} chats desta seção?",
       removeSection: "Remover seção",
       createDescription: "Organize chats e projetos do seu jeito",
       namePlaceholder: "Nome da seção",

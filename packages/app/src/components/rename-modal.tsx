@@ -14,6 +14,8 @@ import type { EditingTextInputHandle } from "@/components/ui/text-input";
 export interface AdaptiveRenameModalProps {
   visible: boolean;
   title: string;
+  /** A line under the title, such as what the named thing is for. */
+  description?: string;
   initialValue: string;
   placeholder?: string;
   submitLabel?: string;
@@ -27,6 +29,7 @@ export interface AdaptiveRenameModalProps {
 export function AdaptiveRenameModal({
   visible,
   title,
+  description,
   initialValue,
   placeholder,
   submitLabel,
@@ -114,7 +117,10 @@ export function AdaptiveRenameModal({
   const errorTestID = testID ? `${testID}-error` : undefined;
   const submitTestID = testID ? `${testID}-submit` : undefined;
   const cancelTestID = testID ? `${testID}-cancel` : undefined;
-  const sheetHeader = useMemo<SheetHeader>(() => ({ title }), [title]);
+  const sheetHeader = useMemo<SheetHeader>(
+    () => ({ title, subtitle: description }),
+    [description, title],
+  );
 
   return (
     <AdaptiveModalSheet

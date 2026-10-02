@@ -248,3 +248,71 @@ test("macOS chat sections sort, reorder, collapse and add projects from their he
     await fixture.cleanup();
   }
 });
+
+test("macOS custom sections hold chats and return them when removed", async ({
+  page,
+}, testInfo) => {
+  const fixture = await seedMockAgentWorkspace({
+    repoPrefix: "custom-sections-",
+    title: "Filed chat",
+  });
+  try {
+    const serverId = getServerId();
+    await installDesktopRuntime(page, {
+      serverId,
+      manageBuiltInDaemon: false,
+      daemonListen: `127.0.0.1:${getE2EDaemonPort()}`,
+    });
+    await page.setViewportSize({ width: 1352, height: 782 });
+    await page.emulateMedia({ colorScheme: "dark" });
+    await openAgentRoute(page, fixture);
+    const recent = page.getByTestId("desktop-section-recent");
+    const chatKey = `${serverId}:${fixture.agentId}`;
+    const firstRow = page.getByTestId(`desktop-chat-${chatKey}`).first();
+    const above = async (row: typeof firstRow, header: typeof recent) =>
+      (await row.boundingBox())!.y < (await header.boundingBox())!.y;
+
+    // Right-clicking Recent offers the reference's sort, Show and New section entries.
+    await recent.click({ button: "right" });
+    const recentMenu = page.getByTestId("desktop-section-recent-context");
+    await expect(recentMenu.getByText("Sort chats", { exact: true })).toBeVisible();
+    await recentMenu.getByTestId("desktop-section-recent-new-section").click();
+    await expect(page.getByTestId("desktop-section-create")).toContainText(
+      "Organize chats and projects your way",
+    );
+    await page.getByTestId("desktop-section-create-input").fill("Work");
+    await page.screenshot({ path: testInfo.outputPath("new-section-dialog.png") });
+    await page.getByTestId("desktop-section-create-submit").click();
+    const work = page.getByTestId("sidebar-project-list").getByText("Work", { exact: true });
+    await expect(work).toBeVisible();
+
+    await firstRow.hover();
+    await page.getByTestId(`desktop-chat-menu-${chatKey}`).first().click();
+    await page.getByText("Section", { exact: true }).click();
+    await page
+      .locator('[data-testid^="desktop-section-move-"]')
+      .filter({ hasText: "Work" })
+      .click();
+    await expect.poll(() => above(firstRow, recent)).toBe(true);
+    await page.reload();
+    await expect(work).toBeVisible();
+    await expect.poll(() => above(firstRow, recent)).toBe(true);
+    await recent.click({ button: "right" });
+    await page.screenshot({ path: testInfo.outputPath("custom-section.png") });
+    await page.keyboard.press("Escape");
+
+    await recent.click({ button: "right" });
+    await page.getByTestId("desktop-section-recent-show-projects").click();
+    await expect(page.getByTestId("desktop-section-projects")).toHaveCount(0);
+    await recent.click({ button: "right" });
+    await page.getByTestId("desktop-section-recent-show-projects").click();
+    await expect(page.getByTestId("desktop-section-projects")).toBeVisible();
+
+    await work.click({ button: "right" });
+    await page.locator('[data-testid$="-remove"]').click();
+    await expect(work).toHaveCount(0);
+    await expect.poll(() => above(firstRow, recent)).toBe(false);
+  } finally {
+    await fixture.cleanup();
+  }
+});

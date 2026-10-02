@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { Archive, Circle, CircleCheck, Copy, Pencil, Pin, PinOff } from "lucide-react-native";
+import { Archive, Circle, CircleCheck, Copy, List, Pencil, Pin, PinOff } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { withUnistyles } from "react-native-unistyles";
 import { AdaptiveRenameModal } from "@/components/rename-modal";
@@ -25,6 +25,7 @@ const UnpinIcon = withUnistyles(PinOff);
 const ReadIcon = withUnistyles(CircleCheck);
 const UnreadIcon = withUnistyles(Circle);
 const CopyIcon = withUnistyles(Copy);
+const SectionIcon = withUnistyles(List);
 const mutedIcon = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
 const renameLeading = <RenameIcon size={16} uniProps={mutedIcon} />;
 const pinLeading = <PinIcon size={16} uniProps={mutedIcon} />;
@@ -33,6 +34,7 @@ const archiveLeading = <ArchiveIcon size={16} uniProps={mutedIcon} />;
 const readLeading = <ReadIcon size={16} uniProps={mutedIcon} />;
 const unreadLeading = <UnreadIcon size={16} uniProps={mutedIcon} />;
 const copyLeading = <CopyIcon size={16} uniProps={mutedIcon} />;
+const sectionLeading = <SectionIcon size={16} uniProps={mutedIcon} />;
 
 export function DesktopChatMenuItems({
   context,
@@ -44,6 +46,7 @@ export function DesktopChatMenuItems({
   onRename,
   onArchive,
   copyPage,
+  sectionPage,
 }: {
   context?: boolean;
   pinned: boolean;
@@ -54,6 +57,8 @@ export function DesktopChatMenuItems({
   onRename: () => void;
   onArchive: () => void;
   copyPage?: string;
+  /** The page id of a `Section ›` submenu the surface declares. */
+  sectionPage?: string;
 }) {
   const { t } = useTranslation();
   const Item = context ? ContextMenuItem : DropdownMenuItem;
@@ -65,6 +70,11 @@ export function DesktopChatMenuItems({
       <Item onSelect={onPin} disabled={disabled} leading={pinned ? unpinLeading : pinLeading}>
         {t(pinned ? "sidebar.workspace.actions.unpin" : "sidebar.workspace.actions.pin")}
       </Item>
+      {sectionPage ? (
+        <DropdownMenuSubTrigger id={sectionPage} leading={sectionLeading} disabled={disabled}>
+          {t("desktopChat.sections.section")}
+        </DropdownMenuSubTrigger>
+      ) : null}
       <Item
         onSelect={onArchive}
         disabled={disabled}

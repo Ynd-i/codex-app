@@ -42,6 +42,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- Added custom macOS sidebar sections: create them from the Recent right-click menu or a chat or project's Section menu, rename, mark read, archive or remove them, and hide Projects. Removing a section returns its chats and projects; sections are stored on this Mac.
+
 - macOS chat sidebar sections collapse from their titles and reveal a sort menu on hover: recently updated, or a manual order you drag, with new chats still arriving on top. Projects add a project from their header.
 
 - The macOS rail's Usage button opens the usage summary beside the rail instead of leaving the current chat; without a connected host it still opens the Usage screen.

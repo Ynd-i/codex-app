@@ -62,6 +62,7 @@ export const ja: TranslationResources = {
       edit: "編集",
       markAllRead: "すべて既読にする",
       archiveChats: "チャットをアーカイブ",
+      archiveConfirm: "このセクションの {{count}} 件のチャットをアーカイブしますか？",
       removeSection: "セクションを削除",
       createDescription: "チャットとプロジェクトを自由に整理",
       namePlaceholder: "セクション名",

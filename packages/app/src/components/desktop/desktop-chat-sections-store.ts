@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
@@ -138,3 +139,23 @@ export const useChatSectionsStore = create<ChatSectionsState>()(
     },
   ),
 );
+
+const NO_ORDER: string[] = [];
+
+export function useSectionSort(sectionId: string) {
+  const sort = useChatSectionsStore((state) => sectionSort(state, sectionId));
+  const order = useChatSectionsStore((state) => state.chatOrderBySection[sectionId] ?? NO_ORDER);
+  const setSortFor = useChatSectionsStore((state) => state.setSort);
+  const setSort = useCallback(
+    (next: ChatSectionSort) => setSortFor(sectionId, next),
+    [sectionId, setSortFor],
+  );
+  return { sort, order, setSort };
+}
+
+export function useSectionCollapsed(sectionId: string) {
+  const collapsed = useChatSectionsStore((state) => state.collapsedSections.includes(sectionId));
+  const toggleFor = useChatSectionsStore((state) => state.toggleCollapsed);
+  const toggle = useCallback(() => toggleFor(sectionId), [sectionId, toggleFor]);
+  return { collapsed, toggle };
+}

@@ -62,6 +62,7 @@ export const ko: TranslationResources = {
       edit: "편집",
       markAllRead: "모두 읽음으로 표시",
       archiveChats: "채팅 보관",
+      archiveConfirm: "이 섹션의 채팅 {{count}}개를 보관할까요?",
       removeSection: "섹션 제거",
       createDescription: "채팅과 프로젝트를 자유롭게 정리하세요",
       namePlaceholder: "섹션 이름",

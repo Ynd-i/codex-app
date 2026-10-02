@@ -62,6 +62,7 @@ export const ru: TranslationResources = {
       edit: "Изменить",
       markAllRead: "Отметить все как прочитанные",
       archiveChats: "Архивировать чаты",
+      archiveConfirm: "Архивировать чаты в этом разделе ({{count}})?",
       removeSection: "Удалить раздел",
       createDescription: "Упорядочивайте чаты и проекты как удобно",
       namePlaceholder: "Название раздела",

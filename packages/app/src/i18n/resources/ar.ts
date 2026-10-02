@@ -62,6 +62,7 @@ export const ar: TranslationResources = {
       edit: "تعديل",
       markAllRead: "تعليم الكل كمقروء",
       archiveChats: "أرشفة المحادثات",
+      archiveConfirm: "أرشفة {{count}} من المحادثات في هذا القسم؟",
       removeSection: "إزالة القسم",
       createDescription: "نظّم المحادثات والمشاريع على طريقتك",
       namePlaceholder: "اسم القسم",

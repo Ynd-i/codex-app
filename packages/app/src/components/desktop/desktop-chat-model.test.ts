@@ -9,6 +9,7 @@ import {
   isDesktopChatUnread,
   orderSectionChats,
   orderSectionProjects,
+  partitionChatSections,
   type DesktopChatProject,
 } from "./desktop-chat-model";
 
@@ -138,4 +139,30 @@ it("ranks projects by their newest chat only in latest order", () => {
   const names = (entries: DesktopChatProject[]) => entries.map((entry) => entry.project.viewKey);
   expect(names(orderSectionProjects([quiet, busy], "manual"))).toEqual(["quiet", "busy"]);
   expect(names(orderSectionProjects([quiet, busy], "latest"))).toEqual(["busy", "quiet"]);
+});
+
+it("moves assigned chats and projects into existing custom sections only", () => {
+  const kept = chat("kept", "local", "one");
+  const moved = chat("moved", "local", "one");
+  const orphaned = chat("orphaned", "local", "one");
+  const app: DesktopChatProject = {
+    project: project("app", "local", ["one"]),
+    chats: [],
+    emptyWorkspaces: [],
+  };
+  const docs: DesktopChatProject = {
+    project: project("docs", "local", []),
+    chats: [],
+    emptyWorkspaces: [],
+  };
+  const result = partitionChatSections({
+    recent: [kept, moved, orphaned],
+    projects: [app, docs],
+    sections: [{ id: "work", name: "Work" }],
+    chatSection: { "local:moved": "work", "local:orphaned": "removed-section" },
+    projectSection: { docs: "work" },
+  });
+  expect(result.recent.map((entry) => entry.id)).toEqual(["kept", "orphaned"]);
+  expect(result.projects.map((entry) => entry.project.viewKey)).toEqual(["app"]);
+  expect(result.custom).toEqual([{ id: "work", name: "Work", chats: [moved], projects: [docs] }]);
 });

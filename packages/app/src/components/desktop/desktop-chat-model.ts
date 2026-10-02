@@ -119,3 +119,45 @@ export function orderSectionProjects(
   const newest = (entry: DesktopChatProject) => entry.chats[0]?.lastActivityAt.getTime() ?? 0;
   return [...projects].sort((left, right) => newest(right) - newest(left));
 }
+
+export interface CustomChatSection {
+  id: string;
+  name: string;
+  chats: AggregatedAgent[];
+  projects: DesktopChatProject[];
+}
+
+/**
+ * Moves chats and projects assigned to a custom section out of Recent and Projects. Pinned chats
+ * stay pinned, and an assignment to a section that no longer exists is ignored.
+ */
+export function partitionChatSections({
+  recent,
+  projects,
+  sections,
+  chatSection,
+  projectSection,
+}: {
+  recent: AggregatedAgent[];
+  projects: DesktopChatProject[];
+  sections: readonly { id: string; name: string }[];
+  chatSection: Readonly<Record<string, string>>;
+  projectSection: Readonly<Record<string, string>>;
+}): { recent: AggregatedAgent[]; projects: DesktopChatProject[]; custom: CustomChatSection[] } {
+  const custom = new Map<string, CustomChatSection>(
+    sections.map((section) => [section.id, { ...section, chats: [], projects: [] }]),
+  );
+  const remainingRecent: AggregatedAgent[] = [];
+  for (const agent of recent) {
+    const section = custom.get(chatSection[desktopChatKey(agent)] ?? "");
+    if (section) section.chats.push(agent);
+    else remainingRecent.push(agent);
+  }
+  const remainingProjects: DesktopChatProject[] = [];
+  for (const entry of projects) {
+    const section = custom.get(projectSection[entry.project.viewKey] ?? "");
+    if (section) section.projects.push(entry);
+    else remainingProjects.push(entry);
+  }
+  return { recent: remainingRecent, projects: remainingProjects, custom: [...custom.values()] };
+}

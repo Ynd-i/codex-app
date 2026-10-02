@@ -62,6 +62,7 @@ export const zhCN: TranslationResources = {
       edit: "编辑",
       markAllRead: "全部标为已读",
       archiveChats: "归档聊天",
+      archiveConfirm: "要归档此分区中的 {{count}} 个聊天吗？",
       removeSection: "移除分区",
       createDescription: "随心整理聊天和项目",
       namePlaceholder: "分区名称",
