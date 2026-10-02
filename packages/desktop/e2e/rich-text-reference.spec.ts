@@ -14,7 +14,7 @@ for (const platform of ["darwin", "win32"] as const) {
     const markdown =
       "例如，带格式的回复会显示成这样：\n\n> 这是一段引用文字。\n\n这部分是**加粗**，这部分是*斜体*，这部分是~~删除线~~，这里是`行内代码`。\n\n- 项目一\n- 项目二\n\n代码块也可以这样显示：\n\n```\n这是一段代码或纯文本\n```\n\n```ts\n" +
       longCode +
-      "\n```\n\n> First nested paragraph.\n>\n> Second nested paragraph.\n";
+      "\n```\n\n> First nested paragraph.\n>\n> Second nested paragraph.\n\n路径 `src/app/index.ts` 在这里。\n";
     const fixture = await seedMockAgentWorkspace({
       repoPrefix: "rich-text-",
       title: "Styled text",
@@ -95,6 +95,15 @@ for (const platform of ["darwin", "win32"] as const) {
         await expect.poll(async () => (await inlineCode.boundingBox())?.height).toBe(16);
         await expect
           .poll(async () => (await paragraph.boundingBox())?.height)
+          .toBe((await intro.boundingBox())?.height);
+        // File and URL chips render through a tooltip wrapper instead of inline text.
+        const pathParagraph = assistant
+          .locator('[data-paseo-markdown-tag="p"]')
+          .filter({ hasText: /^路径/ });
+        const pathCode = pathParagraph.locator('[data-paseo-markdown-tag="code"]');
+        await expect.poll(async () => (await pathCode.boundingBox())?.height).toBe(16);
+        await expect
+          .poll(async () => (await pathParagraph.boundingBox())?.height)
           .toBe((await intro.boundingBox())?.height);
         await expect
           .poll(async () => {

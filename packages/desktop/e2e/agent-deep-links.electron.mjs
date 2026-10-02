@@ -5,7 +5,7 @@ const longCode = 'const message = "' + "long code content ".repeat(14) + '";';
 export const styledResponse =
   "例如，带格式的回复会显示成这样：\n\n> 这是一段引用文字。\n\n这部分是**加粗**，这部分是*斜体*，这部分是~~删除线~~，这里是`行内代码`。\n\n- 项目一\n- 项目二\n\n代码块也可以这样显示：\n\n```\n这是一段代码或纯文本\n```\n\n```ts\n" +
   longCode +
-  "\n```\n";
+  "\n```\n\n路径 `src/app/index.ts` 在这里。\n";
 
 /** Runs against the harness's packaged Custom process; no OS protocol registration is involved. */
 export async function runAgentDeepLinksRegression({
@@ -326,6 +326,11 @@ export async function runAgentDeepLinksRegression({
   await expect
     .poll(async () => (await chipParagraph.boundingBox())?.height)
     .toBe((await intro.boundingBox())?.height);
+  const pathCode = assistant
+    .locator('[data-paseo-markdown-tag="p"]')
+    .filter({ hasText: /^路径/ })
+    .locator('[data-paseo-markdown-tag="code"]');
+  await expect.poll(async () => (await pathCode.boundingBox())?.height).toBe(16);
   await expect(assistant.getByText("斜体", { exact: true })).toHaveCSS("font-style", "italic");
   await expect(assistant.getByText("删除线", { exact: true })).toHaveCSS(
     "text-decoration-line",

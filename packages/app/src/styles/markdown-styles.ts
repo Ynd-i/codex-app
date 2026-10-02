@@ -193,8 +193,11 @@ export function createMarkdownStyles(theme: Theme) {
       ...(codeFontWeight ? { fontWeight: codeFontWeight } : {}),
       fontFamily: theme.fontFamily.mono,
       fontSize: theme.fontSize.code,
-      // The inherited prose line height would enlarge any line containing a chip.
-      ...(getIsElectronMac() ? { paddingVertical: 1, lineHeight: theme.fontSize.code } : {}),
+      // The inherited prose line height would enlarge any line containing a chip. File
+      // and URL chips are blockified by their tooltip wrapper, so this also sizes them.
+      ...(getIsElectronMac()
+        ? { paddingVertical: 1, lineHeight: Math.round(theme.fontSize.code * 1.2) }
+        : {}),
     },
 
     code_block: {
