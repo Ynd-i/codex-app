@@ -5,10 +5,12 @@
 //   v<stable>-v<N>          release N promoted to stable
 //
 // <stable> is the newest upstream release merged into the branch. While that is an upstream
-// beta, nothing is released.
+// beta, nothing is released unless `beta --upstream-beta` asks for a one-off on it, tagged
+// v<upstream-beta>-v<N>-beta<M>.
 //
 //   node scripts/custom-release.mjs sync    merge a newer upstream stable release as -v1-beta1
 //   node scripts/custom-release.mjs beta    release the branch as the next beta
+//   node scripts/custom-release.mjs beta --upstream-beta   the same, on an upstream beta
 //   node scripts/custom-release.mjs stable  promote the latest beta to stable
 //
 // Prints key=value lines for $GITHUB_OUTPUT: merge, backend, tag, from, reason, prerelease,
@@ -17,7 +19,8 @@ import { execFileSync } from "node:child_process";
 import { isMainModule } from "./is-main-module.mjs";
 import { parseReleaseVersion } from "./release-version-utils.mjs";
 
-const releasePattern = /^(?<backend>v\d+\.\d+\.\d+)-v(?<release>\d+)(?:-beta(?<beta>\d+))?$/;
+const releasePattern =
+  /^(?<backend>v\d+\.\d+\.\d+(?:-beta\.\d+)?)-v(?<release>\d+)(?:-beta(?<beta>\d+))?$/;
 
 function parseUpstreamTag(tag) {
   if (!tag.startsWith("v")) return null;
@@ -82,14 +85,25 @@ export function nextBetaTag(backend, tags) {
 /**
  * The semver the in-app updater compares for a release tag. The app version stays upstream's to
  * match the bundled daemon, so updates need their own order: betas numerically, all betas of a
- * release before its stable tag ("beta" sorts before "stable"), then the next release.
+ * release before its stable tag ("beta" sorts before "stable"), then the next release. One-offs
+ * on an upstream beta join with a dot so its number compares numerically, and sort before
+ * every release on the stable version ("beta" sorts before "custom").
  */
 export function updateVersion(tag) {
   const { backend, release, beta } = releasePattern.exec(tag).groups;
-  return `${backend.slice(1)}-custom.${release}.${beta ? `beta.${beta}` : "stable"}`;
+  const base = backend.slice(1);
+  const separator = base.includes("-") ? "." : "-";
+  return `${base}${separator}custom.${release}.${beta ? `beta.${beta}` : "stable"}`;
 }
 
-export function planRelease({ mode, current, upstreamStable, tags, latestIsHead }) {
+export function planRelease({
+  mode,
+  current,
+  upstreamStable,
+  tags,
+  latestIsHead,
+  upstreamBeta = false,
+}) {
   if (!current) throw new Error("No upstream release tag is merged into this branch");
   const skip = (reason) => ({ merge: "", backend: current, tag: "", from: "", reason });
   if (mode === "sync") {
@@ -102,7 +116,7 @@ export function planRelease({ mode, current, upstreamStable, tags, latestIsHead 
   if (mode !== "beta" && mode !== "stable") {
     throw new Error(`Unknown mode "${mode}"; use sync, beta or stable`);
   }
-  if (parseUpstreamTag(current).isPrerelease) {
+  if (parseUpstreamTag(current).isPrerelease && !(mode === "beta" && upstreamBeta)) {
     return skip(`the branch is on upstream beta ${current}; wait for an upstream stable release`);
   }
   if (mode === "beta") {
@@ -131,7 +145,7 @@ function git(...args) {
   return execFileSync("git", args, { encoding: "utf8" }).trim();
 }
 
-function main([mode]) {
+function main([mode, flag]) {
   const tags = git("tag", "--list").split("\n").filter(Boolean);
   const current = newestUpstreamTag(git("tag", "--merged", "HEAD").split("\n").filter(Boolean));
   const latest = current ? latestRelease(current, tags) : null;
@@ -142,6 +156,7 @@ function main([mode]) {
     tags,
     latestIsHead:
       Boolean(latest) && git("rev-parse", `${latest.tag}^{commit}`) === git("rev-parse", "HEAD"),
+    upstreamBeta: flag === "--upstream-beta",
   });
   const prerelease = String(plan.tag.includes("-beta"));
   const version = plan.tag ? updateVersion(plan.tag) : "";

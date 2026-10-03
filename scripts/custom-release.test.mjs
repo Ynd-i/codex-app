@@ -35,6 +35,16 @@ test("nothing is released while the branch is on an upstream beta", () => {
   }
 });
 
+test("a one-off beta on an upstream beta is numbered apart from the stable releases", () => {
+  const tags = ["v0.11.0-beta.1-v1-beta1", "v0.11.0-beta.3-v1-beta1"];
+  const current = "v0.11.0-beta.3";
+  const oneOff = planRelease({ mode: "beta", current, tags, upstreamBeta: true });
+  assert.equal(oneOff.tag, "v0.11.0-beta.3-v1-beta2");
+  assert.equal(oneOff.from, "HEAD");
+  assert.equal(planRelease({ mode: "stable", current, tags, upstreamBeta: true }).tag, "");
+  assert.equal(nextBetaTag("v0.11.0", tags), "v0.11.0-v1-beta1");
+});
+
 test("a beta release needs changes, and stable promotes the latest beta's commit", () => {
   const tags = ["v0.11.0", "v0.11.0-v1-beta1", "v0.11.0-v1-beta2"];
   const current = "v0.11.0";
@@ -59,4 +69,8 @@ test("update versions order betas, then their stable release, then the next rele
   assert.equal(versions[2], "0.11.0-custom.1.stable");
   assert.deepEqual([...versions].sort(semver.compare), versions);
   assert.ok(semver.gt(versions[0], "0.11.0-beta.3"));
+  const oneOffs = ["v0.11.0-beta.3-v1-beta2", "v0.11.0-beta.10-v1-beta1"].map(updateVersion);
+  assert.equal(oneOffs[0], "0.11.0-beta.3.custom.1.beta.2");
+  assert.ok(semver.lt(oneOffs[0], oneOffs[1]));
+  assert.ok(semver.lt(oneOffs[1], updateVersion("v0.11.0-v1-beta1")));
 });

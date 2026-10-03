@@ -30,8 +30,10 @@ complete; this section replaces that handoff.
   and `unavailable` login problems, and localizing that copy in all nine languages. The
   pipeline releases nothing until upstream ships `0.11.0`; the scheduled sync then
   merges it and publishes `v0.11.0-v1-beta1`. As user-requested one-off exceptions,
-  built and smoke-tested locally and ignored by the planner, the prereleases
+  built and smoke-tested locally and ad-hoc signed, the prereleases
   `v0.11.0-beta.1-v1-beta1` and `v0.11.0-beta.3-v1-beta1` are published by the user.
+  Later one-offs run in CI with `upstream_beta`; see
+  [custom releases](../release.md#custom-releases).
 - In-app updates (2026-10-03 15:30 UTC): user decision, a free self-signed certificate
   instead of an Apple Developer ID. Published builds carry `paseoCustomUpdateVersion`,
   are signed with rcodesign and read the `update-feed` branch; see
@@ -41,9 +43,10 @@ complete; this section replaces that handoff.
   (bundle identical to B, `codesign --strict --deep` valid); the signed, stamped app
   passes the packaged smoke; the prepackaged dmg keeps the signature. The user created
   the real certificate (CN `Paseo Custom`, valid until 2046-09-28) and set
-  `CUSTOM_SIGNING_P12` and `CUSTOM_SIGNING_P12_PASSWORD` (13:49 UTC); no CI run has signed
-  with them yet. The one-off ad-hoc releases cannot update in place; install the first
-  signed release by hand.
+  `CUSTOM_SIGNING_P12` and `CUSTOM_SIGNING_P12_PASSWORD` (13:49 UTC). User request: rebuild
+  beta.3 signed as the CI one-off `v0.11.0-beta.3-v1-beta2` (stamp
+  `0.11.0-beta.3.custom.1.beta.2`), the first CI run to sign. The ad-hoc one-offs cannot
+  update in place; install the first signed release by hand.
 - Isolated checkout: `/Users/yndi/dev/projects/codex-app/paseo-upstream-4893629`,
   branch `codex/markdown-spacing-paused-20261002`. Its commits `78a5f32`,
   `63071b9`, `d46ba1f`, `e66eb9a`, `ef2e515`, `f06f026`, `29c8053`, `8ba5126`, `e8a72bf`,
