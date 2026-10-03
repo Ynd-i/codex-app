@@ -109,6 +109,8 @@ jobs:
       - run: node scripts/npm-retry.mjs install -g @anthropic-ai/claude-code opencode-ai
       - run: npm run test:unit --workspace=@getpaseo/server
       - run: npm run build:app-deps
+      # The app suite includes a browser project, as in upstream CI.
+      - run: npx playwright install chromium
       - run: npm run test --workspace=@getpaseo/app
 
   build:
