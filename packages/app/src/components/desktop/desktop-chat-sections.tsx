@@ -1,5 +1,15 @@
 import { useCallback, useMemo } from "react";
-import { Archive, ArrowUpDown, CircleCheck, Plus, Settings2, X } from "lucide-react-native";
+import {
+  Archive,
+  ArrowUpDown,
+  CircleCheck,
+  Folder,
+  List,
+  PanelLeft,
+  Plus,
+  Settings2,
+  X,
+} from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { withUnistyles } from "react-native-unistyles";
 import { DraggableList } from "@/components/draggable-list";
@@ -11,13 +21,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useToast } from "@/contexts/toast-context";
 import type { AggregatedAgent } from "@/hooks/use-aggregated-agents";
-import { useArchiveAgent } from "@/hooks/use-archive-agent";
 import { useSidebarCollapsedSectionsStore } from "@/stores/sidebar-collapsed-sections-store";
 import { useSidebarOrderStore } from "@/stores/sidebar-order-store";
 import type { Theme } from "@/styles/theme";
-import { confirmDialog } from "@/utils/confirm-dialog";
 import { hasVisibleOrderChanged, mergeWithRemainder } from "@/utils/sidebar-reorder";
 import {
   isDesktopChatUnread,
@@ -29,7 +36,7 @@ import {
 import { ChatProject } from "./desktop-chat-project";
 import { ChatSectionHeader } from "./desktop-chat-section-header";
 import { SectionChatList } from "./desktop-chat-section-list";
-import { useSectionDialogs } from "./desktop-chat-section-menus";
+import { useArchiveChats, useSectionDialogs } from "./desktop-chat-section-menus";
 import {
   CHAT_SECTION,
   useChatSectionsStore,
@@ -44,6 +51,9 @@ const ReadIcon = withUnistyles(CircleCheck);
 const ArchiveIcon = withUnistyles(Archive);
 const RemoveIcon = withUnistyles(X);
 const SortIcon = withUnistyles(ArrowUpDown);
+const OrganizeIcon = withUnistyles(PanelLeft);
+const ByProjectIcon = withUnistyles(Folder);
+const MergedIcon = withUnistyles(List);
 const mutedIcon = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
 const newLeading = <PlusIcon size={16} uniProps={mutedIcon} />;
 const editLeading = <EditIcon size={16} uniProps={mutedIcon} />;
@@ -51,12 +61,17 @@ const readLeading = <ReadIcon size={16} uniProps={mutedIcon} />;
 const archiveLeading = <ArchiveIcon size={16} uniProps={mutedIcon} />;
 const removeLeading = <RemoveIcon size={16} uniProps={mutedIcon} />;
 const sortLeading = <SortIcon size={16} uniProps={mutedIcon} />;
+const organizeLeading = <OrganizeIcon size={16} uniProps={mutedIcon} />;
+const byProjectLeading = <ByProjectIcon size={16} uniProps={mutedIcon} />;
+const mergedLeading = <MergedIcon size={16} uniProps={mutedIcon} />;
 
 export function PinnedSection({
   chats,
+  projects,
   selectedKey,
 }: {
   chats: AggregatedAgent[];
+  projects: DesktopChatProject[];
   selectedKey: string | null;
 }) {
   const { t } = useTranslation();
@@ -64,26 +79,32 @@ export function PinnedSection({
   const togglePinned = useSidebarCollapsedSectionsStore((state) => state.togglePinnedCollapsed);
   const { sort, order, setSort } = useSectionSort(CHAT_SECTION.pinned);
   const ordered = useMemo(() => orderSectionChats(chats, sort, order), [chats, order, sort]);
-  const collapsed = pinnedCollapsed || chats.length === 0;
+  const empty = chats.length === 0 && projects.length === 0;
+  const collapsed = pinnedCollapsed || empty;
   return (
     <>
       <ChatSectionHeader
         title={t("sidebar.pinned.title")}
         collapsed={collapsed}
-        onToggle={chats.length > 0 ? togglePinned : undefined}
+        onToggle={empty ? undefined : togglePinned}
         sort={sort}
         onSortChange={setSort}
         testID="desktop-section-pinned"
       />
       {collapsed ? null : (
-        <SectionChatList
-          sectionId={CHAT_SECTION.pinned}
-          chats={ordered}
-          sort={sort}
-          selectedKey={selectedKey}
-          limit={Number.POSITIVE_INFINITY}
-          moreTestID="desktop-pinned-more"
-        />
+        <>
+          <SectionChatList
+            sectionId={CHAT_SECTION.pinned}
+            chats={ordered}
+            sort={sort}
+            selectedKey={selectedKey}
+            limit={Number.POSITIVE_INFINITY}
+            moreTestID="desktop-pinned-more"
+          />
+          {projects.map((entry) => (
+            <ChatProject key={entry.project.viewKey} entry={entry} selectedKey={selectedKey} />
+          ))}
+        </>
       )}
     </>
   );
@@ -110,10 +131,40 @@ export function RecentSection({
   const createSection = useCallback(() => dialogs?.create(), [dialogs]);
   const sortLatest = useCallback(() => setSort("latest"), [setSort]);
   const sortManual = useCallback(() => setSort("manual"), [setSort]);
-  // The right-click menu of the reference's Recent title; its Organize page has no reference yet.
+  const organize = useChatSectionsStore((state) => state.organize);
+  const setOrganize = useChatSectionsStore((state) => state.setOrganize);
+  const organizeByProject = useCallback(() => setOrganize("projects"), [setOrganize]);
+  const organizeMerged = useCallback(() => setOrganize("merged"), [setOrganize]);
+  // The right-click menu of the reference's Recent title.
   const contextMenu = useMemo(
     () => ({
       pages: [
+        {
+          id: "recent-organize",
+          title: t("desktopChat.sections.organize"),
+          content: (
+            <>
+              <DropdownMenuItem
+                selected={organize === "projects"}
+                showSelectedCheck
+                leading={byProjectLeading}
+                onSelect={organizeByProject}
+                testID="desktop-section-organize-projects"
+              >
+                {t("desktopChat.sections.byProject")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                selected={organize === "merged"}
+                showSelectedCheck
+                leading={mergedLeading}
+                onSelect={organizeMerged}
+                testID="desktop-section-organize-merged"
+              >
+                {t("desktopChat.sections.merged")}
+              </DropdownMenuItem>
+            </>
+          ),
+        },
         {
           id: "recent-chat-sort",
           title: t("desktopChat.sections.chatSort"),
@@ -131,6 +182,9 @@ export function RecentSection({
       ],
       items: (
         <>
+          <DropdownMenuSubTrigger id="recent-organize" leading={organizeLeading}>
+            {t("desktopChat.sections.organize")}
+          </DropdownMenuSubTrigger>
           <DropdownMenuSubTrigger id="recent-chat-sort" leading={sortLeading}>
             {t("desktopChat.sections.chatSort")}
           </DropdownMenuSubTrigger>
@@ -155,7 +209,18 @@ export function RecentSection({
         </>
       ),
     }),
-    [createSection, hideProjects, sort, sortLatest, sortManual, t, toggleProjects],
+    [
+      createSection,
+      hideProjects,
+      organize,
+      organizeByProject,
+      organizeMerged,
+      sort,
+      sortLatest,
+      sortManual,
+      t,
+      toggleProjects,
+    ],
   );
   return (
     <>
@@ -191,7 +256,6 @@ export function CustomSection({
   selectedKey: string | null;
 }) {
   const { t } = useTranslation();
-  const toast = useToast();
   const dialogs = useSectionDialogs();
   const removeSection = useChatSectionsStore((state) => state.removeSection);
   const { collapsed, toggle } = useSectionCollapsed(section.id);
@@ -205,7 +269,6 @@ export function CustomSection({
     [section.projects, sort],
   );
   const { update } = useDesktopChatMutation();
-  const { archiveAgent } = useArchiveAgent();
   const hasUnread = section.chats.some(isDesktopChatUnread);
   const edit = useCallback(
     () => dialogs?.edit({ id: section.id, name: section.name }),
@@ -217,20 +280,10 @@ export function CustomSection({
     for (const agent of section.chats)
       if (isDesktopChatUnread(agent)) void update(agent, { kind: "read" }).catch(() => {});
   }, [section.chats, update]);
-  const archiveChats = useCallback(() => {
-    void (async () => {
-      const confirmed = await confirmDialog({
-        title: t("desktopChat.sections.archiveChats"),
-        message: t("desktopChat.sections.archiveConfirm", { count: section.chats.length }),
-        confirmLabel: t("agentList.archiveSheet.archive"),
-        cancelLabel: t("common.actions.cancel"),
-        destructive: true,
-      });
-      if (!confirmed) return;
-      for (const agent of section.chats)
-        await archiveAgent({ serverId: agent.serverId, agentId: agent.id });
-    })().catch((error) => toast.error(error instanceof Error ? error.message : String(error)));
-  }, [archiveAgent, section.chats, t, toast]);
+  const archiveChats = useArchiveChats(
+    section.chats,
+    t("desktopChat.sections.archiveConfirm", { count: section.chats.length }),
+  );
   const contextMenu = useMemo(
     () => ({
       items: (

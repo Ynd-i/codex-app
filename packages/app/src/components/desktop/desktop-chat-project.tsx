@@ -1,6 +1,16 @@
-import { memo, useCallback, useMemo, useState, type Ref } from "react";
+import { memo, useCallback, useMemo, useState, type ReactNode, type Ref } from "react";
 import { router } from "expo-router";
-import { FolderOpen, List, MoreHorizontal, Settings2, SquarePen } from "lucide-react-native";
+import {
+  Archive,
+  FolderOpen,
+  List,
+  MoreHorizontal,
+  Pin,
+  PinOff,
+  Settings2,
+  SquarePen,
+  X,
+} from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
@@ -11,19 +21,33 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
   type MenuPageDefinition,
 } from "@/components/ui/dropdown-menu";
-import type { SidebarWorkspacePlacement } from "@/hooks/use-sidebar-workspaces-list";
+import { useToast } from "@/contexts/toast-context";
+import { useLocalDaemonServerId } from "@/hooks/use-is-local-daemon";
+import type {
+  SidebarProjectEntry,
+  SidebarWorkspacePlacement,
+} from "@/hooks/use-sidebar-workspaces-list";
 import { openProjectSettings } from "@/navigation/settings-navigation";
+import {
+  getCurrentProjectRemoveReadiness,
+  removeProjectFromHosts,
+} from "@/projects/project-remove";
+import { getHostRuntimeStore } from "@/runtime/host-runtime";
 import { navigateToWorkspace } from "@/stores/navigation-active-workspace-store";
 import { useSidebarCollapsedSectionsStore } from "@/stores/sidebar-collapsed-sections-store";
 import type { Theme } from "@/styles/theme";
+import { confirmDialog } from "@/utils/confirm-dialog";
 import { buildNewWorkspaceRoute } from "@/utils/host-routes";
+import { resolveSidebarProjectLocalPath } from "@/utils/sidebar-project-row-model";
+import { OpenInFileManagerMenuItem } from "@/workspace/open-in-file-manager/menu-item";
 import type { DesktopChatProject } from "./desktop-chat-model";
 import { SectionChatList } from "./desktop-chat-section-list";
-import { useSectionMovePage } from "./desktop-chat-section-menus";
+import { useArchiveChats, useSectionMovePage } from "./desktop-chat-section-menus";
 import { useChatSectionsStore } from "./desktop-chat-sections-store";
 
 const FolderIcon = withUnistyles(FolderOpen);
@@ -31,9 +55,17 @@ const NewChatIcon = withUnistyles(SquarePen);
 const MoreIcon = withUnistyles(MoreHorizontal);
 const EditIcon = withUnistyles(Settings2);
 const SectionIcon = withUnistyles(List);
+const PinIcon = withUnistyles(Pin);
+const UnpinIcon = withUnistyles(PinOff);
+const ArchiveIcon = withUnistyles(Archive);
+const RemoveIcon = withUnistyles(X);
 const mutedIcon = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
 const editLeading = <EditIcon size={16} uniProps={mutedIcon} />;
 const sectionLeading = <SectionIcon size={16} uniProps={mutedIcon} />;
+const pinLeading = <PinIcon size={16} uniProps={mutedIcon} />;
+const unpinLeading = <UnpinIcon size={16} uniProps={mutedIcon} />;
+const archiveLeading = <ArchiveIcon size={16} uniProps={mutedIcon} />;
+const removeLeading = <RemoveIcon size={16} uniProps={mutedIcon} />;
 
 function EmptyWorkspaceRow({ workspace }: { workspace: SidebarWorkspacePlacement }) {
   const open = useCallback(
@@ -56,19 +88,133 @@ function EmptyWorkspaceRow({ workspace }: { workspace: SidebarWorkspacePlacement
   );
 }
 
-/** The project menu's items, shared by the `…` button and a right click on the project. */
-function ProjectMenuItems({ onEdit, sectionPage }: { onEdit: () => void; sectionPage: string }) {
+/** Removes the project from every host it is on, after the same confirmation as the workspace sidebar. */
+function useRemoveProject(project: SidebarProjectEntry) {
   const { t } = useTranslation();
-  return (
-    <>
-      <DropdownMenuItem onSelect={onEdit} leading={editLeading}>
-        {t("desktopChat.sections.edit")}
-      </DropdownMenuItem>
-      <DropdownMenuSubTrigger id={sectionPage} leading={sectionLeading}>
-        {t("desktopChat.sections.section")}
-      </DropdownMenuSubTrigger>
-    </>
+  const toast = useToast();
+  const [removing, setRemoving] = useState(false);
+  const remove = useCallback(() => {
+    if (removing) return;
+    void (async () => {
+      const confirmed = await confirmDialog({
+        title: t("sidebar.project.confirmations.removeTitle"),
+        message: t("sidebar.project.confirmations.removeMessage", {
+          projectName: project.projectName,
+        }),
+        confirmLabel: t("sidebar.project.confirmations.removeConfirm"),
+        cancelLabel: t("sidebar.project.confirmations.cancel"),
+        destructive: true,
+      });
+      if (!confirmed) return;
+      const readiness = getCurrentProjectRemoveReadiness({ hosts: project.hosts });
+      if (readiness.kind === "needs_host_update") {
+        toast.error(t("sidebar.project.toasts.updateHostToRemove"));
+        return;
+      }
+      setRemoving(true);
+      try {
+        const outcome = await removeProjectFromHosts({
+          targets: readiness.targets,
+          getClient: (serverId) => getHostRuntimeStore().getClient(serverId),
+        });
+        if (outcome.kind === "host_disconnected")
+          toast.error(t("sidebar.project.toasts.hostDisconnected"));
+        else if (outcome.kind === "failed") toast.error(t("sidebar.project.toasts.removeFailed"));
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : t("sidebar.project.toasts.removeFailed"),
+        );
+      } finally {
+        setRemoving(false);
+      }
+    })();
+  }, [project.hosts, project.projectName, removing, t, toast]);
+  return { remove, removing };
+}
+
+/** The project menu in the reference's order, shared by the `…` button and a right click. */
+function useProjectMenu(entry: DesktopChatProject, onEdit: () => void) {
+  const { t } = useTranslation();
+  const { project, chats } = entry;
+  const section = useChatSectionsStore((state) => state.projectSection[project.viewKey]);
+  const moveProject = useChatSectionsStore((state) => state.moveProject);
+  const pinned = useChatSectionsStore((state) => state.pinnedProjects.includes(project.viewKey));
+  const togglePinnedProject = useChatSectionsStore((state) => state.togglePinnedProject);
+  const localServerId = useLocalDaemonServerId();
+  const projectPath = resolveSidebarProjectLocalPath(project, localServerId);
+  const move = useCallback(
+    (sectionId: string | null) => moveProject(project.viewKey, sectionId),
+    [moveProject, project.viewKey],
   );
+  const togglePin = useCallback(
+    () => togglePinnedProject(project.viewKey),
+    [project.viewKey, togglePinnedProject],
+  );
+  const archiveChats = useArchiveChats(
+    chats,
+    t("desktopChat.sections.archiveProjectConfirm", { count: chats.length }),
+  );
+  const { remove, removing } = useRemoveProject(project);
+  const sectionPage = useSectionMovePage(`project-section-${project.viewKey}`, section, move);
+  const pages = useMemo(() => [sectionPage], [sectionPage]);
+  const items = useMemo(
+    () => (
+      <>
+        <DropdownMenuItem
+          onSelect={togglePin}
+          leading={pinned ? unpinLeading : pinLeading}
+          testID={`desktop-project-pin-${project.viewKey}`}
+        >
+          {t(pinned ? "sidebar.workspace.actions.unpin" : "sidebar.workspace.actions.pin")}
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onEdit} leading={editLeading}>
+          {t("desktopChat.sections.edit")}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuSubTrigger id={sectionPage.id} leading={sectionLeading}>
+          {t("desktopChat.sections.section")}
+        </DropdownMenuSubTrigger>
+        <OpenInFileManagerMenuItem
+          path={projectPath}
+          label={t("desktopChat.sections.revealInFinder")}
+          testID={`desktop-project-reveal-${project.viewKey}`}
+        />
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onSelect={archiveChats}
+          leading={archiveLeading}
+          disabled={chats.length === 0}
+          testID={`desktop-project-archive-${project.viewKey}`}
+        >
+          {t("desktopChat.sections.archiveChats")}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onSelect={remove}
+          leading={removeLeading}
+          status={removing ? "pending" : undefined}
+          pendingLabel={t("sidebar.project.actions.removing")}
+          testID={`desktop-project-remove-${project.viewKey}`}
+        >
+          {t("desktopChat.sections.removeProject")}
+        </DropdownMenuItem>
+      </>
+    ),
+    [
+      archiveChats,
+      chats.length,
+      onEdit,
+      pinned,
+      project.viewKey,
+      projectPath,
+      remove,
+      removing,
+      sectionPage.id,
+      t,
+      togglePin,
+    ],
+  );
+  return { items, pages };
 }
 
 function ProjectActions({
@@ -78,8 +224,7 @@ function ProjectActions({
   menuOpen,
   onMenuOpenChange,
   pages,
-  sectionPage,
-  onEdit,
+  menuItems,
   onCreate,
   onEnter,
   onLeave,
@@ -90,8 +235,7 @@ function ProjectActions({
   menuOpen: boolean;
   onMenuOpenChange: (open: boolean) => void;
   pages: MenuPageDefinition[];
-  sectionPage: string;
-  onEdit: () => void;
+  menuItems: ReactNode;
   onCreate: () => void;
   onEnter: () => void;
   onLeave: () => void;
@@ -112,7 +256,7 @@ function ProjectActions({
           <MoreIcon size={16} uniProps={mutedIcon} />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" width={200} pages={pages}>
-          <ProjectMenuItems onEdit={onEdit} sectionPage={sectionPage} />
+          {menuItems}
         </DropdownMenuContent>
       </DropdownMenu>
       <HeaderToggleButton
@@ -147,8 +291,8 @@ export const ChatProject = memo(function ChatProject({
     state.collapsedProjectKeys.has(project.viewKey),
   );
   const toggleCollapsed = useSidebarCollapsedSectionsStore((state) => state.toggleProjectCollapsed);
-  const section = useChatSectionsStore((state) => state.projectSection[project.viewKey]);
-  const moveProject = useChatSectionsStore((state) => state.moveProject);
+  // Merged keeps every chat in Recent, so a project shows only its own row.
+  const nested = useChatSectionsStore((state) => state.organize !== "merged");
   const [hovered, setHovered] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [contextOpen, setContextOpen] = useState(false);
@@ -158,12 +302,6 @@ export const ChatProject = memo(function ChatProject({
     () => toggleCollapsed(project.viewKey),
     [project.viewKey, toggleCollapsed],
   );
-  const move = useCallback(
-    (sectionId: string | null) => moveProject(project.viewKey, sectionId),
-    [moveProject, project.viewKey],
-  );
-  const sectionPage = useSectionMovePage(`project-section-${project.viewKey}`, section, move);
-  const pages = useMemo(() => [sectionPage], [sectionPage]);
   const target = project.hosts[0];
   const create = useCallback(() => {
     if (target)
@@ -179,7 +317,11 @@ export const ChatProject = memo(function ChatProject({
   const edit = useCallback(() => {
     if (target) openProjectSettings(target.serverId, target.projectId);
   }, [target]);
-  const accessibilityState = useMemo(() => ({ expanded: !collapsed }), [collapsed]);
+  const { items: menuItems, pages } = useProjectMenu(entry, edit);
+  const accessibilityState = useMemo(
+    () => (nested ? { expanded: !collapsed } : undefined),
+    [collapsed, nested],
+  );
   // A manually ordered project list drags by the header; dnd-kit's role would replace its button.
   const {
     role: _dragRole,
@@ -201,7 +343,7 @@ export const ChatProject = memo(function ChatProject({
             onPointerLeave={leave}
           >
             <Pressable
-              onPress={toggle}
+              onPress={nested ? toggle : undefined}
               style={styles.projectButton}
               accessibilityRole="button"
               accessibilityLabel={project.projectName}
@@ -220,8 +362,7 @@ export const ChatProject = memo(function ChatProject({
               menuOpen={menuOpen}
               onMenuOpenChange={setMenuOpen}
               pages={pages}
-              sectionPage={sectionPage.id}
-              onEdit={edit}
+              menuItems={menuItems}
               onCreate={create}
               onEnter={enter}
               onLeave={leave}
@@ -229,10 +370,10 @@ export const ChatProject = memo(function ChatProject({
           </View>
         </ContextMenuTrigger>
         <ContextMenuContent width={200} pages={pages}>
-          <ProjectMenuItems onEdit={edit} sectionPage={sectionPage.id} />
+          {menuItems}
         </ContextMenuContent>
       </ContextMenu>
-      {!collapsed ? (
+      {nested && !collapsed ? (
         <>
           <SectionChatList
             sectionId={`project:${project.viewKey}`}

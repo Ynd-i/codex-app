@@ -46,6 +46,8 @@ export const en = {
     actions: "Chat actions",
     markRead: "Mark as read",
     markUnread: "Mark as unread",
+    fork: "Fork",
+    forkNewChat: "Fork into a new chat",
     sections: {
       actions: "Section actions",
       sortLatest: "Recently updated",
@@ -60,6 +62,7 @@ export const en = {
       markAllRead: "Mark all as read",
       archiveChats: "Archive chats",
       archiveConfirm: "Archive {{count}} chats in this section?",
+      archiveProjectConfirm: "Archive {{count}} chats in this project?",
       removeSection: "Remove section",
       createDescription: "Organize chats and projects your way",
       namePlaceholder: "Section name",
@@ -69,6 +72,11 @@ export const en = {
       notifications: "Notifications",
       priority: "Priority",
       priorityEmpty: "No tasks need attention",
+      organize: "Organize sidebar",
+      byProject: "By project",
+      merged: "Merged",
+      revealInFinder: "Show in Finder",
+      removeProject: "Remove project",
     },
   },
   paneFind: {

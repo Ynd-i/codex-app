@@ -16,7 +16,11 @@ import {
   DropdownMenuSeparator,
   type MenuPageDefinition,
 } from "@/components/ui/dropdown-menu";
+import { useToast } from "@/contexts/toast-context";
+import type { AggregatedAgent } from "@/hooks/use-aggregated-agents";
+import { useArchiveAgent } from "@/hooks/use-archive-agent";
 import type { Theme } from "@/styles/theme";
+import { confirmDialog } from "@/utils/confirm-dialog";
 import { useChatSectionsStore, type ChatSection } from "./desktop-chat-sections-store";
 
 const PlusIcon = withUnistyles(Plus);
@@ -158,4 +162,25 @@ export function useSectionMovePage(
     }),
     [createAndMove, current, onMove, pageId, sections, t],
   );
+}
+
+/** Archives every chat in a section or project after one confirmation that names the count. */
+export function useArchiveChats(chats: AggregatedAgent[], message: string) {
+  const { t } = useTranslation();
+  const toast = useToast();
+  const { archiveAgent } = useArchiveAgent();
+  return useCallback(() => {
+    void (async () => {
+      const confirmed = await confirmDialog({
+        title: t("desktopChat.sections.archiveChats"),
+        message,
+        confirmLabel: t("agentList.archiveSheet.archive"),
+        cancelLabel: t("common.actions.cancel"),
+        destructive: true,
+      });
+      if (!confirmed) return;
+      for (const agent of chats)
+        await archiveAgent({ serverId: agent.serverId, agentId: agent.id });
+    })().catch((error) => toast.error(error instanceof Error ? error.message : String(error)));
+  }, [archiveAgent, chats, message, t, toast]);
 }

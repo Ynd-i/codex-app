@@ -1,17 +1,35 @@
-import { useCallback, useState } from "react";
-import { Archive, Circle, CircleCheck, Copy, List, Pencil, Pin, PinOff } from "lucide-react-native";
+import { useCallback, useMemo, useState } from "react";
+import {
+  AppWindow,
+  Archive,
+  Circle,
+  CircleCheck,
+  Copy,
+  GitFork,
+  List,
+  Pencil,
+  Pin,
+  PinOff,
+} from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { withUnistyles } from "react-native-unistyles";
+import { buildAgentDeepLink } from "@getpaseo/protocol/agent-deep-link";
+import type { AssistantForkTarget } from "@/components/assistant-fork-menu";
 import { AdaptiveRenameModal } from "@/components/rename-modal";
 import { ContextMenuItem } from "@/components/ui/context-menu";
 import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuSubTrigger,
+  type MenuPageDefinition,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/contexts/toast-context";
 import { getIsElectronMac } from "@/constants/platform";
+import { getDesktopHost } from "@/desktop/host";
 import { useArchiveAgent } from "@/hooks/use-archive-agent";
+import { useForkAgent } from "@/hooks/use-fork-agent";
+import { useHostFeature } from "@/runtime/host-features";
+import { useSessionStore } from "@/stores/session-store";
 import type { Theme } from "@/styles/theme";
 import { confirmDialog } from "@/utils/confirm-dialog";
 import type { DesktopChatTarget } from "./desktop-chat-actions";
@@ -26,6 +44,8 @@ const ReadIcon = withUnistyles(CircleCheck);
 const UnreadIcon = withUnistyles(Circle);
 const CopyIcon = withUnistyles(Copy);
 const SectionIcon = withUnistyles(List);
+const ForkIcon = withUnistyles(GitFork);
+const WindowIcon = withUnistyles(AppWindow);
 const mutedIcon = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
 const renameLeading = <RenameIcon size={16} uniProps={mutedIcon} />;
 const pinLeading = <PinIcon size={16} uniProps={mutedIcon} />;
@@ -35,7 +55,10 @@ const readLeading = <ReadIcon size={16} uniProps={mutedIcon} />;
 const unreadLeading = <UnreadIcon size={16} uniProps={mutedIcon} />;
 const copyLeading = <CopyIcon size={16} uniProps={mutedIcon} />;
 const sectionLeading = <SectionIcon size={16} uniProps={mutedIcon} />;
+const forkLeading = <ForkIcon size={16} uniProps={mutedIcon} />;
+const windowLeading = <WindowIcon size={16} uniProps={mutedIcon} />;
 
+/** The chat menu in the reference's order; each optional entry appears when its prop is given. */
 export function DesktopChatMenuItems({
   context,
   pinned,
@@ -45,8 +68,10 @@ export function DesktopChatMenuItems({
   onRead,
   onRename,
   onArchive,
+  onOpenInNewWindow,
   copyPage,
   sectionPage,
+  forkPage,
 }: {
   context?: boolean;
   pinned: boolean;
@@ -56,9 +81,12 @@ export function DesktopChatMenuItems({
   onRead: () => void;
   onRename: () => void;
   onArchive: () => void;
+  onOpenInNewWindow?: () => void;
   copyPage?: string;
   /** The page id of a `Section ›` submenu the surface declares. */
   sectionPage?: string;
+  /** The page id of a `Fork ›` submenu the surface declares. */
+  forkPage?: string;
 }) {
   const { t } = useTranslation();
   const Item = context ? ContextMenuItem : DropdownMenuItem;
@@ -70,11 +98,39 @@ export function DesktopChatMenuItems({
       <Item onSelect={onPin} disabled={disabled} leading={pinned ? unpinLeading : pinLeading}>
         {t(pinned ? "sidebar.workspace.actions.unpin" : "sidebar.workspace.actions.pin")}
       </Item>
+      <Item onSelect={onRead} disabled={disabled} leading={unread ? readLeading : unreadLeading}>
+        {t(unread ? "desktopChat.markRead" : "desktopChat.markUnread")}
+      </Item>
       {sectionPage ? (
         <DropdownMenuSubTrigger id={sectionPage} leading={sectionLeading} disabled={disabled}>
           {t("desktopChat.sections.section")}
         </DropdownMenuSubTrigger>
       ) : null}
+      {forkPage ? (
+        <>
+          <DropdownMenuSeparator />
+          <DropdownMenuSubTrigger id={forkPage} leading={forkLeading} disabled={disabled}>
+            {t("desktopChat.fork")}
+          </DropdownMenuSubTrigger>
+        </>
+      ) : null}
+      {copyPage ? (
+        <>
+          <DropdownMenuSeparator />
+          <DropdownMenuSubTrigger id={copyPage} leading={copyLeading} disabled={disabled}>
+            {t("common.actions.copy")}
+          </DropdownMenuSubTrigger>
+        </>
+      ) : null}
+      {onOpenInNewWindow ? (
+        <>
+          <DropdownMenuSeparator />
+          <Item onSelect={onOpenInNewWindow} leading={windowLeading}>
+            {t("sidebar.project.actions.openNewWindow")}
+          </Item>
+        </>
+      ) : null}
+      <DropdownMenuSeparator />
       <Item
         onSelect={onArchive}
         disabled={disabled}
@@ -83,19 +139,65 @@ export function DesktopChatMenuItems({
       >
         {t("agentList.archiveSheet.archive")}
       </Item>
-      <DropdownMenuSeparator />
-      {copyPage ? (
-        <>
-          <DropdownMenuSubTrigger id={copyPage} leading={copyLeading} disabled={disabled}>
-            {t("common.actions.copy")}
-          </DropdownMenuSubTrigger>
-          <DropdownMenuSeparator />
-        </>
-      ) : null}
-      <Item onSelect={onRead} disabled={disabled} leading={unread ? readLeading : unreadLeading}>
-        {t(unread ? "desktopChat.markRead" : "desktopChat.markUnread")}
-      </Item>
     </>
+  );
+}
+
+/**
+ * The `Fork ›` page: the chat's history seeds a new chat in its workspace or a new workspace.
+ * Null on hosts that cannot build fork context.
+ */
+export function useChatForkPage(agent: DesktopChatTarget): MenuPageDefinition | null {
+  const { t } = useTranslation();
+  const toast = useToast();
+  const source = useSessionStore((state) => {
+    const session = state.sessions[agent.serverId];
+    return session?.agents.get(agent.id) ?? session?.agentDetails.get(agent.id) ?? null;
+  });
+  const supported = useHostFeature(agent.serverId, "agentForkContext");
+  const forkAgent = useForkAgent({ serverId: agent.serverId, toast });
+  const forkInto = useCallback(
+    (target: AssistantForkTarget) => {
+      if (source)
+        void forkAgent({
+          agentId: agent.id,
+          agent: source,
+          workspaceId: agent.workspaceId,
+          target,
+        });
+    },
+    [agent.id, agent.workspaceId, forkAgent, source],
+  );
+  const forkChat = useCallback(() => forkInto("tab"), [forkInto]);
+  const forkWorkspace = useCallback(() => forkInto("workspace"), [forkInto]);
+  const pageId = `chat-fork-${desktopChatKey(agent)}`;
+  return useMemo(
+    () =>
+      supported && source
+        ? {
+            id: pageId,
+            title: t("desktopChat.fork"),
+            content: (
+              <>
+                <DropdownMenuItem
+                  onSelect={forkChat}
+                  leading={forkLeading}
+                  testID="desktop-chat-fork-chat"
+                >
+                  {t("desktopChat.forkNewChat")}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={forkWorkspace}
+                  leading={forkLeading}
+                  testID="desktop-chat-fork-workspace"
+                >
+                  {t("message.actions.forkInNewWorkspace")}
+                </DropdownMenuItem>
+              </>
+            ),
+          }
+        : null,
+    [forkChat, forkWorkspace, pageId, source, supported, t],
   );
 }
 
@@ -127,6 +229,13 @@ export function useDesktopChatMenu(agent: DesktopChatTarget) {
     (value: string) => update(agent, { kind: "rename", title: value }),
     [agent, update],
   );
+  const openInNewWindow = useCallback(() => {
+    void getDesktopHost()
+      ?.window?.openNew?.({
+        agentLink: buildAgentDeepLink({ serverId: agent.serverId, agentId: agent.id }),
+      })
+      ?.catch(() => toast.error(t("sidebar.project.actions.openNewWindowFailed")));
+  }, [agent.id, agent.serverId, t, toast]);
   const archive = useCallback(() => {
     void (async () => {
       if (
@@ -155,6 +264,7 @@ export function useDesktopChatMenu(agent: DesktopChatTarget) {
       onRead: toggleRead,
       onRename: rename,
       onArchive: archive,
+      onOpenInNewWindow: getDesktopHost()?.window?.openNew ? openInNewWindow : undefined,
     },
     renameModal: (
       <AdaptiveRenameModal

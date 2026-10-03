@@ -15,7 +15,7 @@ import type { AggregatedAgent } from "@/hooks/use-aggregated-agents";
 import type { Theme } from "@/styles/theme";
 import { navigateToAgent } from "@/utils/navigate-to-agent";
 import { desktopChatKey } from "./desktop-chat-model";
-import { DesktopChatMenuItems, useDesktopChatMenu } from "./desktop-chat-menu";
+import { DesktopChatMenuItems, useChatForkPage, useDesktopChatMenu } from "./desktop-chat-menu";
 import { useSectionMovePage } from "./desktop-chat-section-menus";
 import { useChatSectionsStore } from "./desktop-chat-sections-store";
 
@@ -45,7 +45,11 @@ export const ChatRow = memo(function ChatRow({
   const moveChat = useChatSectionsStore((state) => state.moveChat);
   const move = useCallback((sectionId: string | null) => moveChat(key, sectionId), [key, moveChat]);
   const sectionPage = useSectionMovePage(`chat-section-${key}`, section, move);
-  const pages = useMemo(() => [sectionPage], [sectionPage]);
+  const forkPage = useChatForkPage(agent);
+  const pages = useMemo(
+    () => (forkPage ? [sectionPage, forkPage] : [sectionPage]),
+    [forkPage, sectionPage],
+  );
   const title = agent.title || t("agentList.fallbackTitle");
   const enter = useCallback(() => setHovered(true), []);
   const leave = useCallback(() => setHovered(false), []);
@@ -120,13 +124,22 @@ export const ChatRow = memo(function ChatRow({
                 <MoreIcon size={16} uniProps={mutedIcon} />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" width={210} pages={pages}>
-                <DesktopChatMenuItems {...menuProps} sectionPage={sectionPage.id} />
+                <DesktopChatMenuItems
+                  {...menuProps}
+                  sectionPage={sectionPage.id}
+                  forkPage={forkPage?.id}
+                />
               </DropdownMenuContent>
             </DropdownMenu>
           </View>
         </ContextMenuTrigger>
         <ContextMenuContent width={210} pages={pages}>
-          <DesktopChatMenuItems {...menuProps} context sectionPage={sectionPage.id} />
+          <DesktopChatMenuItems
+            {...menuProps}
+            context
+            sectionPage={sectionPage.id}
+            forkPage={forkPage?.id}
+          />
         </ContextMenuContent>
       </ContextMenu>
       {renameModal}

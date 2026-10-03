@@ -17,6 +17,9 @@ const DEFAULT_SORT: Record<string, ChatSectionSort> = {
   [CHAT_SECTION.projects]: "manual",
 };
 
+/** `projects` nests each project's chats under it; `merged` keeps every chat in Recent. */
+export type SidebarOrganize = "projects" | "merged";
+
 export interface ChatSection {
   id: string;
   name: string;
@@ -32,6 +35,9 @@ interface ChatSectionsPersistedState {
   chatSection: Record<string, string>;
   /** Project view key to custom section id. */
   projectSection: Record<string, string>;
+  /** Project view keys shown in Pinned, in pin order. */
+  pinnedProjects: string[];
+  organize: SidebarOrganize;
 }
 
 interface ChatSectionsState extends ChatSectionsPersistedState {
@@ -47,10 +53,12 @@ interface ChatSectionsState extends ChatSectionsPersistedState {
   removeSection: (sectionId: string) => void;
   moveChat: (chatKey: string, sectionId: string | null) => void;
   moveProject: (viewKey: string, sectionId: string | null) => void;
+  togglePinnedProject: (viewKey: string) => void;
+  setOrganize: (organize: SidebarOrganize) => void;
 }
 
 const SortSchema = z.enum(["latest", "manual"]);
-const PersistedSchema = z.strictObject({
+export const ChatSectionsPersistedSchema = z.strictObject({
   sections: z.array(z.strictObject({ id: z.string(), name: z.string() })),
   sortBySection: z.record(z.string(), SortSchema),
   chatOrderBySection: z.record(z.string(), z.array(z.string())),
@@ -58,6 +66,9 @@ const PersistedSchema = z.strictObject({
   hideProjects: z.boolean(),
   chatSection: z.record(z.string(), z.string()),
   projectSection: z.record(z.string(), z.string()),
+  // Fields added after the first release stay optional so earlier saved state still loads.
+  pinnedProjects: z.array(z.string()).optional(),
+  organize: z.enum(["projects", "merged"]).optional(),
 });
 
 export function sectionSort(
@@ -90,6 +101,8 @@ export const useChatSectionsStore = create<ChatSectionsState>()(
       hideProjects: false,
       chatSection: {},
       projectSection: {},
+      pinnedProjects: [],
+      organize: "projects",
       inboxOpen: false,
       toggleInbox: () => set((state) => ({ inboxOpen: !state.inboxOpen })),
       setSort: (sectionId, sort) =>
@@ -127,10 +140,17 @@ export const useChatSectionsStore = create<ChatSectionsState>()(
         set((state) => ({ chatSection: withEntry(state.chatSection, chatKey, sectionId) })),
       moveProject: (viewKey, sectionId) =>
         set((state) => ({ projectSection: withEntry(state.projectSection, viewKey, sectionId) })),
+      togglePinnedProject: (viewKey) =>
+        set((state) => ({
+          pinnedProjects: state.pinnedProjects.includes(viewKey)
+            ? state.pinnedProjects.filter((key) => key !== viewKey)
+            : [...state.pinnedProjects, viewKey],
+        })),
+      setOrganize: (organize) => set({ organize }),
     }),
     {
       name: "desktop-chat-sections",
-      storage: createValidatedPersistStorage(AsyncStorage, PersistedSchema),
+      storage: createValidatedPersistStorage(AsyncStorage, ChatSectionsPersistedSchema),
       partialize: (state) => ({
         sections: state.sections,
         sortBySection: state.sortBySection,
@@ -139,6 +159,8 @@ export const useChatSectionsStore = create<ChatSectionsState>()(
         hideProjects: state.hideProjects,
         chatSection: state.chatSection,
         projectSection: state.projectSection,
+        pinnedProjects: state.pinnedProjects,
+        organize: state.organize,
       }),
       version: 1,
     },

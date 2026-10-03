@@ -102,6 +102,7 @@ import { BrowserKeyboard } from "./features/browser-keyboard/index.js";
 import { installAppUpdateOnQuit } from "./features/auto-updater.js";
 import {
   buildAgentDeepLinkRoute,
+  parseAgentDeepLink,
   type AgentDeepLinkTarget,
 } from "@getpaseo/protocol/agent-deep-link";
 import {
@@ -984,12 +985,14 @@ async function bootstrap(): Promise<void> {
   // In-app "Open in new window": opens a window that lands on the given project
   // via the same open-project flow as a CLI launch (no move, no ownership).
   ipcMain.handle("paseo:window:openNew", async (_event, options?: unknown) => {
-    const pendingPath =
-      options && typeof options === "object" && "pendingOpenProjectPath" in options
-        ? (options as { pendingOpenProjectPath?: unknown }).pendingOpenProjectPath
-        : null;
+    const input = (options && typeof options === "object" ? options : {}) as {
+      pendingOpenProjectPath?: unknown;
+      agentLink?: unknown;
+    };
+    const pendingPath = input.pendingOpenProjectPath;
     await desktopWindowOwner.openAdditional({
       pendingProjectPath: typeof pendingPath === "string" ? pendingPath : null,
+      agent: typeof input.agentLink === "string" ? parseAgentDeepLink(input.agentLink) : null,
     });
   });
 

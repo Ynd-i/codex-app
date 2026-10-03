@@ -49,6 +49,8 @@ export const zhCN: TranslationResources = {
     actions: "聊天操作",
     markRead: "标为已读",
     markUnread: "标为未读",
+    fork: "分叉",
+    forkNewChat: "分叉到新聊天",
     sections: {
       actions: "分区操作",
       sortLatest: "最近更新",
@@ -63,6 +65,7 @@ export const zhCN: TranslationResources = {
       markAllRead: "全部标为已读",
       archiveChats: "归档聊天",
       archiveConfirm: "要归档此分区中的 {{count}} 个聊天吗？",
+      archiveProjectConfirm: "要归档此项目中的 {{count}} 个聊天吗？",
       removeSection: "移除分区",
       createDescription: "随心整理聊天和项目",
       namePlaceholder: "分区名称",
@@ -72,6 +75,11 @@ export const zhCN: TranslationResources = {
       notifications: "通知",
       priority: "优先级",
       priorityEmpty: "暂无需要关注的任务",
+      organize: "整理侧边栏",
+      byProject: "分项目显示",
+      merged: "合并显示",
+      revealInFinder: "在 Finder 中显示",
+      removeProject: "移除项目",
     },
   },
   paneFind: {

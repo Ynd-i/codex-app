@@ -49,6 +49,8 @@ export const ja: TranslationResources = {
     actions: "チャットの操作",
     markRead: "既読にする",
     markUnread: "未読にする",
+    fork: "フォーク",
+    forkNewChat: "新しいチャットにフォーク",
     sections: {
       actions: "セクションの操作",
       sortLatest: "最近の更新",
@@ -63,6 +65,7 @@ export const ja: TranslationResources = {
       markAllRead: "すべて既読にする",
       archiveChats: "チャットをアーカイブ",
       archiveConfirm: "このセクションの {{count}} 件のチャットをアーカイブしますか？",
+      archiveProjectConfirm: "このプロジェクトの {{count}} 件のチャットをアーカイブしますか？",
       removeSection: "セクションを削除",
       createDescription: "チャットとプロジェクトを自由に整理",
       namePlaceholder: "セクション名",
@@ -72,6 +75,11 @@ export const ja: TranslationResources = {
       notifications: "通知",
       priority: "優先",
       priorityEmpty: "対応が必要なタスクはありません",
+      organize: "サイドバーを整理",
+      byProject: "プロジェクト別に表示",
+      merged: "まとめて表示",
+      revealInFinder: "Finder に表示",
+      removeProject: "プロジェクトを削除",
     },
   },
   paneFind: {

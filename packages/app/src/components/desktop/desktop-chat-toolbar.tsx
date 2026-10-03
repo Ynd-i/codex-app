@@ -16,7 +16,7 @@ import { iconButtonChromeStyle, mutedIconColorMapping } from "@/components/ui/ic
 import { useSessionStore } from "@/stores/session-store";
 import { useToast } from "@/contexts/toast-context";
 import type { DesktopChatTarget } from "./desktop-chat-actions";
-import { DesktopChatMenuItems, useDesktopChatMenu } from "./desktop-chat-menu";
+import { DesktopChatMenuItems, useChatForkPage, useDesktopChatMenu } from "./desktop-chat-menu";
 import { desktopChatResumeCommand } from "./desktop-chat-copy";
 
 const MoreIcon = withUnistyles(MoreHorizontal);
@@ -51,8 +51,10 @@ function ChatToolbarMenu({
     if (resumeCommand)
       void copy(resumeCommand, t("workspace.tabs.toasts.resumeCommandCopiedLabel"));
   }, [copy, resumeCommand, t]);
+  const forkPage = useChatForkPage(agent);
   const pages = useMemo<MenuPageDefinition[]>(
     () => [
+      ...(forkPage ? [forkPage] : []),
       {
         id: "copy",
         title: t("common.actions.copy"),
@@ -68,7 +70,7 @@ function ChatToolbarMenu({
         ),
       },
     ],
-    [copyAgentId, copyResumeCommand, resumeCommand, t],
+    [copyAgentId, copyResumeCommand, forkPage, resumeCommand, t],
   );
   const buttonStyle = useMemo(
     () =>
@@ -93,7 +95,7 @@ function ChatToolbarMenu({
           )}
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" width={220} pages={pages}>
-          <DesktopChatMenuItems {...menuProps} copyPage="copy" />
+          <DesktopChatMenuItems {...menuProps} copyPage="copy" forkPage={forkPage?.id} />
         </DropdownMenuContent>
       </DropdownMenu>
       {renameModal}

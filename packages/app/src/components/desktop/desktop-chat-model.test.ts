@@ -157,15 +157,23 @@ it("moves assigned chats and projects into existing custom sections only", () =>
     chats: [],
     emptyWorkspaces: [],
   };
+  const pinned: DesktopChatProject = {
+    project: project("pinned", "local", []),
+    chats: [],
+    emptyWorkspaces: [],
+  };
   const result = partitionChatSections({
     recent: [kept, moved, orphaned],
-    projects: [app, docs],
+    projects: [app, docs, pinned],
     sections: [{ id: "work", name: "Work" }],
     chatSection: { "local:moved": "work", "local:orphaned": "removed-section" },
-    projectSection: { docs: "work" },
+    projectSection: { docs: "work", pinned: "work" },
+    // A pinned project shows in Pinned only, even when it was also filed in a section.
+    pinnedProjects: ["pinned", "gone"],
   });
   expect(result.recent.map((entry) => entry.id)).toEqual(["kept", "orphaned"]);
   expect(result.projects.map((entry) => entry.project.viewKey)).toEqual(["app"]);
+  expect(result.pinnedProjects).toEqual([pinned]);
   expect(result.custom).toEqual([{ id: "work", name: "Work", chats: [moved], projects: [docs] }]);
 });
 

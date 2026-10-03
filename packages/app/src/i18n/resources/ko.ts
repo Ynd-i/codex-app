@@ -49,6 +49,8 @@ export const ko: TranslationResources = {
     actions: "채팅 작업",
     markRead: "읽음으로 표시",
     markUnread: "읽지 않음으로 표시",
+    fork: "포크",
+    forkNewChat: "새 채팅으로 포크",
     sections: {
       actions: "섹션 작업",
       sortLatest: "최근 업데이트",
@@ -63,6 +65,7 @@ export const ko: TranslationResources = {
       markAllRead: "모두 읽음으로 표시",
       archiveChats: "채팅 보관",
       archiveConfirm: "이 섹션의 채팅 {{count}}개를 보관할까요?",
+      archiveProjectConfirm: "이 프로젝트의 채팅 {{count}}개를 보관할까요?",
       removeSection: "섹션 제거",
       createDescription: "채팅과 프로젝트를 자유롭게 정리하세요",
       namePlaceholder: "섹션 이름",
@@ -72,6 +75,11 @@ export const ko: TranslationResources = {
       notifications: "알림",
       priority: "우선순위",
       priorityEmpty: "확인이 필요한 작업이 없습니다",
+      organize: "사이드바 정리",
+      byProject: "프로젝트별 표시",
+      merged: "통합 표시",
+      revealInFinder: "Finder에서 보기",
+      removeProject: "프로젝트 제거",
     },
   },
   paneFind: {

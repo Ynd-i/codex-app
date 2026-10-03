@@ -134,8 +134,9 @@ export interface CustomChatSection {
 }
 
 /**
- * Moves chats and projects assigned to a custom section out of Recent and Projects. Pinned chats
- * stay pinned, and an assignment to a section that no longer exists is ignored.
+ * Moves pinned projects to Pinned, then chats and projects assigned to a custom section out of
+ * Recent and Projects. Pinned chats stay pinned, and an assignment to a section that no longer
+ * exists is ignored.
  */
 export function partitionChatSections({
   recent,
@@ -143,13 +144,20 @@ export function partitionChatSections({
   sections,
   chatSection,
   projectSection,
+  pinnedProjects,
 }: {
   recent: AggregatedAgent[];
   projects: DesktopChatProject[];
   sections: readonly { id: string; name: string }[];
   chatSection: Readonly<Record<string, string>>;
   projectSection: Readonly<Record<string, string>>;
-}): { recent: AggregatedAgent[]; projects: DesktopChatProject[]; custom: CustomChatSection[] } {
+  pinnedProjects: readonly string[];
+}): {
+  recent: AggregatedAgent[];
+  projects: DesktopChatProject[];
+  pinnedProjects: DesktopChatProject[];
+  custom: CustomChatSection[];
+} {
   const custom = new Map<string, CustomChatSection>(
     sections.map((section) => [section.id, { ...section, chats: [], projects: [] }]),
   );
@@ -159,13 +167,21 @@ export function partitionChatSections({
     if (section) section.chats.push(agent);
     else remainingRecent.push(agent);
   }
+  const pinned = new Set(pinnedProjects);
   const remainingProjects: DesktopChatProject[] = [];
   for (const entry of projects) {
+    if (pinned.has(entry.project.viewKey)) continue;
     const section = custom.get(projectSection[entry.project.viewKey] ?? "");
     if (section) section.projects.push(entry);
     else remainingProjects.push(entry);
   }
-  return { recent: remainingRecent, projects: remainingProjects, custom: [...custom.values()] };
+  const projectByKey = new Map(projects.map((entry) => [entry.project.viewKey, entry]));
+  return {
+    recent: remainingRecent,
+    projects: remainingProjects,
+    pinnedProjects: pinnedProjects.flatMap((key) => projectByKey.get(key) ?? []),
+    custom: [...custom.values()],
+  };
 }
 
 export interface ChatInbox {

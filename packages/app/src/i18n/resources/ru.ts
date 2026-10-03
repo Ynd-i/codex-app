@@ -49,6 +49,8 @@ export const ru: TranslationResources = {
     actions: "Действия с чатом",
     markRead: "Отметить как прочитанное",
     markUnread: "Отметить как непрочитанное",
+    fork: "Ответвить",
+    forkNewChat: "Ответвить в новый чат",
     sections: {
       actions: "Действия раздела",
       sortLatest: "Недавно обновлённые",
@@ -63,6 +65,7 @@ export const ru: TranslationResources = {
       markAllRead: "Отметить все как прочитанные",
       archiveChats: "Архивировать чаты",
       archiveConfirm: "Архивировать чаты в этом разделе ({{count}})?",
+      archiveProjectConfirm: "Архивировать чаты в этом проекте ({{count}})?",
       removeSection: "Удалить раздел",
       createDescription: "Упорядочивайте чаты и проекты как удобно",
       namePlaceholder: "Название раздела",
@@ -72,6 +75,11 @@ export const ru: TranslationResources = {
       notifications: "Уведомления",
       priority: "Приоритет",
       priorityEmpty: "Нет задач, требующих внимания",
+      organize: "Упорядочить боковую панель",
+      byProject: "По проектам",
+      merged: "Общим списком",
+      revealInFinder: "Показать в Finder",
+      removeProject: "Удалить проект",
     },
   },
   paneFind: {

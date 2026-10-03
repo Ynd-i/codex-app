@@ -93,6 +93,7 @@ function ChatSidebarList({ onAddProject }: { onAddProject: () => void }) {
   const chatSection = useChatSectionsStore((state) => state.chatSection);
   const projectSection = useChatSectionsStore((state) => state.projectSection);
   const hideProjects = useChatSectionsStore((state) => state.hideProjects);
+  const pinnedProjects = useChatSectionsStore((state) => state.pinnedProjects);
   const inboxOpen = useChatSectionsStore((state) => state.inboxOpen);
   const model = useMemo(() => buildDesktopChatSidebar({ projects, agents }), [projects, agents]);
   const partition = useMemo(
@@ -103,8 +104,9 @@ function ChatSidebarList({ onAddProject }: { onAddProject: () => void }) {
         sections,
         chatSection,
         projectSection,
+        pinnedProjects,
       }),
-    [chatSection, model.projects, model.recent, projectSection, sections],
+    [chatSection, model.projects, model.recent, pinnedProjects, projectSection, sections],
   );
   const inboxChats = useMemo(() => [...model.pinned, ...model.recent], [model]);
   return (
@@ -117,7 +119,11 @@ function ChatSidebarList({ onAddProject }: { onAddProject: () => void }) {
         <ChatInbox chats={inboxChats} selectedKey={selectedKey} />
       ) : (
         <>
-          <PinnedSection chats={model.pinned} selectedKey={selectedKey} />
+          <PinnedSection
+            chats={model.pinned}
+            projects={partition.pinnedProjects}
+            selectedKey={selectedKey}
+          />
           {partition.custom.map((section) => (
             <CustomSection key={section.id} section={section} selectedKey={selectedKey} />
           ))}

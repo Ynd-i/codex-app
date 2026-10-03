@@ -49,6 +49,8 @@ export const ar: TranslationResources = {
     actions: "إجراءات المحادثة",
     markRead: "وضع علامة كمقروءة",
     markUnread: "وضع علامة كغير مقروءة",
+    fork: "تفرع",
+    forkNewChat: "تفرع إلى محادثة جديدة",
     sections: {
       actions: "إجراءات القسم",
       sortLatest: "المحدّثة مؤخرًا",
@@ -63,6 +65,7 @@ export const ar: TranslationResources = {
       markAllRead: "تعليم الكل كمقروء",
       archiveChats: "أرشفة المحادثات",
       archiveConfirm: "أرشفة {{count}} من المحادثات في هذا القسم؟",
+      archiveProjectConfirm: "أرشفة {{count}} من المحادثات في هذا المشروع؟",
       removeSection: "إزالة القسم",
       createDescription: "نظّم المحادثات والمشاريع على طريقتك",
       namePlaceholder: "اسم القسم",
@@ -72,6 +75,11 @@ export const ar: TranslationResources = {
       notifications: "الإشعارات",
       priority: "الأولوية",
       priorityEmpty: "لا توجد مهام تحتاج إلى انتباه",
+      organize: "تنظيم الشريط الجانبي",
+      byProject: "حسب المشروع",
+      merged: "مدمج",
+      revealInFinder: "إظهار في Finder",
+      removeProject: "إزالة المشروع",
     },
   },
   paneFind: {

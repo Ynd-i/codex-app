@@ -1,4 +1,4 @@
-import { mkdir } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import type { Page } from "@playwright/test";
 import { test, expect } from "../../app/e2e/support/fixtures";
@@ -9,6 +9,7 @@ import { seedWorkspace } from "../../app/e2e/support/helpers/seed-client";
 import { installUsageReportsFixture } from "../../app/e2e/support/helpers/usage-reports";
 import { openAgentRoute, seedMockAgentWorkspace } from "../../app/e2e/support/helpers/mock-agent";
 import { submitMessage } from "../../app/e2e/support/helpers/composer";
+import { expectChatHistoryAttachment } from "../../app/e2e/support/helpers/assistant-fork";
 import { installDesktopRuntime } from "./support/runtime";
 
 async function waitForTwoFrames(page: Page): Promise<void> {
@@ -352,6 +353,106 @@ test("macOS notification bell lists what needs attention, then finished chats by
     await page.screenshot({ path: testInfo.outputPath("notification-inbox.png") });
     await bell.click();
     await expect(page.getByTestId("desktop-section-recent")).toBeVisible();
+  } finally {
+    await fixture.cleanup();
+  }
+});
+
+test("macOS project and chat menus carry the reference's entries", async ({ page }, testInfo) => {
+  const fixture = await seedMockAgentWorkspace({
+    repoPrefix: "project-menu-",
+    title: "Menu chat",
+    featureValues: { mockAssistantResponse: "Ready to fork." },
+  });
+  try {
+    const serverId = getServerId();
+    const recordPath = testInfo.outputPath("finder.jsonl");
+    await installDesktopRuntime(page, {
+      serverId,
+      manageBuiltInDaemon: false,
+      daemonListen: `127.0.0.1:${getE2EDaemonPort()}`,
+      confirmShouldAccept: true,
+      editorTargets: [
+        {
+          id: "finder",
+          label: "Finder",
+          kind: "file-manager",
+          icon: { kind: "symbol", name: "folder" },
+        },
+      ],
+      editorRecordPath: recordPath,
+    });
+    await page.setViewportSize({ width: 1352, height: 782 });
+    await page.emulateMedia({ colorScheme: "dark" });
+    await openAgentRoute(page, fixture);
+    await submitMessage(page, "Say something to fork.");
+    await expect(page.getByTestId("assistant-message")).toContainText("Ready to fork.");
+    const chatKey = `${serverId}:${fixture.agentId}`;
+    // One row in Recent and one under the project.
+    const chatRows = page.getByTestId(`desktop-chat-${chatKey}`);
+    await expect(chatRows).toHaveCount(2);
+    const recent = page.getByTestId("desktop-section-recent");
+    const header = page.locator('[data-testid^="sidebar-project-row-"]').first();
+    const viewKey = (await header.getAttribute("data-testid"))!.replace("sidebar-project-row-", "");
+    const aboveRecent = async () =>
+      (await header.boundingBox())!.y < (await recent.boundingBox())!.y;
+
+    await header.hover();
+    await page.getByTestId(`desktop-project-menu-${viewKey}`).click();
+    for (const name of [
+      "Pin to top",
+      "Edit",
+      "Section",
+      "Show in Finder",
+      "Archive chats",
+      "Remove project",
+    ])
+      await expect(page.getByRole("menuitem", { name })).toBeVisible();
+    // Screenshots wait out the menu fade-in.
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: testInfo.outputPath("project-menu.png") });
+    await page.getByRole("menuitem", { name: "Show in Finder" }).click();
+    await expect
+      .poll(() => readFile(recordPath, "utf8").catch(() => ""))
+      .toContain('"editorId":"finder"');
+
+    // A pinned project moves to Pinned; a right click unpins it.
+    await header.hover();
+    await page.getByTestId(`desktop-project-menu-${viewKey}`).click();
+    await page.getByTestId(`desktop-project-pin-${viewKey}`).click();
+    await expect.poll(aboveRecent).toBe(true);
+    await header.click({ button: "right" });
+    await page.getByTestId(`desktop-project-pin-${viewKey}`).click();
+    await expect.poll(aboveRecent).toBe(false);
+
+    // Merged keeps the chat in Recent only.
+    await recent.click({ button: "right" });
+    await page.getByRole("menuitem", { name: "Organize sidebar" }).click();
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: testInfo.outputPath("organize-menu.png") });
+    await page.getByTestId("desktop-section-organize-merged").click();
+    await expect(chatRows).toHaveCount(1);
+    await recent.click({ button: "right" });
+    await page.getByRole("menuitem", { name: "Organize sidebar" }).click();
+    await page.getByTestId("desktop-section-organize-projects").click();
+    await expect(chatRows).toHaveCount(2);
+
+    await chatRows.first().hover();
+    await page.getByTestId(`desktop-chat-menu-${chatKey}`).first().click();
+    await page.getByRole("menuitem", { name: "Fork" }).click();
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: testInfo.outputPath("chat-fork-menu.png") });
+    await page.getByTestId("desktop-chat-fork-chat").click();
+    await expectChatHistoryAttachment(page);
+
+    await header.hover();
+    await page.getByTestId(`desktop-project-menu-${viewKey}`).click();
+    await page.getByTestId(`desktop-project-archive-${viewKey}`).click();
+    await expect(chatRows).toHaveCount(0);
+    await header.hover();
+    await page.getByTestId(`desktop-project-menu-${viewKey}`).click();
+    await page.getByTestId(`desktop-project-remove-${viewKey}`).click();
+    await expect(header).toHaveCount(0);
   } finally {
     await fixture.cleanup();
   }

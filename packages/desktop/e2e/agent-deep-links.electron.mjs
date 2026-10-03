@@ -406,6 +406,33 @@ export async function runAgentDeepLinksRegression({
   await evaluateMain(openUrl(link(agentA)));
   await expectChat("A");
   await expect(composer).toHaveValue(draft);
+
+  // Open in new window starts another window on this chat and leaves this one where it was.
+  await page.getByTestId("desktop-chat-toolbar-menu").click();
+  await page.getByRole("menuitem", { name: "Open in new window", exact: true }).click();
+  await expect.poll(async () => (await appState()).windows.length).toBe(2);
+  const otherWindow = (expression) =>
+    evaluateMain(`(async () => {
+    const { BrowserWindow } = process.mainModule.require('electron');
+    const win = BrowserWindow.getAllWindows().find((candidate) => candidate.webContents.id !== ${initial.windows[0]});
+    return win ? (${expression}) : null;
+  })()`);
+  await expect
+    .poll(
+      () =>
+        otherWindow(
+          `win.webContents.executeJavaScript("document.querySelector('[data-testid=desktop-chat-title]')?.textContent ?? null")`,
+        ),
+      { timeout: 60_000 },
+    )
+    .toBe("Deep link chat A");
+  expect(await otherWindow("new URL(win.webContents.getURL()).pathname")).toBe(
+    `/h/${serverId}/workspace/${workspaceId}`,
+  );
+  await otherWindow("(win.close(), true)");
+  await expect.poll(async () => (await appState()).windows).toEqual(initial.windows);
+  await expectChat("A");
+  await expect(composer).toHaveValue(draft);
   return {
     serverId,
     workspaceId,
@@ -437,6 +464,7 @@ export async function runAgentDeepLinksRegression({
     packagedPlainReplyTiming: true,
     packagedCodeCardDensity: true,
     packagedQuestionSubmission: true,
+    packagedChatNewWindow: true,
     invalidUrlRejected: true,
     osProtocolDispatch: "not tested",
   };

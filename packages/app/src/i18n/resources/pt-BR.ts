@@ -49,6 +49,8 @@ export const ptBR: TranslationResources = {
     actions: "Ações da conversa",
     markRead: "Marcar como lida",
     markUnread: "Marcar como não lida",
+    fork: "Bifurcar",
+    forkNewChat: "Bifurcar em uma nova conversa",
     sections: {
       actions: "Ações da seção",
       sortLatest: "Atualizados recentemente",
@@ -63,6 +65,7 @@ export const ptBR: TranslationResources = {
       markAllRead: "Marcar tudo como lido",
       archiveChats: "Arquivar chats",
       archiveConfirm: "Arquivar {{count}} chats desta seção?",
+      archiveProjectConfirm: "Arquivar {{count}} chats deste projeto?",
       removeSection: "Remover seção",
       createDescription: "Organize chats e projetos do seu jeito",
       namePlaceholder: "Nome da seção",
@@ -72,6 +75,11 @@ export const ptBR: TranslationResources = {
       notifications: "Notificações",
       priority: "Prioridade",
       priorityEmpty: "Nenhuma tarefa precisa de atenção",
+      organize: "Organizar barra lateral",
+      byProject: "Por projeto",
+      merged: "Combinado",
+      revealInFinder: "Mostrar no Finder",
+      removeProject: "Remover projeto",
     },
   },
   paneFind: {
