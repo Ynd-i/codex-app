@@ -171,10 +171,13 @@ const ChatOutlineTick = memo(function ChatOutlineTick({
         <View
           style={[
             styles.pill,
-            reducedMotion && styles.stillPill,
             isActive && styles.pillActive,
             hasAttention && styles.pillAttention,
-            inlineUnistylesStyle({ width: pillWidth, height: pillHeight }),
+            inlineUnistylesStyle({
+              width: pillWidth,
+              height: pillHeight,
+              ...(reducedMotion ? { transitionDuration: "0ms" } : {}),
+            }),
           ]}
         />
       </Pressable>
@@ -232,7 +235,6 @@ const styles = StyleSheet.create((theme) => ({
     transitionDuration: "140ms",
     transitionTimingFunction: "ease-out",
   },
-  stillPill: { transitionDuration: "0ms" },
   pillActive: {
     backgroundColor: theme.colors.foregroundExtraMuted,
   },
