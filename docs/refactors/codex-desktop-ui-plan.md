@@ -948,9 +948,10 @@ and asked that every change keep upstream Paseo backend updates mergeable.
   share items but keep their reference orders: the titlebar puts Archive third and
   read state last. Mac rename and New section dialogs right-align compact Cancel
   and submit buttons.
-- Recent's Organize sidebar › By project / Merged is inferred: the captures show the
-  menu, not the merged result. Merged keeps every chat in Recent and shows projects
-  as rows without nested chats. Replace it once a merged-mode capture exists.
+- Recent's Organize sidebar › By project / Merged: the user confirmed Merged only
+  gathers every chat under Recent and can be switched back at any time. It is a saved
+  view preference: projects stay as rows without nested chats, and no chat or
+  project changes.
 
 All section state is client-side, in the `desktop-chat-sections` persisted store.
 Fields added after its first version (pinned projects, organize mode) are optional
