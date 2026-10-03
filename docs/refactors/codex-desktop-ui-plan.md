@@ -23,8 +23,11 @@ complete; this section replaces that handoff.
   renamed `codex-app`; it is the default branch of `Ynd-i/codex-app`, where only
   `custom-release.yml` is enabled. User decision: releases follow upstream stable
   releases only, tagged `v<stable>-v<N>-beta<M>` and promoted to `v<stable>-v<N>`. The
-  branch stays on its `v0.11.0-beta.1` base, so nothing is released until upstream
-  ships `0.11.0`; the scheduled sync then merges it and publishes `v0.11.0-v1-beta1`. A
+  branch stays on its `v0.11.0-beta.1` base, so the pipeline releases nothing until
+  upstream ships `0.11.0`; the scheduled sync then merges it and publishes
+  `v0.11.0-v1-beta1`. As a one-off exception the user chose to publish the current
+  branch now as the prerelease `v0.11.0-beta.1-v1-beta1`, built and smoke-tested
+  locally; the planner ignores that tag. A
   trial merge of upstream `v0.11.0-beta.3` was removed at the user's request; it
   conflicted in eight files under `packages/app/src/usage`, the changelog and one e2e
   spec, and `0.11.0` will raise the same conflicts. Porting to stable `v0.10.3`
