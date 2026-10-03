@@ -47,7 +47,7 @@ export const en = {
     markRead: "Mark as read",
     markUnread: "Mark as unread",
     fork: "Fork",
-    forkNewChat: "Fork into a new chat",
+    forkNewChat: "Fork in a new chat",
     sections: {
       actions: "Section actions",
       sortLatest: "Recently updated",
