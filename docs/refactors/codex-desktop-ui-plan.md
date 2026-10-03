@@ -150,6 +150,7 @@ scope; it does not remove runtime code or add new provider integrations.
 | 1a. Upstream integration check   | Refreshed and verified                                | Upstream `e10f6d2` integrated in isolation; provider, usage, sheet, navigation and custom desktop checks pass. Protected daemons are not restarted.                                          |
 | 2. Chat navigation               | Single-chat layout verified locally                   | Main tabs removed; tools route right with saved state retained. Mac chat sidebar, current-chat actions, draft isolation and Back/Forward pass; other platforms keep the workspace list.      |
 | 3. Transcript and composer       | Composer and activity verified; visual polish pending | Column, input/model controls, tool cards and completed-turn activity are checked in native development. Attachment-menu renderer checks pass; native follow-up and transcript polish remain. |
+| 3a. Native session fork          | Planned; runtime work pending                         | Native provider conversation fork, exact history boundary, independent persistence and verified worktree execution. See [implementation plan](#native-session-fork).                         |
 | 4. Supporting panels             | Right tools and shared titlebar verified locally      | Terminal, browser, file and diff routing pass. Internal file tree and responsive browser controls pass; detailed panel styling and native tool acceptance remain.                            |
 | 5. Custom distribution           | Local macOS package verified; distribution pending    | Independent identity, exclusive custom scheme, update guard and isolated renderer/daemon/CLI startup pass. Release source, signing, OS handler coexistence and distribution remain.          |
 
@@ -168,6 +169,7 @@ create another task ledger.
 | Track                  | Ordered slices                                                                                                                                                                                   | Completion evidence                                                                                                                                                                         |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Chat and composer      | Align transcript width, type and spacing; align composer and attachment previews; adapt provider-backed model/effort controls.                                                                   | Targeted action regressions; isolated renderer checks for sibling drafts, navigation, send/stop and attachments; native comparison against the matching supplied state.                     |
+| Native session fork    | Prove Codex/Claude native cloning; extend creation and registration; connect worktree placement; deliver inherited history and origin UI; expand verified providers.                             | Distinct native handles, exact cutoffs, independent resume, no native-path history attachment, idempotent first prompt and real provider/Electron evidence.                                 |
 | Supporting UI          | Inspect the supplied browser and settings states; adapt existing panels one at a time; then tool output, waiting approval and populated diff when their references are available.                | Existing panel navigation and keyboard behavior retained; empty, loading and error states checked; each visual state has its own evidence.                                                  |
 | Upstream compatibility | Keep presentation in desktop overrides; review each upstream merge; rebuild affected workspace dependencies before checking consumers.                                                           | Small revertible commits, no unintended backend/protocol changes, targeted tests for changed upstream behavior. Last accepted upstream parent: `e10f6d2`; Custom package checks pass below. |
 | Distribution           | Inspect existing identity and updater configuration; prevent a custom package from installing official Paseo bundles; prepare a separate identity/channel; build and validate the local package. | Packaged launch and update behavior accepted separately from development. A release destination, signing identity and any publication are resolved before distribution.                     |
@@ -239,6 +241,219 @@ and prepare the requested banked reset. Check every reported core usage window.
 The current reset tool is available; it requires explicit confirmation for each
 redemption and checks eligibility again. The allowance recovered and the reset
 credit count fell without a reset-tool call from this task.
+
+## Native session fork
+
+Plan date: 2026-10-01. Status: planned; this request creates the implementation
+plan only. Runtime implementation and provider acceptance remain pending.
+
+Replace the current history-attachment fork with a provider-native conversation
+branch for supported providers. The child chat must contain inherited messages as
+ordinary conversation history and continue on its own durable provider handle.
+Starting it in a new worktree also creates an independent execution directory.
+
+### Current behavior and available primitives
+
+The current [fork driver](../../packages/app/src/hooks/use-fork-agent.ts) calls
+`agent.fork_context.request`, attaches curated history to a draft, and creates a
+fresh provider session. The [current Fork definition](../glossary.md) documents
+that behavior. Removing the attachment pill or changing the button alone cannot
+provide native conversation continuity.
+
+The existing rewind adapters already call native clone primitives. Reuse their
+transport and identity resolution, but do not call rewind methods that replace
+the source agent's handle. The daemon currently has no provider-neutral native
+fork operation in `AgentClient`.
+
+| Provider runtime                                  | Verified repository primitive                                                                                                                                                               | Gate before enabling native fork                                                                                                                                            |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Codex, including configured Codex profiles        | `thread/fork` in [transport](../../packages/server/src/server/agent/providers/codex/app-server-transport.ts) and [rewind](../../packages/server/src/server/agent/providers/codex/rewind.ts) | Verify the selected binary's inclusive cutoff semantics and changed-cwd resume. The local type exposes `beforeTurnId`; current official documentation exposes `lastTurnId`. |
+| Claude Code, including configured Claude profiles | SDK `forkSession` in [rewind](../../packages/server/src/server/agent/providers/claude/rewind.ts); SDK dependency is pinned to `0.3.246`                                                     | Verify source-directory lookup, remapped message IDs, and resume in the destination worktree. Current history lookup uses execution cwd.                                    |
+| Pi and OMP                                        | Existing Pi rewind uses `navigateTree`                                                                                                                                                      | Prove an independent durable clone operation in the configured runtime before advertising support. Rewind alone is insufficient.                                            |
+| OpenCode v1 and v2                                | Existing rewind uses `session.revert`; adapters target `1.14.46` and `2.0.10`                                                                                                               | Verify each pinned runtime's independent fork API, cutoff semantics, and changed-cwd behavior.                                                                              |
+| Other ACP or plugin providers                     | No native fork contract exposed by the inspected adapter interface                                                                                                                          | Enable only after an adapter implements and verifies the same contract.                                                                                                     |
+
+Provider identity includes the configured profile, runtime home, binary and
+authentication environment. A `codex-migrated` source must remain bound to its
+configured client and `CODEX_HOME`; a fork must not substitute the default Codex
+or Claude profile. Model brand does not determine fork support.
+
+### Behavior contract
+
+1. A native fork copies persisted conversation history through a selected,
+   completed turn, inclusive. The source agent, provider handle and timeline keep
+   their identity. Later source turns are excluded from the child. Stored or
+   archived sources use read-only metadata/history access; do not unarchive,
+   interactively resume or interrupt the source as a side effect.
+2. The child receives a distinct native conversation handle. Use Codex's new
+   `thread.id` as its handle; the provider's lineage-root `sessionId` may remain
+   shared. Resume the clone rather than starting a blank provider session.
+3. Preserve the provider's structured history, including user and assistant
+   messages, tool calls/results and supported compaction state. Display the
+   provider's hydrated child history using existing timeline normalization.
+   The next user message contains only the new follow-up and its real attachments.
+4. Reuse source model, mode, reasoning, Fast/service tier and provider options
+   where the destination supports them. Rebuild permissions, hooks and internal
+   Paseo tools for the child agent and target workspace. Do not reuse callbacks
+   or tool endpoints scoped to the source agent.
+5. Fork lineage is separate from subagent parentage. Do not set
+   `paseo.parent-agent-id` for a user-created fork. Archiving the source must not
+   cascade into its fork. Store origin metadata through existing agent labels.
+6. First delivery supports same-host, same configured provider, completed-turn
+   forks. While a source keeps running, use only a persisted completed boundary
+   if its provider can safely clone it. Unfinished turns and read-only provider
+   subagent panes do not advertise native fork support.
+7. A fork copies durable conversation state. It does not transfer running shell
+   processes, pending permissions, queued prompts, active delegated agents,
+   heartbeat schedules or other source-owned runtime work. Inherited child-agent
+   history must not become a live child runtime owned by the fork.
+8. Unsupported providers and cross-provider requests use a separate action such
+   as "New chat using this history". Keep the existing context-attachment path
+   for that explicit choice. Native-fork failure must not silently fall back to it.
+   Existing chats created with history attachments remain valid existing chats.
+
+### Minimal implementation design
+
+Extend the existing agent creation pipeline with an optional `forkFrom` intent,
+containing the source Paseo agent ID and canonical boundary cursor. It belongs in
+the regular agent create request and its existing `WorkspaceInitialAgentSchema`
+embedding. The client sends source identities, not native transcript paths.
+The daemon validates source and destination access, resolves the native boundary
+and configured provider/home from the stored source, and rejects a different
+provider profile before allocating resources.
+
+Use the existing creation RPCs, resource IDs, request fingerprints and initial
+message receipts. Add one host capability for the new creation semantics and
+adapter capabilities for exact-boundary and destination-workspace support. Gate
+once at the entry point. New wire fields remain optional under the repository's
+[protocol compatibility rules](../protocol-compatibility.md).
+
+Add an optional provider-client `forkSession` operation that creates a durable
+native clone and returns its persistence handle without issuing a model turn.
+Persist that handle in the existing creation receipt before resuming/hydrating
+the clone. Reuse `resumeSession`, provider history normalization and the
+registration path used by
+[native session import](../../packages/server/src/server/agent/provider-session-import.ts).
+Do not add a second session store or transcript parser.
+
+The source boundary must resolve from its timeline epoch/sequence to the
+provider's stable turn/message identity. A stale epoch, missing checkpoint or
+unpersisted boundary rejects the operation. Each adapter owns the translation
+between an inclusive Paseo cutoff and its native API; unsupported historical
+boundaries must not become whole-history forks.
+
+Create and register the child under a new Paseo agent ID with its own
+`workspaceId`, new persistence handle, normalized copied history and
+`historyPrimed: true`. Use the child provider's message identities, including
+remapped Claude IDs. Refresh runtime-owned state and only then publish the child
+as ready. Subsequent resume must not append the copied prefix again.
+
+The original [CreationService](../../packages/server/src/server/creation/index.ts)
+owns reconnects and progress. Extend its existing receipt for the native-fork
+milestone; do not assume its present resource idempotency makes provider cloning
+idempotent. A persisted child handle resumes the same clone on recovery. An
+ambiguous clone outcome enters `outcomeUnknown` and requires reconciliation
+before another native clone or prompt is attempted.
+
+### Implementation order
+
+| Slice                                    | Change and primary owners                                                                                                                                                                                                                               | Required evidence before the next slice                                                                                                                                                                                                                                |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0. Prove provider semantics              | Codex transport/rewind and Claude adapter/SDK. Seed an isolated session with several completed turns and tool results. Clone an earlier boundary, then resume it in the same directory and a second directory.                                          | New native handle, exact inclusive prefix, unchanged source, no history attachment, independent restart/resume. Record runtime versions and configured provider identity. Resolve Codex parameter drift and Claude history-directory lookup.                           |
+| 1. Add native creation intent            | `packages/protocol/src/messages.ts`, `packages/client/src/daemon-client.ts`, `agent-sdk-types.ts`, `agent/create-agent/create.ts`. Optional `forkFrom` and explicit capability gates.                                                                   | Old create payloads still parse; old hosts do not receive native-fork intent; unsupported adapter, stale boundary and inaccessible source fail before provisioning.                                                                                                    |
+| 2. Deliver a fork in the same workspace  | Codex/Claude adapters, `agent-manager.ts`, existing session import/registration and `server/creation/index.ts`. Clone, persist handle, resume, hydrate and register.                                                                                    | Two independent chats show a real inherited transcript. A follow-up appends exactly once. Source archive, child archive, reconnect and daemon restart preserve independent ownership. Failure after cloning retains a recoverable known handle.                        |
+| 3. Connect new worktree placement        | Existing workspace provisioning and `paseo-worktree-service.ts`; existing New Workspace/create-agent flow. Provision and bootstrap first, fork/resume with the target cwd, then send the first follow-up.                                               | Relative subproject cwd is preserved. Real file reads and edits run in the destination. Dirty source choices are explicit. Setup failure sends no prompt; fork failure retains a recoverable creation state; retries do not create another worktree, clone or message. |
+| 4. Deliver the desktop conversation flow | `use-fork-agent.ts`, assistant turn footer/menu, workspace draft setup, composer creation payload, New Workspace screen and existing timeline components. Replace native-path history attachments with a source descriptor and bounded history preview. | Keyboard and pointer flows, exact source turn, inherited messages, origin divider, error/progress states and duplicate-click protection work in real Electron. No chat-history attachment is added to native forks.                                                    |
+| 5. Expand verified providers             | Pi/OMP, OpenCode v1/v2 and ACP/plugin adapters in separate slices. Update provider capability reporting and product terminology.                                                                                                                        | The same native-handle, history-boundary, workspace and restart tests pass for each enabled runtime. Unsupported profiles keep the separately named context workflow.                                                                                                  |
+
+Slices 0-2 deliver the first working version with Codex and Claude in an existing
+workspace. Worktree support is enabled per provider only after changed-cwd
+acceptance passes; a working same-workspace fork is not evidence for it.
+
+### Worktree file state
+
+Reuse existing Git/workspace owners. The new-worktree intent overrides the
+draft's isolation choice without changing the user's global create preference.
+Default to the source checkout's captured `HEAD` commit, not the main repository's
+default branch, and retain the source-relative subproject path.
+
+Conversation cutoffs do not identify historical filesystem snapshots. Show the
+chosen code base independently from the conversation origin. The first worktree
+slice copies committed files at the chosen ref. If the source has staged,
+unstaged or untracked changes, require an explicit committed-files-only choice
+before continuing; preserve those changes in the source. Including working
+changes is a separate capability, using verified Git snapshot/copy primitives if
+added. Do not silently imply that a new worktree contains source WIP or files as
+they were at an old chat turn.
+
+### Desktop interaction
+
+- A completed assistant turn offers "Continue in new worktree" and the existing
+  same-workspace/new-tab alternative when the selected provider supports it.
+  Reuse current menu/button tokens, focus behavior and desktop composition points.
+- Opening the action creates a draft with bounded history visible as messages,
+  an origin row linking to the source turn, and the existing composer. The draft
+  previews source history; it does not persist fabricated child message IDs.
+- Preselect the source host/project/provider and the requested worktree isolation.
+  Show the chosen base ref. The next follow-up remains editable. Clicking the
+  action alone does not submit a model request.
+- Submit uses one creation operation: prepare workspace and setup, clone the
+  provider session, load its history, register the child, then append the follow-up
+  once. Replace preview IDs with the hydrated child history without duplication.
+- Show preparation, session loading and prompt-start states through existing
+  creation events. Errors retain the draft and expose retry/reconciliation for
+  the recorded operation. An unsupported capability explains the limit instead
+  of presenting a successful native-fork result.
+
+Keep the default Paseo sidebar and unrelated usage/composer work in their current
+scope. Read `docs/expo-router.md` before changing any route or restore behavior.
+
+### Acceptance and validation
+
+Implementation acceptance requires all of the following:
+
+1. A conversation contains an early fact, a tool result, the chosen completed
+   turn and a later sentinel. The child provider history includes the structured
+   prefix through the chosen turn and excludes the sentinel. Inspect native
+   history/IDs as well as the UI; model recollection alone is insufficient.
+2. The child has a new provider conversation handle and durable Paseo record.
+   Its first follow-up is one normal user turn, with no exported history text or
+   `.md` context attachment. Source prompts continue on the original handle.
+3. Child history, tool rows, timestamps and origin survive runtime release,
+   daemon restart, reconnect and further forks, without duplicate history or
+   shared pending permissions. Source archive does not archive the child.
+4. A worktree fork's commands and file changes affect the destination only.
+   Verify root and nested-project placement, branch/base ref, clean checkout and
+   explicit committed-files-only behavior for a dirty source.
+5. Double submit, dropped connection and injected failures after worktree
+   creation, native clone creation, history hydration and initial prompt start
+   retain operation identity. Known handles are reused; unknown sends/clones are
+   not automatically repeated. Cleanup can touch only resources owned by that
+   recorded operation, and must preserve source data.
+6. Capability tests cover native-capable providers, configured provider homes,
+   unsupported provider/cross-provider choices, old app/daemon combinations,
+   stale cursors and unfinished-turn boundaries.
+
+Add focused checks to existing provider rewind/import, creation and workspace
+creation suites; add one desktop fork flow where needed. Run affected tests and
+the repository's required build/typecheck/lint/format commands with its pinned
+npm toolchain. Use an isolated daemon/home for real Codex and Claude smoke runs.
+Never restart the production daemon on port 6767 for this work.
+
+Record fake-provider, real-provider, real-Electron and packaged acceptance
+separately. Update `docs/glossary.md`, `docs/agent-lifecycle.md`, `docs/providers.md`
+and the changelog when their implemented behavior changes. Track this work here.
+
+### External API evidence
+
+- [OpenAI App Server documentation](https://learn.chatgpt.com/docs/app-server):
+  `thread/fork` creates a distinct thread using stored history; `lastTurnId`
+  selects an inclusive completed-turn cutoff. Revalidate against the actual
+  configured binary before choosing adapter parameters.
+- [Anthropic session browser cookbook](https://platform.claude.com/cookbook/claude-agent-sdk-05-building-a-session-browser):
+  native session forking produces a separate transcript, remaps message IDs and
+  supports an inclusive message cutoff; the clone is then resumed. The inspected
+  example uses the same cwd, so it does not establish worktree resume support.
 
 ## Update strategy
 
