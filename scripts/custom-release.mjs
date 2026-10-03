@@ -1,14 +1,22 @@
 #!/usr/bin/env node
-// Plans Paseo Custom releases. A release is tagged v<upstream>-v<N>: <upstream> is the newest
-// upstream Paseo release merged into the branch, and N counts our releases on that backend.
+// Plans Paseo Custom releases, which follow upstream Paseo stable releases only.
 //
-//   node scripts/custom-release.mjs sync <upstream-ref>  merge the newest upstream release, if any
-//   node scripts/custom-release.mjs ui                   release UI changes on the current backend
+//   v<stable>-v<N>-beta<M>  beta M of our release N on upstream <stable>; a GitHub prerelease
+//   v<stable>-v<N>          release N promoted to stable
 //
-// Prints key=value lines for $GITHUB_OUTPUT: merge, backend, tag, prerelease, reason.
+// <stable> is the newest upstream release merged into the branch. While that is an upstream
+// beta, nothing is released.
+//
+//   node scripts/custom-release.mjs sync    merge a newer upstream stable release as -v1-beta1
+//   node scripts/custom-release.mjs beta    release the branch as the next beta
+//   node scripts/custom-release.mjs stable  promote the latest beta to stable
+//
+// Prints key=value lines for $GITHUB_OUTPUT: merge, backend, tag, from, reason, prerelease.
 import { execFileSync } from "node:child_process";
 import { isMainModule } from "./is-main-module.mjs";
 import { parseReleaseVersion } from "./release-version-utils.mjs";
+
+const releasePattern = /^(?<backend>v\d+\.\d+\.\d+)-v(?<release>\d+)(?:-beta(?<beta>\d+))?$/;
 
 function parseUpstreamTag(tag) {
   if (!tag.startsWith("v")) return null;
@@ -19,76 +27,112 @@ function parseUpstreamTag(tag) {
   }
 }
 
-function versionKey(version) {
-  return [version.major, version.minor, version.patch, version.betaNumber ?? Infinity];
-}
-
-export function compareUpstreamTags(a, b) {
-  const left = versionKey(parseUpstreamTag(a));
-  const right = versionKey(parseUpstreamTag(b));
+function compareKeys(left, right) {
   for (let index = 0; index < left.length; index += 1) {
     if (left[index] !== right[index]) return left[index] < right[index] ? -1 : 1;
   }
   return 0;
 }
 
-export function newestUpstreamTag(tags) {
+function versionKey(version) {
+  return [version.major, version.minor, version.patch, version.betaNumber ?? Infinity];
+}
+
+export function compareUpstreamTags(a, b) {
+  return compareKeys(versionKey(parseUpstreamTag(a)), versionKey(parseUpstreamTag(b)));
+}
+
+export function newestUpstreamTag(tags, { stableOnly = false } = {}) {
   return (
     tags
-      .filter((tag) => parseUpstreamTag(tag))
+      .filter((tag) => {
+        const version = parseUpstreamTag(tag);
+        return version && !(stableOnly && version.isPrerelease);
+      })
       .sort(compareUpstreamTags)
       .at(-1) ?? null
   );
 }
 
-export function nextReleaseTag(backend, tags) {
-  const prefix = `${backend}-v`;
-  const counts = tags
-    .filter((tag) => tag.startsWith(prefix) && /^\d+$/.test(tag.slice(prefix.length)))
-    .map((tag) => Number(tag.slice(prefix.length)));
-  return `${prefix}${Math.max(0, ...counts) + 1}`;
+/** Our newest release on a backend; a release's betas come before its stable tag. */
+export function latestRelease(backend, tags) {
+  const key = (release) => [release.number, release.beta ?? Infinity];
+  return (
+    tags
+      .map((tag) => ({ tag, match: releasePattern.exec(tag) }))
+      .filter(({ match }) => match?.groups.backend === backend)
+      .map(({ tag, match }) => ({
+        tag,
+        number: Number(match.groups.release),
+        beta: match.groups.beta ? Number(match.groups.beta) : null,
+      }))
+      .sort((a, b) => compareKeys(key(a), key(b)))
+      .at(-1) ?? null
+  );
 }
 
-export function planRelease({ mode, current, upstream, tags, lastReleaseIsHead }) {
+export function nextBetaTag(backend, tags) {
+  const latest = latestRelease(backend, tags);
+  if (!latest) return `${backend}-v1-beta1`;
+  if (latest.beta === null) return `${backend}-v${latest.number + 1}-beta1`;
+  return `${backend}-v${latest.number}-beta${latest.beta + 1}`;
+}
+
+export function planRelease({ mode, current, upstreamStable, tags, latestIsHead }) {
   if (!current) throw new Error("No upstream release tag is merged into this branch");
+  const skip = (reason) => ({ merge: "", backend: current, tag: "", from: "", reason });
   if (mode === "sync") {
-    if (!upstream || compareUpstreamTags(upstream, current) <= 0) {
-      return { merge: "", backend: current, tag: "", reason: `backend is current at ${current}` };
+    if (!upstreamStable || compareUpstreamTags(upstreamStable, current) <= 0) {
+      return skip(`no upstream stable release is newer than ${current}`);
     }
-    return { merge: upstream, backend: upstream, tag: nextReleaseTag(upstream, tags), reason: "" };
+    const tag = nextBetaTag(upstreamStable, tags);
+    return { merge: upstreamStable, backend: upstreamStable, tag, from: "HEAD", reason: "" };
   }
-  if (mode === "ui") {
-    if (lastReleaseIsHead) {
-      return { merge: "", backend: current, tag: "", reason: "no changes since the last release" };
-    }
-    return { merge: "", backend: current, tag: nextReleaseTag(current, tags), reason: "" };
+  if (mode !== "beta" && mode !== "stable") {
+    throw new Error(`Unknown mode "${mode}"; use sync, beta or stable`);
   }
-  throw new Error(`Unknown mode "${mode}"; use sync or ui`);
+  if (parseUpstreamTag(current).isPrerelease) {
+    return skip(`the branch is on upstream beta ${current}; wait for an upstream stable release`);
+  }
+  if (mode === "beta") {
+    if (latestIsHead) return skip("no changes since the last release");
+    return {
+      merge: "",
+      backend: current,
+      tag: nextBetaTag(current, tags),
+      from: "HEAD",
+      reason: "",
+    };
+  }
+  const latest = latestRelease(current, tags);
+  if (!latest || latest.beta === null) return skip(`no beta on ${current} to promote`);
+  // Stable ships the commit its last beta was tested on.
+  return {
+    merge: "",
+    backend: current,
+    tag: `${current}-v${latest.number}`,
+    from: latest.tag,
+    reason: "",
+  };
 }
 
 function git(...args) {
   return execFileSync("git", args, { encoding: "utf8" }).trim();
 }
 
-function tagsMergedInto(ref) {
-  return git("tag", "--merged", ref).split("\n").filter(Boolean);
-}
-
-function main([mode, upstreamRef]) {
+function main([mode]) {
   const tags = git("tag", "--list").split("\n").filter(Boolean);
-  const current = newestUpstreamTag(tagsMergedInto("HEAD"));
-  const releaseCount = current ? Number(nextReleaseTag(current, tags).split("-v").at(-1)) - 1 : 0;
-  const lastRelease = releaseCount > 0 ? `${current}-v${releaseCount}` : null;
+  const current = newestUpstreamTag(git("tag", "--merged", "HEAD").split("\n").filter(Boolean));
+  const latest = current ? latestRelease(current, tags) : null;
   const plan = planRelease({
     mode,
     current,
-    upstream: mode === "sync" ? newestUpstreamTag(tagsMergedInto(upstreamRef)) : null,
+    upstreamStable: newestUpstreamTag(tags, { stableOnly: true }),
     tags,
-    lastReleaseIsHead:
-      Boolean(lastRelease) &&
-      git("rev-parse", `${lastRelease}^{commit}`) === git("rev-parse", "HEAD"),
+    latestIsHead:
+      Boolean(latest) && git("rev-parse", `${latest.tag}^{commit}`) === git("rev-parse", "HEAD"),
   });
-  const prerelease = plan.tag ? String(parseUpstreamTag(plan.backend).isPrerelease) : "false";
+  const prerelease = String(plan.tag.includes("-beta"));
   for (const [key, value] of Object.entries({ ...plan, prerelease })) {
     console.log(`${key}=${value}`);
   }

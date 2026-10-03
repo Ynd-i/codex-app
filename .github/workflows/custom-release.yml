@@ -1,6 +1,9 @@
 # Paseo Custom releases for the Ynd-i/codex-app fork. See docs/release.md#custom-releases.
-# sync (scheduled): merge the newest upstream Paseo release, test, publish v<upstream>-v1.
-# ui (manual): test and publish the current branch as the next v<upstream>-v<N>.
+# Follows upstream Paseo stable releases only; nothing publishes while the branch is on an
+# upstream beta.
+# sync (scheduled): merge a newer upstream stable release, test, publish v<stable>-v1-beta1.
+# beta (manual): test and publish the branch as the next v<stable>-v<N>-beta<M>.
+# stable (manual): rebuild the latest beta's commit and publish it as v<stable>-v<N>.
 name: Custom release
 
 on:
@@ -9,9 +12,9 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "sync: merge a newer upstream release; ui: release the current branch"
+        description: "sync: merge a newer upstream stable release; beta: release the branch; stable: promote the latest beta"
         type: choice
-        options: [sync, ui]
+        options: [sync, beta, stable]
         default: sync
 
 permissions:
@@ -43,12 +46,13 @@ jobs:
           ref: ${{ env.BRANCH }}
           fetch-depth: 0
 
+      # Stable hotfixes can be cut off a release branch, so every upstream release tag counts.
       - name: Fetch upstream releases
-        run: git fetch --no-tags "$UPSTREAM" "+refs/heads/main:refs/remotes/upstream/main" "+refs/tags/v*:refs/tags/v*"
+        run: git fetch --no-tags "$UPSTREAM" "+refs/tags/v*:refs/tags/v*"
 
       - name: Plan
         id: plan
-        run: node scripts/custom-release.mjs "${{ inputs.mode || 'sync' }}" upstream/main | tee -a "$GITHUB_OUTPUT"
+        run: node scripts/custom-release.mjs "${{ inputs.mode || 'sync' }}" | tee -a "$GITHUB_OUTPUT"
 
       - name: Merge upstream release
         if: steps.plan.outputs.merge != ''
@@ -69,7 +73,9 @@ jobs:
       - name: Commit to release
         id: commit
         if: steps.plan.outputs.tag != ''
-        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+        env:
+          FROM: ${{ steps.plan.outputs.from }}
+        run: echo "sha=$(git rev-parse "$FROM^{commit}")" >> "$GITHUB_OUTPUT"
 
   test:
     needs: plan

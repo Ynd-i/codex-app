@@ -55,24 +55,36 @@ in the [migration plan](refactors/codex-desktop-ui-plan.md).
 
 ### Custom releases
 
-The `Ynd-i/codex-app` fork publishes Paseo Custom as GitHub prereleases from
-`codex-app`. A tag is `v<upstream>-v<N>`: `<upstream>` is the newest upstream
-Paseo release merged into the branch, and `N` counts our releases on that backend,
-starting at 1. Follow upstream `main` releases only; a stable hotfix such as `v0.10.3`
-cut on a release branch is not on `main`. `scripts/custom-release.mjs` computes the plan.
+The `Ynd-i/codex-app` fork publishes Paseo Custom from `codex-app`, following upstream
+Paseo **stable** releases only. Tags:
 
-`.github/workflows/custom-release.yml` runs every six hours in `sync` mode: when
-upstream `main` has a newer release tag, it merges that tag, runs format, lint,
-typecheck and the server and app unit suites, builds and smoke-tests the arm64 bundle,
-then moves `codex-app` and publishes `v<upstream>-v1`. Run it in `ui` mode after
-pushing UI changes to publish the next `-v<N>` on the current backend:
+| Tag                      | Meaning                                                                 |
+| ------------------------ | ----------------------------------------------------------------------- |
+| `v<stable>-v<N>-beta<M>` | Beta `M` of our release `N` on upstream `<stable>`; a GitHub prerelease |
+| `v<stable>-v<N>`         | Release `N` promoted to stable                                          |
+
+`<stable>` is the newest upstream release merged into the branch. Betas count up within a
+release (`v0.11.0-v1-beta1`, `-v1-beta2`), promotion drops the suffix (`v0.11.0-v1`), and
+the next UI change starts `v0.11.0-v2-beta1`. A newer upstream stable release starts again
+at `-v1-beta1`. While the branch is on an upstream beta, as it is until upstream ships
+`0.11.0`, nothing is released. `scripts/custom-release.mjs` computes the plan.
+
+`.github/workflows/custom-release.yml` runs every six hours in `sync` mode. When upstream
+has a stable release newer than the branch, from `main` or a hotfix branch, it merges that
+tag, runs format, lint, typecheck and the server and app unit suites, builds and
+smoke-tests the arm64 bundle, then moves `codex-app` and publishes `v<stable>-v1-beta1`.
+After pushing UI changes, publish the next beta; promote the latest beta's commit to
+stable once it has proven itself:
 
 ```sh
-gh workflow run custom-release.yml -R Ynd-i/codex-app -f mode=ui
+gh workflow run custom-release.yml -R Ynd-i/codex-app -f mode=beta
+gh workflow run custom-release.yml -R Ynd-i/codex-app -f mode=stable
 ```
 
 A merge conflict or failure publishes nothing and opens an issue; the run summary
-lists conflicted files. Pull before working locally, because a sync adds merge commits.
+lists conflicted files. Upstream releases that touch customized files, such as the usage
+screen, conflict and need a manual merge of the tag; after that only `beta` mode tags
+it. Pull before working locally, because a sync adds merge commits.
 
 Only the workflow's `GITHUB_TOKEN` creates release tags. Tags created by people still
 start with `v` and would trigger the inherited upstream release, Docker and deploy
