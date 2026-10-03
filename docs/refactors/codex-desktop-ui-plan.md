@@ -527,9 +527,10 @@ passes the short-lived-process fork and cross-process resume probe.
 
 Backend check on 2026-10-03, through an isolated daemon with the user's provider
 configuration: Codex (`~/.codex`) and Claude pass, including native fork.
-`codex-migrated` fails every turn with "workspace routing discovery unauthorized
-(401)", also when its `CODEX_HOME` is used directly outside Paseo, so its saved
-login needs renewing. OpenCode 1.18.32 answers with an explicit model, but a
+`codex-migrated` failed every turn with "workspace routing discovery unauthorized
+(401)", also outside Paseo; after the user renewed its login it passes a minimal
+native fork on `gpt-5.6-luna`: two turns, a latest-turn fork that keeps the profile
+and inherits both turns, and a follow-up that recalls the fact. OpenCode 1.18.32 answers with an explicit model, but a
 model-less create picks the catalogue's first entry, `google/gemini-flash-latest`,
 which OpenCode rejects. Pi 0.86.1 fails with an `openai-codex` OAuth refresh error.
 Copilot is disabled in the user's configuration.
