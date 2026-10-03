@@ -15,6 +15,10 @@ complete; this section replaces that handoff.
   and the project and chat menus `0dec0cb`, `d564b4a` and `f4a3e94`. The user's uncommitted **Native session fork draft**
   in this file and the private `context-images/` directory (79 reference images
   plus a Finder `.DS_Store`) remain untouched. Preserve both.
+- Native fork checkout (2026-10-03): `/Users/yndi/dev/projects/codex-app/paseo-native-fork`,
+  branch `codex/native-fork` from `8bd2dc5`. It commits the Native session fork plan,
+  its delivery and an app typecheck fix; see [delivery](#delivery--2026-10-03). Not
+  yet merged into `codex/desktop-ui`, whose working copy still holds the draft.
 - Isolated checkout: `/Users/yndi/dev/projects/codex-app/paseo-upstream-4893629`,
   branch `codex/markdown-spacing-paused-20261002`. Its commits `78a5f32`,
   `63071b9`, `d46ba1f`, `e66eb9a`, `ef2e515`, `f06f026`, `29c8053`, `8ba5126`, `e8a72bf`,
@@ -143,16 +147,16 @@ scope; it does not remove runtime code or add new provider integrations.
 
 ## Steps
 
-| Step                             | Status                                                | Acceptance                                                                                                                                                                                   |
-| -------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0. Upstream baseline             | Complete for local startup                            | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                                      |
-| 1. Window and sidebar appearance | Frame and Appearance controls checked                 | Window frame, navigation, Advanced collapse and motion selection have native evidence. Scoped reset passes isolated renderer and packaged checks; full reference matching remains.           |
-| 1a. Upstream integration check   | Refreshed and verified                                | Upstream `e10f6d2` integrated in isolation; provider, usage, sheet, navigation and custom desktop checks pass. Protected daemons are not restarted.                                          |
-| 2. Chat navigation               | Single-chat layout verified locally                   | Main tabs removed; tools route right with saved state retained. Mac chat sidebar, current-chat actions, draft isolation and Back/Forward pass; other platforms keep the workspace list.      |
-| 3. Transcript and composer       | Composer and activity verified; visual polish pending | Column, input/model controls, tool cards and completed-turn activity are checked in native development. Attachment-menu renderer checks pass; native follow-up and transcript polish remain. |
-| 3a. Native session fork          | Planned; runtime work pending                         | Native provider conversation fork, exact history boundary, independent persistence and verified worktree execution. See [implementation plan](#native-session-fork).                         |
-| 4. Supporting panels             | Right tools and shared titlebar verified locally      | Terminal, browser, file and diff routing pass. Internal file tree and responsive browser controls pass; detailed panel styling and native tool acceptance remain.                            |
-| 5. Custom distribution           | Local macOS package verified; distribution pending    | Independent identity, exclusive custom scheme, update guard and isolated renderer/daemon/CLI startup pass. Release source, signing, OS handler coexistence and distribution remain.          |
+| Step                             | Status                                                | Acceptance                                                                                                                                                                                                   |
+| -------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0. Upstream baseline             | Complete for local startup                            | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                                                      |
+| 1. Window and sidebar appearance | Frame and Appearance controls checked                 | Window frame, navigation, Advanced collapse and motion selection have native evidence. Scoped reset passes isolated renderer and packaged checks; full reference matching remains.                           |
+| 1a. Upstream integration check   | Refreshed and verified                                | Upstream `e10f6d2` integrated in isolation; provider, usage, sheet, navigation and custom desktop checks pass. Protected daemons are not restarted.                                                          |
+| 2. Chat navigation               | Single-chat layout verified locally                   | Main tabs removed; tools route right with saved state retained. Mac chat sidebar, current-chat actions, draft isolation and Back/Forward pass; other platforms keep the workspace list.                      |
+| 3. Transcript and composer       | Composer and activity verified; visual polish pending | Column, input/model controls, tool cards and completed-turn activity are checked in native development. Attachment-menu renderer checks pass; native follow-up and transcript polish remain.                 |
+| 3a. Native session fork          | Same-workspace fork verified; worktree pending        | Codex and Claude fork natively in the same workspace with real-provider, restart and archive evidence. Worktree placement, other providers and clone receipts remain. See [delivery](#delivery--2026-10-03). |
+| 4. Supporting panels             | Right tools and shared titlebar verified locally      | Terminal, browser, file and diff routing pass. Internal file tree and responsive browser controls pass; detailed panel styling and native tool acceptance remain.                                            |
+| 5. Custom distribution           | Local macOS package verified; distribution pending    | Independent identity, exclusive custom scheme, update guard and isolated renderer/daemon/CLI startup pass. Release source, signing, OS handler coexistence and distribution remain.                          |
 
 Each slice leaves a runnable app and a small independently revertible commit.
 Update this table and its evidence before moving to the next slice. Local startup
@@ -244,8 +248,10 @@ credit count fell without a reset-tool call from this task.
 
 ## Native session fork
 
-Plan date: 2026-10-01. Status: planned; this request creates the implementation
-plan only. Runtime implementation and provider acceptance remain pending.
+Plan date: 2026-10-01. Status, 2026-10-03: same-workspace native fork delivered
+for Codex and Claude (slices 0, 1, 2 and the same-workspace part of 4); see
+[delivery](#delivery--2026-10-03). Worktree placement (slice 3), further providers
+(slice 5) and crash-safe clone receipts remain open.
 
 Replace the current history-attachment fork with a provider-native conversation
 branch for supported providers. The child chat must contain inherited messages as
@@ -454,6 +460,90 @@ and the changelog when their implemented behavior changes. Track this work here.
   native session forking produces a separate transcript, remaps message IDs and
   supports an inclusive message cutoff; the clone is then resumed. The inspected
   example uses the same cwd, so it does not establish worktree resume support.
+
+### Delivery — 2026-10-03
+
+Work lives on `codex/native-fork` in the worktree
+`/Users/yndi/dev/projects/codex-app/paseo-native-fork`, from `8bd2dc5`.
+
+**Slice 0 findings.** Probes ran against Codex CLI 0.154.0 (ChatGPT login,
+`gpt-5.6-luna`) and Claude Code 2.1.287 with SDK 0.3.246 (`haiku`), seeding four
+turns: an early fact, a shell tool result, the chosen turn and a sentinel.
+
+- Codex `thread/fork` with `lastTurnId` set to the third turn returns a new thread
+  holding exactly turns one to three, under their original turn and item IDs; the
+  source keeps four turns. `beforeTurnId` of the fourth turn gives the same result
+  but requires the `experimentalApi` capability, which Paseo sends, so rewind's
+  paginated path is correct on this binary. Resuming the child with another `cwd`
+  runs tools there and recalls the early fact. A fork carries neither model nor
+  provider config: the follow-up failed until the model was passed.
+- The Codex process that forks keeps the child loaded as its writer; another
+  process then fails to resume it with "already has an active writer", and
+  `thread/unsubscribe` does not release it. Forking in a short-lived process while
+  the source stays loaded elsewhere works, and the child resumes after that
+  process exits.
+- Claude `forkSession` with `upToMessageId` set to the chosen turn's last reply
+  copies exactly turns one to three with remapped UUIDs; the source is unchanged.
+  The new transcript stays in the source's project directory. Resume from another
+  `cwd` finds it and runs tools there, but Paseo reads Claude history from the
+  execution `cwd`'s project directory, so a worktree fork would lose its history.
+
+**Delivered behavior.**
+
+| Area     | Implementation                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Adapters | `AgentSession.forkConversation({ messageId })` and `supportsNativeFork`. Codex forks through the turn opened by that user message with `lastTurnId`, the source's model, service tier and inner config, in a short-lived app-server spawned with the source's launch environment, then rejects a child whose last turn differs. Claude forks at the turn anchor's last assistant UUID. The provider wrapper maps the child handle to profiles such as `codex-migrated`. |
+| Daemon   | `AgentManager.forkAgent` resolves the cursor, or the latest turn when omitted, to the opening user message's provider ID. It rejects stale epochs, the running latest turn and unacknowledged prompts, then registers the child through the import path in the source's workspace with model, mode, thinking, features, provider options, system prompt and title, and `paseo.forked-from-agent-id`. Archived sources are rejected; loading never unarchives.           |
+| Protocol | `agent.fork.request` / `.response` with optional `boundaryCursor`, host feature `agentNativeFork` (COMPAT-tagged) and agent capability `supportsNativeFork`. Old clients and daemons are unaffected.                                                                                                                                                                                                                                                                    |
+| Desktop  | "Fork in a new tab" on a completed turn, and Fork › New chat on an idle chat, call the native fork and open the child. Repeated clicks are ignored while one is pending. The in-flight footer, running chats, Fork in new workspace and unsupported providers keep the history attachment.                                                                                                                                                                              |
+
+**Deviations from the design above.** A dedicated `agent.fork` RPC replaces the
+`forkFrom` creation intent: clicking creates the child immediately with no model
+request, and the user types the follow-up in the child. This removes the draft
+history preview, preview-ID replacement and composer creation plumbing, so the
+initial-message receipt is not needed. The fork runs through the live source
+session, which already holds the configured client, home and turn index. Menu
+labels are unchanged; history forks remain identifiable by their Chat history
+attachment.
+
+**Validation.** Unit: 7 Codex rewind/fork, 6 Claude anchor/fork, 3 manager
+`forkAgent`, 2 app fork-routing cases, plus the authorization, provider-wrapper and
+protocol validation suites. Real daemon runs (`*-rewind.real.e2e.test.ts`, new
+native fork case) pass for Codex and Claude: exact inherited prefix with the tool
+result and without the sentinel, a distinct provider handle, the origin label and
+no parent label, resume after runtime release with recall of the early fact, an
+unchanged source, and no archive cascade. A temporary restart run for both
+providers forks the latest turn, stops the daemon, starts a new one on the same
+home, and finds an identical child timeline that resumes and recalls its fact.
+Typecheck, lint and formatting pass.
+
+The Custom package built from `ab842c9` passes the packaged smoke. Driven over CDP
+with the user's real Codex login, its renderer forks a completed turn from the
+turn footer: the new chat opens selected, shows the inherited turns with model and
+access mode retained, and has no Chat history attachment
+([capture](../qa-evidence/codex-desktop/packaged-native-fork.png)). Codex 0.159.0,
+which the `codex-migrated` profile wraps, keeps the same `lastTurnId` contract and
+passes the short-lived-process fork and cross-process resume probe.
+
+Backend check on 2026-10-03, through an isolated daemon with the user's provider
+configuration: Codex (`~/.codex`) and Claude pass, including native fork.
+`codex-migrated` fails every turn with "workspace routing discovery unauthorized
+(401)", also when its `CODEX_HOME` is used directly outside Paseo, so its saved
+login needs renewing. OpenCode 1.18.32 answers with an explicit model, but a
+model-less create picks the catalogue's first entry, `google/gemini-flash-latest`,
+which OpenCode rejects. Pi 0.86.1 fails with an `openai-codex` OAuth refresh error.
+Copilot is disabled in the user's configuration.
+
+**Open.**
+
+- Slice 3: Codex worktree forks are proven at the provider level only; Claude needs
+  history lookup by session ID first.
+- Slice 5: Pi/OMP, OpenCode and ACP providers keep the history fork.
+- A daemon exit between clone and registration leaves an orphan native session
+  (marked `ponytail:` in `AgentManager.forkAgent`); no receipt reconciles it.
+- Claude profiles with their own `CLAUDE_CONFIG_DIR` fail to fork, as rewind does.
+- No origin divider or source link is shown in the child yet, and the child keeps
+  the source's title, so the sidebar shows two chats with the same name.
 
 ## Update strategy
 

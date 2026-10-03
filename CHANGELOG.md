@@ -8,6 +8,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Added
 
+- Added native forks for Codex and Claude: Fork in a new tab on a completed turn or an idle chat copies the provider conversation itself into a new chat in the same workspace, with its own session and no chat-history attachment. Other providers, running chats and new workspaces keep the history attachment.
+
 - Added independent macOS interface font weight with safe default/Advanced reset, preserving authored emphasis, content/code weights, drafts and sidebar sizing.
 
 - Added a fixed macOS question card above the editable composer, with numbered choices and provider-defined answering/dismiss behavior, plus code-block language headers and working wrap/copy controls.
