@@ -19,19 +19,19 @@ complete; this section replaces that handoff.
   branch `codex/native-fork` from `8bd2dc5`. It commits the Native session fork plan,
   its delivery and an app typecheck fix; see [delivery](#delivery--2026-10-03). It is
   fast-forwarded into `codex-app`.
-- Release state (2026-10-03 12:00 UTC): the product branch `codex/desktop-ui` was
+- Release state (2026-10-03 12:50 UTC): the product branch `codex/desktop-ui` was
   renamed `codex-app`; it is the default branch of `Ynd-i/codex-app`, where only
   `custom-release.yml` is enabled. User decision: releases follow upstream stable
-  releases only, tagged `v<stable>-v<N>-beta<M>` and promoted to `v<stable>-v<N>`. The
-  branch stays on its `v0.11.0-beta.1` base, so the pipeline releases nothing until
-  upstream ships `0.11.0`; the scheduled sync then merges it and publishes
-  `v0.11.0-v1-beta1`. As a one-off exception the user chose to publish the current
-  branch now as the prerelease `v0.11.0-beta.1-v1-beta1`, built and smoke-tested
-  locally; the planner ignores that tag. A
-  trial merge of upstream `v0.11.0-beta.3` was removed at the user's request; it
-  conflicted in eight files under `packages/app/src/usage`, the changelog and one e2e
-  spec, and `0.11.0` will raise the same conflicts. Porting to stable `v0.10.3`
-  instead was rejected: 50 files conflict and 26 belong to 0.11-only systems.
+  releases only, tagged `v<stable>-v<N>-beta<M>` and promoted to `v<stable>-v<N>`, each
+  with a `.dmg` and a `.zip`. Porting to stable `v0.10.3` was rejected: 50 files conflict
+  and 26 belong to 0.11-only systems. The branch merges upstream `v0.11.0-beta.3`
+  (`43b259f`); eight files conflicted under `packages/app/src/usage`, the changelog and
+  one e2e spec, resolved by keeping the Mac overview, adding upstream's hover pin glyph
+  and `unavailable` login problems, and localizing that copy in all nine languages. The
+  pipeline releases nothing until upstream ships `0.11.0`; the scheduled sync then
+  merges it and publishes `v0.11.0-v1-beta1`. As user-requested one-off exceptions,
+  built and smoke-tested locally and ignored by the planner, the prereleases
+  `v0.11.0-beta.1-v1-beta1` and `v0.11.0-beta.3-v1-beta1` are published by the user.
 - Isolated checkout: `/Users/yndi/dev/projects/codex-app/paseo-upstream-4893629`,
   branch `codex/markdown-spacing-paused-20261002`. Its commits `78a5f32`,
   `63071b9`, `d46ba1f`, `e66eb9a`, `ef2e515`, `f06f026`, `29c8053`, `8ba5126`, `e8a72bf`,
