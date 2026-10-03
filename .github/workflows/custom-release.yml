@@ -29,6 +29,9 @@ concurrency:
 env:
   BRANCH: codex-app
   UPSTREAM: https://github.com/getpaseo/paseo.git
+  FEED_BRANCH: update-feed
+  RCODESIGN_URL: https://github.com/indygreg/apple-platform-rs/releases/download/apple-codesign/0.29.0/apple-codesign-0.29.0-macos-universal.tar.gz
+  RCODESIGN_SHA256: d98372d5524226ccf9dc0eda03d4e4f5826182dabb2fc3f2bd303ed9113a748d
 
 jobs:
   plan:
@@ -39,6 +42,7 @@ jobs:
       backend: ${{ steps.plan.outputs.backend }}
       merge: ${{ steps.plan.outputs.merge }}
       prerelease: ${{ steps.plan.outputs.prerelease }}
+      version: ${{ steps.plan.outputs.version }}
       sha: ${{ steps.commit.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
@@ -112,29 +116,70 @@ jobs:
           node-version: "22"
           cache: "npm"
       - run: node scripts/npm-retry.mjs ci
-      - name: Build and smoke-test Paseo Custom
+      # The app version stays upstream's to match the bundled daemon; the in-app updater
+      # compares this stamp instead.
+      - name: Build Paseo Custom
         env:
-          PASEO_DESKTOP_SMOKE: "1"
-          PASEO_DESKTOP_EXPECT_CUSTOM: "1"
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
-        run: npm run build:desktop:custom -- --arm64 --dir
-      # Both downloads carry the smoke-tested app as built, without packaging it again.
+          VERSION: ${{ needs.plan.outputs.version }}
+        run: npm run build:desktop:custom -- --arm64 --dir "-c.extraMetadata.paseoCustomUpdateVersion=$VERSION"
+      # Squirrel.Mac installs an update only when it is signed by the same certificate as the
+      # running app, so the self-signed certificate in these secrets must never change.
+      # rcodesign signs with it without trusting it in a keychain, which codesign requires.
+      - name: Point the app at the update feed and sign it
+        env:
+          P12: ${{ secrets.CUSTOM_SIGNING_P12 }}
+          P12_PASSWORD: ${{ secrets.CUSTOM_SIGNING_P12_PASSWORD }}
+        run: |
+          if [ -z "$P12" ] || [ -z "$P12_PASSWORD" ]; then
+            echo "::error::Set CUSTOM_SIGNING_P12 and CUSTOM_SIGNING_P12_PASSWORD; see docs/release.md#custom-releases"
+            exit 1
+          fi
+          app="packages/desktop/release-custom/mac-arm64/Paseo Custom.app"
+          printf 'provider: generic\nurl: https://raw.githubusercontent.com/%s/%s\nupdaterCacheDirName: paseo-custom-updater\n' \
+            "$GITHUB_REPOSITORY" "$FEED_BRANCH" > "$app/Contents/Resources/app-update.yml"
+          curl -fsSL -o rcodesign.tar.gz "$RCODESIGN_URL"
+          echo "$RCODESIGN_SHA256  rcodesign.tar.gz" | shasum -a 256 -c -
+          tar -xzf rcodesign.tar.gz --strip-components=1 apple-codesign-0.29.0-macos-universal/rcodesign
+          echo "$P12" | base64 --decode > "$RUNNER_TEMP/signing.p12"
+          ./rcodesign sign --p12-file "$RUNNER_TEMP/signing.p12" --p12-password "$P12_PASSWORD" \
+            --code-signature-flags runtime \
+            --entitlements-xml-path packages/desktop/assets/entitlements.custom.mac.plist "$app"
+          rm "$RUNNER_TEMP/signing.p12"
+          codesign -v --strict --deep "$app"
+      - name: Smoke-test the signed app
+        env:
+          PASEO_DESKTOP_EXPECT_CUSTOM: "1"
+        run: node packages/desktop/e2e/packaged-app-smoke.js --app "packages/desktop/release-custom/mac-arm64/Paseo Custom.app"
+      # Both downloads carry the smoke-tested app as signed, without packaging or signing it again.
       - name: Package the smoke-tested app as a dmg and a zip
         env:
           TAG: ${{ needs.plan.outputs.tag }}
+          VERSION: ${{ needs.plan.outputs.version }}
         run: |
           app="packages/desktop/release-custom/mac-arm64/Paseo Custom.app"
-          (cd packages/desktop && npx electron-builder --config electron-builder.custom.yml \
+          base="Paseo-Custom-$TAG-arm64"
+          (cd packages/desktop && npx electron-builder --config electron-builder.custom.yml -c.mac.identity=null \
             --prepackaged "release-custom/mac-arm64/Paseo Custom.app" --mac dmg --arm64 --publish never)
-          mv packages/desktop/release-custom/Paseo-Custom-*-arm64.dmg "Paseo-Custom-$TAG-arm64.dmg"
-          ditto -c -k --keepParent "$app" "Paseo-Custom-$TAG-arm64.zip"
-          for file in "Paseo-Custom-$TAG-arm64.dmg" "Paseo-Custom-$TAG-arm64.zip"; do
+          mv packages/desktop/release-custom/Paseo-Custom-*-arm64.dmg "$base.dmg"
+          ditto -c -k --sequesterRsrc --keepParent "$app" "$base.zip"
+          for file in "$base.dmg" "$base.zip"; do
             shasum -a 256 "$file" > "$file.sha256"
           done
+          cat > update-feed.yml <<EOF
+          version: $VERSION
+          files:
+            - url: https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/$base.zip
+              sha512: $(openssl dgst -sha512 -binary "$base.zip" | base64)
+              size: $(stat -f %z "$base.zip")
+          releaseDate: '$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'
+          EOF
       - uses: actions/upload-artifact@v4
         with:
           name: paseo-custom
-          path: Paseo-Custom-*-arm64.*
+          path: |
+            Paseo-Custom-*-arm64.*
+            update-feed.yml
 
   publish:
     needs: [plan, test, build]
@@ -164,7 +209,8 @@ jobs:
           Paseo Custom $TAG: the Codex-style macOS desktop on upstream Paseo [$BACKEND](https://github.com/getpaseo/paseo/releases/tag/$BACKEND).
 
           - Open the \`.dmg\` and drag Paseo Custom to Applications; the \`.zip\` holds the same app.
-          - Apple Silicon only. Ad-hoc signed and not notarized: on first launch, right-click the app and choose Open, or run \`xattr -dr com.apple.quarantine "/Applications/Paseo Custom.app"\`.
+          - Apple Silicon only. Self-signed and not notarized: on first launch, right-click the app and choose Open, or run \`xattr -dr com.apple.quarantine "/Applications/Paseo Custom.app"\`.
+          - Later releases install from inside the app. Betas reach only the beta release channel.
           - Runs its own daemon and home; it does not replace or update the official Paseo app.
           - Source: $SHA.
           - SHA-256: dmg \`$(cut -d' ' -f1 "$base.dmg.sha256")\`, zip \`$(cut -d' ' -f1 "$base.zip.sha256")\`
@@ -173,6 +219,21 @@ jobs:
           if [ "${{ needs.plan.outputs.prerelease }}" = "true" ]; then flags+=(--prerelease); fi
           gh release create "$TAG" "$base.dmg" "$base.dmg.sha256" "$base.zip" "$base.zip.sha256" \
             --target "$SHA" --title "Paseo Custom $TAG" --notes-file notes.md "${flags[@]}"
+      # The in-app updater reads beta-mac.yml on the beta channel and latest-mac.yml on stable.
+      - name: Point the update feed at the release
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git rev-parse -q --verify "origin/$FEED_BRANCH" >/dev/null; then
+            git worktree add --detach feed "origin/$FEED_BRANCH"
+          else
+            git worktree add --orphan -b "$FEED_BRANCH" feed
+          fi
+          cp update-feed.yml feed/beta-mac.yml
+          if [ "${{ needs.plan.outputs.prerelease }}" != "true" ]; then cp update-feed.yml feed/latest-mac.yml; fi
+          git -C feed add -A
+          git -C feed commit -m "Paseo Custom $TAG"
+          git -C feed push origin "HEAD:refs/heads/$FEED_BRANCH"
       - name: Keep inherited upstream workflows disabled
         run: |
           gh workflow list --all --json path,state \

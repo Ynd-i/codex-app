@@ -11,7 +11,8 @@
 //   node scripts/custom-release.mjs beta    release the branch as the next beta
 //   node scripts/custom-release.mjs stable  promote the latest beta to stable
 //
-// Prints key=value lines for $GITHUB_OUTPUT: merge, backend, tag, from, reason, prerelease.
+// Prints key=value lines for $GITHUB_OUTPUT: merge, backend, tag, from, reason, prerelease,
+// version (the semver the in-app updater compares).
 import { execFileSync } from "node:child_process";
 import { isMainModule } from "./is-main-module.mjs";
 import { parseReleaseVersion } from "./release-version-utils.mjs";
@@ -78,6 +79,16 @@ export function nextBetaTag(backend, tags) {
   return `${backend}-v${latest.number}-beta${latest.beta + 1}`;
 }
 
+/**
+ * The semver the in-app updater compares for a release tag. The app version stays upstream's to
+ * match the bundled daemon, so updates need their own order: betas numerically, all betas of a
+ * release before its stable tag ("beta" sorts before "stable"), then the next release.
+ */
+export function updateVersion(tag) {
+  const { backend, release, beta } = releasePattern.exec(tag).groups;
+  return `${backend.slice(1)}-custom.${release}.${beta ? `beta.${beta}` : "stable"}`;
+}
+
 export function planRelease({ mode, current, upstreamStable, tags, latestIsHead }) {
   if (!current) throw new Error("No upstream release tag is merged into this branch");
   const skip = (reason) => ({ merge: "", backend: current, tag: "", from: "", reason });
@@ -133,7 +144,8 @@ function main([mode]) {
       Boolean(latest) && git("rev-parse", `${latest.tag}^{commit}`) === git("rev-parse", "HEAD"),
   });
   const prerelease = String(plan.tag.includes("-beta"));
-  for (const [key, value] of Object.entries({ ...plan, prerelease })) {
+  const version = plan.tag ? updateVersion(plan.tag) : "";
+  for (const [key, value] of Object.entries({ ...plan, prerelease, version })) {
     console.log(`${key}=${value}`);
   }
 }

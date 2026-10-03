@@ -909,13 +909,35 @@ function assertCustomMacIdentity(appPath) {
       `Custom macOS bundle must register only paseo-custom, never the upstream paseo scheme; received ${JSON.stringify(schemes)}`,
     );
   }
-  if (fs.existsSync(path.join(resourcesPath, "app-update.yml"))) {
+  const updateFeedPath = path.join(resourcesPath, "app-update.yml");
+  if (metadata.paseoCustomUpdateVersion) {
+    // The custom-release workflow stamps the builds it publishes and gives them the fork's feed.
+    const updateFeed = fs.readFileSync(updateFeedPath, "utf8");
+    if (!updateFeed.includes("provider: generic") || updateFeed.includes("getpaseo")) {
+      throw new Error(
+        `Published custom macOS bundle must use the fork's update feed:\n${updateFeed}`,
+      );
+    }
+  } else if (fs.existsSync(updateFeedPath)) {
     throw new Error("Custom macOS bundle must not contain an upstream update feed");
   }
-  return true;
+  return metadata;
 }
 
-async function assertCustomAppUpdatesDisabled(page) {
+async function assertCustomAppUpdates(page, enabled) {
+  if (enabled) {
+    // Any outcome of a real check against the fork's feed but "disabled" proves the stamp is read.
+    const check = await page.evaluate(() =>
+      window.paseoDesktop.invoke("check_app_update", { intent: "manual" }),
+    );
+    if (check.errorMessage?.includes("disabled for custom builds")) {
+      throw new Error("Published custom application update checks must be enabled");
+    }
+    console.log(
+      "Packaged custom smoke: independent identity, fork update feed, update IPC enabled",
+    );
+    return;
+  }
   const result = await page.evaluate(async () => {
     const check = await window.paseoDesktop.invoke("check_app_update", { intent: "manual" });
     if (check.hasUpdate || !check.errorMessage?.includes("disabled for custom builds")) {
@@ -937,7 +959,8 @@ async function smokePackagedDesktopApp({
 }) {
   assertExecutable(executablePath, "Packaged app executable");
   assertLinuxDesktopIdentity(appPath);
-  const customMac = assertCustomMacIdentity(appPath);
+  const customMetadata = assertCustomMacIdentity(appPath);
+  const customMac = Boolean(customMetadata);
   await smokeColdCliDaemonStart({ appPath });
 
   const userData = createTempDir("paseo-smoke-user-data-");
@@ -1009,7 +1032,9 @@ async function smokePackagedDesktopApp({
     });
     page = await waitForPackagedAppPage(browser, deadline);
     await assertPackagedRendererLoaded(page, deadline);
-    if (customMac) await assertCustomAppUpdatesDisabled(page);
+    if (customMac) {
+      await assertCustomAppUpdates(page, Boolean(customMetadata.paseoCustomUpdateVersion));
+    }
     console.log("Packaged desktop smoke: real app renderer and preload bridge loaded");
     const status = await waitForRendererStartedDaemon({
       page,

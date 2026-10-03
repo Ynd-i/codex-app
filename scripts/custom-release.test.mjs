@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { newestUpstreamTag, nextBetaTag, planRelease } from "./custom-release.mjs";
+import semver from "semver";
+import { newestUpstreamTag, nextBetaTag, planRelease, updateVersion } from "./custom-release.mjs";
 
 test("the newest upstream tag orders betas before their release and ignores our tags", () => {
   const tags = ["v0.10.3", "v0.11.0-beta.2", "v0.11.0-beta.10", "v0.10.3-v4", "v0.10.3-v5-beta1"];
@@ -43,4 +44,19 @@ test("a beta release needs changes, and stable promotes the latest beta's commit
   assert.equal(stable.tag, "v0.11.0-v1");
   assert.equal(stable.from, "v0.11.0-v1-beta2");
   assert.equal(planRelease({ mode: "stable", current, tags: [...tags, "v0.11.0-v1"] }).tag, "");
+});
+
+test("update versions order betas, then their stable release, then the next release", () => {
+  const tags = [
+    "v0.11.0-v1-beta2",
+    "v0.11.0-v1-beta10",
+    "v0.11.0-v1",
+    "v0.11.0-v2-beta1",
+    "v0.11.1-v1-beta1",
+  ];
+  const versions = tags.map(updateVersion);
+  assert.equal(versions[0], "0.11.0-custom.1.beta.2");
+  assert.equal(versions[2], "0.11.0-custom.1.stable");
+  assert.deepEqual([...versions].sort(semver.compare), versions);
+  assert.ok(semver.gt(versions[0], "0.11.0-beta.3"));
 });

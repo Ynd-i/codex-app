@@ -1,8 +1,10 @@
-# Keep upstream packaging inputs inherited; this fork has no release feed yet.
+# Keep upstream packaging inputs inherited.
 extends: ./electron-builder.yml
 appId: local.paseo.custom.desktop
 productName: Paseo Custom
 executableName: Paseo Custom
+# Only the custom-release workflow adds an update feed, to the builds it publishes; see
+# docs/release.md#custom-releases.
 publish: null
 # Object form replaces the parent protocol array; another array would concatenate it.
 protocols:

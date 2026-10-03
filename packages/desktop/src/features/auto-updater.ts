@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { app } from "electron";
@@ -36,6 +37,34 @@ export {
 let cachedStagingUserIdPromise: Promise<string> | null = null;
 
 const UPDATE_CHANNEL_NOT_PUBLISHED_CODE = "ERR_UPDATER_CHANNEL_FILE_NOT_FOUND";
+
+let cachedCustomUpdateVersion: string | null | undefined;
+
+/**
+ * The update version CI stamps into a published Paseo Custom build as `paseoCustomUpdateVersion`
+ * in the app's package.json. The app version stays upstream's so it keeps matching the bundled
+ * daemon; the updater compares this one instead. Builds without it cannot update in place.
+ */
+function getCustomUpdateVersion(): string | null {
+  if (cachedCustomUpdateVersion !== undefined) return cachedCustomUpdateVersion;
+  cachedCustomUpdateVersion = null;
+  if (!app.isPackaged) return null;
+  try {
+    const pkg = JSON.parse(readFileSync(path.join(app.getAppPath(), "package.json"), "utf8")) as {
+      paseoCustomUpdateVersion?: unknown;
+    };
+    if (typeof pkg.paseoCustomUpdateVersion === "string") {
+      cachedCustomUpdateVersion = pkg.paseoCustomUpdateVersion;
+    }
+  } catch {
+    // Unreadable metadata keeps updates disabled.
+  }
+  return cachedCustomUpdateVersion;
+}
+
+function updateVersionOf(appVersion: string): string {
+  return getCustomUpdateVersion() ?? appVersion;
+}
 
 interface AppUpdateLogSink {
   info(message: string, details: object): void;
@@ -164,6 +193,15 @@ class ElectronAppUpdateRuntime implements AppUpdateRuntime {
     if (this.configured) return;
     this.configured = true;
 
+    const customUpdateVersion = getCustomUpdateVersion();
+    if (customUpdateVersion) {
+      // Reuse electron-updater's own SemVer class so comparisons follow its semantics exactly.
+      const SemVer = autoUpdater.currentVersion.constructor as new (
+        version: string,
+      ) => typeof autoUpdater.currentVersion;
+      Object.assign(autoUpdater, { currentVersion: new SemVer(customUpdateVersion) });
+    }
+
     // electron-updater logs every emitted error before consumers can classify it.
     // Paseo reports genuine check, runtime, and install failures through the
     // callbacks below, so leave internal error logging disabled to avoid both
@@ -225,10 +263,10 @@ class ElectronAppUpdateRuntime implements AppUpdateRuntime {
 const appUpdateService = createAppUpdateService({
   runtime: new ElectronAppUpdateRuntime(),
   isPackaged: () => app.isPackaged,
-  // Only the upstream application may consume its release feed. A renamed build
-  // needs its own publisher and install validation before updates can be enabled.
+  // Only the upstream application may consume its release feed. A published Paseo Custom
+  // build carries its own feed and update version; other renamed builds stay manual.
   unavailableReason: () =>
-    app.getName() === "Paseo"
+    app.getName() === "Paseo" || getCustomUpdateVersion()
       ? null
       : "Automatic updates are disabled for custom builds. Install a new custom build manually.",
   now: () => Date.now(),
@@ -257,14 +295,15 @@ export async function checkForAppUpdate({
   releaseChannel: AppReleaseChannel;
   intent: AppUpdateCheckIntent;
 }): Promise<AppUpdateCheckResult> {
-  updateLifecycleLog.checkStarted({ currentVersion, releaseChannel, intent });
+  const version = updateVersionOf(currentVersion);
+  updateLifecycleLog.checkStarted({ currentVersion: version, releaseChannel, intent });
   const result = await appUpdateService.checkForAppUpdate({
-    currentVersion,
+    currentVersion: version,
     releaseChannel,
     intent,
   });
   updateLifecycleLog.checkCompleted({
-    currentVersion,
+    currentVersion: version,
     targetVersion: result.latestVersion,
     releaseChannel,
     intent,
@@ -286,7 +325,7 @@ export async function downloadAndInstallUpdate(
   onBeforeQuit?: () => Promise<void>,
 ): Promise<AppUpdateInstallResult> {
   return appUpdateService.downloadAndInstallUpdate(
-    { currentVersion, releaseChannel },
+    { currentVersion: updateVersionOf(currentVersion), releaseChannel },
     onBeforeQuit,
   );
 }
@@ -309,5 +348,9 @@ export async function installAppUpdateOnQuit({
     return false;
   }
 
-  return appUpdateService.installUpdateOnQuit({ currentVersion, releaseChannel, signal });
+  return appUpdateService.installUpdateOnQuit({
+    currentVersion: updateVersionOf(currentVersion),
+    releaseChannel,
+    signal,
+  });
 }

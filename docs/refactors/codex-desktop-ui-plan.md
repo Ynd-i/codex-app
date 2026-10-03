@@ -32,6 +32,17 @@ complete; this section replaces that handoff.
   merges it and publishes `v0.11.0-v1-beta1`. As user-requested one-off exceptions,
   built and smoke-tested locally and ignored by the planner, the prereleases
   `v0.11.0-beta.1-v1-beta1` and `v0.11.0-beta.3-v1-beta1` are published by the user.
+- In-app updates (2026-10-03 15:30 UTC): user decision, a free self-signed certificate
+  instead of an Apple Developer ID. Published builds carry `paseoCustomUpdateVersion`,
+  are signed with rcodesign and read the `update-feed` branch; see
+  [in-app updates](../release.md#in-app-updates). Verified locally with a throwaway
+  certificate: build B satisfies build A's designated requirement while an ad-hoc build
+  does not; A downloaded B from a local feed on the beta channel and installed it on quit
+  (bundle identical to B, `codesign --strict --deep` valid); the signed, stamped app
+  passes the packaged smoke; the prepackaged dmg keeps the signature. Pending on the user:
+  create the real certificate and set `CUSTOM_SIGNING_P12` and
+  `CUSTOM_SIGNING_P12_PASSWORD`; until then the release workflow fails at signing. The
+  one-off ad-hoc releases cannot update in place; install the first signed release by hand.
 - Isolated checkout: `/Users/yndi/dev/projects/codex-app/paseo-upstream-4893629`,
   branch `codex/markdown-spacing-paused-20261002`. Its commits `78a5f32`,
   `63071b9`, `d46ba1f`, `e66eb9a`, `ef2e515`, `f06f026`, `29c8053`, `8ba5126`, `e8a72bf`,

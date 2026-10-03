@@ -71,7 +71,7 @@ at `-v1-beta1`. While the branch is on an upstream beta, as it is until upstream
 
 `.github/workflows/custom-release.yml` runs every six hours in `sync` mode. When upstream
 has a stable release newer than the branch, from `main` or a hotfix branch, it merges that
-tag, runs format, lint, typecheck and the server and app unit suites, builds and
+tag, runs format, lint, typecheck and the server and app unit suites, builds, signs and
 smoke-tests the arm64 app, then moves `codex-app` and publishes `v<stable>-v1-beta1` with
 that app as a `.dmg` and a `.zip`. Every build runs on GitHub's macOS runners; nothing
 builds on a schedule except after an upstream merge.
@@ -91,6 +91,36 @@ it. Pull before working locally, because a sync adds merge commits.
 Only the workflow's `GITHUB_TOKEN` creates release tags. Tags created by people still
 start with `v` and would trigger the inherited upstream release, Docker and deploy
 workflows, so the workflow keeps every other workflow disabled in the fork.
+
+#### In-app updates
+
+Published builds update themselves from the `update-feed` branch. The app version stays
+upstream's to match the bundled daemon, so the workflow stamps each build with
+`paseoCustomUpdateVersion` from `updateVersion()` in `scripts/custom-release.mjs`
+(`v0.11.0-v1-beta2` becomes `0.11.0-custom.1.beta.2`) and adds an `app-update.yml` for the
+feed. After publishing, it writes `beta-mac.yml` for every release and `latest-mac.yml`
+for stable ones: the beta release channel in Settings receives betas, the stable channel
+only stable releases. Local builds have neither, so their updates stay disabled.
+
+Squirrel.Mac installs an update only when the new app is signed by the same certificate as
+the running one, and ad-hoc signatures never match. The workflow signs with a self-signed
+certificate from the `CUSTOM_SIGNING_P12` (base64) and `CUSTOM_SIGNING_P12_PASSWORD`
+secrets, using rcodesign because `codesign` refuses an untrusted certificate. Never
+replace the certificate: installed copies would stop updating until reinstalled by hand.
+Create it once with the system LibreSSL, keep the `.p12` and its password somewhere safe,
+then delete the key:
+
+```sh
+/usr/bin/openssl req -x509 -newkey rsa:2048 -nodes -days 7300 -subj "/CN=Paseo Custom" \
+  -addext "keyUsage=critical,digitalSignature" -addext "extendedKeyUsage=critical,codeSigning" \
+  -keyout paseo-custom.key -out paseo-custom.crt
+/usr/bin/openssl pkcs12 -export -inkey paseo-custom.key -in paseo-custom.crt -out paseo-custom.p12
+base64 -i paseo-custom.p12 | gh secret set CUSTOM_SIGNING_P12 -R Ynd-i/codex-app
+gh secret set CUSTOM_SIGNING_P12_PASSWORD -R Ynd-i/codex-app
+```
+
+The first signed release has to be installed by hand over an ad-hoc build, and macOS asks
+again for the permissions the old signature had.
 
 ## Two steps
 
