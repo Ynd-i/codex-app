@@ -226,8 +226,8 @@ function ProjectActions({
   pages,
   menuItems,
   onCreate,
-  onEnter,
-  onLeave,
+  onFocus,
+  onBlur,
 }: {
   viewKey: string;
   revealed: boolean;
@@ -237,16 +237,16 @@ function ProjectActions({
   pages: MenuPageDefinition[];
   menuItems: ReactNode;
   onCreate: () => void;
-  onEnter: () => void;
-  onLeave: () => void;
+  onFocus: () => void;
+  onBlur: () => void;
 }) {
   const { t } = useTranslation();
   return (
     <View style={[styles.projectActions, !revealed && styles.hidden]}>
       <DropdownMenu open={menuOpen} onOpenChange={onMenuOpenChange}>
         <DropdownMenuTrigger
-          onFocus={onEnter}
-          onBlur={onLeave}
+          onFocus={onFocus}
+          onBlur={onBlur}
           disabled={disabled}
           style={styles.actionButton}
           accessibilityRole="button"
@@ -261,8 +261,8 @@ function ProjectActions({
       </DropdownMenu>
       <HeaderToggleButton
         onPress={onCreate}
-        onFocus={onEnter}
-        onBlur={onLeave}
+        onFocus={onFocus}
+        onBlur={onBlur}
         disabled={disabled}
         tooltipLabel={t("desktopChat.newChat")}
         tooltipKeys={[]}
@@ -294,10 +294,15 @@ export const ChatProject = memo(function ChatProject({
   // Merged keeps every chat in Recent, so a project shows only its own row.
   const nested = useChatSectionsStore((state) => state.organize !== "merged");
   const [hovered, setHovered] = useState(false);
+  // Kept apart from hover: New chat moves focus to the composer, and that blur must not hide the
+  // actions while the pointer is still on the row.
+  const [focused, setFocused] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [contextOpen, setContextOpen] = useState(false);
   const enter = useCallback(() => setHovered(true), []);
   const leave = useCallback(() => setHovered(false), []);
+  const focus = useCallback(() => setFocused(true), []);
+  const blur = useCallback(() => setFocused(false), []);
   const toggle = useCallback(
     () => toggleCollapsed(project.viewKey),
     [project.viewKey, toggleCollapsed],
@@ -329,7 +334,7 @@ export const ChatProject = memo(function ChatProject({
     "aria-roledescription": _dragRoleDescription,
     ...dragAttributes
   } = dragHandleProps?.attributes ?? {};
-  const revealed = hovered || menuOpen || contextOpen;
+  const revealed = hovered || focused || menuOpen || contextOpen;
   return (
     <View style={styles.project}>
       <ContextMenu open={contextOpen} onOpenChange={setContextOpen}>
@@ -364,8 +369,8 @@ export const ChatProject = memo(function ChatProject({
               pages={pages}
               menuItems={menuItems}
               onCreate={create}
-              onEnter={enter}
-              onLeave={leave}
+              onFocus={focus}
+              onBlur={blur}
             />
           </View>
         </ContextMenuTrigger>

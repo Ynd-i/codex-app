@@ -309,6 +309,14 @@ export const ar: TranslationResources = {
       title: "وضع",
       searchPlaceholder: "أوضاع البحث...",
       selectWithValue: "حدد وضع الوكيل ({{value}})",
+      desktop: {
+        plan: "وضع الخطة",
+        askForReview: "طلب المراجعة",
+        acceptEdits: "قبول التعديلات",
+        autoPilot: "الطيار الآلي",
+        reviewForMe: "راجع نيابةً عني",
+        fullAccess: "وصول كامل",
+      },
     },
     hints: {
       thinking: "وضع التفكير",

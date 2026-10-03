@@ -305,6 +305,14 @@ export const en = {
       title: "Mode",
       searchPlaceholder: "Search modes...",
       selectWithValue: "Select agent mode ({{value}})",
+      desktop: {
+        plan: "Plan mode",
+        askForReview: "Ask for review",
+        acceptEdits: "Accept edits",
+        autoPilot: "Auto pilot",
+        reviewForMe: "Review for me",
+        fullAccess: "Full access",
+      },
     },
     hints: {
       thinking: "Thinking mode",

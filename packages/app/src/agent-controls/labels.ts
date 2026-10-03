@@ -1,3 +1,4 @@
+import { getIsElectronMac } from "@/constants/platform";
 import { i18n } from "@/i18n/i18next";
 
 interface ControlLabelInput {
@@ -28,7 +29,25 @@ function formatControlLabel(option: ControlLabelInput, splitHyphen: boolean): st
   return sentenceCase(splitCompactLabel(rawLabel, splitHyphen));
 }
 
-export function formatAgentModeLabel(mode: ControlLabelInput): string {
+// The Mac desktop names permission modes the way the Codex and Claude apps do.
+const DESKTOP_MODE_LABEL_KEYS: Record<string, Record<string, string>> = {
+  claude: {
+    plan: "agentControls.mode.desktop.plan",
+    default: "agentControls.mode.desktop.askForReview",
+    acceptEdits: "agentControls.mode.desktop.acceptEdits",
+    auto: "agentControls.mode.desktop.autoPilot",
+    bypassPermissions: "agentControls.mode.desktop.fullAccess",
+  },
+  codex: {
+    auto: "agentControls.mode.desktop.askForReview",
+    "auto-review": "agentControls.mode.desktop.reviewForMe",
+    "full-access": "agentControls.mode.desktop.fullAccess",
+  },
+};
+
+export function formatAgentModeLabel(mode: ControlLabelInput, provider?: string | null): string {
+  const desktopKey = provider ? DESKTOP_MODE_LABEL_KEYS[provider]?.[mode.id] : undefined;
+  if (desktopKey && getIsElectronMac()) return i18n.t(desktopKey);
   return formatControlLabel(mode, mode.label == null);
 }
 

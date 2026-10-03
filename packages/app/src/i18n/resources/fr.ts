@@ -313,6 +313,14 @@ export const fr: TranslationResources = {
       title: "Mode",
       searchPlaceholder: "Modes de recherche...",
       selectWithValue: "Sélectionnez le mode agent ({{value}})",
+      desktop: {
+        plan: "Mode plan",
+        askForReview: "Demander une revue",
+        acceptEdits: "Accepter les modifications",
+        autoPilot: "Pilote automatique",
+        reviewForMe: "Vérifier pour moi",
+        fullAccess: "Accès complet",
+      },
     },
     hints: {
       thinking: "Mode réflexion",

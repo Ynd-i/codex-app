@@ -311,6 +311,14 @@ export const ru: TranslationResources = {
       title: "Режим",
       searchPlaceholder: "Поиск режимов...",
       selectWithValue: "Выбрать режим агента ({{value}})",
+      desktop: {
+        plan: "Режим плана",
+        askForReview: "Запрашивать проверку",
+        acceptEdits: "Принимать правки",
+        autoPilot: "Автопилот",
+        reviewForMe: "Проверять за меня",
+        fullAccess: "Полный доступ",
+      },
     },
     hints: {
       thinking: "Режим рассуждений",

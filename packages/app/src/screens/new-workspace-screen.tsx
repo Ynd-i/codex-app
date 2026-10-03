@@ -342,7 +342,7 @@ function ProjectPickerTrigger({
           accessibilityLabel="Workspace project"
         >
           <View style={styles.badgeIconBox}>
-            {projectViewKey ? (
+            {projectViewKey && (iconDataUri || !getIsElectronMac()) ? (
               <ProjectIconView
                 iconDataUri={iconDataUri}
                 initial={placeholderInitial}
@@ -480,6 +480,8 @@ function ProjectOptionItem({
   active,
   disabled,
   onPress,
+  iconColor,
+  iconSize,
 }: {
   testID: string;
   projectViewKey: string;
@@ -490,29 +492,37 @@ function ProjectOptionItem({
   active: boolean;
   disabled: boolean;
   onPress: () => void;
+  iconColor: string;
+  iconSize: number;
 }) {
+  // Like Codex, the Mac desktop shows a project's favicon or a folder, and only its name.
+  const desktopChat = getIsElectronMac();
   const placeholderLabel = projectIconPlaceholderLabelFromDisplayName(label);
   const placeholderInitial = placeholderLabel.charAt(0).toUpperCase() || "?";
   const leadingSlot = useMemo(
     () => (
       <View style={styles.rowIconBox}>
-        <ProjectIconView
-          iconDataUri={iconDataUri}
-          initial={placeholderInitial}
-          projectViewKey={projectViewKey}
-          size={ICON_SIZE.md}
-          textStyle={styles.projectIconFallbackText}
-        />
+        {desktopChat && !iconDataUri ? (
+          <Folder size={iconSize} color={iconColor} />
+        ) : (
+          <ProjectIconView
+            iconDataUri={iconDataUri}
+            initial={placeholderInitial}
+            projectViewKey={projectViewKey}
+            size={ICON_SIZE.md}
+            textStyle={styles.projectIconFallbackText}
+          />
+        )}
       </View>
     ),
-    [iconDataUri, placeholderInitial, projectViewKey],
+    [desktopChat, iconColor, iconDataUri, iconSize, placeholderInitial, projectViewKey],
   );
 
   return (
     <ComboboxItem
       testID={testID}
       label={label}
-      description={description}
+      description={desktopChat ? undefined : description}
       selected={selected}
       active={active}
       disabled={disabled}
@@ -590,6 +600,7 @@ function NewWorkspaceProjectPickerOption({
   isPending: boolean;
   supportsWorkspaceMultiplicity: boolean;
 }) {
+  const { theme } = useUnistyles();
   const project = projectByOptionId.get(option.id);
   if (!project) return <View key={option.id} />;
   const sourceDirectory =
@@ -610,6 +621,8 @@ function NewWorkspaceProjectPickerOption({
           !project.hosts.some((host) => host.worktreeSupport !== "unsupported"))
       }
       onPress={onPress}
+      iconColor={theme.colors.foregroundMuted}
+      iconSize={theme.iconSize.sm}
     />
   );
 }

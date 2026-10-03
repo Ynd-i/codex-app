@@ -10,7 +10,9 @@ import {
   Pressable,
   Text,
   View,
+  type NativeSyntheticEvent,
   type PressableStateCallbackType,
+  type TargetedEvent,
   type ViewStyle,
   type StyleProp,
 } from "react-native";
@@ -19,6 +21,7 @@ import { Check, CheckCircle } from "lucide-react-native";
 import { AdaptiveTextInput } from "@/components/adaptive-modal-sheet";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { isWeb } from "@/constants/platform";
 import type { Theme } from "@/styles/theme";
 import { MenuDepthProvider, useMenuContext } from "./menu-context";
 import { MENU_ITEM_HEIGHT } from "./menu-geometry";
@@ -308,6 +311,15 @@ export function MenuItem({
     selectItem(onSelect, closeOnSelect);
   }, [isDisabled, selectItem, onSelect, closeOnSelect]);
 
+  // Opening a menu focuses its first item for the keyboard. Only keyboard focus draws the
+  // highlight, so a menu opened with the pointer starts with nothing highlighted.
+  const [keyboardFocused, setKeyboardFocused] = useState(false);
+  const handleFocus = useCallback((event: NativeSyntheticEvent<TargetedEvent>) => {
+    const target = event.nativeEvent.target as unknown as Element;
+    setKeyboardFocused(!isWeb || target.matches(":focus-visible"));
+  }, []);
+  const handleBlur = useCallback(() => setKeyboardFocused(false), []);
+
   // A row that draws a check has to say so as well: a multi-select page is a list of things that
   // are on or off, and the check is the only thing telling a sighted user which. Rows that answer
   // no such question stay plain buttons.
@@ -327,13 +339,13 @@ export function MenuItem({
       isDisabled ? styles.itemDisabled : null,
       muted && !isDisabled ? styles.itemMuted : null,
       hovered && !pressed && !isDisabled ? styles.itemHovered : null,
-      focused && !isDisabled ? styles.itemHovered : null,
+      keyboardFocused && !isDisabled ? styles.itemHovered : null,
       pressed && !isDisabled ? styles.itemPressed : null,
       typeof style === "function"
         ? style({ pressed, hovered, focused, disabled: Boolean(isDisabled) })
         : style,
     ],
-    [active, isDisabled, muted, style],
+    [active, isDisabled, keyboardFocused, muted, style],
   );
 
   const itemTextStyle = useMemo(
@@ -360,6 +372,8 @@ export function MenuItem({
       dataSet={itemDataSet}
       disabled={isDisabled}
       onPress={handleItemPress}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
       style={itemPressableStyle}
     >
       {showSelectedCheck ? (

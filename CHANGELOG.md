@@ -44,6 +44,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- The macOS project picker shows a project's favicon or a folder with only its name, and Claude and Codex permission modes use their apps' names: Ask for review, Review for me, Auto pilot and Full access.
+
 - Added a notification bell beside macOS sidebar search: Priority lists chats waiting on a permission or an error, then finished chats follow by day across every section, with reply previews for chats this window has loaded.
 
 - Added custom macOS sidebar sections: create them from the Recent right-click menu or a chat or project's Section menu, rename, mark read, archive or remove them, and hide Projects. Removing a section returns its chats and projects; sections are stored on this Mac.
@@ -121,6 +123,8 @@ distribution and full migration acceptance remain pending; see the
 - Removed voice mode, dictation, their shortcut entries, and audio diagnostics from the custom macOS desktop, in line with the agreed scope. Other platforms and the voice backend remain available.
 
 ### Fixed
+
+- Kept a macOS project row's actions visible while the pointer stays on it after New chat, and stopped menus opened with the pointer from highlighting their first item; keyboard navigation still highlights the focused item.
 
 - Kept responsive sidebar defaults from becoming permanent visibility overrides when reordering or hiding unrelated items.
 

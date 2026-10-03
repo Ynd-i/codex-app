@@ -202,7 +202,7 @@ function buildModeGroup(source: AgentControlContributionSource): CommandCenterCh
         .map(
           (mode): CommandCenterChoice => ({
             id: mode.id,
-            path: [formatAgentModeLabel(mode)],
+            path: [formatAgentModeLabel(mode, source.provider)],
             icon: source.icons.mode(mode.id),
             selected: mode.id === modes.selectedId,
             testId: `command-center-mode-${source.serverId}:${source.ownerKey}:${mode.id}`,

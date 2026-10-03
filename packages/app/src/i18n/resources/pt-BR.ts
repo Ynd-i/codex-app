@@ -310,6 +310,14 @@ export const ptBR: TranslationResources = {
       title: "Modo",
       searchPlaceholder: "Buscar modos...",
       selectWithValue: "Selecionar modo do agente ({{value}})",
+      desktop: {
+        plan: "Modo plano",
+        askForReview: "Pedir revisão",
+        acceptEdits: "Aceitar edições",
+        autoPilot: "Piloto automático",
+        reviewForMe: "Revisar por mim",
+        fullAccess: "Acesso total",
+      },
     },
     hints: {
       thinking: "Modo de raciocínio",

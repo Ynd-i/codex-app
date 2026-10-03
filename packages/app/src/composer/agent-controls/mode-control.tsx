@@ -103,11 +103,11 @@ export function AgentModeControl({
 
   const Icon = getAgentModeIcon(provider, selectedMode?.id ?? "", providerDefinitions);
   const iconColor = theme.colors.foregroundMuted;
-  const selectedModeLabel = selectedMode ? formatAgentModeLabel(selectedMode) : "";
+  const selectedModeLabel = selectedMode ? formatAgentModeLabel(selectedMode, provider) : "";
 
   const allOptions = useMemo<ComboboxOption[]>(
-    () => modeOptions.map((m) => ({ id: m.id, label: formatAgentModeLabel(m) })),
-    [modeOptions],
+    () => modeOptions.map((m) => ({ id: m.id, label: formatAgentModeLabel(m, provider) })),
+    [modeOptions, provider],
   );
   const options = useMemo<ComboboxOption[]>(() => {
     const q = normalizeSearchQuery(searchQuery);

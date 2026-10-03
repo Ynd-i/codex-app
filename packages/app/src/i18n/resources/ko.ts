@@ -309,6 +309,14 @@ export const ko: TranslationResources = {
       title: "모드",
       searchPlaceholder: "모드 검색...",
       selectWithValue: "에이전트 모드 선택 ({{value}})",
+      desktop: {
+        plan: "계획 모드",
+        askForReview: "검토 요청",
+        acceptEdits: "편집 수락",
+        autoPilot: "자동 조종",
+        reviewForMe: "대신 검토",
+        fullAccess: "전체 액세스",
+      },
     },
     hints: {
       thinking: "사고 모드",
