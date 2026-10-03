@@ -38,6 +38,10 @@ export const ja: TranslationResources = {
     durationDays: "{{count}}日",
     ago: "{{duration}}前",
     lessThanMinute: "1分未満",
+    problemExpired: "ログインは{{ago}}に期限切れになりました。{{remedy}}",
+    problemRejected: "ログインが拒否されました（HTTP {{status}}）。{{remedy}}",
+    problemRunToRefresh: "{{command}} を実行して更新してください。",
+    problemSignInAgain: "もう一度サインインしてください。",
   },
   desktopChat: {
     activity: "アクティビティ",

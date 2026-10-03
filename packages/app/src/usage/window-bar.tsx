@@ -1,7 +1,12 @@
 import { useTranslation } from "react-i18next";
+import { Pin } from "lucide-react-native";
 import { useMemo } from "react";
 import { Pressable, Text, View, type StyleProp, type ViewStyle } from "react-native";
-import { StyleSheet } from "react-native-unistyles";
+import { StyleSheet, withUnistyles } from "react-native-unistyles";
+import { useIsCompactFormFactor } from "@/constants/layout";
+import { isNative } from "@/constants/platform";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { usageCopy } from "./copy";
 import { clampPct, formatDisplayPct, formatPct, formatUsageDeadline } from "./format";
 import { displayPercent, usageWindowRowLabel } from "./model";
 import type { UsageDisplayAs } from "./preferences";
@@ -36,6 +41,7 @@ export function UsageWindowBar({
   pinTestID: string;
 }) {
   const { t } = useTranslation();
+  const isCompact = useIsCompactFormFactor();
   const shownPct = displayPercent(window, displayAs);
   const tone = windowTone(window);
 
@@ -92,6 +98,8 @@ export function UsageWindowBar({
           complement={complement}
           shownPct={shownPct}
           accessibilityValue={accessibilityValue}
+          pinVisible={Boolean(hovered) || isNative || isCompact}
+          pinned={pinned}
         />
       )}
     </Pressable>
@@ -110,6 +118,8 @@ function WindowRowContent({
   complement,
   shownPct,
   accessibilityValue,
+  pinVisible,
+  pinned,
 }: {
   highlight: StyleProp<ViewStyle>;
   label: string;
@@ -122,44 +132,88 @@ function WindowRowContent({
   complement: string | null;
   shownPct: number | null;
   accessibilityValue: { min: number; max: number; now: number; text: string };
+  pinVisible: boolean;
+  pinned: boolean;
 }) {
   const deadlineStyle = isAtRisk ? styles.atRisk : styles.reset;
   return (
     <>
       <View style={highlight} pointerEvents="none" />
-      <View style={styles.labelRow}>
-        <Text style={styles.label(overview)} numberOfLines={1}>
-          {label}
-        </Text>
-        <Text style={styles.value}>
-          {value}
-          {!overview ? (
-            <UsageDeadline at={deadline} kind={deadlineKind} prefix=" · " style={deadlineStyle} />
-          ) : null}
-        </Text>
-      </View>
-      {overview && (complement || deadline) ? (
-        <View style={styles.labelRow}>
-          <View style={styles.deadlineSlot}>
-            <UsageDeadline at={deadline} kind={deadlineKind} style={deadlineStyle} />
+      <View style={styles.contentRow}>
+        <View style={styles.windowContent(overview)}>
+          <View style={styles.labelRow}>
+            <Text style={styles.label(overview)} numberOfLines={1}>
+              {label}
+            </Text>
+            <Text style={styles.value}>
+              {value}
+              {!overview ? (
+                <UsageDeadline
+                  at={deadline}
+                  kind={deadlineKind}
+                  prefix=" · "
+                  style={deadlineStyle}
+                />
+              ) : null}
+            </Text>
           </View>
-          {complement ? <Text style={styles.value}>{complement}</Text> : null}
+          {overview && (complement || deadline) ? (
+            <View style={styles.labelRow}>
+              <View style={styles.deadlineSlot}>
+                <UsageDeadline at={deadline} kind={deadlineKind} style={deadlineStyle} />
+              </View>
+              {complement ? <Text style={styles.value}>{complement}</Text> : null}
+            </View>
+          ) : null}
+          {shownPct != null ? (
+            <UsageMeter
+              percent={shownPct}
+              tone={tone}
+              style={styles.meter(overview)}
+              accessibilityLabel={label}
+              accessibilityValue={accessibilityValue}
+            />
+          ) : null}
         </View>
-      ) : null}
-      {shownPct != null ? (
-        <UsageMeter
-          percent={shownPct}
-          tone={tone}
-          style={styles.meter(overview)}
-          accessibilityLabel={label}
-          accessibilityValue={accessibilityValue}
-        />
-      ) : null}
+        <UsagePinGlyph visible={pinVisible} pinned={pinned} />
+      </View>
     </>
   );
 }
 
+const ThemedPin = withUnistyles(Pin);
+
+function UsagePinGlyph({ visible, pinned }: { visible: boolean; pinned: boolean }) {
+  const iconMapping = useMemo(
+    () => (theme: { colors: { foregroundMuted: string } }) => ({
+      color: theme.colors.foregroundMuted,
+      fill: pinned ? theme.colors.foregroundMuted : "none",
+    }),
+    [pinned],
+  );
+  return (
+    <Tooltip delayDuration={300} enabledOnDesktop enabledOnMobile={false}>
+      <TooltipTrigger asChild>
+        <View
+          style={visible ? styles.pin : styles.pinHidden}
+          testID={pinned ? "usage-pin-glyph-pinned" : "usage-pin-glyph-unpinned"}
+        >
+          <ThemedPin size={12} uniProps={iconMapping} />
+        </View>
+      </TooltipTrigger>
+      <TooltipContent side="top">
+        <Text style={styles.tooltipText}>{usageCopy.pin}</Text>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 const styles = StyleSheet.create((theme) => ({
+  contentRow: { flexDirection: "row", alignItems: "center", gap: theme.spacing[2] },
+  windowContent: (overview: boolean) => ({ flex: 1, gap: overview ? 8 : 3 }),
+  pin: { width: 12, alignItems: "center" },
+  pinHidden: { width: 12, alignItems: "center", opacity: 0 },
+  tooltipText: { color: theme.colors.popoverForeground, fontSize: theme.fontSize.sm },
   row: (overview: boolean) => ({
     gap: overview ? 8 : 3,
     // The highlight bleeds into the card padding so the label and bar stay on the card's rail.

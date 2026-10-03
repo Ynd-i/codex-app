@@ -38,6 +38,10 @@ export const ar: TranslationResources = {
     durationDays: "{{count}} ي",
     ago: "قبل {{duration}}",
     lessThanMinute: "أقل من دقيقة",
+    problemExpired: "انتهت صلاحية تسجيل الدخول {{ago}}. {{remedy}}",
+    problemRejected: "تم رفض تسجيل الدخول (HTTP {{status}}). {{remedy}}",
+    problemRunToRefresh: "شغّل {{command}} لتحديثه.",
+    problemSignInAgain: "سجّل الدخول مرة أخرى.",
   },
   desktopChat: {
     activity: "النشاط",

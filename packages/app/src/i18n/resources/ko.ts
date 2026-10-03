@@ -38,6 +38,10 @@ export const ko: TranslationResources = {
     durationDays: "{{count}}일",
     ago: "{{duration}} 전",
     lessThanMinute: "1분 미만",
+    problemExpired: "로그인이 {{ago}}에 만료되었습니다. {{remedy}}",
+    problemRejected: "로그인이 거부되었습니다(HTTP {{status}}). {{remedy}}",
+    problemRunToRefresh: "{{command}}을(를) 실행해 갱신하세요.",
+    problemSignInAgain: "다시 로그인하세요.",
   },
   desktopChat: {
     activity: "활동",

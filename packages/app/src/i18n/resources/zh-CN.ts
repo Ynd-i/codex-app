@@ -38,6 +38,10 @@ export const zhCN: TranslationResources = {
     durationDays: "{{count}}天",
     ago: "{{duration}}前",
     lessThanMinute: "不到1分钟",
+    problemExpired: "登录已于{{ago}}过期。{{remedy}}",
+    problemRejected: "登录被拒绝（HTTP {{status}}）。{{remedy}}",
+    problemRunToRefresh: "运行 {{command}} 以刷新登录。",
+    problemSignInAgain: "请重新登录。",
   },
   desktopChat: {
     activity: "活动",

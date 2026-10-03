@@ -1,6 +1,7 @@
 import type { TFunction } from "i18next";
 import { i18n } from "@/i18n/i18next";
 import { usageCopy } from "./copy";
+import { formatUsageTimeAgo } from "./format";
 import type { UsageDisplayAs } from "./preferences";
 import type { UsageReportEntry, UsageView, UsageWindow } from "./types";
 
@@ -43,15 +44,8 @@ export function formatUsageFreshness(
   fetchedAt?: string,
 ): string {
   if (compactTimeAgo === "now") return t("usage.updatedNow");
-  const match = /^(\d+)([mhd])$/.exec(compactTimeAgo);
-  let time = compactTimeAgo;
-  if (match) {
-    let key: "usage.durationMinutes" | "usage.durationHours" | "usage.durationDays" =
-      "usage.durationMinutes";
-    if (match[2] === "h") key = "usage.durationHours";
-    if (match[2] === "d") key = "usage.durationDays";
-    time = t("usage.ago", { duration: t(key, { count: Number(match[1]) }) });
-  } else if (fetchedAt && Number.isFinite(new Date(fetchedAt).getTime())) {
+  let time = formatUsageTimeAgo(compactTimeAgo, t);
+  if (time === compactTimeAgo && fetchedAt && Number.isFinite(new Date(fetchedAt).getTime())) {
     time = new Date(fetchedAt).toLocaleDateString(i18n.resolvedLanguage, {
       month: "short",
       day: "numeric",

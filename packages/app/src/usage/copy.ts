@@ -1,7 +1,21 @@
+import type { UsageProblem } from "@getpaseo/protocol/messages";
 import { i18n } from "@/i18n/i18next";
+import { formatCompactTimeAgo } from "@/utils/time";
+import { formatUsageTimeAgo } from "./format";
 
 // Preserve the sidebar copy contract while resolving the current language at render time.
 export const usageCopy = {
+  problem: (problem: UsageProblem, now: Date = new Date()): string => {
+    if (problem.kind === "no_quota") return problem.detail;
+    const remedy = problem.refreshedBy
+      ? i18n.t("usage.problemRunToRefresh", { command: problem.refreshedBy })
+      : i18n.t("usage.problemSignInAgain");
+    if (problem.kind === "rejected") {
+      return i18n.t("usage.problemRejected", { status: problem.status, remedy });
+    }
+    const ago = formatUsageTimeAgo(formatCompactTimeAgo(new Date(problem.expiresAt), now));
+    return i18n.t("usage.problemExpired", { ago, remedy });
+  },
   get options() {
     return i18n.t("usage.options");
   },

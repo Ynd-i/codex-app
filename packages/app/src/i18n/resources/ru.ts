@@ -38,6 +38,10 @@ export const ru: TranslationResources = {
     durationDays: "{{count}} дн",
     ago: "{{duration}} назад",
     lessThanMinute: "менее 1 мин",
+    problemExpired: "Срок входа истёк {{ago}}. {{remedy}}",
+    problemRejected: "Вход отклонён (HTTP {{status}}). {{remedy}}",
+    problemRunToRefresh: "Выполните {{command}}, чтобы обновить его.",
+    problemSignInAgain: "Войдите снова.",
   },
   desktopChat: {
     activity: "Действия",

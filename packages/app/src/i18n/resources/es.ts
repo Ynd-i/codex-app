@@ -38,6 +38,10 @@ export const es: TranslationResources = {
     durationDays: "{{count}} d",
     ago: "hace {{duration}}",
     lessThanMinute: "menos de 1 min",
+    problemExpired: "El inicio de sesión caducó {{ago}}. {{remedy}}",
+    problemRejected: "Inicio de sesión rechazado (HTTP {{status}}). {{remedy}}",
+    problemRunToRefresh: "Ejecuta {{command}} para actualizarlo.",
+    problemSignInAgain: "Vuelve a iniciar sesión.",
   },
   desktopChat: {
     activity: "Actividad",

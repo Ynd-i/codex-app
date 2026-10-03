@@ -38,6 +38,10 @@ export const fr: TranslationResources = {
     durationDays: "{{count}} j",
     ago: "il y a {{duration}}",
     lessThanMinute: "moins de 1 min",
+    problemExpired: "La connexion a expiré {{ago}}. {{remedy}}",
+    problemRejected: "Connexion refusée (HTTP {{status}}). {{remedy}}",
+    problemRunToRefresh: "Exécutez {{command}} pour l’actualiser.",
+    problemSignInAgain: "Reconnectez-vous.",
   },
   desktopChat: {
     activity: "Activité",

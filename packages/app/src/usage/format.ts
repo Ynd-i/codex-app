@@ -49,6 +49,18 @@ export function formatUsageDeadline(
   return t(kind === "reset" ? "usage.resetsIn" : "usage.runsOutIn", { duration });
 }
 
+/** A compact relative time as a phrase: "3h" → "3h ago". A date label stays as it is. */
+export function formatUsageTimeAgo(compactTimeAgo: string, t: TFunction = i18n.t): string {
+  if (compactTimeAgo === "now") return t("usage.ago", { duration: t("usage.lessThanMinute") });
+  const match = /^(\d+)([mhd])$/.exec(compactTimeAgo);
+  if (!match) return compactTimeAgo;
+  let key: "usage.durationMinutes" | "usage.durationHours" | "usage.durationDays" =
+    "usage.durationMinutes";
+  if (match[2] === "h") key = "usage.durationHours";
+  if (match[2] === "d") key = "usage.durationDays";
+  return t("usage.ago", { duration: t(key, { count: Number(match[1]) }) });
+}
+
 export function formatAmount(
   value: number,
   unit: UsageBalanceUnit,

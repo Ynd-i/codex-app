@@ -16,6 +16,7 @@ import { useIsCompactFormFactor } from "@/constants/layout";
 import { getIsElectronMac, isNative } from "@/constants/platform";
 import { useCompactTimeAgo } from "@/hooks/use-time-ago";
 import { UsageBalanceBar } from "./balance-bar";
+import { usageCopy } from "./copy";
 import type { UsageDisplay } from "./display";
 import { formatUsageFreshness, type UsageRefresh } from "./model";
 import { useReportRefresh } from "./queries";
@@ -26,6 +27,19 @@ import { UsageWindowBar } from "./window-bar";
 function statusText(report: UsageReport, t: TFunction): string | null {
   if (report.status === "available") return null;
   return report.status === "error" ? t("common.errors.error") : t("usage.unavailable");
+}
+
+function reportContent(report: UsageReport) {
+  if (report.status === "available")
+    return {
+      windows: report.windows,
+      balances: report.balances ?? [],
+      details: report.details ?? [],
+      message: undefined,
+    };
+  const message =
+    report.status === "unavailable" ? usageCopy.problem(report.problem) : report.error;
+  return { windows: [], balances: [], details: [], message };
 }
 
 const ThemedRotateCw = withUnistyles(RotateCw);
@@ -51,8 +65,7 @@ export function UsageCard({
   const usage = entry.report;
   const status = statusText(usage, t);
   const footer = entry.account.label ?? null;
-  const balances = usage.balances ?? [];
-  const details = usage.details ?? [];
+  const { windows, balances, details, message } = reportContent(usage);
 
   const containerStyle = useMemo(
     () => [
@@ -78,7 +91,9 @@ export function UsageCard({
         <Text style={styles.name(overview)} numberOfLines={1}>
           {entry.sourceLabel}
         </Text>
-        {usage.planLabel ? <StatusBadge label={usage.planLabel} variant="muted" size="xs" /> : null}
+        {usage.status === "available" && usage.planLabel ? (
+          <StatusBadge label={usage.planLabel} variant="muted" size="xs" />
+        ) : null}
         <View style={styles.headerSpacer} />
         {status ? (
           <View style={styles.statusRow}>
@@ -95,15 +110,15 @@ export function UsageCard({
         />
       </View>
 
-      {usage.error ? (
+      {message ? (
         <Text style={styles.error} numberOfLines={3}>
-          {usage.error}
+          {message}
         </Text>
       ) : null}
 
-      {usage.windows.length > 0 || balances.length > 0 ? (
+      {windows.length > 0 || balances.length > 0 ? (
         <View style={styles.bars}>
-          {usage.windows.map((window) => (
+          {windows.map((window) => (
             <PinnableWindowBar
               key={window.id}
               entry={entry}

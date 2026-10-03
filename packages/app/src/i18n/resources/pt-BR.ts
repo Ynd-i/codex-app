@@ -38,6 +38,10 @@ export const ptBR: TranslationResources = {
     durationDays: "{{count}} d",
     ago: "há {{duration}}",
     lessThanMinute: "menos de 1 min",
+    problemExpired: "O login expirou {{ago}}. {{remedy}}",
+    problemRejected: "Login recusado (HTTP {{status}}). {{remedy}}",
+    problemRunToRefresh: "Execute {{command}} para atualizá-lo.",
+    problemSignInAgain: "Entre novamente.",
   },
   desktopChat: {
     activity: "Atividade",

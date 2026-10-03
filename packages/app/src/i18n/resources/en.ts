@@ -35,6 +35,10 @@ export const en = {
     durationDays: "{{count}}d",
     ago: "{{duration}} ago",
     lessThanMinute: "<1m",
+    problemExpired: "Login expired {{ago}}. {{remedy}}",
+    problemRejected: "Login rejected (HTTP {{status}}). {{remedy}}",
+    problemRunToRefresh: "Run {{command}} to refresh it.",
+    problemSignInAgain: "Sign in again.",
   },
   desktopChat: {
     activity: "Activity",
