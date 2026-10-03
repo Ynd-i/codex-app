@@ -2,7 +2,7 @@
 
 ## Unreleased — custom desktop
 
-These changes are available on `codex/desktop-ui` in local development. Packaged
+These changes are available on `codex-app` in local development. Packaged
 distribution and full migration acceptance remain pending; see the
 [migration plan](docs/refactors/codex-desktop-ui-plan.md).
 

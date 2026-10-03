@@ -24,7 +24,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  BRANCH: codex/desktop-ui
+  BRANCH: codex-app
   UPSTREAM: https://github.com/getpaseo/paseo.git
 
 jobs:

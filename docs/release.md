@@ -56,7 +56,7 @@ in the [migration plan](refactors/codex-desktop-ui-plan.md).
 ### Custom releases
 
 The `Ynd-i/codex-app` fork publishes Paseo Custom as GitHub prereleases from
-`codex/desktop-ui`. A tag is `v<upstream>-v<N>`: `<upstream>` is the newest upstream
+`codex-app`. A tag is `v<upstream>-v<N>`: `<upstream>` is the newest upstream
 Paseo release merged into the branch, and `N` counts our releases on that backend,
 starting at 1. Follow upstream `main` releases only; a stable hotfix such as `v0.10.3`
 cut on a release branch is not on `main`. `scripts/custom-release.mjs` computes the plan.
@@ -64,7 +64,7 @@ cut on a release branch is not on `main`. `scripts/custom-release.mjs` computes 
 `.github/workflows/custom-release.yml` runs every six hours in `sync` mode: when
 upstream `main` has a newer release tag, it merges that tag, runs format, lint,
 typecheck and the server and app unit suites, builds and smoke-tests the arm64 bundle,
-then moves `codex/desktop-ui` and publishes `v<upstream>-v1`. Run it in `ui` mode after
+then moves `codex-app` and publishes `v<upstream>-v1`. Run it in `ui` mode after
 pushing UI changes to publish the next `-v<N>` on the current backend:
 
 ```sh
