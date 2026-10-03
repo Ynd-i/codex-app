@@ -1530,7 +1530,9 @@ function NewWorkspaceProjectControl({
     [project.onAddProject],
   );
   const { selectedProject } = project;
-  const showClear = project.canClear && hovered && !isPending && selectedProject !== null;
+  // Chat folders are only hidden from the Mac desktop sidebar.
+  const showClear =
+    project.canClear && getIsElectronMac() && hovered && !isPending && selectedProject !== null;
   return (
     <View style={style} onPointerEnter={handlePointerEnter} onPointerLeave={handlePointerLeave}>
       <ProjectPickerTrigger

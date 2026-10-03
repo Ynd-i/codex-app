@@ -1344,13 +1344,17 @@ removes the project, and every such chat gets its own folder,
 - The removed state is a third project selection, `none`, kept like a manual choice
   until the route changes. A New chat opened from a chat-folder chat starts in it.
 - Chat folders are recognised by path (`packages/app/src/projects/chat-folder.ts`).
-  They are hidden from the sidebar's Projects and the picker, and the titlebar
-  shows no project folder for them; their chats stay in Recent. Settings › Projects
-  and chat search still list them.
+  They are hidden from the sidebar's Projects and the picker, and the titlebar and
+  chat search show no project for them; their chats stay in Recent. Settings ›
+  Projects still lists one per chat, which is where they can be removed.
+- The remove button sits inside the chip's trigger. React Native Web stops the
+  click at the inner Pressable, so it never opens the picker.
+- The button shows only on the Mac desktop, the one sidebar that hides chat
+  folders.
 
 Validation: unit tests for the path helper, selection state, sidebar model, server
-`createParents` and protocol parsing; app typecheck and lint. The packaged UI was
-not exercised before release.
+`createParents` and protocol parsing; a browser test for the nested trigger
+button; app typecheck and lint. The packaged UI was not exercised before release.
 
 ### Sidebar motion and selection — 2026-10-01
 

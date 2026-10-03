@@ -31,6 +31,7 @@ import { useIsCompactFormFactor } from "@/constants/layout";
 import { getIsElectronMac, isNative, isWeb } from "@/constants/platform";
 import { useAggregatedAgents, type AggregatedAgent } from "@/hooks/use-aggregated-agents";
 import { useProjects } from "@/hooks/use-projects";
+import { isChatFolderPath } from "@/projects/chat-folder";
 import {
   OverlayLayerProvider,
   useGlobalWebOverlayLayer,
@@ -146,7 +147,11 @@ function useBuiltInRows(
       for (const host of project.hosts) {
         for (const workspace of host.workspaces) {
           if (workspace.archivingAt) continue;
-          projectNameByWorkspace.set(`${host.serverId}:${workspace.id}`, project.projectName);
+          // A chat without a project shows no project label, not its chat folder's name.
+          projectNameByWorkspace.set(
+            `${host.serverId}:${workspace.id}`,
+            isChatFolderPath(host.repoRoot) ? "" : project.projectName,
+          );
           allWorkspaces.push({
             kind: "workspace",
             id: `workspace:${host.serverId}:${workspace.id}`,
