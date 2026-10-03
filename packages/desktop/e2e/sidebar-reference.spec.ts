@@ -439,7 +439,12 @@ test("macOS project and chat menus carry the reference's entries", async ({ page
 
     await chatRows.first().hover();
     await page.getByTestId(`desktop-chat-menu-${chatKey}`).first().click();
-    await page.getByRole("menuitem", { name: "Fork" }).click();
+    const fork = page.getByRole("menuitem", { name: "Fork", exact: true });
+    // The row menu keeps the reference's order; the titlebar order is checked in chat-menu-copy.
+    await expect(
+      page.locator('[data-menu-surface="true"]').filter({ has: fork }).getByRole("menuitem"),
+    ).toHaveText(["Rename", "Pin to top", "Mark as read", "Section", "Fork", "Archive"]);
+    await fork.click();
     await page.waitForTimeout(300);
     await page.screenshot({ path: testInfo.outputPath("chat-fork-menu.png") });
     await page.getByTestId("desktop-chat-fork-chat").click();

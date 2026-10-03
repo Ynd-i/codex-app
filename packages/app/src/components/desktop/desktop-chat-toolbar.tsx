@@ -95,7 +95,7 @@ function ChatToolbarMenu({
           )}
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" width={220} pages={pages}>
-          <DesktopChatMenuItems {...menuProps} copyPage="copy" forkPage={forkPage?.id} />
+          <DesktopChatMenuItems {...menuProps} toolbar copyPage="copy" forkPage={forkPage?.id} />
         </DropdownMenuContent>
       </DropdownMenu>
       {renameModal}

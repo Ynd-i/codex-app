@@ -46,6 +46,10 @@ test("macOS chat Copy menu uses the current agent and disables unavailable resum
     await page.screenshot({ path: testInfo.outputPath("chat-copy-menu-baseline.png") });
     const copy = page.getByRole("menuitem", { name: "Copy", exact: true });
     await expect(copy).toBeVisible();
+    // The titlebar menu keeps the reference's order: Archive third, then Copy and Fork.
+    await expect(
+      page.locator('[data-menu-surface="true"]').filter({ has: copy }).getByRole("menuitem"),
+    ).toHaveText(["Rename", "Pin to top", "Archive", "Copy", "Fork", "Mark as unread"]);
     await expect(page.locator('[data-menu-surface="true"]').filter({ has: copy })).toHaveCSS(
       "opacity",
       "1",

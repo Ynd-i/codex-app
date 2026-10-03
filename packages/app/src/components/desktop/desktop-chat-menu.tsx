@@ -58,9 +58,13 @@ const sectionLeading = <SectionIcon size={16} uniProps={mutedIcon} />;
 const forkLeading = <ForkIcon size={16} uniProps={mutedIcon} />;
 const windowLeading = <WindowIcon size={16} uniProps={mutedIcon} />;
 
-/** The chat menu in the reference's order; each optional entry appears when its prop is given. */
+/**
+ * The chat menu in the reference's order; each optional entry appears when its prop is given.
+ * The titlebar menu (`toolbar`) puts Archive third and read state last, as the reference does.
+ */
 export function DesktopChatMenuItems({
   context,
+  toolbar,
   pinned,
   unread,
   disabled,
@@ -74,6 +78,7 @@ export function DesktopChatMenuItems({
   forkPage,
 }: {
   context?: boolean;
+  toolbar?: boolean;
   pinned: boolean;
   unread: boolean;
   disabled: boolean;
@@ -90,6 +95,21 @@ export function DesktopChatMenuItems({
 }) {
   const { t } = useTranslation();
   const Item = context ? ContextMenuItem : DropdownMenuItem;
+  const readItem = (
+    <Item onSelect={onRead} disabled={disabled} leading={unread ? readLeading : unreadLeading}>
+      {t(unread ? "desktopChat.markRead" : "desktopChat.markUnread")}
+    </Item>
+  );
+  const archiveItem = (
+    <Item
+      onSelect={onArchive}
+      disabled={disabled}
+      destructive={!getIsElectronMac()}
+      leading={archiveLeading}
+    >
+      {t("agentList.archiveSheet.archive")}
+    </Item>
+  );
   return (
     <>
       <Item onSelect={onRename} disabled={disabled} leading={renameLeading}>
@@ -98,27 +118,25 @@ export function DesktopChatMenuItems({
       <Item onSelect={onPin} disabled={disabled} leading={pinned ? unpinLeading : pinLeading}>
         {t(pinned ? "sidebar.workspace.actions.unpin" : "sidebar.workspace.actions.pin")}
       </Item>
-      <Item onSelect={onRead} disabled={disabled} leading={unread ? readLeading : unreadLeading}>
-        {t(unread ? "desktopChat.markRead" : "desktopChat.markUnread")}
-      </Item>
+      {toolbar ? archiveItem : readItem}
       {sectionPage ? (
         <DropdownMenuSubTrigger id={sectionPage} leading={sectionLeading} disabled={disabled}>
           {t("desktopChat.sections.section")}
         </DropdownMenuSubTrigger>
-      ) : null}
-      {forkPage ? (
-        <>
-          <DropdownMenuSeparator />
-          <DropdownMenuSubTrigger id={forkPage} leading={forkLeading} disabled={disabled}>
-            {t("desktopChat.fork")}
-          </DropdownMenuSubTrigger>
-        </>
       ) : null}
       {copyPage ? (
         <>
           <DropdownMenuSeparator />
           <DropdownMenuSubTrigger id={copyPage} leading={copyLeading} disabled={disabled}>
             {t("common.actions.copy")}
+          </DropdownMenuSubTrigger>
+        </>
+      ) : null}
+      {forkPage ? (
+        <>
+          <DropdownMenuSeparator />
+          <DropdownMenuSubTrigger id={forkPage} leading={forkLeading} disabled={disabled}>
+            {t("desktopChat.fork")}
           </DropdownMenuSubTrigger>
         </>
       ) : null}
@@ -131,14 +149,7 @@ export function DesktopChatMenuItems({
         </>
       ) : null}
       <DropdownMenuSeparator />
-      <Item
-        onSelect={onArchive}
-        disabled={disabled}
-        destructive={!getIsElectronMac()}
-        leading={archiveLeading}
-      >
-        {t("agentList.archiveSheet.archive")}
-      </Item>
+      {toolbar ? readItem : archiveItem}
     </>
   );
 }
