@@ -1,0 +1,178 @@
+# Paseo Custom releases for the Ynd-i/codex-app fork. See docs/release.md#custom-releases.
+# sync (scheduled): merge the newest upstream Paseo release, test, publish v<upstream>-v1.
+# ui (manual): test and publish the current branch as the next v<upstream>-v<N>.
+name: Custom release
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "sync: merge a newer upstream release; ui: release the current branch"
+        type: choice
+        options: [sync, ui]
+        default: sync
+
+permissions:
+  contents: write
+  issues: write
+  actions: write
+
+concurrency:
+  group: custom-release
+  cancel-in-progress: false
+
+env:
+  BRANCH: codex/desktop-ui
+  UPSTREAM: https://github.com/getpaseo/paseo.git
+
+jobs:
+  plan:
+    if: github.repository == 'Ynd-i/codex-app'
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.plan.outputs.tag }}
+      backend: ${{ steps.plan.outputs.backend }}
+      merge: ${{ steps.plan.outputs.merge }}
+      prerelease: ${{ steps.plan.outputs.prerelease }}
+      sha: ${{ steps.commit.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BRANCH }}
+          fetch-depth: 0
+
+      - name: Fetch upstream releases
+        run: git fetch --no-tags "$UPSTREAM" "+refs/heads/main:refs/remotes/upstream/main" "+refs/tags/v*:refs/tags/v*"
+
+      - name: Plan
+        id: plan
+        run: node scripts/custom-release.mjs "${{ inputs.mode || 'sync' }}" upstream/main | tee -a "$GITHUB_OUTPUT"
+
+      - name: Merge upstream release
+        if: steps.plan.outputs.merge != ''
+        env:
+          MERGE: ${{ steps.plan.outputs.merge }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if ! git merge --no-edit -m "chore: merge upstream Paseo $MERGE" "refs/tags/$MERGE"; then
+            git diff --name-only --diff-filter=U | sed 's/^/- /' > conflicts.md
+            { echo "Upstream $MERGE conflicts with $BRANCH; merge it by hand:"; cat conflicts.md; } >> "$GITHUB_STEP_SUMMARY"
+            git merge --abort
+            exit 1
+          fi
+          # Tests and the build run on this commit; the branch moves only after they pass.
+          git push --force origin "HEAD:refs/heads/custom-release/$MERGE"
+
+      - name: Commit to release
+        id: commit
+        if: steps.plan.outputs.tag != ''
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  test:
+    needs: plan
+    if: needs.plan.outputs.tag != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: node scripts/npm-retry.mjs ci
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run build:server
+      - run: npm run typecheck
+      - run: node --test scripts/custom-release.test.mjs
+      - run: npm run test:unit --workspace=@getpaseo/server
+      - run: npm run build:app-deps
+      - run: npm run test --workspace=@getpaseo/app
+
+  build:
+    needs: plan
+    if: needs.plan.outputs.tag != ''
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: node scripts/npm-retry.mjs ci
+      - name: Build and smoke-test Paseo Custom
+        env:
+          PASEO_DESKTOP_SMOKE: "1"
+          PASEO_DESKTOP_EXPECT_CUSTOM: "1"
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npm run build:desktop:custom -- --arm64 --dir
+      - name: Zip the smoke-tested bundle
+        env:
+          TAG: ${{ needs.plan.outputs.tag }}
+        run: |
+          ditto -c -k --keepParent "packages/desktop/release-custom/mac-arm64/Paseo Custom.app" "Paseo-Custom-$TAG-arm64.zip"
+          shasum -a 256 "Paseo-Custom-$TAG-arm64.zip" > "Paseo-Custom-$TAG-arm64.zip.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: paseo-custom
+          path: Paseo-Custom-*-arm64.zip*
+
+  publish:
+    needs: [plan, test, build]
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ needs.plan.outputs.tag }}
+      SHA: ${{ needs.plan.outputs.sha }}
+      BACKEND: ${{ needs.plan.outputs.backend }}
+      MERGE: ${{ needs.plan.outputs.merge }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Advance the branch to the merged upstream release
+        if: env.MERGE != ''
+        run: |
+          git push origin "$SHA:refs/heads/$BRANCH"
+          git push origin --delete "custom-release/$MERGE"
+      - uses: actions/download-artifact@v4
+        with:
+          name: paseo-custom
+      - name: Publish the GitHub release
+        run: |
+          zip="Paseo-Custom-$TAG-arm64.zip"
+          cat > notes.md <<EOF
+          Paseo Custom $TAG: the Codex-style macOS desktop on upstream Paseo [$BACKEND](https://github.com/getpaseo/paseo/releases/tag/$BACKEND).
+
+          - Apple Silicon only. Ad-hoc signed and not notarized: on first launch, right-click the app and choose Open, or run \`xattr -dr com.apple.quarantine "/Applications/Paseo Custom.app"\`.
+          - Runs its own daemon and home; it does not replace or update the official Paseo app.
+          - Source: $SHA. SHA-256: \`$(cut -d' ' -f1 "$zip.sha256")\`
+          EOF
+          flags=()
+          if [ "${{ needs.plan.outputs.prerelease }}" = "true" ]; then flags+=(--prerelease); fi
+          gh release create "$TAG" "$zip" "$zip.sha256" --target "$SHA" --title "Paseo Custom $TAG" --notes-file notes.md "${flags[@]}"
+      - name: Keep inherited upstream workflows disabled
+        run: |
+          gh workflow list --all --json path,state \
+            --jq '.[] | select(.state == "active" and .path != ".github/workflows/custom-release.yml") | .path' |
+            while read -r path; do gh workflow disable "$(basename "$path")"; done
+
+  report-failure:
+    needs: [plan, test, build, publish]
+    if: failure()
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Open an issue for the failed release
+        run: |
+          title="Custom release ${{ needs.plan.outputs.tag || 'planning' }} failed"
+          if [ -z "$(gh issue list -R "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number --jq '.[].number')" ]; then
+            gh issue create -R "$GITHUB_REPOSITORY" --title "$title" --body "Nothing was published. The run summary lists any upstream merge conflicts. Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          fi

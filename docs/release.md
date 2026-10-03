@@ -53,6 +53,31 @@ This checks the local bundle, isolated renderer/daemon/CLI startup and update IP
 Signing, notarization, real-provider runs and remote pairing have separate acceptance
 in the [migration plan](refactors/codex-desktop-ui-plan.md).
 
+### Custom releases
+
+The `Ynd-i/codex-app` fork publishes Paseo Custom as GitHub prereleases from
+`codex/desktop-ui`. A tag is `v<upstream>-v<N>`: `<upstream>` is the newest upstream
+Paseo release merged into the branch, and `N` counts our releases on that backend,
+starting at 1. Follow upstream `main` releases only; a stable hotfix such as `v0.10.3`
+cut on a release branch is not on `main`. `scripts/custom-release.mjs` computes the plan.
+
+`.github/workflows/custom-release.yml` runs every six hours in `sync` mode: when
+upstream `main` has a newer release tag, it merges that tag, runs format, lint,
+typecheck and the server and app unit suites, builds and smoke-tests the arm64 bundle,
+then moves `codex/desktop-ui` and publishes `v<upstream>-v1`. Run it in `ui` mode after
+pushing UI changes to publish the next `-v<N>` on the current backend:
+
+```sh
+gh workflow run custom-release.yml -R Ynd-i/codex-app -f mode=ui
+```
+
+A merge conflict or failure publishes nothing and opens an issue; the run summary
+lists conflicted files. Pull before working locally, because a sync adds merge commits.
+
+Only the workflow's `GITHUB_TOKEN` creates release tags. Tags created by people still
+start with `v` and would trigger the inherited upstream release, Docker and deploy
+workflows, so the workflow keeps every other workflow disabled in the fork.
+
 ## Two steps
 
 A release has exactly two steps. The agent does the first, the user authorizes the second.
