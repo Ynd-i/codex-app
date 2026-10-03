@@ -72,7 +72,9 @@ at `-v1-beta1`. While the branch is on an upstream beta, as it is until upstream
 `.github/workflows/custom-release.yml` runs every six hours in `sync` mode. When upstream
 has a stable release newer than the branch, from `main` or a hotfix branch, it merges that
 tag, runs format, lint, typecheck and the server and app unit suites, builds and
-smoke-tests the arm64 bundle, then moves `codex-app` and publishes `v<stable>-v1-beta1`.
+smoke-tests the arm64 app, then moves `codex-app` and publishes `v<stable>-v1-beta1` with
+that app as a `.dmg` and a `.zip`. Every build runs on GitHub's macOS runners; nothing
+builds on a schedule except after an upstream merge.
 After pushing UI changes, publish the next beta; promote the latest beta's commit to
 stable once it has proven itself:
 

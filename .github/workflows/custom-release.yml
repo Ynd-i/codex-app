@@ -118,16 +118,23 @@ jobs:
           PASEO_DESKTOP_EXPECT_CUSTOM: "1"
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
         run: npm run build:desktop:custom -- --arm64 --dir
-      - name: Zip the smoke-tested bundle
+      # Both downloads carry the smoke-tested app as built, without packaging it again.
+      - name: Package the smoke-tested app as a dmg and a zip
         env:
           TAG: ${{ needs.plan.outputs.tag }}
         run: |
-          ditto -c -k --keepParent "packages/desktop/release-custom/mac-arm64/Paseo Custom.app" "Paseo-Custom-$TAG-arm64.zip"
-          shasum -a 256 "Paseo-Custom-$TAG-arm64.zip" > "Paseo-Custom-$TAG-arm64.zip.sha256"
+          app="packages/desktop/release-custom/mac-arm64/Paseo Custom.app"
+          (cd packages/desktop && npx electron-builder --config electron-builder.custom.yml \
+            --prepackaged "release-custom/mac-arm64/Paseo Custom.app" --mac dmg --arm64 --publish never)
+          mv packages/desktop/release-custom/Paseo-Custom-*-arm64.dmg "Paseo-Custom-$TAG-arm64.dmg"
+          ditto -c -k --keepParent "$app" "Paseo-Custom-$TAG-arm64.zip"
+          for file in "Paseo-Custom-$TAG-arm64.dmg" "Paseo-Custom-$TAG-arm64.zip"; do
+            shasum -a 256 "$file" > "$file.sha256"
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: paseo-custom
-          path: Paseo-Custom-*-arm64.zip*
+          path: Paseo-Custom-*-arm64.*
 
   publish:
     needs: [plan, test, build]
@@ -152,17 +159,20 @@ jobs:
           name: paseo-custom
       - name: Publish the GitHub release
         run: |
-          zip="Paseo-Custom-$TAG-arm64.zip"
+          base="Paseo-Custom-$TAG-arm64"
           cat > notes.md <<EOF
           Paseo Custom $TAG: the Codex-style macOS desktop on upstream Paseo [$BACKEND](https://github.com/getpaseo/paseo/releases/tag/$BACKEND).
 
+          - Open the \`.dmg\` and drag Paseo Custom to Applications; the \`.zip\` holds the same app.
           - Apple Silicon only. Ad-hoc signed and not notarized: on first launch, right-click the app and choose Open, or run \`xattr -dr com.apple.quarantine "/Applications/Paseo Custom.app"\`.
           - Runs its own daemon and home; it does not replace or update the official Paseo app.
-          - Source: $SHA. SHA-256: \`$(cut -d' ' -f1 "$zip.sha256")\`
+          - Source: $SHA.
+          - SHA-256: dmg \`$(cut -d' ' -f1 "$base.dmg.sha256")\`, zip \`$(cut -d' ' -f1 "$base.zip.sha256")\`
           EOF
           flags=()
           if [ "${{ needs.plan.outputs.prerelease }}" = "true" ]; then flags+=(--prerelease); fi
-          gh release create "$TAG" "$zip" "$zip.sha256" --target "$SHA" --title "Paseo Custom $TAG" --notes-file notes.md "${flags[@]}"
+          gh release create "$TAG" "$base.dmg" "$base.dmg.sha256" "$base.zip" "$base.zip.sha256" \
+            --target "$SHA" --title "Paseo Custom $TAG" --notes-file notes.md "${flags[@]}"
       - name: Keep inherited upstream workflows disabled
         run: |
           gh workflow list --all --json path,state \
