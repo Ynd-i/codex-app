@@ -45,8 +45,18 @@ complete; this section replaces that handoff.
   the real certificate (CN `Paseo Custom`, valid until 2046-09-28) and set
   `CUSTOM_SIGNING_P12` and `CUSTOM_SIGNING_P12_PASSWORD` (13:49 UTC). User request: rebuild
   beta.3 signed as the CI one-off `v0.11.0-beta.3-v1-beta2` (stamp
-  `0.11.0-beta.3.custom.1.beta.2`), the first CI run to sign. The ad-hoc one-offs cannot
-  update in place; install the first signed release by hand.
+  `0.11.0-beta.3.custom.1.beta.2`). Run `37134174761` on `969ad31` published it
+  (16:00 UTC). Its zip is signed by the user's certificate (SHA-1 `B8:29:C9:99:…:37:80`)
+  and passes `codesign --strict --deep`. `update-feed` holds only `beta-mac.yml`, whose
+  sha512 matches the zip. The four earlier runs failed, published nothing and led to
+  these fixes:
+  - `RCODESIGN_*` workflow variables were read as rcodesign configuration;
+  - the agent CLIs and Playwright Chromium were missing for the server and app suites;
+  - test mocks and the lucide stub lacked `getIsElectronMac` and `CircleHelp`;
+  - the fork's Unreleased changelog entry broke a test.
+
+  The ad-hoc one-offs cannot update in place; install this release by hand.
+
 - Isolated checkout: `/Users/yndi/dev/projects/codex-app/paseo-upstream-4893629`,
   branch `codex/markdown-spacing-paused-20261002`. Its commits `78a5f32`,
   `63071b9`, `d46ba1f`, `e66eb9a`, `ef2e515`, `f06f026`, `29c8053`, `8ba5126`, `e8a72bf`,
