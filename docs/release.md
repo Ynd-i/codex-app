@@ -83,10 +83,11 @@ gh workflow run custom-release.yml -R Ynd-i/codex-app -f mode=beta
 gh workflow run custom-release.yml -R Ynd-i/codex-app -f mode=stable
 ```
 
-A merge conflict or failure publishes nothing and opens an issue; the run summary
-lists conflicted files. Upstream releases that touch customized files, such as the usage
-screen, conflict and need a manual merge of the tag; after that only `beta` mode tags
-it. Pull before working locally, because a sync adds merge commits.
+A merge conflict or failure opens an issue and publishes nothing, unless only the update
+feed step failed after the GitHub release was created; the run summary lists conflicted
+files. Upstream releases that touch customized files, such as the usage screen, conflict
+and need a manual merge of the tag; after that only `beta` mode tags it. Pull before
+working locally, because a sync adds merge commits.
 
 Only the workflow's `GITHUB_TOKEN` creates release tags. Tags created by people still
 start with `v` and would trigger the inherited upstream release, Docker and deploy

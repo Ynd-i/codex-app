@@ -251,5 +251,5 @@ jobs:
         run: |
           title="Custom release ${{ needs.plan.outputs.tag || 'planning' }} failed"
           if [ -z "$(gh issue list -R "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number --jq '.[].number')" ]; then
-            gh issue create -R "$GITHUB_REPOSITORY" --title "$title" --body "Nothing was published. The run summary lists any upstream merge conflicts. Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            gh issue create -R "$GITHUB_REPOSITORY" --title "$title" --body "The release did not finish; check the run for which steps ran. Its summary lists any upstream merge conflicts. Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
           fi
