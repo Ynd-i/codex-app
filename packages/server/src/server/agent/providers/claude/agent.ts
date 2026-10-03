@@ -322,6 +322,7 @@ const CLAUDE_CAPABILITIES: AgentCapabilityFlags = {
   supportsRewindConversation: true,
   supportsRewindFiles: true,
   supportsRewindBoth: true,
+  supportsNativeFork: true,
 };
 
 const DEFAULT_MODES: AgentMode[] = [
@@ -2782,6 +2783,29 @@ class ClaudeAgentSession implements AgentSession {
         this.rebindConversationSession(sessionId);
       },
     });
+  }
+
+  async forkConversation(input: { messageId: string }): Promise<AgentPersistenceHandle> {
+    const userMessageId = this.resolveClaudeMessageId(input.messageId);
+    const anchor = this.rewindTurnAnchors.find((entry) => entry.userMessageId === userMessageId);
+    if (!anchor?.assistantMessageId) {
+      throw new Error(`Claude fork target ${input.messageId} has no completed reply`);
+    }
+    const source = this.describePersistence();
+    if (!source) {
+      throw new Error("Claude session is not ready for fork");
+    }
+    // ponytail: the SDK reads ~/.claude or this process's CLAUDE_CONFIG_DIR, like rewind; a
+    // profile with its own config dir fails here instead of forking the wrong transcript.
+    const fork = await this.rewindSdk.forkSession(source.sessionId, {
+      upToMessageId: anchor.assistantMessageId,
+    });
+    return {
+      provider: "claude",
+      sessionId: fork.sessionId,
+      nativeHandle: fork.sessionId,
+      metadata: source.metadata,
+    };
   }
 
   async revertFiles(input: { messageId: string }): Promise<void> {

@@ -178,6 +178,7 @@ export interface AgentCapabilityFlags {
   supportsRewindConversation?: boolean;
   supportsRewindFiles?: boolean;
   supportsRewindBoth?: boolean;
+  supportsNativeFork?: boolean;
 }
 
 export interface AgentPersistenceHandle {
@@ -685,6 +686,11 @@ export interface AgentSession {
   revertConversation?(input: { messageId: string }): Promise<void>;
   revertFiles?(input: { messageId: string }): Promise<void>;
   revertBoth?(input: { messageId: string }): Promise<void>;
+  /**
+   * Copy the durable conversation through the turn started by `messageId`, inclusive, into a
+   * new native session and return its handle. This session keeps its handle and keeps running.
+   */
+  forkConversation?(input: { messageId: string }): Promise<AgentPersistenceHandle>;
   /**
    * Out-of-band prompt handler. When non-null, the manager runs the returned
    * handler instead of allocating a turn. The handler emits stream events
