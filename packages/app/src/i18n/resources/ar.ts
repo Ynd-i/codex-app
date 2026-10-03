@@ -1377,6 +1377,8 @@ export const ar: TranslationResources = {
     },
     fields: {
       project: "المشروع",
+      noProject: "بلا مشروع",
+      clearProject: "إزالة المشروع",
       base: "الأساس",
       baseNotApplicable: "غير قابل للتطبيق",
     },

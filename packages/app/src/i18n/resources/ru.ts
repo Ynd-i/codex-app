@@ -1395,6 +1395,8 @@ export const ru: TranslationResources = {
     },
     fields: {
       project: "Проект",
+      noProject: "Без проекта",
+      clearProject: "Убрать проект",
       base: "Базовая ветка",
       baseNotApplicable: "Неприменимо",
     },

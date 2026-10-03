@@ -1366,6 +1366,8 @@ export const zhCN: TranslationResources = {
     },
     fields: {
       project: "项目",
+      noProject: "无项目",
+      clearProject: "移除项目",
       base: "基线",
       baseNotApplicable: "不适用",
     },

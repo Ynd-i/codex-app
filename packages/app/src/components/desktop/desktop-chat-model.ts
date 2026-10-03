@@ -5,6 +5,7 @@ import type {
   SidebarWorkspacePlacement,
 } from "@/hooks/use-sidebar-workspaces-list";
 import { isWorkspaceRootAgent } from "@/subagents/policies";
+import { isChatFolderPath } from "@/projects/chat-folder";
 import { applyStoredOrdering } from "@/hooks/sidebar-workspaces-view-model";
 import type { StreamItem } from "@/types/stream";
 import {
@@ -83,13 +84,16 @@ export function buildDesktopChatSidebar({
     workspacesWithChats.add(workspaceKey);
   }
   return {
-    projects: projects.map((project) => ({
-      project,
-      chats: chatsByProject.get(project.viewKey) ?? [],
-      emptyWorkspaces: project.workspaces.filter(
-        (workspace) => !workspacesWithChats.has(workspace.workspaceKey),
-      ),
-    })),
+    // A chat without a project lives in a chat folder project; it shows in Recent only.
+    projects: projects
+      .filter((project) => !isChatFolderPath(project.iconWorkingDir))
+      .map((project) => ({
+        project,
+        chats: chatsByProject.get(project.viewKey) ?? [],
+        emptyWorkspaces: project.workspaces.filter(
+          (workspace) => !workspacesWithChats.has(workspace.workspaceKey),
+        ),
+      })),
     pinned: visible
       .filter((agent) => desktopChatPinnedAt(agent) !== null)
       .sort((left, right) => desktopChatPinnedAt(right)! - desktopChatPinnedAt(left)!),

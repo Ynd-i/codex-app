@@ -8,6 +8,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Added
 
+- Added chats without a project: hovering the New chat project chip shows a remove button, and the chat then runs in its own folder, `~/Documents/Paseo/<date>/<name>`, with global settings and rules instead of a project's. Chat folders stay out of Projects and the project picker; their chats show in Recent. Hosts need the new `projectCreateDirectoryParents` feature.
+
 - Added native forks for Codex and Claude: Fork in a new tab on a completed turn or an idle chat copies the provider conversation itself into a new chat in the same workspace, with its own session and no chat-history attachment. Other providers, running chats and new workspaces keep the history attachment.
 
 - Added independent macOS interface font weight with safe default/Advanced reset, preserving authored emphasis, content/code weights, drafts and sidebar sizing.

@@ -2584,6 +2584,8 @@ export const ProjectCreateDirectoryRequestSchema = z.object({
   type: z.literal("project.create_directory.request"),
   parentPath: z.string(),
   name: z.string(),
+  // Creates missing parent directories first; gated by features.projectCreateDirectoryParents.
+  createParents: z.boolean().optional(),
   requestId: z.string(),
 });
 
@@ -3683,6 +3685,8 @@ export const ServerInfoStatusPayloadSchema = z
         workspaceGithubRepositorySearch: z.boolean().optional(),
         // COMPAT(projectCreateDirectory): added in v0.1.108, remove gate after 2027-01-15.
         projectCreateDirectory: z.boolean().optional(),
+        // COMPAT(projectCreateDirectoryParents): added in Paseo Custom v0.11.0-beta.3-v1-beta4, remove gate after 2027-04-01.
+        projectCreateDirectoryParents: z.boolean().optional(),
         // COMPAT(projectList): added in v0.2.4, drop the gate when floor >= v0.2.4.
         projectList: z.boolean().optional(),
         // COMPAT(commitsList): added in v0.1.110, remove gate after 2027-01-16.

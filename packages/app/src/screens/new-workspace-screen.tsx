@@ -14,7 +14,14 @@ import type { PressableStateCallbackType } from "react-native";
 import { StyleSheet, useUnistyles, withUnistyles } from "react-native-unistyles";
 import { createNameId } from "mnemonic-id";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, Folder, FolderPlus, GitBranch, GitPullRequest } from "lucide-react-native";
+import {
+  ChevronDown,
+  CircleX,
+  Folder,
+  FolderPlus,
+  GitBranch,
+  GitPullRequest,
+} from "lucide-react-native";
 import { Composer } from "@/composer";
 import { ComposerDock } from "@/composer/dock";
 import { PaseoLogo } from "@/components/icons/paseo-logo";
@@ -61,7 +68,11 @@ import {
   navigateToWorkspace,
   useLastWorkspaceSelection,
 } from "@/stores/navigation-active-workspace-store";
-import { normalizeWorkspaceDescriptor, type WorkspaceDescriptor } from "@/stores/session-store";
+import {
+  normalizeProjectDescriptor,
+  normalizeWorkspaceDescriptor,
+  type WorkspaceDescriptor,
+} from "@/stores/session-store";
 import { useWorkspace } from "@/stores/session-store-hooks";
 import { buildNewWorkspaceDraftKey, generateDraftId } from "@/stores/draft-keys";
 import { useOpenAddProject } from "@/hooks/use-open-add-project";
@@ -88,6 +99,7 @@ import {
   type HostProjectListItem,
 } from "@/projects/host-projects";
 import { useProjectIcons } from "@/projects/icons";
+import { chatFolderParentPath } from "@/projects/chat-folder";
 import { ICON_SIZE, type Theme } from "@/styles/theme";
 import type { ComposerAttachment } from "@/attachments/types";
 import { useDraftWorkspaceAttachmentScopeKey } from "@/attachments/workspace-attachments-store";
@@ -314,6 +326,8 @@ function ProjectPickerTrigger({
   iconDataUri,
   iconColor,
   iconSize,
+  onClear,
+  clearLabel,
 }: {
   pickerAnchorRef: React.RefObject<View | null>;
   onPress: () => void;
@@ -325,9 +339,37 @@ function ProjectPickerTrigger({
   iconDataUri: string | null;
   iconColor: string;
   iconSize: number;
+  /** Set while the chip is hovered and a project can be removed. */
+  onClear?: () => void;
+  clearLabel: string;
 }) {
   const placeholderLabel = projectIconPlaceholderLabelFromDisplayName(label);
   const placeholderInitial = placeholderLabel.charAt(0).toUpperCase() || "?";
+  let icon: ReactElement;
+  if (onClear) {
+    icon = (
+      <Pressable
+        testID="new-workspace-project-clear"
+        onPress={onClear}
+        accessibilityRole="button"
+        accessibilityLabel={clearLabel}
+      >
+        <CircleX size={iconSize} color={iconColor} />
+      </Pressable>
+    );
+  } else if (projectViewKey && (iconDataUri || !getIsElectronMac())) {
+    icon = (
+      <ProjectIconView
+        iconDataUri={iconDataUri}
+        initial={placeholderInitial}
+        projectViewKey={projectViewKey}
+        size={ICON_SIZE.md}
+        textStyle={styles.projectIconFallbackText}
+      />
+    );
+  } else {
+    icon = <Folder size={iconSize} color={iconColor} />;
+  }
   return (
     <Tooltip>
       <TooltipTrigger asChild triggerRefProp="ref">
@@ -341,19 +383,7 @@ function ProjectPickerTrigger({
           accessibilityRole="button"
           accessibilityLabel="Workspace project"
         >
-          <View style={styles.badgeIconBox}>
-            {projectViewKey && (iconDataUri || !getIsElectronMac()) ? (
-              <ProjectIconView
-                iconDataUri={iconDataUri}
-                initial={placeholderInitial}
-                projectViewKey={projectViewKey}
-                size={ICON_SIZE.md}
-                textStyle={styles.projectIconFallbackText}
-              />
-            ) : (
-              <Folder size={iconSize} color={iconColor} />
-            )}
-          </View>
+          <View style={styles.badgeIconBox}>{icon}</View>
           <Text style={styles.badgeText} numberOfLines={1}>
             {label}
           </Text>
@@ -823,7 +853,7 @@ async function createMultiplicityWorkspace(input: {
   worktreeSlug: string;
   client: NonNullable<ReturnType<typeof useHostRuntimeClient>>;
   isolation: "local" | "worktree";
-  project: HostProjectListItem;
+  projectId: string;
   sourceDirectory: string;
   checkoutRequest: PickerCheckoutRequest | undefined;
   withInitialAgent: boolean;
@@ -838,8 +868,7 @@ async function createMultiplicityWorkspace(input: {
   serverId: string;
   createFailedMessage: string;
 }): Promise<WorkspaceCreationResult> {
-  const projectId = getHostProjectId(input.project, input.serverId);
-  if (!projectId) throw new Error("Project is not available on the selected host");
+  const { projectId } = input;
   const isWorktree = input.isolation === "worktree";
   const firstAgentContext = buildFirstAgentContext({
     prompt: input.prompt,
@@ -873,6 +902,37 @@ async function createMultiplicityWorkspace(input: {
     : normalizedWorkspace;
   input.mergeWorkspaces(input.serverId, [workspaceForInitialMerge]);
   return { workspace: normalizedWorkspace, agent: payload.agent };
+}
+
+interface ChatFolder {
+  projectId: string;
+  directoryPath: string;
+}
+
+/** Creates today's folder for a chat without a project; a taken name gets a fresh one. */
+async function createChatFolder(input: {
+  client: DaemonClient;
+  serverId: string;
+  name: string;
+}): Promise<ChatFolder> {
+  const parentPath = chatFolderParentPath(new Date());
+  for (let attempt = 1; ; attempt += 1) {
+    const payload = await input.client.createProjectDirectory({
+      parentPath,
+      name: attempt === 1 ? input.name : createNameId(),
+      createParents: true,
+    });
+    if (payload.project && payload.directoryPath) {
+      getHostRuntimeStore().acceptProjectSnapshot(
+        input.serverId,
+        normalizeProjectDescriptor(payload.project),
+      );
+      return { projectId: payload.project.projectId, directoryPath: payload.directoryPath };
+    }
+    if (payload.errorCode !== "directory_exists" || attempt === 3) {
+      throw new Error(payload.error ?? "Unable to create the chat folder");
+    }
+  }
 }
 
 interface CreateChatAgentInput {
@@ -1404,6 +1464,10 @@ interface NewWorkspaceFormStackInput {
     selectedOptionId: string;
     onSelect: (id: string) => void;
     onAddProject: () => void;
+    /** No project chosen: the chat gets its own folder. */
+    cleared: boolean;
+    canClear: boolean;
+    onClear: () => void;
     renderOption: RefPickerRenderOption;
   };
   host: FormPickerControl & {
@@ -1439,50 +1503,53 @@ interface NewWorkspaceFormStackInput {
   };
 }
 
-function useNewWorkspaceFormStack(input: NewWorkspaceFormStackInput): ReactElement {
-  const { theme } = useUnistyles();
+function NewWorkspaceProjectControl({
+  project,
+  isPending,
+  style,
+  badgePressableStyle,
+  desktopPlacement,
+  iconColor,
+  iconSize,
+}: {
+  project: NewWorkspaceFormStackInput["project"];
+  isPending: boolean;
+  style: React.ComponentProps<typeof View>["style"];
+  badgePressableStyle: React.ComponentProps<typeof Pressable>["style"];
+  desktopPlacement: "top-start" | "bottom-start";
+  iconColor: string;
+  iconSize: number;
+}) {
   const { t } = useTranslation();
-  const { isCompact, isPending, project, host, isolation, base, launch } = input;
-  const desktopPlacement = getIsElectronMac() ? "top-start" : "bottom-start";
-
-  const selectedHostLabel =
-    host.allHosts.find((h) => h.serverId === host.selectedServerId)?.label ?? "Host";
-  const showHostControl = host.allHosts.length > 1;
-  const isolationTriggerLabel = isolationLabel(t, isolation.effectiveIsolation);
+  // Hover lives on the plain wrapper (docs/hover.md) so the clear button inside the chip keeps it.
+  const [hovered, setHovered] = useState(false);
+  const handlePointerEnter = useCallback(() => setHovered(true), []);
+  const handlePointerLeave = useCallback(() => setHovered(false), []);
   const addProjectAction = useMemo(
     () => <AddProjectPickerAction onPress={project.onAddProject} />,
     [project.onAddProject],
   );
-
-  const badgePressableStyle = useCallback(
-    ({ pressed, hovered }: PressableStateCallbackType & { hovered?: boolean }) => [
-      styles.badge,
-      Boolean(hovered) && !isPending && styles.badgeHovered,
-      pressed && !isPending && styles.badgePressed,
-      isPending && styles.badgeDisabled,
-    ],
-    [isPending],
-  );
-
-  const desktopControlStyle = isCompact ? undefined : styles.desktopControl;
-
-  const projectControl = (
-    <View style={desktopControlStyle}>
+  const { selectedProject } = project;
+  const showClear = project.canClear && hovered && !isPending && selectedProject !== null;
+  return (
+    <View style={style} onPointerEnter={handlePointerEnter} onPointerLeave={handlePointerLeave}>
       <ProjectPickerTrigger
         pickerAnchorRef={project.anchorRef}
         onPress={project.open}
         disabled={isPending}
         badgePressableStyle={badgePressableStyle}
-        label={project.triggerLabel}
+        label={project.cleared ? t("newWorkspace.fields.noProject") : project.triggerLabel}
         tooltipLabel={t("newWorkspace.tooltips.project")}
-        projectViewKey={project.selectedProject?.viewKey ?? null}
+        projectViewKey={selectedProject?.viewKey ?? null}
         iconDataUri={
-          project.selectedProject
-            ? (project.iconDataByProjectViewKey.get(project.selectedProject.viewKey) ?? null)
+          selectedProject
+            ? (project.iconDataByProjectViewKey.get(selectedProject.viewKey) ?? null)
             : null
         }
-        iconColor={theme.colors.foregroundMuted}
-        iconSize={theme.iconSize.sm}
+        iconColor={iconColor}
+        iconSize={iconSize}
+        onClear={showClear ? project.onClear : undefined}
+        clearLabel={t("newWorkspace.fields.clearProject")}
       />
       <Combobox
         options={project.options}
@@ -1501,6 +1568,41 @@ function useNewWorkspaceFormStack(input: NewWorkspaceFormStackInput): ReactEleme
         footer={addProjectAction}
       />
     </View>
+  );
+}
+
+function useNewWorkspaceFormStack(input: NewWorkspaceFormStackInput): ReactElement {
+  const { theme } = useUnistyles();
+  const { t } = useTranslation();
+  const { isCompact, isPending, project, host, isolation, base, launch } = input;
+  const desktopPlacement = getIsElectronMac() ? "top-start" : "bottom-start";
+
+  const selectedHostLabel =
+    host.allHosts.find((h) => h.serverId === host.selectedServerId)?.label ?? "Host";
+  const showHostControl = host.allHosts.length > 1;
+  const isolationTriggerLabel = isolationLabel(t, isolation.effectiveIsolation);
+  const badgePressableStyle = useCallback(
+    ({ pressed, hovered }: PressableStateCallbackType & { hovered?: boolean }) => [
+      styles.badge,
+      Boolean(hovered) && !isPending && styles.badgeHovered,
+      pressed && !isPending && styles.badgePressed,
+      isPending && styles.badgeDisabled,
+    ],
+    [isPending],
+  );
+
+  const desktopControlStyle = isCompact ? undefined : styles.desktopControl;
+
+  const projectControl = (
+    <NewWorkspaceProjectControl
+      project={project}
+      isPending={isPending}
+      style={desktopControlStyle}
+      badgePressableStyle={badgePressableStyle}
+      desktopPlacement={desktopPlacement}
+      iconColor={theme.colors.foregroundMuted}
+      iconSize={theme.iconSize.sm}
+    />
   );
 
   const hostControl = showHostControl ? (
@@ -1681,11 +1783,14 @@ export function NewWorkspaceScreen({
   // COMPAT(workspaceMultiplicity): added in v0.1.97, drop the gate when floor >= v0.1.97
   const supportsWorkspaceMultiplicity = useHostFeature(selectedServerId, "workspaceMultiplicity");
   const supportsForgeSearch = useHostFeature(selectedServerId, "forgeSearch");
+  // COMPAT(projectCreateDirectoryParents): added in Paseo Custom v0.11.0-beta.3-v1-beta4, remove gate after 2027-04-01.
+  const supportsChatFolders = useHostFeature(selectedServerId, "projectCreateDirectoryParents");
   const [creationIdentity] = useState(() => ({
     draftId: draftId ?? generateDraftId(),
     worktreeSlug: createNameId(),
   }));
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const chatFolderRef = useRef<ChatFolder | null>(null);
   const [creationResult, setCreationResult] = useState<
     WorkspaceCreationResult | { workspace: null }
   >({ workspace: null });
@@ -1763,6 +1868,8 @@ export function NewWorkspaceScreen({
     selectedProjectOptionId,
     projectTriggerLabel,
     handleSelectProjectOption: selectProjectOption,
+    projectCleared,
+    clearProject,
   } = useNewWorkspaceProjectPicker({
     selectedServerId,
     projects,
@@ -1949,6 +2056,11 @@ export function NewWorkspaceScreen({
     [clearPickerSelectionForTargetChange, selectProjectOption, selectedProjectOptionId],
   );
 
+  const handleClearProject = useCallback(() => {
+    clearProject();
+    clearPickerSelectionForTargetChange(selectedProjectOptionId, "");
+  }, [clearPickerSelectionForTargetChange, clearProject, selectedProjectOptionId]);
+
   const handleSelectWorkspaceHost = useCallback(
     (id: string) => {
       handleSelectHost(id);
@@ -2065,12 +2177,46 @@ export function NewWorkspaceScreen({
       if (creationResult.workspace) {
         return creationResult;
       }
+      if (projectCleared) {
+        const connectedClient = withConnectedClient();
+        // One folder per draft, so retrying a failed create reuses it.
+        chatFolderRef.current ??= await createChatFolder({
+          client: connectedClient,
+          serverId: selectedServerId,
+          name: creationIdentity.worktreeSlug,
+        });
+        const { directoryPath } = chatFolderRef.current;
+        const chatFolderWorkspace = await createMultiplicityWorkspace({
+          idempotencyKey: creationIdentity.draftId,
+          worktreeSlug: creationIdentity.worktreeSlug,
+          client: connectedClient,
+          isolation: "local",
+          projectId: chatFolderRef.current.projectId,
+          sourceDirectory: directoryPath,
+          checkoutRequest: undefined,
+          withInitialAgent: input.withInitialAgent,
+          prompt: input.prompt,
+          attachments: input.attachments,
+          // The composer has no cwd without a project; the agent runs in the chat folder.
+          agent: input.agent?.config
+            ? { ...input.agent, config: { ...input.agent.config, cwd: directoryPath } }
+            : input.agent,
+          onEvent: input.onEvent,
+          mergeWorkspaces,
+          serverId: selectedServerId,
+          createFailedMessage: t("newWorkspace.errors.createWorktreeFailed"),
+        });
+        setCreationResult(chatFolderWorkspace);
+        return chatFolderWorkspace;
+      }
       if (!selectedProject) {
         throw new Error("Choose a project");
       }
       if (!selectedSourceDirectory) {
         throw new Error("Choose a host for this project");
       }
+      const hostProjectId = getHostProjectId(selectedProject, selectedServerId);
+      if (!hostProjectId) throw new Error("Project is not available on the selected host");
       const connectedClient = withConnectedClient();
       const createsWorktree = !supportsWorkspaceMultiplicity || effectiveIsolation === "worktree";
       const checkoutStatusForCreate = createsWorktree
@@ -2091,7 +2237,7 @@ export function NewWorkspaceScreen({
         worktreeSlug: creationIdentity.worktreeSlug,
         client: connectedClient,
         isolation: createsWorktree ? "worktree" : "local",
-        project: selectedProject,
+        projectId: hostProjectId,
         sourceDirectory: selectedSourceDirectory,
         checkoutRequest,
         withInitialAgent: input.withInitialAgent,
@@ -2111,6 +2257,7 @@ export function NewWorkspaceScreen({
       creationResult,
       effectiveIsolation,
       mergeWorkspaces,
+      projectCleared,
       queryClient,
       selectedItem,
       selectedProject,
@@ -2337,6 +2484,9 @@ export function NewWorkspaceScreen({
       selectedOptionId: selectedProjectOptionId,
       onSelect: handleSelectProjectOption,
       onAddProject: handleAddProject,
+      cleared: projectCleared,
+      canClear: supportsChatFolders,
+      onClear: handleClearProject,
       openState: projectPickerOpen,
       onOpenChange: handleProjectPickerOpenChange,
       renderOption: renderProjectOption,

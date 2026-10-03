@@ -52,6 +52,22 @@ function project(viewKey: string, serverId: string, workspaceIds: string[]): Sid
   };
 }
 
+it("lists a chat without a project in Recent but not its chat folder in Projects", () => {
+  const chatFolder = {
+    ...project("brave-fox", "local", ["chat-folder"]),
+    iconWorkingDir: "/Users/me/Documents/Paseo/2026-10-03/brave-fox",
+  };
+  const projectless = chat("projectless", "local", "chat-folder");
+
+  const model = buildDesktopChatSidebar({
+    projects: [chatFolder, project("app", "local", ["main"])],
+    agents: [projectless],
+  });
+
+  expect(model.projects.map((entry) => entry.project.viewKey)).toEqual(["app"]);
+  expect(model.recent).toEqual([projectless]);
+});
+
 it("keeps chat and host identities distinct without losing empty workspaces", () => {
   const first = chat("same-id", "local", "one");
   const sibling = chat("sibling", "local", "one");

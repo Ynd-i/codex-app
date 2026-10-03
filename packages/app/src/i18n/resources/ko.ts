@@ -1384,6 +1384,8 @@ export const ko: TranslationResources = {
     },
     fields: {
       project: "프로젝트",
+      noProject: "프로젝트 없음",
+      clearProject: "프로젝트 제거",
       base: "기준",
       baseNotApplicable: "해당 없음",
     },

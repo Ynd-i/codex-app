@@ -1403,6 +1403,8 @@ export const ptBR: TranslationResources = {
     },
     fields: {
       project: "Projeto",
+      noProject: "Sem projeto",
+      clearProject: "Remover projeto",
       base: "Base",
       baseNotApplicable: "Não aplicável",
     },

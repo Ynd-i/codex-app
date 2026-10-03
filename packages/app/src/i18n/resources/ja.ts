@@ -1391,6 +1391,8 @@ export const ja: TranslationResources = {
     },
     fields: {
       project: "プロジェクト",
+      noProject: "プロジェクトなし",
+      clearProject: "プロジェクトを外す",
       base: "ベース",
       baseNotApplicable: "該当なし",
     },

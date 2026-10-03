@@ -2622,7 +2622,7 @@ export class DaemonClient {
   }
 
   async createProjectDirectory(
-    input: { parentPath: string; name: string },
+    input: { parentPath: string; name: string; createParents?: boolean },
     requestId?: string,
   ): Promise<ProjectCreateDirectoryPayload> {
     return this.sendNamespacedCorrelatedSessionRequest<"project.create_directory.response">({
@@ -2631,6 +2631,7 @@ export class DaemonClient {
         type: "project.create_directory.request",
         parentPath: input.parentPath,
         name: input.name,
+        ...(input.createParents ? { createParents: true } : {}),
       },
     });
   }

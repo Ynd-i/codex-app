@@ -1327,6 +1327,31 @@ runner passed on the `9275863` bundle.
 [New section dialog](../qa-evidence/codex-desktop/sidebar-new-section-dialog.png)
 were inspected.
 
+### Chats without a project — 2026-10-03
+
+The user asked for Codex's projectless chats: hovering the New chat project chip
+removes the project, and every such chat gets its own folder,
+`~/Documents/Paseo/<YYYY-MM-DD>/<name>`.
+
+- Every daemon workspace belongs to a project, so the folder is created and
+  registered with the existing `project.create_directory` RPC. Its new optional
+  `createParents` creates the dated parent first, gated by
+  `features.projectCreateDirectoryParents` (COMPAT-tagged at the gate). The name is
+  the draft's mnemonic slug; a taken name gets a fresh one, at most three tries.
+- The workspace is always local, and the first agent's `cwd` is set to the folder:
+  the daemon maps that `cwd` relative to the workspace source, and the composer has
+  no `cwd` without a project.
+- The removed state is a third project selection, `none`, kept like a manual choice
+  until the route changes. A New chat opened from a chat-folder chat starts in it.
+- Chat folders are recognised by path (`packages/app/src/projects/chat-folder.ts`).
+  They are hidden from the sidebar's Projects and the picker, and the titlebar
+  shows no project folder for them; their chats stay in Recent. Settings › Projects
+  and chat search still list them.
+
+Validation: unit tests for the path helper, selection state, sidebar model, server
+`createParents` and protocol parsing; app typecheck and lint. The packaged UI was
+not exercised before release.
+
 ### Sidebar motion and selection — 2026-10-01
 
 Mac Appearance now exposes a saved System / On / Off reduced-motion preference.

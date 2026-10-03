@@ -48,6 +48,7 @@ import { useWorkspaceFields } from "@/stores/session-store-hooks";
 import { inlineUnistylesStyle } from "@/styles/unistyles-inline-style";
 import { TitlebarDragRegion } from "./titlebar-drag-region";
 import type { Theme } from "@/styles/theme";
+import { isChatFolderPath } from "@/projects/chat-folder";
 import { DesktopChatShortcuts } from "./desktop-chat-shortcuts";
 import { DesktopChatToolbar } from "./desktop-chat-toolbar";
 import { useDesktopNavigationHistory } from "./use-desktop-navigation-history";
@@ -138,11 +139,12 @@ function ChatTitle({ chatTitle }: { chatTitle: string }) {
   const serverId = selection?.serverId ?? null;
   const workspaceId = selection?.workspaceId ?? null;
   const workspaceTitle = useWorkspaceFields(serverId, workspaceId, (workspace) => workspace.name);
-  // Like Codex, the folder marks a chat that belongs to a project.
+  // Like Codex, the folder marks a chat that belongs to a project, not one in a chat folder.
   const inProject = useWorkspaceFields(
     serverId,
     workspaceId,
-    (workspace) => workspace.projectId.trim() !== "",
+    (workspace) =>
+      workspace.projectId.trim() !== "" && !isChatFolderPath(workspace.projectRootPath),
   );
   const title = chatTitle || workspaceTitle;
   if (!title) return null;

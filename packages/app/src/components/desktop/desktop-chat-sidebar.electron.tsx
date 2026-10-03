@@ -137,7 +137,7 @@ function ChatSidebarList({ onAddProject }: { onAddProject: () => void }) {
           )}
         </>
       )}
-      {model.projects.length === 0 ? (
+      {model.projects.length === 0 && model.recent.length === 0 && model.pinned.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.secondaryText}>
             {t(allProjects.length > 0 ? "sidebar.filterEmpty.description" : "sessions.empty")}

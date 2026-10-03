@@ -1899,6 +1899,8 @@ export class VoiceAssistantWebSocketServer {
         workspaceGithubRepositorySearch: true,
         // COMPAT(projectCreateDirectory): added in v0.1.108, remove gate after 2027-01-15.
         projectCreateDirectory: true,
+        // COMPAT(projectCreateDirectoryParents): added in Paseo Custom v0.11.0-beta.3-v1-beta4, remove gate after 2027-04-01.
+        projectCreateDirectoryParents: true,
         // COMPAT(commitsList): added in v0.1.110, remove gate after 2027-01-16.
         commitsList: true,
         // COMPAT(commitBaseClassification): added in v0.2.0, remove gate after 2027-01-23.

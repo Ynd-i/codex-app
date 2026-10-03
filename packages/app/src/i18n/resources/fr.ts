@@ -1413,6 +1413,8 @@ export const fr: TranslationResources = {
     },
     fields: {
       project: "Projet",
+      noProject: "Aucun projet",
+      clearProject: "Retirer le projet",
       base: "Base",
       baseNotApplicable: "Non applicable",
     },

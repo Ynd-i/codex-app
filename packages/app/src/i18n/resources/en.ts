@@ -1385,6 +1385,8 @@ export const en = {
     },
     fields: {
       project: "Project",
+      noProject: "No project",
+      clearProject: "Remove project",
       base: "Base",
       baseNotApplicable: "Not applicable",
     },
