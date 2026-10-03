@@ -23,7 +23,6 @@ on:
 
 permissions:
   contents: write
-  issues: write
   actions: write
 
 concurrency:
@@ -34,8 +33,9 @@ env:
   BRANCH: codex-app
   UPSTREAM: https://github.com/getpaseo/paseo.git
   FEED_BRANCH: update-feed
-  RCODESIGN_URL: https://github.com/indygreg/apple-platform-rs/releases/download/apple-codesign/0.29.0/apple-codesign-0.29.0-macos-universal.tar.gz
-  RCODESIGN_SHA256: d98372d5524226ccf9dc0eda03d4e4f5826182dabb2fc3f2bd303ed9113a748d
+  # rcodesign reads every RCODESIGN_* variable as configuration, so avoid that prefix.
+  APPLE_CODESIGN_URL: https://github.com/indygreg/apple-platform-rs/releases/download/apple-codesign/0.29.0/apple-codesign-0.29.0-macos-universal.tar.gz
+  APPLE_CODESIGN_SHA256: d98372d5524226ccf9dc0eda03d4e4f5826182dabb2fc3f2bd303ed9113a748d
 
 jobs:
   plan:
@@ -105,6 +105,8 @@ jobs:
       - run: npm run build:server
       - run: npm run typecheck
       - run: node --test scripts/custom-release.test.mjs
+      # Provider tests resolve the installed agent binaries, as in upstream CI.
+      - run: node scripts/npm-retry.mjs install -g @anthropic-ai/claude-code opencode-ai
       - run: npm run test:unit --workspace=@getpaseo/server
       - run: npm run build:app-deps
       - run: npm run test --workspace=@getpaseo/app
@@ -144,8 +146,8 @@ jobs:
           app="packages/desktop/release-custom/mac-arm64/Paseo Custom.app"
           printf 'provider: generic\nurl: https://raw.githubusercontent.com/%s/%s\nupdaterCacheDirName: paseo-custom-updater\n' \
             "$GITHUB_REPOSITORY" "$FEED_BRANCH" > "$app/Contents/Resources/app-update.yml"
-          curl -fsSL -o rcodesign.tar.gz "$RCODESIGN_URL"
-          echo "$RCODESIGN_SHA256  rcodesign.tar.gz" | shasum -a 256 -c -
+          curl -fsSL -o rcodesign.tar.gz "$APPLE_CODESIGN_URL"
+          echo "$APPLE_CODESIGN_SHA256  rcodesign.tar.gz" | shasum -a 256 -c -
           tar -xzf rcodesign.tar.gz --strip-components=1 apple-codesign-0.29.0-macos-universal/rcodesign
           echo "$P12" | base64 --decode > "$RUNNER_TEMP/signing.p12"
           ./rcodesign sign --p12-file "$RUNNER_TEMP/signing.p12" --p12-password "$P12_PASSWORD" \
@@ -245,17 +247,3 @@ jobs:
           gh workflow list --all --json path,state \
             --jq '.[] | select(.state == "active" and .path != ".github/workflows/custom-release.yml") | .path' |
             while read -r path; do gh workflow disable "$(basename "$path")"; done
-
-  report-failure:
-    needs: [plan, test, build, publish]
-    if: failure()
-    runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ github.token }}
-    steps:
-      - name: Open an issue for the failed release
-        run: |
-          title="Custom release ${{ needs.plan.outputs.tag || 'planning' }} failed"
-          if [ -z "$(gh issue list -R "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number --jq '.[].number')" ]; then
-            gh issue create -R "$GITHUB_REPOSITORY" --title "$title" --body "The release did not finish; check the run for which steps ran. Its summary lists any upstream merge conflicts. Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-          fi

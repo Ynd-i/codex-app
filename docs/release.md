@@ -87,9 +87,9 @@ gh workflow run custom-release.yml -R Ynd-i/codex-app -f mode=stable
 gh workflow run custom-release.yml -R Ynd-i/codex-app -f mode=beta -f upstream_beta=true
 ```
 
-A merge conflict or failure opens an issue and publishes nothing, unless only the update
-feed step failed after the GitHub release was created; the run summary lists conflicted
-files. Upstream releases that touch customized files, such as the usage screen, conflict
+A merge conflict or failure publishes nothing, unless only the update feed step failed
+after the GitHub release was created. GitHub emails the failed run, since the fork has
+issues disabled; its summary lists conflicted files. Upstream releases that touch customized files, such as the usage screen, conflict
 and need a manual merge of the tag; after that only `beta` mode tags it. Pull before
 working locally, because a sync adds merge commits.
 
