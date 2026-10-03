@@ -10,18 +10,20 @@ complete; this section replaces that handoff.
 - Primary: `/Users/yndi/dev/projects/codex-app/paseo`, branch `codex/desktop-ui`.
   It contains the integrated Markdown block-spacing and inline-code commits
   `2b4e52e`, `6e335c1` and `fb46652`, the 13px text scale `f51630f`, list markers
-  `a54288d`, the chat sidebar `009bdea`, `94f0b05` and `c52b0ef`, rail actions `1e8b5fa`
-  and the rail usage popover `bd43b54`. The user's uncommitted **Native session fork draft**
+  `a54288d`, the chat sidebar `009bdea`, `94f0b05` and `c52b0ef`, rail actions `1e8b5fa`,
+  the rail usage popover `bd43b54`, chat sections `e636690`, `273459e` and `4e80d44`,
+  and the project and chat menus `0dec0cb`, `d564b4a` and `f4a3e94`. The user's uncommitted **Native session fork draft**
   in this file and the private `context-images/` directory (79 reference images
   plus a Finder `.DS_Store`) remain untouched. Preserve both.
 - Isolated checkout: `/Users/yndi/dev/projects/codex-app/paseo-upstream-4893629`,
   branch `codex/markdown-spacing-paused-20261002`. Its commits `78a5f32`,
-  `63071b9`, `d46ba1f`, `e66eb9a`, `ef2e515`, `f06f026`, `29c8053`, `8ba5126`, `e8a72bf` and `64f7f74`
+  `63071b9`, `d46ba1f`, `e66eb9a`, `ef2e515`, `f06f026`, `29c8053`, `8ba5126`, `e8a72bf`,
+  `64f7f74`, `bf58bf4`, `72a36fd`, `b978dc2`, `9275863`, `4fde9b8` and `c0c71e8`
   replace checkpoint `0964d59` on `cda57c3`; the checkpoint's handoff
   text was dropped there because primary `3e3ba6d` already contained it.
 - Last verified bundle:
   `paseo-upstream-4893629/packages/desktop/release-custom/mac-arm64/Paseo Custom.app`,
-  built from `64f7f74` on upstream `e10f6d2` / 0.11.0-beta.1. Its source matches
+  built from `c0c71e8` on upstream `e10f6d2` / 0.11.0-beta.1. Its source matches
   the primary commits above. It was not installed to `/Applications`.
 
 ### Completed and preserved
@@ -46,7 +48,8 @@ their sections below. Local commits are not pushed.
 2. On 2026-10-02 the user asked for overall Codex similarity rather than pixel
    equality. Fix visible differences at the reference viewport; do not reopen
    sub-pixel ink fitting. The user then asked for the Codex chat sidebar on Mac;
-   see [its restoration](#chat-sidebar-restoration--2026-10-02).
+   see [its restoration](#chat-sidebar-restoration--2026-10-02) and
+   [sections and menus](#chat-sections-and-menus--2026-10-03).
 3. Audit the remaining surface and acceptance gaps in Steps below. Full visual
    parity, provider/remote-device acceptance and distribution gates are not claimed.
 
@@ -916,8 +919,68 @@ inspected. Logs: `/private/tmp/paseo-rail-renderer{,-2}.log` and
 
 Remaining difference: the selected chat is highlighted in both Recent and its
 project group, while Codex highlights one row. The user does not want the Codex
-workspace menu or notifications bell in the header. The full native browser suite
-was not rerun.
+workspace menu in the header. The full native browser suite was not rerun.
+
+### Chat sections and menus — 2026-10-03
+
+The user then supplied Codex captures of the section headers, Recent's right-click
+menu, the New section dialog, the notification bell and the project and chat menus,
+and asked that every change keep upstream Paseo backend updates mergeable.
+
+- Sections (`e636690`): Pinned, Recent and Projects headers collapse and show a `…`
+  menu on hover: Recently updated or Manual order. Manual order drags rows; chats it
+  has not seen stay where activity puts them, so a new chat still arrives on top.
+  Projects reuse the shared project order and add a project from the header `+`.
+- Custom sections (`273459e`): right-clicking Recent offers Sort chats, Show ›
+  Projects and New section. Chats and projects move through a Section › submenu. A
+  custom section's right-click menu edits it, marks its chats read, archives them or
+  removes the section, which returns its items to their default places.
+- Notifications (`4e80d44`): the bell beside search replaces the sections with
+  Priority (pending permissions and errors) and finished chats grouped by day. Reply
+  previews come only from timelines this window already holds, because fetching
+  another chat's timeline resumes it on its host.
+- Project and chat menus (`0dec0cb`, `f4a3e94`, captures `d564b4a`): the project menu follows
+  the reference: Pin to top, Edit, Section ›, Show in Finder, Archive chats, Remove
+  project. A pinned project shows in Pinned only. Remove project reuses the workspace
+  sidebar's confirmation and host removal. Chat menus add Fork › (a new chat in the
+  same workspace or a new workspace, seeded with the chat's history; hidden on hosts
+  without `agentForkContext`) and Open in new window. The row and titlebar menus
+  share items but keep their reference orders: the titlebar puts Archive third and
+  read state last. Mac rename and New section dialogs right-align compact Cancel
+  and submit buttons.
+- Recent's Organize sidebar › By project / Merged is inferred: the captures show the
+  menu, not the merged result. Merged keeps every chat in Recent and shows projects
+  as rows without nested chats. Replace it once a merged-mode capture exists.
+
+All section state is client-side, in the `desktop-chat-sections` persisted store.
+Fields added after its first version (pinned projects, organize mode) are optional
+because the validated storage deletes any saved state its schema rejects; a unit
+test loads the earlier shape. Pins, unread state and titles keep using existing
+agent labels and RPCs. The daemon, server and protocol are unchanged. The only shell
+change is an optional `agentLink` on the existing `paseo:window:openNew` IPC; main
+parses it with the protocol's `parseAgentDeepLink` and opens the window on the agent
+route.
+
+Validation: the sidebar reference spec covers sort, reorder and collapse, custom
+sections, the bell and the new menus (pin to Pinned, Show in Finder through the
+desktop editor bridge, Merged, Fork in a new chat with its history attachment,
+archive chats and remove project) and the row menu order; the chat Copy spec checks
+the titlebar order. 15 renderer cases pass across the sidebar, chat
+Copy menu, project-picker, single-chat and project-editor specs, plus the browser
+Projects settings case. The shared `openProjects` helper now scopes its click to the
+settings sidebar, because the Mac chat sidebar's Projects header is also a
+"Projects" button. Unit tests: 7 app (chat model, sections store) and 4 desktop
+(window owner). The Custom package rebuilt from `c0c71e8` passes smoke and the
+native runner, which now opens a chat in a new window, checks that window shows the
+same chat on its workspace route, and closes it. The first runner attempt on that
+bundle failed earlier, at the draft check after reload: an extra `n` followed chat
+A's saved draft. The immediate rerun passed; the cause was not found. The same
+runner passed on the `9275863` bundle.
+[Project menu](../qa-evidence/codex-desktop/sidebar-project-menu.png),
+[Fork submenu](../qa-evidence/codex-desktop/sidebar-chat-fork-menu.png),
+[Organize sidebar](../qa-evidence/codex-desktop/sidebar-organize-menu.png) and
+[New section dialog](../qa-evidence/codex-desktop/sidebar-new-section-dialog.png)
+were inspected.
 
 ### Sidebar motion and selection — 2026-10-01
 
