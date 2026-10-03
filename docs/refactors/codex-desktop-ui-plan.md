@@ -39,10 +39,11 @@ complete; this section replaces that handoff.
   certificate: build B satisfies build A's designated requirement while an ad-hoc build
   does not; A downloaded B from a local feed on the beta channel and installed it on quit
   (bundle identical to B, `codesign --strict --deep` valid); the signed, stamped app
-  passes the packaged smoke; the prepackaged dmg keeps the signature. Pending on the user:
-  create the real certificate and set `CUSTOM_SIGNING_P12` and
-  `CUSTOM_SIGNING_P12_PASSWORD`; until then the release workflow fails at signing. The
-  one-off ad-hoc releases cannot update in place; install the first signed release by hand.
+  passes the packaged smoke; the prepackaged dmg keeps the signature. The user created
+  the real certificate (CN `Paseo Custom`, valid until 2046-09-28) and set
+  `CUSTOM_SIGNING_P12` and `CUSTOM_SIGNING_P12_PASSWORD` (13:49 UTC); no CI run has signed
+  with them yet. The one-off ad-hoc releases cannot update in place; install the first
+  signed release by hand.
 - Isolated checkout: `/Users/yndi/dev/projects/codex-app/paseo-upstream-4893629`,
   branch `codex/markdown-spacing-paused-20261002`. Its commits `78a5f32`,
   `63071b9`, `d46ba1f`, `e66eb9a`, `ef2e515`, `f06f026`, `29c8053`, `8ba5126`, `e8a72bf`,
