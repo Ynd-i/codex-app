@@ -2603,6 +2603,8 @@ export class Session {
     switch (msg.type) {
       case "agent.rewind.request":
         return this.handleAgentRewindRequest(msg, source);
+      case "agent.fork.request":
+        return this.handleAgentForkRequest(msg, source);
       default:
         return undefined;
     }
@@ -4691,6 +4693,40 @@ export class Session {
       );
     } finally {
       this.rewindInitiators.delete(msg.agentId);
+    }
+  }
+
+  private async handleAgentForkRequest(
+    msg: Extract<SessionInboundMessage, { type: "agent.fork.request" }>,
+    source?: object,
+  ): Promise<void> {
+    const respond = (childAgentId: string | null, error: string | null) =>
+      this.emitForSource(
+        {
+          type: "agent.fork.response",
+          payload: {
+            requestId: msg.requestId,
+            agentId: msg.agentId,
+            childAgentId,
+            ok: error === null,
+            error,
+          },
+        },
+        source,
+      );
+    try {
+      await ensureUnarchivedAgentLoaded(msg.agentId, {
+        agentManager: this.agentManager,
+        agentStorage: this.agentStorage,
+        logger: this.sessionLogger,
+      });
+      const child = await this.agentManager.forkAgent({
+        sourceAgentId: msg.agentId,
+        boundaryCursor: msg.boundaryCursor,
+      });
+      respond(child.id, null);
+    } catch (error) {
+      respond(null, error instanceof Error ? error.message : "Failed to fork agent");
     }
   }
 

@@ -1,4 +1,6 @@
 export const PARENT_AGENT_ID_LABEL = "paseo.parent-agent-id";
+/** Origin of a native fork. Unlike the parent label it implies no ownership or archive cascade. */
+export const FORKED_FROM_AGENT_ID_LABEL = "paseo.forked-from-agent-id";
 const OPEN_AGENT_TAB_LABEL_PREFIX = "paseo.open-agent-tab.";
 
 export function getOpenAgentTabLabel(clientId: string): string {

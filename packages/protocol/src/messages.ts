@@ -378,6 +378,7 @@ const AgentCapabilityFlagsSchema: z.ZodType<AgentCapabilityFlags> = z
     supportsRewindFiles: z.boolean().optional().default(false),
     // COMPAT(rewind): added in v0.1.X, drop when floor >= v0.1.X.
     supportsRewindBoth: z.boolean().optional().default(false),
+    supportsNativeFork: z.boolean().optional(),
   })
   .catchall(z.boolean());
 
@@ -2012,6 +2013,25 @@ export const AgentRewindResponseMessageSchema = z.object({
   }),
 });
 
+// Native fork: the daemon picks the latest completed turn when boundaryCursor is omitted.
+export const AgentForkRequestMessageSchema = z.object({
+  type: z.literal("agent.fork.request"),
+  agentId: z.string(),
+  boundaryCursor: AgentTimelineCursorSchema.optional(),
+  requestId: z.string(),
+});
+
+export const AgentForkResponseMessageSchema = z.object({
+  type: z.literal("agent.fork.response"),
+  payload: z.object({
+    requestId: z.string(),
+    agentId: z.string(),
+    childAgentId: z.string().nullable(),
+    ok: z.boolean(),
+    error: z.string().nullable(),
+  }),
+});
+
 export const UpdateAgentResponseMessageSchema = z.object({
   type: z.literal("update_agent_response"),
   payload: AgentActionResponsePayloadSchema,
@@ -3262,6 +3282,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   AgentConfigApplyRequestMessageSchema,
   AgentDetachRequestMessageSchema,
   AgentRewindRequestMessageSchema,
+  AgentForkRequestMessageSchema,
   AgentPermissionResponseMessageSchema,
   CheckoutStatusRequestSchema,
   CheckoutDiffGetRequestSchema,
@@ -3642,6 +3663,8 @@ export const ServerInfoStatusPayloadSchema = z
         agentForkContext: z.boolean().optional(),
         // COMPAT(agentForkContextCursor): added in v0.1.108, remove gate after 2027-01-14.
         agentForkContextCursor: z.boolean().optional(),
+        // COMPAT(agentNativeFork): added in v0.11.0, remove gate after 2027-04-03.
+        agentNativeFork: z.boolean().optional(),
         // COMPAT(providerSubagents): added in v0.1.107, remove gate after 2027-01-12.
         providerSubagents: z.boolean().optional(),
         // COMPAT(projectedSubagentTimeline): added after v0.8.0, remove gates after 2027-03-14; retain wire field.
@@ -6881,6 +6904,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   AgentConfigApplyResponseMessageSchema,
   AgentDetachResponseMessageSchema,
   AgentRewindResponseMessageSchema,
+  AgentForkResponseMessageSchema,
   UpdateAgentResponseMessageSchema,
   ProjectRenameResponseSchema,
   ProjectIconSetResponseSchema,
@@ -7081,6 +7105,7 @@ export type SetAgentFeatureResponseMessage = z.infer<typeof SetAgentFeatureRespo
 export type AgentConfigApplyResponseMessage = z.infer<typeof AgentConfigApplyResponseMessageSchema>;
 export type AgentDetachResponseMessage = z.infer<typeof AgentDetachResponseMessageSchema>;
 export type AgentRewindResponseMessage = z.infer<typeof AgentRewindResponseMessageSchema>;
+export type AgentForkResponseMessage = z.infer<typeof AgentForkResponseMessageSchema>;
 export type UpdateAgentResponseMessage = z.infer<typeof UpdateAgentResponseMessageSchema>;
 export type ProjectRenameResponse = z.infer<typeof ProjectRenameResponseSchema>;
 export type ProjectIconSetResponse = z.infer<typeof ProjectIconSetResponseSchema>;

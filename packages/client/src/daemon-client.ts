@@ -3512,6 +3512,39 @@ export class DaemonClient {
     return payload;
   }
 
+  /** Native fork; resolves with the new agent's id. */
+  async forkAgent(
+    agentId: string,
+    boundaryCursor?: { epoch: string; seq: number },
+  ): Promise<string> {
+    const requestId = this.createRequestId();
+    const message = SessionInboundMessageSchema.parse({
+      type: "agent.fork.request",
+      requestId,
+      agentId,
+      ...(boundaryCursor ? { boundaryCursor } : {}),
+    });
+    const payload = await this.sendRequest({
+      requestId,
+      message,
+      timeout: 120_000,
+      options: { skipQueue: true },
+      select: (msg) => {
+        if (msg.type !== "agent.fork.response") {
+          return null;
+        }
+        if (msg.payload.requestId !== requestId) {
+          return null;
+        }
+        return msg.payload;
+      },
+    });
+    if (!payload.ok || !payload.childAgentId) {
+      throw new Error(payload.error ?? "Agent fork failed");
+    }
+    return payload.childAgentId;
+  }
+
   async cancelAgent(agentId: string): Promise<void> {
     const requestId = this.createRequestId();
     const message = SessionInboundMessageSchema.parse({

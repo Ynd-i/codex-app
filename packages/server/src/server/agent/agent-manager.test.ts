@@ -4336,6 +4336,109 @@ test("importProviderSession imports the selected session without listing and pub
   expect((await storage.get(imported.id))?.title).toBe("Trace provider imports");
 });
 
+describe("forkAgent", () => {
+  class ForkableSession extends TestAgentSession {
+    override readonly capabilities = { ...TEST_CAPABILITIES, supportsNativeFork: true };
+    readonly forkedMessageIds: string[] = [];
+
+    async forkConversation(input: { messageId: string }): Promise<AgentPersistenceHandle> {
+      this.forkedMessageIds.push(input.messageId);
+      return { provider: "codex", sessionId: "thread-child", nativeHandle: "thread-child" };
+    }
+  }
+
+  function turn(messageId: string, reply: string) {
+    return [
+      { item: { type: "user_message" as const, text: `ask ${messageId}`, messageId } },
+      { item: { type: "assistant_message" as const, text: reply } },
+    ];
+  }
+
+  async function setup() {
+    const workdir = mkdtempSync(join(tmpdir(), "agent-manager-fork-"));
+    const storage = new AgentStorage(join(workdir, "agents"), logger);
+    const source = new ForkableSession({ provider: "codex", cwd: workdir });
+
+    class ForkClient extends TestAgentClient {
+      readonly imports: Array<{ handle: string; model: string | undefined }> = [];
+
+      async importSession(
+        input: ImportProviderSessionInput,
+        context: ImportProviderSessionContext,
+      ) {
+        this.imports.push({ handle: input.providerHandleId, model: context.storedConfig.model });
+        const isChild = input.providerHandleId === "thread-child";
+        return {
+          session: isChild ? new TestAgentSession({ provider: "codex", cwd: workdir }) : source,
+          config: {
+            ...context.storedConfig,
+            model: isChild ? context.storedConfig.model : "gpt-5.4-mini",
+          },
+          persistence: {
+            provider: "codex" as const,
+            sessionId: input.providerHandleId,
+            nativeHandle: input.providerHandleId,
+          },
+          timeline: isChild ? turn("u1", "A1") : [...turn("u1", "A1"), ...turn("u2", "A2")],
+        };
+      }
+    }
+
+    const client = new ForkClient();
+    const manager = new AgentManager({ clients: { codex: client }, registry: storage, logger });
+    const sourceAgent = await manager.importProviderSession({
+      provider: "codex",
+      providerHandleId: "thread-source",
+      cwd: workdir,
+      workspaceId: "ws-source",
+    });
+    return { manager, client, source, sourceAgent };
+  }
+
+  test("copies the conversation through the selected turn into a new agent in the same workspace", async () => {
+    const { manager, client, source, sourceAgent } = await setup();
+    const timeline = manager.fetchTimeline(sourceAgent.id, { limit: 0 });
+    const firstReply = timeline.rows.find((row) => row.item.type === "assistant_message");
+
+    const child = await manager.forkAgent({
+      sourceAgentId: sourceAgent.id,
+      boundaryCursor: { epoch: timeline.epoch, seq: firstReply!.seq },
+    });
+
+    expect(source.forkedMessageIds).toEqual(["u1"]);
+    expect(client.imports.at(-1)).toEqual({ handle: "thread-child", model: "gpt-5.4-mini" });
+    expect(child.id).not.toBe(sourceAgent.id);
+    expect(child.workspaceId).toBe("ws-source");
+    expect(child.labels).toEqual({ "paseo.forked-from-agent-id": sourceAgent.id });
+    expect(child.persistence?.sessionId).toBe("thread-child");
+    expect(manager.getTimeline(child.id)).toEqual([
+      { type: "user_message", text: "ask u1", messageId: "u1" },
+      { type: "assistant_message", text: "A1" },
+    ]);
+    expect(manager.getTimeline(sourceAgent.id)).toHaveLength(4);
+  });
+
+  test("forks through the latest turn when no boundary is given", async () => {
+    const { manager, source, sourceAgent } = await setup();
+
+    await manager.forkAgent({ sourceAgentId: sourceAgent.id });
+
+    expect(source.forkedMessageIds).toEqual(["u2"]);
+  });
+
+  test("rejects a boundary from an earlier timeline epoch", async () => {
+    const { manager, source, sourceAgent } = await setup();
+
+    await expect(
+      manager.forkAgent({
+        sourceAgentId: sourceAgent.id,
+        boundaryCursor: { epoch: "old", seq: 2 },
+      }),
+    ).rejects.toThrow("The chat changed since this turn was shown");
+    expect(source.forkedMessageIds).toEqual([]);
+  });
+});
+
 test("reloadAgentSession passes daemon launch env through the provider launch context", async () => {
   const workdir = mkdtempSync(join(tmpdir(), "agent-manager-reload-context-"));
   const storagePath = join(workdir, "agents");

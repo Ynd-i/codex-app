@@ -14,6 +14,7 @@ import {
   hasOpenAgentTab,
   isDelegatedAgent,
   isOpenAgentTabLabel,
+  FORKED_FROM_AGENT_ID_LABEL,
   PARENT_AGENT_ID_LABEL,
 } from "@getpaseo/protocol/agent-labels";
 import type { Logger } from "pino";
@@ -62,6 +63,7 @@ import {
   type SeedAgentTimelineOptions,
 } from "./agent-timeline-store.js";
 import type {
+  AgentTimelineCursor,
   AgentTimelineFetchOptions,
   AgentTimelineFetchResult,
   AgentTimelineRow,
@@ -1417,6 +1419,7 @@ export class AgentManager {
     cwd: string;
     workspaceId: string;
     labels?: Record<string, string>;
+    config?: Partial<AgentSessionConfig>;
   }): Promise<ManagedAgent> {
     this.assertAcceptingAgentRegistrations();
     const resolvedAgentId = validateAgentId(this.idFactory(), "importProviderSession");
@@ -1429,6 +1432,7 @@ export class AgentManager {
 
     const { storedConfig, launchConfig, paseoToolPolicy } = await this.prepareSessionConfig(
       {
+        ...input.config,
         provider: input.provider,
         cwd: input.cwd,
       },
@@ -3186,6 +3190,80 @@ export class AgentManager {
     } finally {
       this.runs.settleForegroundRun(agentId, lock.token);
     }
+  }
+
+  /**
+   * Native fork: copy the source's provider conversation through a completed turn into a new
+   * agent in the same workspace. The source keeps its handle, timeline and run.
+   */
+  forkAgent(input: {
+    sourceAgentId: string;
+    boundaryCursor?: AgentTimelineCursor;
+  }): Promise<ManagedAgent> {
+    return this.trackAgentRegistrationOperation(this.forkAgentInternal(input));
+  }
+
+  private async forkAgentInternal(input: {
+    sourceAgentId: string;
+    boundaryCursor?: AgentTimelineCursor;
+  }): Promise<ManagedAgent> {
+    const source = this.requireSessionAgent(input.sourceAgentId);
+    if (!source.session.capabilities.supportsNativeFork || !source.session.forkConversation) {
+      throw new Error(`Provider '${source.provider}' does not support native fork`);
+    }
+    if (!source.workspaceId) {
+      throw new Error("Cannot fork an agent that has no workspace");
+    }
+    const messageId = this.resolveForkUserMessageId(input.sourceAgentId, input.boundaryCursor);
+    const handle = await source.session.forkConversation({ messageId });
+    // ponytail: a daemon exit between this clone and registration leaves an orphan native
+    // session; the source is untouched. Persist the handle in a creation receipt to recover it.
+    const config = source.config;
+    return this.importProviderSessionInternal({
+      provider: source.provider,
+      providerHandleId: handle.sessionId,
+      cwd: config.cwd,
+      workspaceId: source.workspaceId,
+      labels: { [FORKED_FROM_AGENT_ID_LABEL]: source.id },
+      config: {
+        title: config.title,
+        modeId: config.modeId,
+        model: config.model,
+        thinkingOptionId: config.thinkingOptionId,
+        featureValues: config.featureValues,
+        providerOptions: config.providerOptions,
+        systemPrompt: config.systemPrompt,
+      },
+    });
+  }
+
+  /** The provider id of the user message that opens the completed turn to fork through. */
+  private resolveForkUserMessageId(agentId: string, cursor?: AgentTimelineCursor): string {
+    if (cursor && cursor.epoch !== this.timelineStore.getEpoch(agentId)) {
+      throw new Error("The chat changed since this turn was shown; reload it and fork again");
+    }
+    const rows = this.timelineStore.getRows(agentId);
+    const boundarySeq = cursor?.seq ?? Number.POSITIVE_INFINITY;
+    const userRow = rows.findLast(
+      (row) => row.seq <= boundarySeq && row.item.type === "user_message",
+    );
+    if (!userRow || userRow.item.type !== "user_message") {
+      throw new Error("There is no completed turn to fork");
+    }
+    const turnIsLatest = !rows.some(
+      (row) => row.seq > boundarySeq && row.item.type === "user_message",
+    );
+    if (turnIsLatest && this.hasInFlightRun(agentId)) {
+      throw new Error("Wait for the current turn to finish before forking it");
+    }
+    if (userRow.item.clientMessageId === userRow.item.messageId && !userRow.providerMessageId) {
+      throw new Error("Cannot fork before the provider acknowledges the prompt");
+    }
+    const messageId = userRow.providerMessageId ?? userRow.item.messageId;
+    if (!messageId) {
+      throw new Error("The selected turn has no provider message id");
+    }
+    return messageId;
   }
 
   async deleteAgentState(agentId: string): Promise<void> {
