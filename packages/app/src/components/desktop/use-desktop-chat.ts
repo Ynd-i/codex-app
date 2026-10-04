@@ -4,7 +4,11 @@ import { useTranslation } from "react-i18next";
 import { useToast } from "@/contexts/toast-context";
 import { resolveFocusedChatTarget } from "@/composer/focused-chat-target";
 import { getHostRuntimeStore } from "@/runtime/host-runtime";
-import { useActiveWorkspaceSelection } from "@/stores/navigation-active-workspace-store";
+import {
+  getLastWorkspaceSelection,
+  useActiveWorkspaceSelection,
+} from "@/stores/navigation-active-workspace-store";
+import { useSessionStore } from "@/stores/session-store";
 import { useWorkspaceFields } from "@/stores/session-store-hooks";
 import {
   collectAllTabs,
@@ -12,11 +16,15 @@ import {
   useWorkspaceLayoutStore,
   type WorkspaceLayout,
 } from "@/stores/workspace-layout-store";
+import { redirectIfArchivingActiveWorkspace } from "@/utils/sidebar-workspace-archive-redirect";
+import { archiveWorkspaceOptimistically } from "@/workspace/workspace-archive";
+import { purgeArchivedWorkspaceState } from "@/workspace/use-workspace-archive";
 import {
   updateDesktopChat,
   type DesktopChatAction,
   type DesktopChatTarget,
 } from "./desktop-chat-actions";
+import { selectEmptiedWorkspaces } from "./desktop-chat-model";
 
 function focusedAgentId(layout: WorkspaceLayout | undefined): string | null {
   if (!layout) return null;
@@ -86,4 +94,33 @@ export function useDesktopChatMutation() {
     [mutateAsync],
   );
   return { update, pendingAgent: mutation.isPending ? mutation.variables?.agent : null };
+}
+
+/** Archives the workspaces of chats that were just archived once no chat is left in them. */
+export async function archiveEmptiedWorkspaces(
+  chats: readonly Pick<DesktopChatTarget, "serverId" | "workspaceId">[],
+): Promise<void> {
+  for (const serverId of new Set(chats.map((chat) => chat.serverId))) {
+    const session = useSessionStore.getState().sessions[serverId];
+    const client = getHostRuntimeStore().getClient(serverId);
+    if (!session || !client) continue;
+    const workspaceIds = selectEmptiedWorkspaces({
+      workspaceIds: chats
+        .filter((chat) => chat.serverId === serverId)
+        .map((chat) => chat.workspaceId),
+      workspaces: session.workspaces.values(),
+      agents: session.agents.values(),
+    });
+    for (const workspaceId of workspaceIds) {
+      // ponytail: the last remembered workspace stands in for the route; off a workspace route
+      // (Settings) this can redirect to the project's new chat.
+      redirectIfArchivingActiveWorkspace({
+        serverId,
+        workspaceId,
+        activeWorkspaceSelection: getLastWorkspaceSelection(),
+      });
+      await archiveWorkspaceOptimistically({ client, workspace: { serverId, workspaceId } });
+      purgeArchivedWorkspaceState({ serverId, workspaceId });
+    }
+  }
 }

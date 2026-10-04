@@ -22,6 +22,7 @@ import { useArchiveAgent } from "@/hooks/use-archive-agent";
 import type { Theme } from "@/styles/theme";
 import { confirmDialog } from "@/utils/confirm-dialog";
 import { useChatSectionsStore, type ChatSection } from "./desktop-chat-sections-store";
+import { archiveEmptiedWorkspaces } from "./use-desktop-chat";
 
 const PlusIcon = withUnistyles(Plus);
 const mutedIcon = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
@@ -181,6 +182,7 @@ export function useArchiveChats(chats: AggregatedAgent[], message: string) {
       if (!confirmed) return;
       for (const agent of chats)
         await archiveAgent({ serverId: agent.serverId, agentId: agent.id });
+      await archiveEmptiedWorkspaces(chats);
     })().catch((error) => toast.error(error instanceof Error ? error.message : String(error)));
   }, [archiveAgent, chats, message, t, toast]);
 }

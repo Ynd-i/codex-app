@@ -12,6 +12,7 @@ import {
   orderSectionChats,
   orderSectionProjects,
   partitionChatSections,
+  selectEmptiedWorkspaces,
   type DesktopChatProject,
 } from "./desktop-chat-model";
 
@@ -224,4 +225,40 @@ it("previews the last reply as one plain line", () => {
   expect(
     latestReplyPreview([reply("first"), reply("**Done.** Fixed `the bug`.\n\n```ts\ncode\n```")]),
   ).toBe("Done. Fixed the bug.");
+});
+
+it("archives workspaces left without chats but keeps worktrees and each project's last one", () => {
+  const workspaces = [
+    { id: "a", projectId: "app", workspaceKind: "directory" as const },
+    { id: "b", projectId: "app", workspaceKind: "directory" as const },
+    { id: "c", projectId: "app", workspaceKind: "directory" as const },
+    { id: "tree", projectId: "app", workspaceKind: "worktree" as const },
+    { id: "solo", projectId: "lib", workspaceKind: "local_checkout" as const },
+  ];
+  const archivedAt = new Date();
+  const agents = [
+    { workspaceId: "a", archivedAt },
+    { workspaceId: "b", archivedAt },
+    { workspaceId: "b", archivedAt: null },
+    { workspaceId: "c", archivedAt },
+  ];
+  expect(
+    selectEmptiedWorkspaces({
+      workspaceIds: ["a", "b", "tree", "solo", "gone"],
+      workspaces,
+      agents,
+    }),
+  ).toEqual(["a"]);
+  // The project keeps "tree" active, so both directory workspaces can go.
+  expect(selectEmptiedWorkspaces({ workspaceIds: ["a", "c", "a"], workspaces, agents })).toEqual([
+    "a",
+    "c",
+  ]);
+  expect(
+    selectEmptiedWorkspaces({
+      workspaceIds: ["a", "c"],
+      workspaces: [workspaces[0]!, workspaces[2]!],
+      agents,
+    }),
+  ).toEqual(["a"]);
 });

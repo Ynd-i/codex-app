@@ -7,6 +7,7 @@ import type {
 import { isWorkspaceRootAgent } from "@/subagents/policies";
 import { isChatFolderPath } from "@/projects/chat-folder";
 import { applyStoredOrdering } from "@/hooks/sidebar-workspaces-view-model";
+import type { WorkspaceDescriptor } from "@/stores/session-store";
 import type { StreamItem } from "@/types/stream";
 import {
   DATE_SECTION_ORDER,
@@ -99,6 +100,34 @@ export function buildDesktopChatSidebar({
       .sort((left, right) => desktopChatPinnedAt(right)! - desktopChatPinnedAt(left)!),
     recent: visible.filter((agent) => desktopChatPinnedAt(agent) === null),
   };
+}
+
+/**
+ * Workspaces an archive left without an unarchived agent, so they archive with their last chat.
+ * Worktrees keep their row because archiving one can remove uncommitted work, and each project
+ * keeps one workspace because the daemon treats a project without one as archived.
+ */
+export function selectEmptiedWorkspaces(input: {
+  workspaceIds: Iterable<string | undefined>;
+  workspaces: Iterable<Pick<WorkspaceDescriptor, "id" | "projectId" | "workspaceKind">>;
+  agents: Iterable<{ workspaceId?: string; archivedAt?: Date | null }>;
+}): string[] {
+  const workspaces = [...input.workspaces];
+  const inUse = new Set<string | undefined>();
+  for (const agent of input.agents) if (!agent.archivedAt) inUse.add(agent.workspaceId);
+  const remaining = new Map<string, number>();
+  for (const workspace of workspaces)
+    remaining.set(workspace.projectId, (remaining.get(workspace.projectId) ?? 0) + 1);
+  const emptied: string[] = [];
+  for (const workspaceId of new Set(input.workspaceIds)) {
+    const workspace = workspaces.find((candidate) => candidate.id === workspaceId);
+    if (!workspace || workspace.workspaceKind === "worktree" || inUse.has(workspaceId)) continue;
+    const count = remaining.get(workspace.projectId) ?? 0;
+    if (count <= 1) continue;
+    remaining.set(workspace.projectId, count - 1);
+    emptied.push(workspace.id);
+  }
+  return emptied;
 }
 
 export type ChatSectionSort = "latest" | "manual";

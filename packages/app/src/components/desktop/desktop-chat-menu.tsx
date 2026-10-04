@@ -34,7 +34,7 @@ import type { Theme } from "@/styles/theme";
 import { confirmDialog } from "@/utils/confirm-dialog";
 import type { DesktopChatTarget } from "./desktop-chat-actions";
 import { desktopChatKey, desktopChatPinnedAt, isDesktopChatUnread } from "./desktop-chat-model";
-import { useDesktopChatMutation } from "./use-desktop-chat";
+import { archiveEmptiedWorkspaces, useDesktopChatMutation } from "./use-desktop-chat";
 
 const ArchiveIcon = withUnistyles(Archive);
 const RenameIcon = withUnistyles(Pencil);
@@ -261,6 +261,7 @@ export function useDesktopChatMenu(agent: DesktopChatTarget) {
       )
         return;
       await archiveAgent({ serverId: agent.serverId, agentId: agent.id });
+      await archiveEmptiedWorkspaces([agent]);
     })().catch((error) => toast.error(error instanceof Error ? error.message : String(error)));
   }, [agent, archiveAgent, t, toast]);
   return {
