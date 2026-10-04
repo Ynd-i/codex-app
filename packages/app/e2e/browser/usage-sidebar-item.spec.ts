@@ -95,7 +95,7 @@ test.describe("Usage item", () => {
 
     await test.step("a fresh device shows default windows, which opens the Usage screen", async () => {
       await expect(usageItem(page)).toBeVisible({ timeout: 30_000 });
-      await expectPinnedUsage(page, ["31% 5h", "54% wk", "7% 5h", "12% wk"]);
+      await expectPinnedUsage(page, "54% wk", 1);
       await qaScreenshot(page, "desktop-footer-defaults", { kind: "footer" });
       await openSidebarNavSettings(page);
       await qaScreenshot(page, "desktop-settings-sidebar-footer");
@@ -108,7 +108,7 @@ test.describe("Usage item", () => {
       await qaScreenshot(page, "compact-settings-sidebar-footer");
       await gotoAppShell(page);
       await openCompactSidebar(page);
-      await expectPinnedUsage(page, ["31% 5h", "54% wk", "7% 5h", "12% wk"]);
+      await expectPinnedUsage(page, "54% wk", 1);
       await qaScreenshot(page, "compact-footer-defaults");
       await page.setViewportSize(WIDE);
       await gotoAppShell(page);
@@ -123,9 +123,9 @@ test.describe("Usage item", () => {
         0,
       );
       await togglePin(screen, "Claude", "Session");
-      await expectPinnedUsage(page, ["31% 5h"]);
+      await expectPinnedUsage(page, "31% 5h");
       await togglePin(screen, "Codex", "Weekly");
-      await expectPinnedUsage(page, ["31% 5h", "12% wk"]);
+      await expectPinnedUsage(page, "31% 5h", 1);
       await expect(usageItem(page)).not.toHaveText("Usage");
       await qaScreenshot(page, "desktop-footer-pins", { kind: "footer" });
       await expect(page.getByRole("button", { name: "Usage options", exact: true })).toBeVisible();
@@ -141,7 +141,7 @@ test.describe("Usage item", () => {
 
     await test.step("remaining flips the Usage item and the Usage screen", async () => {
       await showUsageAs(page, "remaining");
-      await expectPinnedUsage(page, ["69% 5h", "88% wk"]);
+      await expectPinnedUsage(page, "69% 5h", 1);
       await expect(usageItem(page)).toHaveAccessibleName(/Claude .*69% left, Codex .*88% left/);
       await expect(
         screen.getByTestId("usage-report-claude:default").getByText("69% left"),
@@ -164,7 +164,7 @@ test.describe("Usage item", () => {
       await leaveUsageScreen(page);
       await openCompactSidebar(page);
       await expect(usageItem(page)).toBeInViewport();
-      await expectPinnedUsage(page, ["69% 5h", "88% wk"]);
+      await expectPinnedUsage(page, "69% 5h", 1);
       await qaScreenshot(page, "compact-footer");
       await usageItem(page).click();
       const sheet = usageSheet(page);
@@ -205,7 +205,7 @@ test.describe("Usage item", () => {
 
     await test.step("a reload keeps the pins and the toggle", async () => {
       await page.reload();
-      await expectPinnedUsage(page, ["69% 5h", "88% wk"]);
+      await expectPinnedUsage(page, "69% 5h", 1);
       await openUsageOptions(page);
       await expect(page.getByTestId("usage-display-remaining")).toHaveAttribute(
         "aria-checked",
@@ -229,10 +229,10 @@ test.describe("Usage item", () => {
     await test.step("unpinning both brings back default windows, and that survives a reload", async () => {
       await togglePin(screen, "Claude", "Session");
       await togglePin(screen, "Codex", "Weekly");
-      await expectPinnedUsage(page, ["69% 5h", "46% wk", "93% 5h", "88% wk"]);
+      await expectPinnedUsage(page, "46% wk", 1);
       await page.reload();
       await expect(screen.getByText("88% left")).toBeVisible({ timeout: 10_000 });
-      await expectPinnedUsage(page, ["69% 5h", "46% wk", "93% 5h", "88% wk"]);
+      await expectPinnedUsage(page, "46% wk", 1);
       await gotoAppShell(page);
       await usageItem(page).click();
       await expectOnUsageScreen(page);
@@ -312,14 +312,13 @@ test("released hosts supply source logos through the client conversion", async (
   });
   await page.setViewportSize(WIDE);
   await gotoAppShell(page);
-  await expectPinnedUsage(page, ["31% 5h", "54% wk", "7% 5h", "12% wk"]);
+  await expectPinnedUsage(page, "54% wk", 1);
   // Source logos are decorative SVGs with no accessible role. Their path data distinguishes
   // the source artwork from the fallback gauge.
   const claudePath = /<path[^>]* d="([^"]+)"/.exec(claudeAndCodexReports()[0]!.icon!)![1]!;
   const codexPath = /<path[^>]* d="([^"]+)"/.exec(claudeAndCodexReports()[1]!.icon!)![1]!;
   const summary = usageItem(page).getByTestId("sidebar-usage-source");
   await expect(summary.nth(0).locator("svg path").first()).toHaveAttribute("d", claudePath);
-  await expect(summary.nth(1).locator("svg path").first()).toHaveAttribute("d", codexPath);
   await qaScreenshot(page, "released-host-footer", { kind: "footer" });
   await usageItem(page).click();
   await expectOnUsageScreen(page);

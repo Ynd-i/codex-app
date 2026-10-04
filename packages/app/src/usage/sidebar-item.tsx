@@ -1,13 +1,7 @@
 import { router } from "expo-router";
-import { Fragment, useCallback, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Pressable,
-  Text,
-  View,
-  type LayoutChangeEvent,
-  type PressableStateCallbackType,
-} from "react-native";
+import { Pressable, Text, View, type PressableStateCallbackType } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import {
   SidebarPopoverRoot,
@@ -24,14 +18,7 @@ import { useUsageHostId, useUsageHostSelection } from "./hosts";
 import { useUsageHostReports } from "./queries";
 import { UsageSourceIcon } from "./source-icon";
 import { UsageMeter } from "./meter";
-import {
-  choosePinnedUsageLayout,
-  METER_GAP,
-  MIN_METER_WIDTH,
-  resolvePinnedUsage,
-  type PinnedUsageLayout,
-  type PinnedUsageSource,
-} from "./pinned";
+import { mostConstrainedWindow, resolvePinnedUsage, type PinnedUsageSource } from "./pinned";
 import type { UsageHost } from "./model";
 import { UsageBody } from "./usage-section";
 
@@ -49,7 +36,7 @@ export function useHasUsageSummary(): boolean {
 }
 
 /**
- * The sidebar footer's usage entry: each summary window's source icon and percent, and nothing
+ * The sidebar footer's usage entry: the most constrained summary window, and nothing
  * while no summary window has data, since the footer's Usage icon already opens the screen.
  * Pressing it opens the Usage screen; on compact layouts it opens the usage sheet instead.
  */
@@ -207,23 +194,13 @@ function HostUsageSheet({
   );
 }
 
-function pinnedUsageLabel(label: string, sources: readonly PinnedUsageSource[]): string {
-  const windows = sources.flatMap((source) => source.windows);
-  return `${label}: ${windows.map((window) => window.label).join(", ")}`;
-}
-
 function triggerStyle({ hovered }: PressableStateCallbackType & { hovered?: boolean }) {
   return hovered ? [styles.trigger, styles.triggerHovered] : styles.trigger;
 }
 
-function layoutWidth(event: LayoutChangeEvent): number {
-  return event.nativeEvent.layout.width;
-}
-
 /**
- * One line: each account's icon, then per window a meter and "31% 5h". Off-screen copies measure
- * the line with labels and with percents alone; the richest layout that fits is shown, and what
- * it leaves out takes no space at all.
+ * One fixed-size summary however many sources are pinned: the most constrained window's source
+ * icon, meter and "54% wk", then "+N" for the other sources. The full breakdown is one press away.
  */
 function PinnedUsageTrigger({
   label,
@@ -234,103 +211,36 @@ function PinnedUsageTrigger({
   sources: readonly PinnedUsageSource[];
   onPress: () => void;
 }) {
-  const [available, setAvailable] = useState<number | null>(null);
-  const [labelsWidth, setLabelsWidth] = useState<number | null>(null);
-  const [percentsWidth, setPercentsWidth] = useState<number | null>(null);
-  const handleAvailableLayout = useCallback((event: LayoutChangeEvent) => {
-    setAvailable(layoutWidth(event));
-  }, []);
-  const handleLabelsLayout = useCallback((event: LayoutChangeEvent) => {
-    setLabelsWidth(layoutWidth(event));
-  }, []);
-  const handlePercentsLayout = useCallback((event: LayoutChangeEvent) => {
-    setPercentsWidth(layoutWidth(event));
-  }, []);
-  const layout = choosePinnedUsageLayout({
-    available,
-    labelsWidth,
-    percentsWidth,
-    windowCount: sources.reduce((count, source) => count + source.windows.length, 0),
-  });
+  const top = mostConstrainedWindow(sources);
+  if (!top) return null;
+  const { source, window } = top;
+  const more = sources.length - 1;
+  const accessibilityLabel = `${label}: ${window.label}${more > 0 ? `, +${more}` : ""}`;
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={pinnedUsageLabel(label, sources)}
+      accessibilityLabel={accessibilityLabel}
       style={triggerStyle}
       testID="sidebar-usage"
     >
-      <View style={styles.line} onLayout={handleAvailableLayout}>
-        <PinnedUsageLine sources={sources} layout={layout} />
-      </View>
-      <View
-        style={styles.measure}
-        pointerEvents="none"
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
-        aria-hidden
-      >
-        <View style={styles.measured} onLayout={handleLabelsLayout}>
-          <PinnedUsageLine sources={sources} layout="labels" measuring />
-        </View>
-        <View style={styles.measured} onLayout={handlePercentsLayout}>
-          <PinnedUsageLine sources={sources} layout="percents" measuring />
-        </View>
-      </View>
-    </Pressable>
-  );
-}
-
-/**
- * The line's items as direct children of one row, so every meter shares the leftover width
- * equally.
- */
-function PinnedUsageLine({
-  sources,
-  layout,
-  measuring = false,
-}: {
-  sources: readonly PinnedUsageSource[];
-  layout: PinnedUsageLayout;
-  measuring?: boolean;
-}) {
-  return sources.map((source, sourceIndex) => (
-    <Fragment key={source.key}>
-      <View
-        style={sourceIndex === 0 ? null : styles.sourceGap}
-        testID={measuring ? undefined : "sidebar-usage-source"}
-      >
+      <View testID="sidebar-usage-source">
         <UsageSourceIcon svg={source.icon} size={14} />
       </View>
-      {source.windows.map((window, windowIndex) => {
-        const leadStyle = windowIndex === 0 ? styles.iconGap : styles.windowGap;
-        return (
-          <Fragment key={window.key}>
-            {layout === "meters" ? (
-              <View style={[styles.meterSlot, leadStyle]}>
-                <UsageMeter
-                  percent={window.percent}
-                  tone={window.tone}
-                  quiet
-                  style={styles.meter}
-                />
-              </View>
-            ) : null}
-            <Text
-              style={[styles.percent, layout === "meters" ? null : leadStyle]}
-              numberOfLines={1}
-              testID={measuring ? undefined : "sidebar-usage-pinned-window"}
-            >
-              {window.percentText}
-              {layout === "percents" || window.shortLabel === "" ? null : (
-                <Text style={styles.windowLabel}>{` ${window.shortLabel}`}</Text>
-              )}
-            </Text>
-          </Fragment>
-        );
-      })}
-    </Fragment>
-  ));
+      <UsageMeter percent={window.percent} tone={window.tone} style={styles.meter} />
+      <Text style={styles.percent} numberOfLines={1} testID="sidebar-usage-pinned-window">
+        {window.percentText}
+        {window.shortLabel === "" ? null : (
+          <Text style={styles.windowLabel}>{` ${window.shortLabel}`}</Text>
+        )}
+      </Text>
+      {more > 0 ? (
+        <Text style={styles.more} numberOfLines={1} testID="sidebar-usage-more">
+          {`+${more}`}
+        </Text>
+      ) : null}
+    </Pressable>
+  );
 }
 
 const styles = StyleSheet.create((theme) => ({
@@ -348,55 +258,27 @@ const styles = StyleSheet.create((theme) => ({
   triggerHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
   },
-  line: {
-    flex: 1,
-    minWidth: 0,
-    flexDirection: "row",
-    alignItems: "center",
-    overflow: "hidden",
-  },
-  // Wide enough that nothing inside wraps or shrinks; each child reports its natural width.
-  measure: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: 10_000,
-    opacity: 0,
-  },
-  measured: {
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  sourceGap: {
-    marginLeft: theme.spacing[3],
-  },
-  iconGap: {
-    marginLeft: theme.spacing[1.5],
-  },
-  windowGap: {
-    marginLeft: theme.spacing[2],
-  },
-  // Every slot takes an equal share of the leftover width, so the line fills the row.
-  meterSlot: {
-    flexGrow: 1,
-    flexShrink: 1,
-    flexBasis: 0,
-    minWidth: MIN_METER_WIDTH,
-    marginRight: METER_GAP,
-  },
   meter: {
+    width: 28,
     height: 6,
     borderRadius: 3,
+    marginLeft: theme.spacing[1.5],
+    marginRight: theme.spacing[1.5],
   },
   percent: {
-    flexShrink: 0,
+    flexShrink: 1,
     color: theme.colors.foreground,
     fontSize: theme.fontSize.sm,
     fontVariant: ["tabular-nums"],
   },
   windowLabel: {
     color: theme.colors.foregroundMuted,
+  },
+  more: {
+    flexShrink: 0,
+    marginLeft: theme.spacing[2],
+    color: theme.colors.foregroundMuted,
+    fontSize: theme.fontSize.sm,
   },
   sheetBody: {
     padding: theme.spacing[3],

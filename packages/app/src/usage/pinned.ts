@@ -1,7 +1,7 @@
 import type { TFunction } from "i18next";
 import { i18n } from "@/i18n/i18next";
 import { formatPct } from "./format";
-import { displayPercent } from "./model";
+import { displayPercent, usedPercent } from "./model";
 import type { UsagePreferences } from "./preferences";
 import { windowTone } from "./tone";
 import type { UsageReportEntry, UsageTone, UsageWindow } from "./types";
@@ -13,6 +13,8 @@ export interface PinnedUsageWindow {
   label: string;
   /** The window's short name ("5h"), empty for none, or its label when the source sends none. */
   shortLabel: string;
+  /** The share used, whatever the user's used/remaining preference shows. */
+  usedPct: number;
   /** The share shown, under the user's used/remaining preference. */
   percent: number;
   percentText: string;
@@ -26,30 +28,20 @@ export interface PinnedUsageSource {
   windows: PinnedUsageWindow[];
 }
 
-/** How much of each window the one-line summary has room for. */
-export type PinnedUsageLayout = "meters" | "labels" | "percents";
-
-// A meter narrower than this is a sliver that reads as noise rather than a share.
-export const MIN_METER_WIDTH = 16;
-/** The space between a meter and its text. */
-export const METER_GAP = 4;
-
 /**
- * The richest layout that fits on one line: every window's meter, else its short label, else its
- * percent alone. Meters are all or none; a line never mixes them. Until the widths are known it
- * shows labels, which never flashes meters that turn out not to fit.
+ * The window closest to its limit across all sources, the one the sidebar summary shows. The
+ * first wins a tie; null while no source has a window.
  */
-export function choosePinnedUsageLayout(input: {
-  available: number | null;
-  labelsWidth: number | null;
-  percentsWidth: number | null;
-  windowCount: number;
-}): PinnedUsageLayout {
-  const { available, labelsWidth, percentsWidth, windowCount } = input;
-  if (available === null || labelsWidth === null || percentsWidth === null) return "labels";
-  if (labelsWidth + windowCount * (MIN_METER_WIDTH + METER_GAP) <= available) return "meters";
-  if (labelsWidth <= available) return "labels";
-  return percentsWidth < labelsWidth ? "percents" : "labels";
+export function mostConstrainedWindow(
+  sources: readonly PinnedUsageSource[],
+): { source: PinnedUsageSource; window: PinnedUsageWindow } | null {
+  let best: { source: PinnedUsageSource; window: PinnedUsageWindow } | null = null;
+  for (const source of sources) {
+    for (const window of source.windows) {
+      if (!best || window.usedPct > best.window.usedPct) best = { source, window };
+    }
+  }
+  return best;
 }
 
 function describe(entry: UsageReportEntry, windowLabel: string): string {
@@ -102,6 +94,7 @@ export function resolvePinnedUsage(
         key: `${entry.id}/${window.id}`,
         label: `${describe(entry, window.label)} ${value}`,
         shortLabel: window.shortLabel ?? window.label,
+        usedPct: usedPercent(window) ?? 0,
         percent,
         percentText,
         tone: windowTone(window),

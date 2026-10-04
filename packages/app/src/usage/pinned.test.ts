@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { i18n } from "@/i18n/i18next";
 import type { UsagePreferences } from "./preferences";
 import {
-  choosePinnedUsageLayout,
+  mostConstrainedWindow,
   resolvePinnedUsage,
   type PinnedUsageSource,
   type PinnedUsageWindow,
@@ -53,23 +53,23 @@ function preferences(
   return { displayAs, pinned, serverId: null };
 }
 
-describe("choosePinnedUsageLayout", () => {
-  const widths = { labelsWidth: 200, percentsWidth: 120, windowCount: 2 };
-
-  it("shows meters only when every window's meter fits beside the labels", () => {
-    expect(choosePinnedUsageLayout({ ...widths, available: 240 })).toBe("meters");
-    expect(choosePinnedUsageLayout({ ...widths, available: 239 })).toBe("labels");
+describe("mostConstrainedWindow", () => {
+  it("picks the highest used share across sources, whatever the display preference", () => {
+    for (const displayAs of ["used", "remaining"] as const) {
+      const sources = resolvePinnedUsage([claude, codex], preferences([], displayAs));
+      const best = mostConstrainedWindow(sources);
+      expect(best?.window.key).toBe("claude:default/five-hour");
+    }
+    const pinned = preferences([
+      { sourceId: "claude", windowId: "weekly" },
+      { sourceId: "codex", windowId: "weekly" },
+    ]);
+    const best = mostConstrainedWindow(resolvePinnedUsage([claude, codex], pinned));
+    expect([best?.source.key, best?.window.shortLabel]).toEqual(["claude:default", "wk"]);
   });
 
-  it("drops the labels before it lets the line overflow", () => {
-    expect(choosePinnedUsageLayout({ ...widths, available: 199 })).toBe("percents");
-  });
-
-  it("shows labels until the widths are measured", () => {
-    expect(choosePinnedUsageLayout({ ...widths, available: null })).toBe("labels");
-    expect(choosePinnedUsageLayout({ ...widths, available: 999, labelsWidth: null })).toBe(
-      "labels",
-    );
+  it("is null while no source has a window with data", () => {
+    expect(mostConstrainedWindow([])).toBeNull();
   });
 });
 
@@ -161,6 +161,7 @@ describe("resolvePinnedUsage", () => {
           key: "claude:default/five-hour",
           label: "Claude Session 31% used",
           shortLabel: "5h",
+          usedPct: 31,
           percent: 31,
           percentText: "31%",
           tone: "default",
@@ -169,6 +170,7 @@ describe("resolvePinnedUsage", () => {
           key: "claude:default/weekly",
           label: "Claude Weekly 80% used",
           shortLabel: "wk",
+          usedPct: 80,
           percent: 80,
           percentText: "80%",
           tone: "warning",

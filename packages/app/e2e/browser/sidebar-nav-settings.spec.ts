@@ -38,7 +38,7 @@ test("fixed footer line keeps its five icons, Help and Settings at the end", asy
   await seedSidebarFooterPreferences(page, [{ key: "add-project", visible: false }]);
   await page.setViewportSize({ width: 1440, height: 900 });
   await gotoAppShell(page);
-  await expectPinnedUsage(page, ["31% 5h", "54% wk", "7% 5h", "12% wk"]);
+  await expectPinnedUsage(page, "54% wk", 1);
   await expectFooterIconRow(page);
   await expectFooterSeparator(page, true);
   await footerScreenshot(page, "footer-desktop-with-rows");
