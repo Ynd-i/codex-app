@@ -824,9 +824,6 @@ export const es: TranslationResources = {
         close: "Cerrar",
         cancel: "Cancelar",
         archive: "Archivo",
-        closeTerminalTitle: "¿Cerrar terminal?",
-        closeTerminalMessage:
-          "Cualquier proceso en ejecución en esta terminal se detendrá inmediatamente.",
         archiveRunningAgentTitle: "¿Agente de ejecución de archivos?",
         archiveRunningAgentMessage:
           "Este agente todavía está ejecutándose. Archivarlo detendrá al agente y cerrará la pestaña.",

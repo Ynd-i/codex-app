@@ -817,8 +817,6 @@ export const ar: TranslationResources = {
         close: "يغلق",
         cancel: "يلغي",
         archive: "أرشيف",
-        closeTerminalTitle: "إغلاق المحطة؟",
-        closeTerminalMessage: "سيتم إيقاف أي عملية جارية في هذه المحطة على الفور.",
         archiveRunningAgentTitle: "وكيل تشغيل الأرشيف؟",
         archiveRunningAgentMessage:
           "هذا الوكيل لا يزال قيد التشغيل. ستؤدي أرشفته إلى إيقاف الوكيل وإغلاق علامة التبويب.",

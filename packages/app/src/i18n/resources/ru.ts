@@ -824,9 +824,6 @@ export const ru: TranslationResources = {
         close: "Закрыть",
         cancel: "Отмена",
         archive: "Архивировать",
-        closeTerminalTitle: "Закрыть терминал?",
-        closeTerminalMessage:
-          "Любой запущенный процесс в этом терминале будет немедленно остановлен.",
         archiveRunningAgentTitle: "Архивировать работающего агента?",
         archiveRunningAgentMessage:
           "Этот агент всё ещё работает. При архивировании агент будет остановлен, а вкладка закрыта.",

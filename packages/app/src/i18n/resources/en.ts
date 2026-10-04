@@ -813,8 +813,6 @@ export const en = {
         closeWithoutSaving: "Close without saving",
         closePaneTitle: "Close pane?",
         bulkUnsaved: "{{count}} tab(s) have unsaved changes. Closing will discard those drafts.",
-        closeTerminalTitle: "Close terminal?",
-        closeTerminalMessage: "Any running process in this terminal will be stopped immediately.",
         archiveRunningAgentTitle: "Archive running agent?",
         archiveRunningAgentMessage:
           "This agent is still running. Archiving it will stop the agent and close the tab.",

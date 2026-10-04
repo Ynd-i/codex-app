@@ -821,9 +821,6 @@ export const ptBR: TranslationResources = {
         close: "Fechar",
         cancel: "Cancelar",
         archive: "Arquivar",
-        closeTerminalTitle: "Fechar terminal?",
-        closeTerminalMessage:
-          "Qualquer processo em execução neste terminal será interrompido imediatamente.",
         archiveRunningAgentTitle: "Arquivar agente em execução?",
         archiveRunningAgentMessage:
           "Este agente ainda está em execução. Arquivá-lo interromperá o agente e fechará a aba.",

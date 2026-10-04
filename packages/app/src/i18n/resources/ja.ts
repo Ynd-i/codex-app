@@ -822,8 +822,6 @@ export const ja: TranslationResources = {
         close: "閉じる",
         cancel: "キャンセル",
         archive: "アーカイブ",
-        closeTerminalTitle: "ターミナルを閉じますか？",
-        closeTerminalMessage: "このターミナルで実行中のプロセスはすぐに停止されます。",
         archiveRunningAgentTitle: "実行中のエージェントをアーカイブしますか？",
         archiveRunningAgentMessage:
           "このエージェントはまだ実行中です。アーカイブするとエージェントが停止してタブが閉じられます。",
