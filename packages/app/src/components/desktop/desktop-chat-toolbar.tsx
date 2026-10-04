@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import * as Clipboard from "expo-clipboard";
 import { MoreHorizontal } from "lucide-react-native";
-import { ActivityIndicator } from "react-native";
 import { useTranslation } from "react-i18next";
 import { withUnistyles } from "react-native-unistyles";
 import { useShallow } from "zustand/shallow";
@@ -18,9 +17,10 @@ import { useToast } from "@/contexts/toast-context";
 import type { DesktopChatTarget } from "./desktop-chat-actions";
 import { DesktopChatMenuItems, useChatForkPage, useDesktopChatMenu } from "./desktop-chat-menu";
 import { desktopChatResumeCommand } from "./desktop-chat-copy";
+import { DesktopProgressRing } from "./desktop-progress-ring";
 
 const MoreIcon = withUnistyles(MoreHorizontal);
-const Progress = withUnistyles(ActivityIndicator);
+const Progress = withUnistyles(DesktopProgressRing);
 
 function ChatToolbarMenu({
   agent,
@@ -89,7 +89,7 @@ function ChatToolbarMenu({
           testID="desktop-chat-toolbar-menu"
         >
           {busy ? (
-            <Progress size="small" uniProps={mutedIconColorMapping} />
+            <Progress uniProps={mutedIconColorMapping} />
           ) : (
             <MoreIcon size={18} uniProps={mutedIconColorMapping} />
           )}

@@ -16,7 +16,12 @@ import { useTranslation } from "react-i18next";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import type { DraggableListDragHandleProps } from "@/components/draggable-list.types";
 import { HeaderToggleButton } from "@/components/headers/header-toggle-button";
-import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from "@/components/ui/context-menu";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,18 +43,24 @@ import {
   removeProjectFromHosts,
 } from "@/projects/project-remove";
 import { getHostRuntimeStore } from "@/runtime/host-runtime";
-import { navigateToWorkspace } from "@/stores/navigation-active-workspace-store";
+import {
+  getLastWorkspaceSelection,
+  navigateToWorkspace,
+} from "@/stores/navigation-active-workspace-store";
 import { useWorkspaceFields } from "@/stores/session-store-hooks";
 import { useSidebarCollapsedSectionsStore } from "@/stores/sidebar-collapsed-sections-store";
 import type { Theme } from "@/styles/theme";
 import { confirmDialog } from "@/utils/confirm-dialog";
 import { buildNewWorkspaceRoute } from "@/utils/host-routes";
 import { resolveSidebarProjectLocalPath } from "@/utils/sidebar-project-row-model";
+import { redirectIfArchivingActiveWorkspace } from "@/utils/sidebar-workspace-archive-redirect";
 import { OpenInFileManagerMenuItem } from "@/workspace/open-in-file-manager/menu-item";
+import { useWorkspaceArchive } from "@/workspace/use-workspace-archive";
 import type { DesktopChatProject } from "./desktop-chat-model";
 import { SectionChatList } from "./desktop-chat-section-list";
 import { useArchiveChats, useSectionMovePage } from "./desktop-chat-section-menus";
 import { useChatSectionsStore } from "./desktop-chat-sections-store";
+import { DesktopSidebarTitle } from "./desktop-sidebar-title";
 
 const FolderIcon = withUnistyles(FolderOpen);
 const NewChatIcon = withUnistyles(SquarePen);
@@ -67,32 +78,98 @@ const pinLeading = <PinIcon size={16} uniProps={mutedIcon} />;
 const unpinLeading = <UnpinIcon size={16} uniProps={mutedIcon} />;
 const archiveLeading = <ArchiveIcon size={16} uniProps={mutedIcon} />;
 const removeLeading = <RemoveIcon size={16} uniProps={mutedIcon} />;
+// The archive button covers this much of the title's right edge (the md+ button width, as in
+// the chat row).
+const EMPTY_WORKSPACE_ACTION_WIDTH = 26;
 
 function EmptyWorkspaceRow({ workspace }: { workspace: SidebarWorkspacePlacement }) {
+  const { t } = useTranslation();
   // The placement's name is the workspace ID; the descriptor holds the real name.
-  const name =
-    useWorkspaceFields(
-      workspace.serverId,
-      workspace.workspaceId,
-      (descriptor) => descriptor.name,
-    ) ?? workspace.name;
+  const descriptor = useWorkspaceFields(workspace.serverId, workspace.workspaceId, (item) => ({
+    name: item.name,
+    archiving: item.archivingAt !== null,
+    isDirty: item.gitRuntime?.isDirty ?? null,
+    aheadOfOrigin: item.gitRuntime?.aheadOfOrigin ?? null,
+    diffStat: item.diffStat,
+  }));
+  const name = descriptor?.name ?? workspace.name;
+  const [hovered, setHovered] = useState(false);
+  const [contextOpen, setContextOpen] = useState(false);
+  const [hiding, setHiding] = useState(false);
+  const enter = useCallback(() => setHovered(true), []);
+  const leave = useCallback(() => setHovered(false), []);
   const open = useCallback(
     () => navigateToWorkspace({ serverId: workspace.serverId, workspaceId: workspace.workspaceId }),
     [workspace.serverId, workspace.workspaceId],
   );
+  const redirect = useCallback(() => {
+    redirectIfArchivingActiveWorkspace({
+      serverId: workspace.serverId,
+      workspaceId: workspace.workspaceId,
+      activeWorkspaceSelection: getLastWorkspaceSelection(),
+    });
+  }, [workspace.serverId, workspace.workspaceId]);
+  // Worktrees confirm first when the archive would drop uncommitted or unpushed work.
+  const { archive } = useWorkspaceArchive({
+    serverId: workspace.serverId,
+    workspaceId: workspace.workspaceId,
+    workspaceKind: workspace.workspaceKind,
+    name,
+    isDirty: descriptor?.isDirty,
+    aheadOfOrigin: descriptor?.aheadOfOrigin,
+    diffStat: descriptor?.diffStat,
+    onArchiveStarted: redirect,
+    onSetHiding: setHiding,
+  });
+  const archiving = hiding || descriptor?.archiving === true;
+  const revealed = hovered || contextOpen;
+  const archiveLabel = t("sidebar.workspace.actions.archive");
   return (
-    <Pressable
-      onPress={open}
-      style={styles.emptyWorkspace}
-      accessibilityRole="button"
-      accessibilityLabel={name}
-      testID={`sidebar-workspace-row-${workspace.workspaceKey}`}
-    >
-      <FolderIcon size={14} uniProps={mutedIcon} />
-      <Text numberOfLines={1} style={styles.secondaryText}>
-        {name}
-      </Text>
-    </Pressable>
+    <ContextMenu open={contextOpen} onOpenChange={setContextOpen}>
+      <ContextMenuTrigger contextOnly>
+        <View
+          onPointerEnter={enter}
+          onPointerLeave={leave}
+          style={[styles.emptyWorkspace, revealed && styles.headerHovered]}
+        >
+          <Pressable
+            onPress={open}
+            style={styles.emptyWorkspaceButton}
+            accessibilityRole="button"
+            accessibilityLabel={name}
+            testID={`sidebar-workspace-row-${workspace.workspaceKey}`}
+          >
+            <FolderIcon size={14} uniProps={mutedIcon} />
+            <DesktopSidebarTitle
+              title={name}
+              style={styles.secondaryText}
+              reserve={revealed ? EMPTY_WORKSPACE_ACTION_WIDTH : 0}
+              scrolling={revealed}
+            />
+          </Pressable>
+          <HeaderToggleButton
+            onPress={archive}
+            disabled={archiving}
+            onFocus={enter}
+            onBlur={leave}
+            tooltipLabel={archiveLabel}
+            tooltipKeys={[]}
+            tooltipSide="top"
+            style={[styles.emptyWorkspaceAction, !revealed && styles.hidden]}
+            accessibilityRole="button"
+            accessibilityLabel={archiveLabel}
+            testID={`desktop-workspace-archive-${workspace.workspaceKey}`}
+          >
+            <ArchiveIcon size={16} uniProps={mutedIcon} />
+          </HeaderToggleButton>
+        </View>
+      </ContextMenuTrigger>
+      <ContextMenuContent width={200}>
+        <ContextMenuItem onSelect={archive} disabled={archiving} leading={archiveLeading}>
+          {archiveLabel}
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }
 
@@ -450,13 +527,19 @@ const styles = StyleSheet.create((theme) => ({
   emptyWorkspace: {
     minHeight: 32,
     paddingLeft: 32,
+    paddingRight: 4,
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 10,
+  },
+  emptyWorkspaceButton: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 32,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
-  secondaryText: {
-    color: theme.colors.foregroundMuted,
-    fontSize: theme.fontSize.base,
-    flexShrink: 1,
-  },
+  emptyWorkspaceAction: { position: "absolute", right: 4 },
+  secondaryText: { color: theme.colors.foregroundMuted, fontSize: theme.fontSize.base },
 }));

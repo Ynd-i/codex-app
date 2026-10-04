@@ -1451,6 +1451,14 @@ changes, and a list of sidebar, composer and transcript fixes. All of it is in
   counterpart.
 - Sidebar: chat rows show Pin and Archive on hover and the full menu on right-click.
   Pinned hides when it has no chats or projects. The rail drops Add project.
+  Titles follow Codex's marquee (`app-initial` CSS, `_viewport_a3okg`): they span the
+  row under the absolutely placed actions, fade out instead of an ellipsis where they
+  overflow or meet the status or actions, and scroll to their end at 2em/s while hovered
+  (`desktop-sidebar-title.tsx`). The running and busy indicator is a 12pt ring that fills
+  and empties (`desktop-progress-ring.web.tsx`); Codex's running sidebar row was never
+  captured, so this follows the user's description. Empty workspace rows archive from a
+  hover button or right-click through `useWorkspaceArchive`, so worktrees still confirm
+  risky archives. Archiving a project's only workspace archives the project.
 - Usage: the sidebar entry shows the most used window across pinned sources plus
   "+N", replacing the per-window line that could not fit more providers. The Mac sidebar
   has no Usage item: `useSidebarNavItems` drops it, so Settings › Sidebar and the usage
