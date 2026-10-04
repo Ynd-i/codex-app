@@ -433,6 +433,7 @@ export const zhCN: TranslationResources = {
       forkUnavailable: "请更新主机以使用此功能。",
       forkMissingWorkspace: "此 Agent 不在工作区中。",
       forkFailed: "分叉聊天失败",
+      forkOrigin: "从聊天中继续",
       openFile: "打开文件",
       copied: "已复制",
     },

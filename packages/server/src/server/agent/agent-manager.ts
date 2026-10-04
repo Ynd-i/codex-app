@@ -14,6 +14,7 @@ import {
   hasOpenAgentTab,
   isDelegatedAgent,
   isOpenAgentTabLabel,
+  FORKED_AT_LABEL,
   FORKED_FROM_AGENT_ID_LABEL,
   PARENT_AGENT_ID_LABEL,
 } from "@getpaseo/protocol/agent-labels";
@@ -84,6 +85,7 @@ import { isSystemInjectedEnvelope } from "./agent-prompt.js";
 import { isStaleProviderSessionError } from "./stale-provider-session-error.js";
 import { stripInternalPaseoMcpServer, withRuntimePaseoMcpServer } from "./runtime-mcp-config.js";
 import { resolveCreateAgentTitles } from "./create-agent-title.js";
+import { forkTitle } from "./fork-title.js";
 import type { PaseoToolCatalogFactory } from "./tools/types.js";
 import { isPaseoToolPolicyEnabled } from "./paseo-tool-policy.js";
 import {
@@ -3219,14 +3221,23 @@ export class AgentManager {
     // ponytail: a daemon exit between this clone and registration leaves an orphan native
     // session; the source is untouched. Persist the handle in a creation receipt to recover it.
     const config = source.config;
-    return this.importProviderSessionInternal({
+    // The sidebar shows the stored title, which renames and generated titles update.
+    const records = (await this.registry?.list()) ?? [];
+    const sourceTitle = records.find((record) => record.id === source.id)?.title ?? config.title;
+    const child = await this.importProviderSessionInternal({
       provider: source.provider,
       providerHandleId: handle.sessionId,
       cwd: config.cwd,
       workspaceId: source.workspaceId,
       labels: { [FORKED_FROM_AGENT_ID_LABEL]: source.id },
       config: {
-        title: config.title,
+        title: sourceTitle
+          ? forkTitle({
+              sourceTitle,
+              sourceIsFork: FORKED_FROM_AGENT_ID_LABEL in source.labels,
+              existingTitles: records.flatMap((record) => (record.title ? [record.title] : [])),
+            })
+          : undefined,
         modeId: config.modeId,
         model: config.model,
         thinkingOptionId: config.thinkingOptionId,
@@ -3235,6 +3246,10 @@ export class AgentManager {
         systemPrompt: config.systemPrompt,
       },
     });
+    // Stamped after the import, so every inherited row, even one primed without a provider
+    // timestamp, is older; clients mark the end of the inherited history with it.
+    await this.writeLabels(child.id, { [FORKED_AT_LABEL]: new Date().toISOString() });
+    return this.getAgent(child.id) ?? child;
   }
 
   /** The provider id of the user message that opens the completed turn to fork through. */

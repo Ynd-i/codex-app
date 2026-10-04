@@ -433,6 +433,7 @@ export const ar: TranslationResources = {
       forkUnavailable: "حدّث المضيف لاستخدام هذا.",
       forkMissingWorkspace: "هذا الوكيل ليس في مساحة عمل.",
       forkFailed: "فشل تفريع المحادثة",
+      forkOrigin: "متابعة من المحادثة",
       openFile: "افتح الملف",
       copied: "منقول",
     },

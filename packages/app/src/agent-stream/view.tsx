@@ -91,18 +91,26 @@ import { recordRenderProfileReasons } from "@/utils/render-profiler";
 import { useRetainedPanelActive } from "@/components/retained-panel";
 import { useStreamHistoryWindow } from "./use-stream-history-window";
 import { PluginTimelineItemView, useInstalledTimelineTransform } from "@/plugins/timeline";
+import { ForkOriginDivider, useForkDividerPlacement } from "./fork-origin-divider";
 
 function renderLiveAuxiliaryNode(input: {
   pendingPermissions: ReactNode;
   turnFooter: ReactNode;
+  forkOriginDivider: ReactNode;
   bottomOverlayInset: number;
 }): ReactNode {
-  if (!input.pendingPermissions && !input.turnFooter && input.bottomOverlayInset === 0) {
+  if (
+    !input.pendingPermissions &&
+    !input.turnFooter &&
+    !input.forkOriginDivider &&
+    input.bottomOverlayInset === 0
+  ) {
     return null;
   }
   return (
     <>
       {input.turnFooter}
+      {input.forkOriginDivider}
       {input.pendingPermissions ? (
         <View style={stylesheet.contentWrapper}>
           <View style={stylesheet.listHeaderContent}>{input.pendingPermissions}</View>
@@ -541,6 +549,12 @@ const AgentStreamViewComponent = forwardRef<AgentStreamViewHandle, AgentStreamVi
         isTurnActive,
       ],
     );
+    const forkDivider = useForkDividerPlacement({
+      serverId: resolvedServerId,
+      agentId,
+      tail: presentation.tail,
+      head: presentation.head,
+    });
     const {
       start: historyWindowStart,
       hasLocalHistory,
@@ -915,18 +929,41 @@ const AgentStreamViewComponent = forwardRef<AgentStreamViewHandle, AgentStreamVi
         ) : (
           body
         );
-        return renderStreamItemWithTurnFooter({
+        const rendered = renderStreamItemWithTurnFooter({
           content,
           layoutItem: activity && hidden ? { ...layoutItem, gapBelow: 0 } : layoutItem,
           strategy: streamRenderStrategy,
           supportsTimelineCursor: supportsAgentForkContextCursor,
           onForkAssistantTurn: readOnly ? undefined : handleForkAssistantTurn,
         });
+        // A just-forked chat's last item has its turn actions in the live footer, which places
+        // the divider itself; otherwise the divider follows this item's actions.
+        if (!rendered || !forkDivider || forkDivider.isLast) return rendered;
+        if (layoutItem.item.id !== forkDivider.itemId) return rendered;
+        const divider = (
+          <ForkOriginDivider
+            serverId={resolvedServerId}
+            sourceAgentId={forkDivider.sourceAgentId}
+          />
+        );
+        return streamRenderStrategy.getFrameChildOrder() === "footer-then-content" ? (
+          <>
+            {divider}
+            {rendered}
+          </>
+        ) : (
+          <>
+            {rendered}
+            {divider}
+          </>
+        );
       },
       [
+        forkDivider,
         handleForkAssistantTurn,
         readOnly,
         renderStreamItemContent,
+        resolvedServerId,
         turnActivity,
         toggleTurnActivity,
         streamRenderStrategy,
@@ -1066,9 +1103,21 @@ const AgentStreamViewComponent = forwardRef<AgentStreamViewHandle, AgentStreamVi
       return renderLiveAuxiliaryNode({
         pendingPermissions: auxiliary.pendingPermissions,
         turnFooter: auxiliary.turnFooter,
+        forkOriginDivider: forkDivider?.isLast ? (
+          <ForkOriginDivider
+            serverId={resolvedServerId}
+            sourceAgentId={forkDivider.sourceAgentId}
+          />
+        ) : null,
         bottomOverlayInset,
       });
-    }, [auxiliary.pendingPermissions, auxiliary.turnFooter, bottomOverlayTailClearance]);
+    }, [
+      auxiliary.pendingPermissions,
+      auxiliary.turnFooter,
+      bottomOverlayTailClearance,
+      forkDivider,
+      resolvedServerId,
+    ]);
 
     const renderers = useMemo<StreamSegmentRenderers>(
       () => ({

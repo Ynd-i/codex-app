@@ -125,7 +125,9 @@ gh secret set CUSTOM_SIGNING_P12_PASSWORD -R Ynd-i/codex-app
 ```
 
 The first signed release has to be installed by hand over an ad-hoc build, and macOS asks
-again for the permissions the old signature had.
+again for the permissions the old signature had. An update runs the installed app's
+updater, so a fix to the update path first takes effect on the release after the one that
+ships it.
 
 ## Two steps
 

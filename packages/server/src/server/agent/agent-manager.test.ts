@@ -4337,13 +4337,17 @@ test("importProviderSession imports the selected session without listing and pub
 });
 
 describe("forkAgent", () => {
+  let forkCount = 0;
+
   class ForkableSession extends TestAgentSession {
     override readonly capabilities = { ...TEST_CAPABILITIES, supportsNativeFork: true };
     readonly forkedMessageIds: string[] = [];
 
     async forkConversation(input: { messageId: string }): Promise<AgentPersistenceHandle> {
       this.forkedMessageIds.push(input.messageId);
-      return { provider: "codex", sessionId: "thread-child", nativeHandle: "thread-child" };
+      forkCount += 1;
+      const sessionId = forkCount === 1 ? "thread-child" : `thread-child-${forkCount}`;
+      return { provider: "codex", sessionId, nativeHandle: sessionId };
     }
   }
 
@@ -4355,6 +4359,7 @@ describe("forkAgent", () => {
   }
 
   async function setup() {
+    forkCount = 0;
     const workdir = mkdtempSync(join(tmpdir(), "agent-manager-fork-"));
     const storage = new AgentStorage(join(workdir, "agents"), logger);
     const source = new ForkableSession({ provider: "codex", cwd: workdir });
@@ -4367,9 +4372,9 @@ describe("forkAgent", () => {
         context: ImportProviderSessionContext,
       ) {
         this.imports.push({ handle: input.providerHandleId, model: context.storedConfig.model });
-        const isChild = input.providerHandleId === "thread-child";
+        const isChild = input.providerHandleId.startsWith("thread-child");
         return {
-          session: isChild ? new TestAgentSession({ provider: "codex", cwd: workdir }) : source,
+          session: isChild ? new ForkableSession({ provider: "codex", cwd: workdir }) : source,
           config: {
             ...context.storedConfig,
             model: isChild ? context.storedConfig.model : "gpt-5.4-mini",
@@ -4392,7 +4397,7 @@ describe("forkAgent", () => {
       cwd: workdir,
       workspaceId: "ws-source",
     });
-    return { manager, client, source, sourceAgent };
+    return { manager, client, source, sourceAgent, storage };
   }
 
   test("copies the conversation through the selected turn into a new agent in the same workspace", async () => {
@@ -4409,13 +4414,34 @@ describe("forkAgent", () => {
     expect(client.imports.at(-1)).toEqual({ handle: "thread-child", model: "gpt-5.4-mini" });
     expect(child.id).not.toBe(sourceAgent.id);
     expect(child.workspaceId).toBe("ws-source");
-    expect(child.labels).toEqual({ "paseo.forked-from-agent-id": sourceAgent.id });
+    expect(child.labels).toEqual({
+      "paseo.forked-from-agent-id": sourceAgent.id,
+      "paseo.forked-at": expect.any(String),
+    });
     expect(child.persistence?.sessionId).toBe("thread-child");
     expect(manager.getTimeline(child.id)).toEqual([
       { type: "user_message", text: "ask u1", messageId: "u1" },
       { type: "assistant_message", text: "A1" },
     ]);
     expect(manager.getTimeline(sourceAgent.id)).toHaveLength(4);
+  });
+
+  test("titles forks like Codex and stamps the end of the inherited history", async () => {
+    const { manager, sourceAgent, storage } = await setup();
+    await manager.setTitle(sourceAgent.id, "Plan");
+
+    const first = await manager.forkAgent({ sourceAgentId: sourceAgent.id });
+    const second = await manager.forkAgent({ sourceAgentId: sourceAgent.id });
+    const ofFirst = await manager.forkAgent({ sourceAgentId: first.id });
+
+    const titles = await Promise.all(
+      [first, second, ofFirst].map(async (agent) => (await storage.get(agent.id))?.title),
+    );
+    expect(titles).toEqual(["Plan (2)", "Plan (3)", "Plan (4)"]);
+    const lastInherited = manager.fetchTimeline(first.id, { limit: 0 }).rows.at(-1)!;
+    expect(Date.parse(first.labels["paseo.forked-at"]!)).toBeGreaterThanOrEqual(
+      Date.parse(lastInherited.timestamp),
+    );
   });
 
   test("forks through the latest turn when no boundary is given", async () => {

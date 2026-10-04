@@ -439,6 +439,7 @@ export const fr: TranslationResources = {
       forkUnavailable: "Mettez l'hôte à jour pour utiliser ceci.",
       forkMissingWorkspace: "Cet agent n'est pas dans un espace de travail.",
       forkFailed: "Impossible de dupliquer le chat",
+      forkOrigin: "Suite de la discussion",
       openFile: "Ouvrir le fichier",
       copied: "Copié",
     },

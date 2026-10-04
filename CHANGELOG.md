@@ -47,6 +47,7 @@ distribution and full migration acceptance remain pending; see the
 ### Changed
 
 - The macOS project picker shows a project's favicon or a folder with only its name, and Claude and Codex permission modes use their apps' names: Ask for review, Review for me, Auto pilot and Full access.
+- Native forks are titled like Codex, "Chat (2)" then "Chat (3)", and end their inherited history with a "Continued from chat" divider that opens the original chat. The macOS composer starts its first line 4pt lower, keeping its height.
 
 - Added a notification bell beside macOS sidebar search: Priority lists chats waiting on a permission or an error, then finished chats follow by day across every section, with reply previews for chats this window has loaded.
 
@@ -126,6 +127,7 @@ distribution and full migration acceptance remain pending; see the
 
 ### Fixed
 
+- Fixed in-app updates on macOS needing a second Update click: the first click now installs and relaunches. The fix applies to updates from this release onward.
 - Kept a macOS project row's actions visible while the pointer stays on it after New chat, and stopped menus opened with the pointer from highlighting their first item; keyboard navigation still highlights the focused item.
 
 - Kept responsive sidebar defaults from becoming permanent visibility overrides when reordering or hiding unrelated items.

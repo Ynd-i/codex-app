@@ -581,8 +581,19 @@ Copilot is disabled in the user's configuration.
 - A daemon exit between clone and registration leaves an orphan native session
   (marked `ponytail:` in `AgentManager.forkAgent`); no receipt reconciles it.
 - Claude profiles with their own `CLAUDE_CONFIG_DIR` fail to fork, as rewind does.
-- No origin divider or source link is shown in the child yet, and the child keeps
-  the source's title, so the sidebar shows two chats with the same name.
+
+**Fork title and origin — 2026-10-04.** As in Codex, the child is titled after the
+source's stored title with the next free number, "Plan (2)", then "Plan (3)"
+(`agent/fork-title.ts`). A fork of a fork numbers from the base title; only a source
+that is itself a fork has its trailing number stripped, so "Budget (2026)" becomes
+"Budget (2026) (2)". After the import the daemon labels the child
+`paseo.forked-at`, so every inherited row is older, even one primed without a provider
+timestamp. The chat view ends the inherited history after the last item stamped no
+later than that label with a "Continued from chat" divider that opens the source.
+A just-forked chat has its latest turn actions in the live footer, so the divider
+follows that footer there. Validation: unit tests for the title helper, the boundary
+finder and the manager fork (titles and label time); the divider was not exercised
+in a packaged build before release.
 
 ## Update strategy
 
