@@ -14,6 +14,8 @@ The custom macOS desktop keeps one current chat in the main area without a tab
 strip. Supporting tools use Explorer on the right, including ordinary terminals,
 browser, files, diffs and workspace plugin panels. New chat owns provider
 selection; tool launchers omit Terminal profiles and Edit profiles.
+Cmd+W closes the selected Explorer tool tab and does nothing while Explorer is hidden.
+It never closes the chat, because closing a chat tab archives the agent.
 
 Saved layouts are adapted without closing sessions or replacing tab instances.
 Chats and drafts remain available through workspace navigation; supporting tabs

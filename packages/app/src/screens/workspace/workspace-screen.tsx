@@ -1936,6 +1936,18 @@ function WorkspaceScreenContent({
       }),
     [uiTabs, workspaceLayout, unfocusedPaneId],
   );
+  // The macOS layout keeps one chat in the main area, so Cmd+W closes only the selected Explorer tool.
+  const explorerCloseTabId = useMemo(
+    () =>
+      isExplorerSidebarShowing && explorerSidebarPaneId
+        ? deriveWorkspacePaneState({
+            layout: workspaceLayout,
+            tabs: uiTabs,
+            paneId: explorerSidebarPaneId,
+          }).activeTabId
+        : null,
+    [explorerSidebarPaneId, isExplorerSidebarShowing, uiTabs, workspaceLayout],
+  );
   const viewedTimelineSync = useSessionStore(
     (state) => state.sessions[normalizedServerId]?.viewedTimelineSync ?? null,
   );
@@ -3155,11 +3167,13 @@ function WorkspaceScreenContent({
         case "workspace.tab.menu.open":
           handleCreateNewTab({ paneId: focusedPaneTabState.pane?.id });
           return true;
-        case "workspace.tab.close-current":
-          if (activeTabId) {
-            void handleCloseTabById(activeTabId);
+        case "workspace.tab.close-current": {
+          const closeTabId = getIsElectronMac() ? explorerCloseTabId : activeTabId;
+          if (closeTabId) {
+            void handleCloseTabById(closeTabId);
           }
           return true;
+        }
         case "workspace.tab.navigate-index": {
           const next = tabs[action.index - 1] ?? null;
           if (next?.tabId) {
@@ -3185,6 +3199,7 @@ function WorkspaceScreenContent({
     },
     [
       activeTabId,
+      explorerCloseTabId,
       handleCloseTabById,
       handleCreateDraftTab,
       handleCreateBrowserTab,
