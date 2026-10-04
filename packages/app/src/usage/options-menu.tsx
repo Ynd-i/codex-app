@@ -41,7 +41,8 @@ export function UsageOptionsMenu({
   const showUsed = useCallback(() => setDisplayAs("used"), [setDisplayAs]);
   const showRemaining = useCallback(() => setDisplayAs("remaining"), [setDisplayAs]);
   const sidebarItems = useSidebarNavItems("footer");
-  const inSidebar = sidebarItems.items.some((item) => item.key === "usage" && item.visible);
+  const sidebarUsage = sidebarItems.items.find((item) => item.key === "usage");
+  const inSidebar = sidebarUsage?.visible === true;
   const { setVisible } = sidebarItems;
   const toggleInSidebar = useCallback(
     () => setVisible("usage", !inSidebar),
@@ -91,14 +92,18 @@ export function UsageOptionsMenu({
         >
           {usageCopy.displayRemaining}
         </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          selected={inSidebar}
-          onSelect={toggleInSidebar}
-          testID="usage-show-in-sidebar"
-        >
-          {usageCopy.showInSidebar}
-        </DropdownMenuItem>
+        {sidebarUsage ? (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              selected={inSidebar}
+              onSelect={toggleInSidebar}
+              testID="usage-show-in-sidebar"
+            >
+              {usageCopy.showInSidebar}
+            </DropdownMenuItem>
+          </>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   );

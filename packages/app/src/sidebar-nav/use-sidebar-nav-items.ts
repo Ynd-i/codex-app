@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from "react";
+import { usesDesktopShell } from "@/components/desktop/desktop-shell";
 import { useIsCompactFormFactor } from "@/constants/layout";
 import { useAppSettings } from "@/hooks/use-settings";
 import type { AppSettings } from "@/hooks/use-settings/storage";
@@ -16,6 +17,14 @@ const PREFERENCE_FIELDS = {
   header: "sidebarNavItems",
   footer: "sidebarFooterItems",
 } as const satisfies Record<SidebarSection, keyof AppSettings>;
+
+// The Mac rail shows usage, so its sidebar has no Usage item. Saved preferences keep the key.
+function resolveItems<Section extends SidebarSection>(
+  input: Parameters<typeof resolveSidebarNavItems<Section>>[0],
+): SidebarNavItem<Section>[] {
+  const items = resolveSidebarNavItems(input);
+  return usesDesktopShell ? items.filter((item) => item.key !== "usage") : items;
+}
 
 export interface UseSidebarNavItemsReturn<Section extends SidebarSection> {
   /** Every item in the section in display order, hidden ones included. */
@@ -35,7 +44,7 @@ export function useSidebarNavItems<Section extends SidebarSection>(
   const pluginGroups = useMemo(() => groupPluginSidebarItems(plugins, section), [plugins, section]);
 
   const items = useMemo(
-    () => resolveSidebarNavItems({ section, compact, pluginGroups, preferences }),
+    () => resolveItems({ section, compact, pluginGroups, preferences }),
     [compact, pluginGroups, preferences, section],
   );
 
@@ -43,7 +52,7 @@ export function useSidebarNavItems<Section extends SidebarSection>(
     (key: string, visible: boolean) => {
       void updateSettings((current) => {
         const previous = current[field];
-        const currentItems = resolveSidebarNavItems({
+        const currentItems = resolveItems({
           section,
           compact,
           pluginGroups,
@@ -61,7 +70,7 @@ export function useSidebarNavItems<Section extends SidebarSection>(
     (key: string, direction: "up" | "down") => {
       void updateSettings((current) => {
         const previous = current[field];
-        const currentItems = resolveSidebarNavItems({
+        const currentItems = resolveItems({
           section,
           compact,
           pluginGroups,

@@ -8,6 +8,7 @@ import {
 import { getServerId } from "../../app/e2e/support/helpers/server-id";
 import { getE2EDaemonPort } from "../../app/e2e/support/helpers/daemon-port";
 import { installUsageReportsFixture } from "../../app/e2e/support/helpers/usage-reports";
+import { buildUsageRoute } from "../../app/src/utils/host-routes";
 import { installDesktopRuntime } from "./support/runtime";
 
 test("usage reset countdown advances on the shared clock without replacing its label", async ({
@@ -46,10 +47,12 @@ test("usage reset countdown advances on the shared clock without replacing its l
   });
   await page.setViewportSize({ width: 1352, height: 782 });
   await gotoAppShell(page);
-  await page.getByTestId("sidebar-usage").filter({ visible: true }).first().click();
+  await page.goto(buildUsageRoute());
   const card = page.getByTestId("usage-report-clock:quota");
   const label = card.getByText("resets 1m", { exact: true });
   await expect(label).toBeVisible();
+  // Reports are loaded, yet the Mac sidebar has no Usage summary; the rail shows usage.
+  await expect(page.getByTestId("sidebar-usage")).toHaveCount(0);
   const element = await label.elementHandle();
   if (!element) throw new Error("Missing reset countdown label");
   await page.clock.fastForward("03:00");
@@ -112,7 +115,7 @@ test("desktop usage keeps provider data through refresh failures and language ch
   await page.setViewportSize({ width: 1352, height: 782 });
   await page.emulateMedia({ colorScheme: "dark" });
   await gotoAppShell(page);
-  await page.getByTestId("sidebar-usage").filter({ visible: true }).first().click();
+  await page.goto(buildUsageRoute());
   const screen = page.getByTestId("usage-screen").filter({ visible: true }).first();
   const alpha = screen.getByTestId("usage-report-alpha:plan");
   await expect(alpha.getByText("69% remaining", { exact: true })).toBeVisible();
@@ -134,7 +137,7 @@ test("desktop usage keeps provider data through refresh failures and language ch
   await page.getByRole("button", { name: "System", exact: true }).click();
   await page.getByRole("menuitem", { name: "简体中文 - Simplified Chinese", exact: true }).click();
   await clickSettingsBackToWorkspace(page);
-  await page.getByTestId("sidebar-usage").filter({ visible: true }).first().click();
+  await page.goto(buildUsageRoute());
   await expect(screen.getByTestId("page-title")).toHaveText("使用情况");
   await screen.getByTestId("usage-options-menu").click();
   await expect(page.getByTestId("usage-display-used").filter({ visible: true })).toHaveText("已用");
