@@ -205,6 +205,13 @@ export const fr: TranslationResources = {
     },
   },
   composer: {
+    queue: {
+      steer: "Orienter",
+      delete: "Supprimer",
+      more: "Plus",
+      edit: "Modifier le message",
+      turnOff: "Désactiver la file",
+    },
     placeholders: {
       chat: "Posez toutes vos questions",
       desktop: "Envoyez un message à l'agent, marquez@filesou utilisez/commandset/skills",

@@ -108,6 +108,7 @@ import {
 import { resolveAgentControlsMode } from "@/composer/agent-controls/mode";
 import { resolveComposerInputMode, type ComposerInputMode } from "@/composer/input-mode";
 import { resolveActiveSendBehavior } from "./input/state";
+import { DesktopQueuedMessageRow } from "./desktop-queued-message-row";
 import { useKeyboardActionHandler } from "@/hooks/use-keyboard-action-handler";
 import type { KeyboardActionDefinition } from "@/keyboard/keyboard-action-dispatcher";
 import type { MessageInputKeyboardActionKind } from "@/keyboard/actions";
@@ -400,6 +401,8 @@ interface RenderQueueTrackArgs {
   queuedMessages: readonly QueuedMessage[];
   handleEditQueuedMessage: (id: string) => void;
   handleSendQueuedNow: (id: string) => Promise<void>;
+  handleDeleteQueuedMessage: (id: string) => void;
+  handleTurnOffQueue: () => void;
   editLabel: string;
   sendNowLabel: string;
 }
@@ -410,16 +413,28 @@ function renderQueueTrack(args: RenderQueueTrackArgs): ReactElement | null {
   if (queuedMessages.length === 0) return null;
   return (
     <View style={styles.queueTrack}>
-      {queuedMessages.map((item) => (
-        <QueuedMessageRow
-          key={item.id}
-          item={item}
-          onEdit={handleEditQueuedMessage}
-          onSendNow={handleSendQueuedNow}
-          editLabel={editLabel}
-          sendNowLabel={sendNowLabel}
-        />
-      ))}
+      {queuedMessages.map((item) =>
+        getIsElectronMac() ? (
+          <DesktopQueuedMessageRow
+            key={item.id}
+            id={item.id}
+            text={item.text}
+            onSteer={args.handleSendQueuedNow}
+            onDelete={args.handleDeleteQueuedMessage}
+            onEdit={handleEditQueuedMessage}
+            onTurnOffQueue={args.handleTurnOffQueue}
+          />
+        ) : (
+          <QueuedMessageRow
+            key={item.id}
+            item={item}
+            onEdit={handleEditQueuedMessage}
+            onSendNow={handleSendQueuedNow}
+            editLabel={editLabel}
+            sendNowLabel={sendNowLabel}
+          />
+        ),
+      )}
     </View>
   );
 }
@@ -1304,7 +1319,7 @@ function ComposerContentImpl({
     agentDirectoryStatus,
   });
 
-  const { settings: appSettings } = useAppSettings();
+  const { settings: appSettings, updateSettings: updateAppSettings } = useAppSettings();
 
   const agentState = useSessionStore(useShallow(buildAgentStateSelector(serverId, agentId)));
 
@@ -1540,7 +1555,11 @@ function ComposerContentImpl({
   }, [focusInput, onFocusInput]);
 
   const submitMessage = useCallback(
-    async (text: string, submitAttachments: ComposerAttachment[]) => {
+    async (
+      text: string,
+      submitAttachments: ComposerAttachment[],
+      activeTurnBehavior?: "interrupt" | "steer",
+    ) => {
       onMessageSent?.();
       if (onSubmitMessageRef.current) {
         await onSubmitMessageRef.current({ text, attachments: submitAttachments, cwd });
@@ -1553,7 +1572,7 @@ function ComposerContentImpl({
         agentIdRef.current,
         text,
         submitAttachments,
-        appSettings.sendBehavior === "steer" ? "steer" : "interrupt",
+        activeTurnBehavior ?? (appSettings.sendBehavior === "steer" ? "steer" : "interrupt"),
       );
     },
     [appSettings.sendBehavior, cwd, onMessageSent, t],
@@ -1952,13 +1971,14 @@ function ComposerContentImpl({
   const handleSendQueuedNow = useCallback(
     async (id: string) => {
       if (!sendAgentMessageRef.current && !onSubmitMessageRef.current) return;
-      // Reuse the regular send path; server-side send atomically interrupts any active run.
+      // Reuse the regular send path. The Mac row's Steer sends into the running turn like
+      // Codex; elsewhere the server-side send atomically interrupts any active run.
       const result = await sendQueuedComposerMessageNow({
         agentId,
         messageId: id,
         queue: queueWriter,
         submitMessage: ({ text, attachments: queuedAttachments }) =>
-          submitMessage(text, queuedAttachments),
+          submitMessage(text, queuedAttachments, getIsElectronMac() ? "steer" : undefined),
         failedToSendMessage: t("composer.errors.failedToSend"),
       });
       if (result.status === "failed") {
@@ -1967,6 +1987,24 @@ function ComposerContentImpl({
     },
     [agentId, queueWriter, submitMessage, t],
   );
+
+  const handleDeleteQueuedMessage = useCallback(
+    (id: string) => {
+      queueWriter.write((prev) => {
+        const next = new Map(prev);
+        next.set(
+          agentId,
+          (prev.get(agentId) ?? []).filter((item) => item.id !== id),
+        );
+        return next;
+      });
+    },
+    [agentId, queueWriter],
+  );
+
+  const handleTurnOffQueue = useCallback(() => {
+    void updateAppSettings({ sendBehavior: "steer" });
+  }, [updateAppSettings]);
 
   const handleQueue = useCallback(
     (payload: MessagePayload) => {
@@ -2345,10 +2383,19 @@ function ComposerContentImpl({
         queuedMessages,
         handleEditQueuedMessage,
         handleSendQueuedNow,
+        handleDeleteQueuedMessage,
+        handleTurnOffQueue,
         editLabel: t("composer.attachments.editQueuedMessage"),
         sendNowLabel: t("composer.attachments.sendQueuedMessageNow"),
       }),
-    [handleEditQueuedMessage, handleSendQueuedNow, queuedMessages, t],
+    [
+      handleDeleteQueuedMessage,
+      handleEditQueuedMessage,
+      handleSendQueuedNow,
+      handleTurnOffQueue,
+      queuedMessages,
+      t,
+    ],
   );
 
   const autocompleteConfiguration = useMemo(

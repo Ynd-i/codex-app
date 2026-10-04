@@ -203,6 +203,13 @@ export const ptBR: TranslationResources = {
     },
   },
   composer: {
+    queue: {
+      steer: "Direcionar",
+      delete: "Excluir",
+      more: "Mais",
+      edit: "Editar mensagem",
+      turnOff: "Desativar fila",
+    },
     placeholders: {
       chat: "Pergunte o que quiser",
       desktop: "Envie uma mensagem ao agente, marque @files ou use /commands e /skills",

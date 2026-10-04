@@ -203,6 +203,13 @@ export const es: TranslationResources = {
     },
   },
   composer: {
+    queue: {
+      steer: "Dirigir",
+      delete: "Eliminar",
+      more: "Más",
+      edit: "Editar mensaje",
+      turnOff: "Desactivar cola",
+    },
     placeholders: {
       chat: "Pregunta lo que quieras",
       desktop: "Envíe un mensaje al agente, etiquete@fileso use/commandsy/skills",

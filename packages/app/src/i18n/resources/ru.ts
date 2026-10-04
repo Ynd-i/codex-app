@@ -203,6 +203,13 @@ export const ru: TranslationResources = {
     },
   },
   composer: {
+    queue: {
+      steer: "Направить",
+      delete: "Удалить",
+      more: "Ещё",
+      edit: "Изменить сообщение",
+      turnOff: "Выключить очередь",
+    },
     placeholders: {
       chat: "Спросите о чём угодно",
       desktop: "Напишите агенту сообщение, отметьте @files или используйте /commands и /skills.",

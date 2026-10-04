@@ -202,6 +202,13 @@ export const ar: TranslationResources = {
     },
   },
   composer: {
+    queue: {
+      steer: "توجيه",
+      delete: "حذف",
+      more: "المزيد",
+      edit: "تعديل الرسالة",
+      turnOff: "إيقاف قائمة الانتظار",
+    },
     placeholders: {
       chat: "اسأل عن أي شيء",
       desktop: "أرسل رسالة إلى الوكيل أو ضع علامة على @files أو استخدم /commands و /skills",

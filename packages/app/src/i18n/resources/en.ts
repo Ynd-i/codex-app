@@ -198,6 +198,13 @@ export const en = {
     },
   },
   composer: {
+    queue: {
+      steer: "Steer",
+      delete: "Delete",
+      more: "More",
+      edit: "Edit message",
+      turnOff: "Turn off queue",
+    },
     placeholders: {
       chat: "Ask anything",
       desktop: "Message the agent, tag @files, or use /commands and /skills",

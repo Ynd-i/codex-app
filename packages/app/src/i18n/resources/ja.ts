@@ -203,6 +203,13 @@ export const ja: TranslationResources = {
     },
   },
   composer: {
+    queue: {
+      steer: "ステア",
+      delete: "削除",
+      more: "その他",
+      edit: "メッセージを編集",
+      turnOff: "キューをオフにする",
+    },
     placeholders: {
       chat: "なんでも聞いてください",
       desktop: "エージェントにメッセージ、@ファイル、/コマンドや/スキルを入力",

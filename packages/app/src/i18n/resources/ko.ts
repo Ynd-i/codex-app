@@ -202,6 +202,13 @@ export const ko: TranslationResources = {
     },
   },
   composer: {
+    queue: {
+      steer: "조정",
+      delete: "삭제",
+      more: "더보기",
+      edit: "메시지 편집",
+      turnOff: "대기열 끄기",
+    },
     placeholders: {
       chat: "무엇이든 물어보세요",
       desktop: "에이전트에게 메시지를 보내거나 @files 태그, /commands, /skills를 사용하세요",
