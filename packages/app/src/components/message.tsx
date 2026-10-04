@@ -3117,6 +3117,29 @@ interface ToolCallProps {
   maxDetailHeight?: number;
 }
 
+// Finished Mac tool rows read like Codex steps: "已读取 History.swift", "已运行 pwd".
+const MAC_DONE_LABEL_KEYS: Partial<Record<ToolCallDetail["type"], string>> = {
+  read: "toolCallGroup.done.read",
+  edit: "toolCallGroup.done.edit",
+  write: "toolCallGroup.done.edit",
+  shell: "toolCallGroup.done.shell",
+  search: "toolCallGroup.done.search",
+  fetch: "toolCallGroup.done.fetch",
+};
+
+function toolCallLabel(
+  t: (key: string) => string,
+  status: ToolCallProps["status"],
+  detail: ToolCallDetail | undefined,
+  displayName: string,
+): string {
+  const key =
+    getIsElectronMac() && status === "completed" && detail
+      ? MAC_DONE_LABEL_KEYS[detail.type]
+      : undefined;
+  return key ? t(key) : displayName;
+}
+
 export const ToolCall = memo(function ToolCall({
   toolName,
   args,
@@ -3135,6 +3158,7 @@ export const ToolCall = memo(function ToolCall({
   forceInline = false,
   maxDetailHeight = getIsElectronMac() ? 160 : 400,
 }: ToolCallProps) {
+  const { t } = useTranslation();
   const { openToolCall } = useToolCallSheet();
   const [isExpanded, setIsExpanded] = useState(defaultExpanded ?? false);
 
@@ -3277,7 +3301,7 @@ export const ToolCall = memo(function ToolCall({
     <ExpandableBadge
       testID="tool-call-badge"
       fadeDetailsBottom={shellInlineFade && shellHasMore}
-      label={presentation.displayName}
+      label={toolCallLabel(t, status, effectiveDetail, presentation.displayName)}
       secondaryLabel={presentation.summary}
       icon={presentation.icon}
       isExpanded={shouldRenderInline && isExpanded}

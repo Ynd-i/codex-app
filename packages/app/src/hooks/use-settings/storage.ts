@@ -335,7 +335,8 @@ const StoredAppSettingsSchema = z
         ? "none"
         : DEFAULT_SIDEBAR_CHECKS_DISPLAY);
     const toolCallDetailLevel =
-      stored.toolCallDetailLevel ?? (stored.compactToolCalls ? "overview" : "detailed");
+      stored.toolCallDetailLevel ??
+      (stored.compactToolCalls || getIsElectronMac() ? "overview" : "detailed");
     return {
       ...stored,
       openInSidePane,
@@ -444,7 +445,11 @@ async function readAppSettings(
 
   const defaultStored = StoredAppSettingsSchema.parse({});
   return {
-    settings: { ...DEFAULT_CLIENT_SETTINGS, syntaxTheme: defaultStored.syntaxTheme },
+    settings: {
+      ...DEFAULT_CLIENT_SETTINGS,
+      syntaxTheme: defaultStored.syntaxTheme,
+      toolCallDetailLevel: defaultStored.toolCallDetailLevel,
+    },
     needsWrite: true,
     stored: defaultStored,
   };

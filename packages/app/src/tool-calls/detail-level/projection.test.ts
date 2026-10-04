@@ -262,7 +262,25 @@ describe("tool call detail-level projection", () => {
         otherToolCount: 0,
         paseoCallCount: 0,
       },
+      categories: ["read", "command", "edit"],
     });
+  });
+
+  it("lists distinct categories chronologically and identifies skill and tool-search calls", () => {
+    const unknownDetail = { type: "unknown" as const, input: null, output: null };
+    const calls = [
+      toolCall("1", unknownDetail, { name: "ToolSearch" }),
+      toolCall("2", unknownDetail, { name: "Skill" }),
+      toolCall("3", { type: "read", filePath: "/repo/a.ts" }),
+      toolCall("4", { type: "shell", command: "pwd" }),
+      toolCall("5", { type: "read", filePath: "/repo/b.ts" }),
+      toolCall("6", unknownDetail, { name: "mystery" }),
+    ];
+
+    const group = project({ level: "overview", head: calls }).groupsByHostId.get("1");
+
+    expect(group?.categories).toEqual(["loadTools", "skill", "read", "command", "other"]);
+    expect(group?.summary.otherToolCount).toBe(3);
   });
 
   it("distinguishes reads, searches, and other tools in overview", () => {
