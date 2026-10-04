@@ -83,8 +83,9 @@ export interface StreamRenderInput {
   isAuthoritativeHistoryReady: boolean;
   onNearBottomChange: (value: boolean) => void;
   // The history row under the top of the viewport, for surfaces that mark where the reader
-  // is in the transcript. Only the web viewport measures it today.
-  onReadingPositionChange?: (rowId: string | null) => void;
+  // is in the transcript, and whether the viewport rests at the bottom. Only the web
+  // viewport measures it today.
+  onReadingPositionChange?: (rowId: string | null, atBottom: boolean) => void;
   onNearHistoryStart: () => boolean | Promise<boolean>;
   isLoadingOlderHistory: boolean;
   hasOlderHistory: boolean;

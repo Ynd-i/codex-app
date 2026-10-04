@@ -1056,13 +1056,15 @@ const AgentStreamViewComponent = forwardRef<AgentStreamViewHandle, AgentStreamVi
       return itemById;
     }, [streamLayout.liveHead]);
 
-    const handleReadingPositionChange = useStableEvent((rowId: string | null) => {
-      const row =
-        rowId === null
-          ? undefined
-          : (layoutHistoryItemById.get(rowId) ?? layoutLiveHeadItemById.get(rowId));
-      chatOutline.reportReadingPosition(row?.item.timelineCursor?.seq ?? null);
-    });
+    const handleReadingPositionChange = useStableEvent(
+      (rowId: string | null, atBottom: boolean) => {
+        const row =
+          rowId === null
+            ? undefined
+            : (layoutHistoryItemById.get(rowId) ?? layoutLiveHeadItemById.get(rowId));
+        chatOutline.reportReadingPosition(row?.item.timelineCursor?.seq ?? null, atBottom);
+      },
+    );
 
     const renderHistoryRow = useCallback(
       (item: StreamItem) =>

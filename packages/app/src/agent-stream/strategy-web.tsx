@@ -729,7 +729,7 @@ function WebStreamViewport(props: StreamRenderInput & { isMobileBreakpoint: bool
     const scrollContainer = scrollContainerRef.current;
     const contentNode = contentRef.current;
     if (!scrollContainer || !contentNode) {
-      onReadingPositionChange(null);
+      onReadingPositionChange(null, false);
       return;
     }
     const readingLine = scrollContainer.getBoundingClientRect().top + READING_POSITION_OFFSET_PX;
@@ -744,7 +744,7 @@ function WebStreamViewport(props: StreamRenderInput & { isMobileBreakpoint: bool
         break;
       }
     }
-    onReadingPositionChange(readingRowId);
+    onReadingPositionChange(readingRowId, isScrollContainerAtBottom(scrollContainer));
   });
 
   const updateScrollMetrics = useCallback(() => {
