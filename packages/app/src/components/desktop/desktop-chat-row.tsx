@@ -1,16 +1,12 @@
 import { memo, useCallback, useMemo, useState, type Ref } from "react";
-import { MoreHorizontal } from "lucide-react-native";
+import { Archive, Pin, PinOff } from "lucide-react-native";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { AgentStatusDot } from "@/components/agent-status-dot";
 import type { DraggableListDragHandleProps } from "@/components/draggable-list.types";
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from "@/components/ui/context-menu";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { HeaderToggleButton } from "@/components/headers/header-toggle-button";
 import type { AggregatedAgent } from "@/hooks/use-aggregated-agents";
 import type { Theme } from "@/styles/theme";
 import { navigateToAgent } from "@/utils/navigate-to-agent";
@@ -19,7 +15,9 @@ import { DesktopChatMenuItems, useChatForkPage, useDesktopChatMenu } from "./des
 import { useSectionMovePage } from "./desktop-chat-section-menus";
 import { useChatSectionsStore } from "./desktop-chat-sections-store";
 
-const MoreIcon = withUnistyles(MoreHorizontal);
+const ArchiveIcon = withUnistyles(Archive);
+const PinIcon = withUnistyles(Pin);
+const UnpinIcon = withUnistyles(PinOff);
 const Progress = withUnistyles(ActivityIndicator);
 const mutedIcon = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
 
@@ -37,7 +35,6 @@ export const ChatRow = memo(function ChatRow({
   const { t } = useTranslation();
   const { busy, unread, markRead, menuProps, renameModal } = useDesktopChatMenu(agent);
   const [hovered, setHovered] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [contextOpen, setContextOpen] = useState(false);
   const key = desktopChatKey(agent);
   const selected = selectedKey === key;
@@ -50,6 +47,12 @@ export const ChatRow = memo(function ChatRow({
     () => (forkPage ? [sectionPage, forkPage] : [sectionPage]),
     [forkPage, sectionPage],
   );
+  const pinLabel = t(
+    menuProps.pinned ? "sidebar.workspace.actions.unpin" : "sidebar.workspace.actions.pin",
+  );
+  const revealed = hovered || contextOpen;
+  const actionStyle = revealed ? undefined : styles.actionHidden;
+  const archiveLabel = t("agentList.archiveSheet.archive");
   const title = agent.title || t("agentList.fallbackTitle");
   const enter = useCallback(() => setHovered(true), []);
   const leave = useCallback(() => setHovered(false), []);
@@ -85,7 +88,7 @@ export const ChatRow = memo(function ChatRow({
             style={[
               styles.chatRow,
               indented && styles.indented,
-              (hovered || contextOpen || menuOpen) && styles.rowHovered,
+              revealed && styles.rowHovered,
               selected && styles.rowSelected,
             ]}
           >
@@ -112,25 +115,40 @@ export const ChatRow = memo(function ChatRow({
                 />
               )}
             </Pressable>
-            <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
-              <DropdownMenuTrigger
-                onFocus={enter}
-                onBlur={leave}
-                style={[styles.menuButton, !hovered && !menuOpen && styles.menuHidden]}
-                accessibilityRole="button"
-                accessibilityLabel={t("desktopChat.actions")}
-                testID={`desktop-chat-menu-${key}`}
-              >
-                <MoreIcon size={16} uniProps={mutedIcon} />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" width={210} pages={pages}>
-                <DesktopChatMenuItems
-                  {...menuProps}
-                  sectionPage={sectionPage.id}
-                  forkPage={forkPage?.id}
-                />
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <HeaderToggleButton
+              onPress={menuProps.onPin}
+              disabled={busy}
+              onFocus={enter}
+              onBlur={leave}
+              tooltipLabel={pinLabel}
+              tooltipKeys={[]}
+              tooltipSide="top"
+              style={actionStyle}
+              accessibilityRole="button"
+              accessibilityLabel={pinLabel}
+              testID={`desktop-chat-pin-${key}`}
+            >
+              {menuProps.pinned ? (
+                <UnpinIcon size={16} uniProps={mutedIcon} />
+              ) : (
+                <PinIcon size={16} uniProps={mutedIcon} />
+              )}
+            </HeaderToggleButton>
+            <HeaderToggleButton
+              onPress={menuProps.onArchive}
+              disabled={busy}
+              onFocus={enter}
+              onBlur={leave}
+              tooltipLabel={archiveLabel}
+              tooltipKeys={[]}
+              tooltipSide="top"
+              style={actionStyle}
+              accessibilityRole="button"
+              accessibilityLabel={archiveLabel}
+              testID={`desktop-chat-archive-${key}`}
+            >
+              <ArchiveIcon size={16} uniProps={mutedIcon} />
+            </HeaderToggleButton>
           </View>
         </ContextMenuTrigger>
         <ContextMenuContent width={210} pages={pages}>
@@ -175,12 +193,5 @@ const styles = StyleSheet.create((theme) => ({
     lineHeight: 20,
   },
   unreadTitle: { color: theme.colors.foreground, fontWeight: theme.fontWeight.medium },
-  menuButton: {
-    width: 24,
-    height: 28,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 6,
-  },
-  menuHidden: { opacity: 0 },
+  actionHidden: { opacity: 0 },
 }));

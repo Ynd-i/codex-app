@@ -16,7 +16,6 @@ import {
   CalendarClock,
   CircleGauge,
   Folder,
-  FolderPlus,
   History,
   House,
   Server,
@@ -29,7 +28,6 @@ import { WindowSidebarMenuToggle } from "@/components/headers/menu-header";
 import { HeaderToggleButton } from "@/components/headers/header-toggle-button";
 import { SidebarHelpMenu } from "@/components/sidebar/sidebar-help-menu";
 import { HostPicker } from "@/components/hosts/host-picker";
-import { useOpenAddProject } from "@/hooks/use-open-add-project";
 import { openHostOverview } from "@/navigation/settings-navigation";
 import { useHosts } from "@/runtime/host-runtime";
 import { UsageRailPopover } from "@/usage";
@@ -76,7 +74,6 @@ const HomeIcon = withUnistyles(House);
 const HistoryIcon = withUnistyles(History);
 const SchedulesIcon = withUnistyles(CalendarClock);
 const SettingsIcon = withUnistyles(Settings);
-const AddProjectIcon = withUnistyles(FolderPlus);
 const ProjectIcon = withUnistyles(Folder);
 const UsageIcon = withUnistyles(CircleGauge);
 const HostsIcon = withUnistyles(Server);
@@ -207,8 +204,6 @@ function hostOptionTestID(serverId: string): string {
 
 function DesktopNavigationRail({ pathname }: { pathname: string }) {
   const { t } = useTranslation();
-  const openAddProject = useOpenAddProject();
-  const addProject = useCallback(() => void openAddProject(), [openAddProject]);
   const renderUsageTrigger = useCallback(
     (onPress: () => void) => (
       <RailButton
@@ -251,14 +246,6 @@ function DesktopNavigationRail({ pathname }: { pathname: string }) {
         <SchedulesIcon size={20} uniProps={railIconProps(schedulesActive)} />
       </RailButton>
       <View style={styles.railSpacer} />
-      <RailButton
-        onPress={addProject}
-        label={t("sidebar.actions.addProject")}
-        active={false}
-        testID="sidebar-add-project"
-      >
-        <AddProjectIcon size={20} uniProps={railIconProps(false)} />
-      </RailButton>
       <UsageRailPopover renderTrigger={renderUsageTrigger} />
       <RailHostPicker />
       <SidebarHelpMenu />

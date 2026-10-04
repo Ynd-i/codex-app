@@ -80,18 +80,18 @@ export function PinnedSection({
   const { sort, order, setSort } = useSectionSort(CHAT_SECTION.pinned);
   const ordered = useMemo(() => orderSectionChats(chats, sort, order), [chats, order, sort]);
   const empty = chats.length === 0 && projects.length === 0;
-  const collapsed = pinnedCollapsed || empty;
+  if (empty) return null;
   return (
     <>
       <ChatSectionHeader
         title={t("sidebar.pinned.title")}
-        collapsed={collapsed}
-        onToggle={empty ? undefined : togglePinned}
+        collapsed={pinnedCollapsed}
+        onToggle={togglePinned}
         sort={sort}
         onSortChange={setSort}
         testID="desktop-section-pinned"
       />
-      {collapsed ? null : (
+      {pinnedCollapsed ? null : (
         <>
           <SectionChatList
             sectionId={CHAT_SECTION.pinned}

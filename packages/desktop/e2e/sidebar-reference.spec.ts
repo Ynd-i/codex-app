@@ -42,7 +42,7 @@ test("desktop navigation rail stays visible and marks the current destination", 
     const historyIconPath = history.locator("svg path").first();
     await expect(rail).toBeVisible();
     // The rail carries the sidebar footer actions, so the footer drops its icon line.
-    for (const testID of ["sidebar-add-project", "sidebar-usage-icon", "sidebar-hosts-trigger"])
+    for (const testID of ["sidebar-usage-icon", "sidebar-hosts-trigger"])
       await expect(rail.getByTestId(testID)).toBeVisible();
     await expect(page.locator('[data-testid="sidebar-footer-bottom-line"]:visible')).toHaveCount(0);
     await expect(workspaceSidebar).toBeVisible();
@@ -288,8 +288,11 @@ test("macOS custom sections hold chats and return them when removed", async ({
     const work = page.getByTestId("sidebar-project-list").getByText("Work", { exact: true });
     await expect(work).toBeVisible();
 
-    await firstRow.hover();
-    await page.getByTestId(`desktop-chat-menu-${chatKey}`).first().click();
+    // Hover actions are Pin and Archive; the full menu is the right-click menu. Pinned hides when empty.
+    await expect(page.getByTestId(`desktop-chat-pin-${chatKey}`).first()).toBeAttached();
+    await expect(page.getByTestId(`desktop-chat-archive-${chatKey}`).first()).toBeAttached();
+    await expect(page.getByTestId("desktop-section-pinned")).toHaveCount(0);
+    await firstRow.click({ button: "right" });
     await page.getByText("Section", { exact: true }).click();
     await page
       .locator('[data-testid^="desktop-section-move-"]')
@@ -437,8 +440,7 @@ test("macOS project and chat menus carry the reference's entries", async ({ page
     await page.getByTestId("desktop-section-organize-projects").click();
     await expect(chatRows).toHaveCount(2);
 
-    await chatRows.first().hover();
-    await page.getByTestId(`desktop-chat-menu-${chatKey}`).first().click();
+    await chatRows.first().click({ button: "right" });
     const fork = page.getByRole("menuitem", { name: "Fork", exact: true });
     // The row menu keeps the reference's order; the titlebar order is checked in chat-menu-copy.
     await expect(
