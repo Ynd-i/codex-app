@@ -47,6 +47,7 @@ export const zhCN: TranslationResources = {
     activity: "活动",
     workedFor: "用时 {{duration}}",
     startWork: "我们应该做些什么？",
+    explorerAfterStart: "开始对话后将显示文件和更改。",
     startInProject: "我们应该在{{project}}中做些什么？",
     resetReasoning: "重置推理强度",
     newChat: "新聊天",

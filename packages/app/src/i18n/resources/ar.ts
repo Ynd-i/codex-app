@@ -47,6 +47,7 @@ export const ar: TranslationResources = {
     activity: "النشاط",
     workedFor: "المدة: {{duration}}",
     startWork: "على ماذا نعمل؟",
+    explorerAfterStart: "تظهر الملفات والتغييرات بعد بدء المحادثة.",
     startInProject: "على ماذا نعمل في {{project}}؟",
     resetReasoning: "إعادة ضبط مستوى الاستدلال",
     newChat: "محادثة جديدة",

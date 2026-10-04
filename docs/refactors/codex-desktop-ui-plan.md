@@ -77,7 +77,7 @@ approval and question cards with draft retention; styled quotes/code blocks;
 chat/composer edge alignment; plain replies without empty activity headers;
 completion timestamps; 82px default code cards and tighter list rows; reference
 gaps between paragraphs, lists and code cards; inline code that keeps the prose
-line height; the reference 13px text scale and list markers. Detailed commit IDs, evidence and platform limitations remain in
+line height; the reference 13px text scale and list markers; the Paseox brand label, sliding Explorer dock (also toggleable on the new chat screen) and an animated effort slider (2026-10-04). Detailed commit IDs, evidence and platform limitations remain in
 their sections below. Local commits are not pushed.
 
 ### Next work and boundaries

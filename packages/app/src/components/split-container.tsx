@@ -40,6 +40,7 @@ import {
   resolveExplorerSidebarWidth,
 } from "@/components/explorer-sidebar-layout";
 import { RetainedPanel } from "@/components/retained-panel";
+import { useAnimatedDock } from "@/components/use-animated-dock";
 import {
   hasMultipleVisiblePanes,
   resolveSplitContainerRoot,
@@ -446,8 +447,14 @@ export function SplitContainer({
     ? removeWindowChromeCorner(inheritedWindowChromeCorners, "top-right")
     : inheritedWindowChromeCorners;
   const mainColumnStyle = styles.mainColumn;
+  const explorerSidebarDock = useAnimatedDock(renderExplorerSidebarDock, explorerSidebarWidth);
   const explorerSidebarDockStyle = useMemo(
-    () => [styles.explorerSidebarDock, { width: explorerSidebarWidth }],
+    () => [styles.explorerSidebarDock, explorerSidebarDock.style],
+    [explorerSidebarDock.style],
+  );
+  // Fixed width so the content clips instead of reflowing while the dock slides.
+  const explorerSidebarDockContentStyle = useMemo(
+    () => [styles.explorerSidebarDockContent, { width: explorerSidebarWidth }],
     [explorerSidebarWidth],
   );
   const handleWorkspaceShellLayout = useCallback((event: LayoutChangeEvent) => {
@@ -702,38 +709,45 @@ export function SplitContainer({
               ) : null}
             </View>
           </WindowChromeRegion>
-          {renderExplorerSidebarDock && explorerSidebarPane ? (
+          {explorerSidebarDock.rendered && explorerSidebarPane ? (
             <>
-              <ResizeHandle
-                testID="workspace-explorer-sidebar-resize-handle"
-                direction="horizontal"
-                hitAreaAlignment="end"
-                groupId={EXPLORER_SIDEBAR_RESIZE_GROUP_ID}
-                index={0}
-                sizes={explorerSidebarDockSizes}
-                containerSize={workspaceShellWidth}
-                onPreviewResizeSplit={previewExplorerSidebarResize}
-                onResizeSplit={commitExplorerSidebarResize}
-              />
-              <View style={explorerSidebarDockStyle}>
-                <ExplorerSidebarDock
-                  pane={explorerSidebarPane}
-                  uiTabs={uiTabs}
-                  normalizedServerId={normalizedServerId}
-                  normalizedWorkspaceId={normalizedWorkspaceId}
-                  isWorkspaceFocused={isWorkspaceFocused}
-                  closingTabIds={closingTabIds}
-                  onSelectTab={onSelectTabInPane}
-                  onCloseTab={onCloseTab}
-                  onCreateNewTab={handleCreateExplorerTab}
-                  onMoveTabToMain={handleMoveExplorerTabToMain}
-                  buildPaneContentModel={buildPaneContentModel}
-                  onReorderTabsInPane={onReorderTabsInPane}
-                  activeDragTabId={activeDragTabId}
-                  tabDropPreview={tabDropPreview}
-                  headerAction={renderExplorerSidebarHeaderAction?.()}
+              {renderExplorerSidebarDock ? (
+                <ResizeHandle
+                  testID="workspace-explorer-sidebar-resize-handle"
+                  direction="horizontal"
+                  hitAreaAlignment="end"
+                  groupId={EXPLORER_SIDEBAR_RESIZE_GROUP_ID}
+                  index={0}
+                  sizes={explorerSidebarDockSizes}
+                  containerSize={workspaceShellWidth}
+                  onPreviewResizeSplit={previewExplorerSidebarResize}
+                  onResizeSplit={commitExplorerSidebarResize}
                 />
-              </View>
+              ) : null}
+              <Animated.View
+                style={explorerSidebarDockStyle}
+                pointerEvents={renderExplorerSidebarDock ? "auto" : "none"}
+              >
+                <View style={explorerSidebarDockContentStyle}>
+                  <ExplorerSidebarDock
+                    pane={explorerSidebarPane}
+                    uiTabs={uiTabs}
+                    normalizedServerId={normalizedServerId}
+                    normalizedWorkspaceId={normalizedWorkspaceId}
+                    isWorkspaceFocused={isWorkspaceFocused}
+                    closingTabIds={closingTabIds}
+                    onSelectTab={onSelectTabInPane}
+                    onCloseTab={onCloseTab}
+                    onCreateNewTab={handleCreateExplorerTab}
+                    onMoveTabToMain={handleMoveExplorerTabToMain}
+                    buildPaneContentModel={buildPaneContentModel}
+                    onReorderTabsInPane={onReorderTabsInPane}
+                    activeDragTabId={activeDragTabId}
+                    tabDropPreview={tabDropPreview}
+                    headerAction={renderExplorerSidebarHeaderAction?.()}
+                  />
+                </View>
+              </Animated.View>
             </>
           ) : null}
         </View>
@@ -1398,9 +1412,14 @@ const styles = StyleSheet.create((theme) => ({
   },
   explorerSidebarDock: {
     flexShrink: 0,
+    minHeight: 0,
+    overflow: "hidden",
+    backgroundColor: theme.colors.surfaceSidebar,
+  },
+  explorerSidebarDockContent: {
+    flex: 1,
     minWidth: 240,
     minHeight: 0,
-    backgroundColor: theme.colors.surfaceSidebar,
   },
   group: {
     flex: 1,

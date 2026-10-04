@@ -1,4 +1,5 @@
 import { useAppReducedMotion } from "@/appearance/reduced-motion";
+import { SIDEBAR_TOGGLE_TIMING } from "@/components/use-animated-dock";
 import { router } from "expo-router";
 import { CircleGauge, FolderPlus, GitBranch, Server, Settings, X } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
@@ -21,7 +22,6 @@ import {
 } from "react-native";
 import { Gesture } from "react-native-gesture-handler";
 import Animated, {
-  Easing,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -81,10 +81,6 @@ import { SidebarWorkspaceList } from "./sidebar-workspace-list";
 type SidebarTheme = ReturnType<typeof useUnistyles>["theme"];
 
 const DEV_BUILD_LABEL = process.env.EXPO_PUBLIC_PASEO_DEV_BUILD_LABEL?.trim() || null;
-const SIDEBAR_TOGGLE_TIMING = {
-  duration: 220,
-  easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-};
 
 interface SidebarSharedProps {
   theme: SidebarTheme;

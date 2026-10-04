@@ -47,6 +47,7 @@ export const ja: TranslationResources = {
     activity: "アクティビティ",
     workedFor: "所要時間: {{duration}}",
     startWork: "何をしましょうか？",
+    explorerAfterStart: "チャットを開始するとファイルと変更が表示されます。",
     startInProject: "{{project}} で何をしましょうか？",
     resetReasoning: "推論の強度をリセット",
     newChat: "新しいチャット",

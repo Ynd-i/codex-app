@@ -47,6 +47,7 @@ export const ko: TranslationResources = {
     activity: "활동",
     workedFor: "소요 시간: {{duration}}",
     startWork: "어떤 작업을 할까요?",
+    explorerAfterStart: "채팅을 시작하면 파일과 변경 사항이 표시됩니다.",
     startInProject: "{{project}}에서 어떤 작업을 할까요?",
     resetReasoning: "추론 강도 재설정",
     newChat: "새 채팅",

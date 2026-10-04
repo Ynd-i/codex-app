@@ -47,6 +47,7 @@ export const ru: TranslationResources = {
     activity: "Действия",
     workedFor: "Время: {{duration}}",
     startWork: "Над чем поработаем?",
+    explorerAfterStart: "Файлы и изменения появятся после начала чата.",
     startInProject: "Над чем поработаем в {{project}}?",
     resetReasoning: "Сбросить интенсивность рассуждений",
     newChat: "Новый чат",

@@ -44,6 +44,7 @@ export const en = {
     activity: "Activity",
     workedFor: "Worked for {{duration}}",
     startWork: "What should we work on?",
+    explorerAfterStart: "Files and changes appear once the chat starts.",
     startInProject: "What should we work on in {{project}}?",
     resetReasoning: "Reset reasoning intensity",
     newChat: "New chat",

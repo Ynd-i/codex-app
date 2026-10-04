@@ -150,6 +150,7 @@ import {
 } from "./workspace/terminals/state";
 import { captureWorkspaceDraftCleanup } from "./new-workspace/background-handoff";
 import { useNewWorkspaceScreenPresence } from "./new-workspace/screen-presence";
+import { NewChatExplorerDock, revealNewChatExplorer } from "./new-workspace/new-chat-explorer";
 
 const ThemedFolderPlus = withUnistyles(FolderPlus);
 const ThemedPaseoLogo = withUnistyles(PaseoLogo);
@@ -1293,6 +1294,7 @@ function submitWorkspaceDraft(input: SubmitDraftInput): SubmitOutcome {
     workspaceId,
     target: submission.target,
   });
+  revealNewChatExplorer(serverId, workspaceId);
   return "navigated";
 }
 
@@ -2415,6 +2417,7 @@ export function NewWorkspaceScreen({
               }
               outcome = "navigated";
               navigateToWorkspace({ serverId: targetServerId, workspaceId });
+              revealNewChatExplorer(targetServerId, workspaceId);
             },
           });
           // Nothing navigated, so this screen may still be mounted under another route. Release
@@ -2521,6 +2524,7 @@ export function NewWorkspaceScreen({
           }
           outcome = "navigated";
           navigateToWorkspace({ serverId: targetServerId, workspaceId, target });
+          revealNewChatExplorer(targetServerId, workspaceId);
         },
       });
       if (outcome === "background") {
@@ -2771,26 +2775,29 @@ function NewWorkspaceLayout({
   let content;
   if (desktopChat) {
     content = (
-      <View style={styles.desktopLayout}>
-        <View style={styles.desktopHero} pointerEvents="none">
-          <View aria-hidden>
-            <ThemedPaseoLogo size={56} uniProps={passiveColorMapping} />
+      <View style={styles.desktopRow}>
+        <View style={styles.desktopLayout}>
+          <View style={styles.desktopHero} pointerEvents="none">
+            <View aria-hidden>
+              <ThemedPaseoLogo size={56} uniProps={passiveColorMapping} />
+            </View>
+            <Text
+              style={styles.desktopHeroTitle}
+              accessibilityRole="header"
+              testID="desktop-new-chat-hero"
+            >
+              {projectName
+                ? t("desktopChat.startInProject", { project: projectName })
+                : t("desktopChat.startWork")}
+            </Text>
           </View>
-          <Text
-            style={styles.desktopHeroTitle}
-            accessibilityRole="header"
-            testID="desktop-new-chat-hero"
-          >
-            {projectName
-              ? t("desktopChat.startInProject", { project: projectName })
-              : t("desktopChat.startWork")}
-          </Text>
+          <View style={styles.desktopSetupRail}>
+            <View style={styles.desktopSetup}>{formStack}</View>
+          </View>
+          {/* Mac imports through History and Cmd+K, like Codex keeping this area clear. */}
+          {composer}
         </View>
-        <View style={styles.desktopSetupRail}>
-          <View style={styles.desktopSetup}>{formStack}</View>
-        </View>
-        {/* Mac imports through History and Cmd+K, like Codex keeping this area clear. */}
-        {composer}
+        <NewChatExplorerDock />
       </View>
     );
   } else {
@@ -2825,7 +2832,8 @@ function NewWorkspaceLayout({
 }
 
 const styles = StyleSheet.create((theme) => ({
-  desktopLayout: { flex: 1 },
+  desktopRow: { flex: 1, flexDirection: "row" },
+  desktopLayout: { flex: 1, minWidth: 0 },
   desktopHero: {
     flex: 1,
     minHeight: 0,

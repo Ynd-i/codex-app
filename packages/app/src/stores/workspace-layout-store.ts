@@ -118,6 +118,9 @@ interface WorkspaceLayoutStore {
   sidePaneIdByWorkspace: Record<string, string | null>;
   /** Workspaces where PR detection already added its tab once; a closed tab never returns. */
   pullRequestTabAutoOpenedByWorkspace: Record<string, true>;
+  /** Explorer toggled on the new chat screen; the created workspace opens with it. Not persisted. */
+  newChatExplorerOpen: boolean;
+  setNewChatExplorerOpen: (open: boolean) => void;
   openTab: (input: OpenWorkspaceTabInput) => string | null;
   /** Placement resolves lazily so an already acknowledged workspace never creates a side pane. */
   autoOpenPullRequestTab: (
@@ -726,6 +729,8 @@ export function createWorkspaceLayoutStore(
           }
           return tabId;
         },
+        newChatExplorerOpen: false,
+        setNewChatExplorerOpen: (open) => set({ newChatExplorerOpen: open }),
         layoutByWorkspace: {},
         splitSizesByWorkspace: {},
         explorerSidebarWidthByWorkspace: {},
