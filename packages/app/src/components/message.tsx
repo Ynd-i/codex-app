@@ -1236,6 +1236,8 @@ const expandableBadgeStylesheet = StyleSheet.create((theme) => ({
   },
   detailWrapperBorderless: {
     borderWidth: 0,
+    // The Mac wrapper sets borderTopWidth, and the longhand outlives the shorthand above.
+    borderTopWidth: 0,
     backgroundColor: "transparent",
     marginTop: 0,
   },
