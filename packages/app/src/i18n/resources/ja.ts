@@ -440,6 +440,7 @@ export const ja: TranslationResources = {
     },
     actions: {
       copyCode: "コードをコピー",
+      runInTerminal: "ターミナルで実行",
       plainText: "プレーンテキスト",
       copyTurn: "ターンをコピー",
       copyMessage: "メッセージをコピー",

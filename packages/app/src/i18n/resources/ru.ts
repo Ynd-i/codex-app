@@ -439,6 +439,7 @@ export const ru: TranslationResources = {
     },
     actions: {
       copyCode: "Скопировать код",
+      runInTerminal: "Выполнить в терминале",
       plainText: "Обычный текст",
       copyTurn: "Скопировать ответ",
       copyMessage: "Копировать сообщение",

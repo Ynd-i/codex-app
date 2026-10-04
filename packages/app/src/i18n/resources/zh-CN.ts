@@ -435,6 +435,7 @@ export const zhCN: TranslationResources = {
     },
     actions: {
       copyCode: "复制代码",
+      runInTerminal: "在终端中运行",
       plainText: "纯文本",
       copyTurn: "复制回合",
       copyMessage: "复制消息",

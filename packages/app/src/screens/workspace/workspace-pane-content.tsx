@@ -38,6 +38,7 @@ export interface BuildWorkspacePaneContentModelInput {
   onSetCurrentTabState: (state: WorkspaceTabDescriptor["state"]) => void;
   onOpenWorkspaceFile: (request: WorkspaceFileOpenRequest) => void;
   onOpenImportSheet: () => void;
+  onRunInTerminal?: (command: string) => void;
 }
 
 export function buildWorkspacePaneContentModel({
@@ -54,6 +55,7 @@ export function buildWorkspacePaneContentModel({
   onSetCurrentTabState,
   onOpenWorkspaceFile,
   onOpenImportSheet,
+  onRunInTerminal,
 }: BuildWorkspacePaneContentModelInput): WorkspacePaneContentModel {
   ensurePanelsRegistered();
   const registration = getPanelRegistration(tab.kind);
@@ -77,6 +79,7 @@ export function buildWorkspacePaneContentModel({
       setCurrentTabState: onSetCurrentTabState,
       openFileInWorkspace: onOpenWorkspaceFile,
       openImportSheet: onOpenImportSheet,
+      runInTerminal: onRunInTerminal,
     },
   };
 }
@@ -103,6 +106,7 @@ export function WorkspacePaneContent({
   const setCurrentTabState = useStableEvent(paneContextValue.setCurrentTabState);
   const openFileInWorkspace = useStableEvent(paneContextValue.openFileInWorkspace);
   const openImportSheet = useStableEvent(paneContextValue.openImportSheet);
+  const runInTerminal = useStableEvent(paneContextValue.runInTerminal ?? (() => undefined));
   const stablePaneContextValue = useMemo(
     () => ({
       serverId: paneContextValue.serverId,
@@ -120,11 +124,13 @@ export function WorkspacePaneContent({
       setCurrentTabState,
       openFileInWorkspace,
       openImportSheet,
+      runInTerminal: paneContextValue.runInTerminal ? runInTerminal : undefined,
     }),
     [
       closeCurrentTab,
       openFileInWorkspace,
       openImportSheet,
+      runInTerminal,
       openTab,
       openPreferredTarget,
       openTargetToSide,
@@ -136,6 +142,7 @@ export function WorkspacePaneContent({
       paneContextValue.workspaceId,
       paneContextValue.host,
       paneContextValue.openTargetToSide,
+      paneContextValue.runInTerminal,
       retargetCurrentTab,
       setCurrentTabState,
     ],

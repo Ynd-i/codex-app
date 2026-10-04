@@ -439,6 +439,7 @@ export const ptBR: TranslationResources = {
     },
     actions: {
       copyCode: "Copiar código",
+      runInTerminal: "Executar no terminal",
       plainText: "Texto simples",
       copyTurn: "Copiar turno",
       copyMessage: "Copiar mensagem",

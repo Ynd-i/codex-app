@@ -440,6 +440,7 @@ export const es: TranslationResources = {
     },
     actions: {
       copyCode: "Copiar código",
+      runInTerminal: "Ejecutar en el terminal",
       plainText: "Texto sin formato",
       copyTurn: "Copiar turno",
       copyMessage: "Copiar mensaje",

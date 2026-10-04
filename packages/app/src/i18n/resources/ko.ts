@@ -436,6 +436,7 @@ export const ko: TranslationResources = {
     },
     actions: {
       copyCode: "코드 복사",
+      runInTerminal: "터미널에서 실행",
       plainText: "일반 텍스트",
       copyTurn: "턴 복사",
       copyMessage: "메시지 복사",

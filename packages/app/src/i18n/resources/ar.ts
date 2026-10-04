@@ -435,6 +435,7 @@ export const ar: TranslationResources = {
     },
     actions: {
       copyCode: "نسخ الرمز",
+      runInTerminal: "تشغيل في الطرفية",
       plainText: "نص عادي",
       copyTurn: "نسخ بدوره",
       copyMessage: "انسخ الرسالة",

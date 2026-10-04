@@ -441,6 +441,7 @@ export const fr: TranslationResources = {
     },
     actions: {
       copyCode: "Copier le code",
+      runInTerminal: "Exécuter dans le terminal",
       plainText: "Texte brut",
       copyTurn: "Copier le tour",
       copyMessage: "Copier le message",

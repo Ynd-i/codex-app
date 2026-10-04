@@ -432,6 +432,7 @@ export const en = {
     },
     actions: {
       copyCode: "Copy code",
+      runInTerminal: "Run in terminal",
       plainText: "Plain text",
       copyTurn: "Copy turn",
       copyMessage: "Copy message",

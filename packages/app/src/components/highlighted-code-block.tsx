@@ -11,11 +11,12 @@ import { StyleSheet } from "react-native-unistyles";
 import { ScrollView } from "@/components/ui/scroll-view";
 import { MarkdownTextSpan } from "@/components/markdown-text";
 import * as Clipboard from "expo-clipboard";
-import { ArrowRightToLine, Check, Copy, Code, WrapText } from "lucide-react-native";
+import { ArrowRightToLine, Check, Copy, Code, Play, WrapText } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import type { HighlightToken } from "@getpaseo/highlight";
 import { getIsElectronMac, isNative, isWeb } from "@/constants/platform";
 import { useIsCompactFormFactor } from "@/constants/layout";
+import { useRunInTerminal } from "@/panels/pane-context";
 import { syntaxTokenStyleFor } from "@/styles/syntax-token-styles";
 import { CODE_SURFACE_DATASET } from "@/styles/code-surface";
 import { highlightToKeyedLines, type KeyedLine } from "@/utils/highlight-cache";
@@ -57,6 +58,8 @@ function fenceLanguageToExtension(info: string | null | undefined): string | nul
   const normalized = first.replace(/^\./, "");
   return LANGUAGE_ALIASES[normalized] ?? normalized;
 }
+
+const SHELL_LANGUAGES = new Set(["sh", "bash", "zsh", "fish", "shell", "shellscript"]);
 
 function stripTerminalFenceNewline(code: string): string {
   return code.endsWith("\n") ? code.slice(0, -1) : code;
@@ -100,6 +103,14 @@ export const HighlightedCodeBlock = React.memo(function HighlightedCodeBlock({
   // and ends in more than one when the author left a blank line before the closing
   // fence; pasting any of them into a terminal runs the last line.
   const getCode = useCallback(() => code.replace(TRAILING_CODE_LINE_BREAKS, ""), [code]);
+  const runInTerminal = useRunInTerminal();
+  const handleRun = useMemo(
+    () =>
+      runInTerminal && SHELL_LANGUAGES.has(fenceLanguageToExtension(language) ?? "")
+        ? () => runInTerminal(getCode())
+        : null,
+    [getCode, language, runInTerminal],
+  );
 
   const codeText = (
     <MarkdownTextSpan
@@ -133,6 +144,7 @@ export const HighlightedCodeBlock = React.memo(function HighlightedCodeBlock({
               >
                 <WrapActionIcon size={16} color={macStyles.headerText.color} />
               </Pressable>
+              {handleRun ? <RunButton onRun={handleRun} visible inline /> : null}
               <CopyButton getCode={getCode} visible inline />
             </View>
           </View>
@@ -143,6 +155,7 @@ export const HighlightedCodeBlock = React.memo(function HighlightedCodeBlock({
       ) : (
         <>
           {codeText}
+          {handleRun ? <RunButton onRun={handleRun} visible={controlsVisible} /> : null}
           <CopyButton getCode={getCode} visible={controlsVisible} />
         </>
       )}
@@ -209,6 +222,51 @@ function splitFenceStyle(inheritedStyles: TextStyle, textStyle: TextStyle): Spli
     innerTextStyle: [inheritedStyles, textOnly],
   };
 }
+
+interface RunButtonProps {
+  onRun: () => void;
+  visible: boolean;
+  inline?: boolean;
+}
+
+const RunButton = React.memo(function RunButton({
+  onRun,
+  visible,
+  inline = false,
+}: RunButtonProps) {
+  const { t } = useTranslation();
+  const visibilityStyle = visible
+    ? copyButtonStyles.containerVisible
+    : copyButtonStyles.containerHidden;
+  const wrapperStyle = useMemo(
+    () => [
+      copyButtonStyles.container,
+      inline ? copyButtonStyles.inline : copyButtonStyles.runOffset,
+      visibilityStyle,
+    ],
+    [inline, visibilityStyle],
+  );
+  return (
+    <Pressable
+      onPress={onRun}
+      style={wrapperStyle}
+      pointerEvents={visible ? "auto" : "none"}
+      accessibilityRole="button"
+      accessibilityLabel={t("message.actions.runInTerminal")}
+      hitSlop={8}
+      dataSet={markdownCopyDataSet.ignore}
+    >
+      {({ hovered }) => (
+        <Play
+          size={14}
+          color={
+            hovered ? copyButtonStyles.iconHoveredColor.color : copyButtonStyles.iconColor.color
+          }
+        />
+      )}
+    </Pressable>
+  );
+});
 
 interface CopyButtonProps {
   getCode: () => string;
@@ -286,6 +344,7 @@ const copyButtonStyles = StyleSheet.create((theme) => ({
     padding: theme.spacing[1],
   },
   inline: { position: "relative", top: 0, right: 0, padding: 6 },
+  runOffset: { right: theme.spacing[2] + 28 },
   containerVisible: {
     opacity: 1,
   },

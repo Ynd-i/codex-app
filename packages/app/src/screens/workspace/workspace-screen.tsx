@@ -109,6 +109,12 @@ import type { CheckoutStatusPayload } from "@/git/use-status-query";
 import { confirmDialog } from "@/utils/confirm-dialog";
 import { useArchiveAgent } from "@/hooks/use-archive-agent";
 import { useStableEvent } from "@/hooks/use-stable-event";
+import {
+  RUNNER_TERMINAL_NAME,
+  resolveRunnerTerminalId,
+  setRunnerTerminalId,
+  toTerminalCommandInput,
+} from "@/screens/workspace/terminals/command-runner";
 import { removeResidentBrowserWebview } from "@/desktop/browser/resident-webviews";
 import { BROWSER_NEW_TAB_URL } from "@/desktop/browser/new-tab-url";
 import { createWorkspaceBrowser, useBrowserStore } from "@/desktop/browser/store";
@@ -1711,6 +1717,27 @@ function WorkspaceScreenContent({
     },
     toast,
   });
+  const runnerKey = `${normalizedServerId}:${normalizedWorkspaceId}`;
+  const pendingRunnerCommandsRef = useRef<string[] | null>(null);
+  const sendRunnerCommands = useStableEvent((terminalId: string, commands: string[]) => {
+    for (const command of commands) {
+      client?.sendTerminalInput(terminalId, {
+        type: "input",
+        data: toTerminalCommandInput(command),
+      });
+    }
+  });
+  const handleRunnerOrTerminalCreated = useStableEvent(
+    (input: { terminalId: string; destination: TerminalTabDestination }) => {
+      handleTerminalCreated(input);
+      const commands = pendingRunnerCommandsRef.current;
+      if (commands) {
+        pendingRunnerCommandsRef.current = null;
+        setRunnerTerminalId(runnerKey, input.terminalId);
+        sendRunnerCommands(input.terminalId, commands);
+      }
+    },
+  );
   const queryClient = useQueryClient();
   const {
     createMutation: createTerminalMutation,
@@ -1736,7 +1763,7 @@ function WorkspaceScreenContent({
     workspaceScripts,
     hasHydratedWorkspaces,
     isMissingWorkspaceDirectory,
-    onTerminalCreated: handleTerminalCreated,
+    onTerminalCreated: handleRunnerOrTerminalCreated,
     onScriptTerminalSelected: handleScriptTerminalSelected,
     onWorkspacePathUnavailable: handleWorkspacePathUnavailable,
     onTerminalCreateQueued: handleTerminalCreateQueued,
@@ -2419,6 +2446,21 @@ function WorkspaceScreenContent({
     createTerminal({
       destination: input?.paneId ? { kind: "open", paneId: input.paneId } : { kind: "open" },
     });
+  });
+
+  const handleRunInTerminal = useStableEvent((command: string) => {
+    const runnerId = resolveRunnerTerminalId(runnerKey, liveTerminalIds);
+    if (runnerId) {
+      handleScriptTerminalSelected(runnerId);
+      sendRunnerCommands(runnerId, [command]);
+      return;
+    }
+    if (pendingRunnerCommandsRef.current) {
+      pendingRunnerCommandsRef.current.push(command);
+      return;
+    }
+    pendingRunnerCommandsRef.current = [command];
+    createTerminal({ destination: { kind: "open" }, name: RUNNER_TERMINAL_NAME });
   });
 
   const handleCreateTerminalWithProfile = useCallback(
@@ -3609,6 +3651,7 @@ function WorkspaceScreenContent({
           });
         },
         onOpenImportSheet: openImportSheet,
+        onRunInTerminal: handleRunInTerminal,
       }),
     [
       handleCloseTabById,
@@ -3618,6 +3661,7 @@ function WorkspaceScreenContent({
       normalizedServerId,
       normalizedWorkspaceId,
       canRenderDesktopPaneSplits,
+      handleRunInTerminal,
       openImportSheet,
       openInSidePane,
       isMobile,
