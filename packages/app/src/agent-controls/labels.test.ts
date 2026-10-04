@@ -22,10 +22,10 @@ describe("formatAgentModeLabel", () => {
       vi.spyOn(platform, "getIsElectronMac").mockReturnValue(true);
       const claude = (id: string) => formatAgentModeLabel({ id, label: id }, "claude");
       const codex = (id: string) => formatAgentModeLabel({ id, label: id }, "codex");
-      expect(claude("auto")).toBe("Auto pilot");
+      expect(claude("auto")).toBe("Auto-review");
       expect(claude("bypassPermissions")).toBe("Full access");
       expect(codex("auto")).toBe("Ask for review");
-      expect(codex("auto-review")).toBe("Review for me");
+      expect(codex("auto-review")).toBe("Auto-review");
       expect(formatAgentModeLabel({ id: "build", label: "Build" }, "opencode")).toBe("Build");
     });
 

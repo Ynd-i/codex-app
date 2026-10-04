@@ -27,6 +27,7 @@ import { showProviderNoticeToast } from "@/utils/provider-notice-toast";
 import type { AgentMode } from "@getpaseo/protocol/agent-types";
 import type { AgentProviderDefinition } from "@getpaseo/protocol/provider-manifest";
 import { getAgentModeIcon, getAgentModeOptionIcon } from "@/agent-controls/icons";
+import { getSelectableAgentModes } from "@/agent-controls/policy";
 interface ModeComboboxOptionProps {
   option: ComboboxOption;
   selected: boolean;
@@ -105,9 +106,14 @@ export function AgentModeControl({
   const iconColor = theme.colors.foregroundMuted;
   const selectedModeLabel = selectedMode ? formatAgentModeLabel(selectedMode, provider) : "";
 
+  // The trigger keeps showing a hidden mode's own label; only the list and cycling are filtered.
+  const selectableModes = useMemo(
+    () => (surface === "toolbar" ? getSelectableAgentModes(modeOptions, provider) : modeOptions),
+    [modeOptions, provider, surface],
+  );
   const allOptions = useMemo<ComboboxOption[]>(
-    () => modeOptions.map((m) => ({ id: m.id, label: formatAgentModeLabel(m, provider) })),
-    [modeOptions, provider],
+    () => selectableModes.map((m) => ({ id: m.id, label: formatAgentModeLabel(m, provider) })),
+    [selectableModes, provider],
   );
   const options = useMemo<ComboboxOption[]>(() => {
     const q = normalizeSearchQuery(searchQuery);
@@ -141,18 +147,21 @@ export function AgentModeControl({
     (action: KeyboardActionDefinition): boolean => {
       if (action.id !== "message-input.mode-cycle") return false;
       if (disabled || !isActiveComposer) return false;
-      const nextModeId = resolveNextAgentModeId({ modeOptions, selectedMode: selectedModeId });
+      const nextModeId = resolveNextAgentModeId({
+        modeOptions: selectableModes,
+        selectedMode: selectedModeId,
+      });
       if (!nextModeId) return false;
       onSelectMode(nextModeId);
       return true;
     },
-    [disabled, isActiveComposer, modeOptions, onSelectMode, selectedModeId],
+    [disabled, isActiveComposer, selectableModes, onSelectMode, selectedModeId],
   );
 
   useKeyboardActionHandler({
     handlerId: keyboardHandlerIdRef.current,
     actions: ["message-input.mode-cycle"],
-    enabled: isActiveComposer && !disabled && modeOptions.length > 1,
+    enabled: isActiveComposer && !disabled && selectableModes.length > 1,
     priority: 200,
     handle: handleKeyboardAction,
   });

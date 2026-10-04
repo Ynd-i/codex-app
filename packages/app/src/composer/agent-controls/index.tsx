@@ -25,6 +25,9 @@ import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useShallow } from "zustand/shallow";
 import { Settings2 } from "lucide-react-native";
 import { getAgentFeatureIcon, ThinkingIcon } from "@/agent-controls/icons";
+import { FAST_MODE_FEATURE_ID, PLAN_MODE_FEATURE_ID } from "@/agent-controls/policy";
+import type { PlanToggle } from "@/agent-controls/policy";
+import { PlanModeToggle, useDesktopPlanMode } from "@/composer/agent-controls/plan-mode";
 import { formatThinkingOptionLabel } from "@/agent-controls/labels";
 import { ComboboxTrigger } from "@/components/ui/combobox-trigger";
 import { CombinedModelSelector } from "@/components/combined-model-selector";
@@ -103,6 +106,7 @@ type AgentControlSelector = "provider" | "mode" | "model" | "thinking" | `featur
 const EMPTY_AGENT_PROVIDER_DEFINITIONS: AgentProviderDefinition[] = [];
 
 interface ControlledAgentControlsProps {
+  ownerKey: string;
   provider: string;
   providerOptions?: AgentControlOption[];
   selectedProviderId?: string;
@@ -235,6 +239,45 @@ function getFeatureIconColor(
     default:
       return foregroundMuted;
   }
+}
+
+function DesktopPlanToggle({ toggle, disabled }: { toggle: PlanToggle | null; disabled: boolean }) {
+  const { theme } = useUnistyles();
+  if (!toggle) return null;
+  const iconColor = getFeatureIconColor(
+    PLAN_MODE_FEATURE_ID,
+    toggle.isOn,
+    theme.colors.palette,
+    theme.colors.foregroundMuted,
+  );
+  return <PlanModeToggle toggle={toggle} iconColor={iconColor} disabled={disabled} />;
+}
+
+function resolveFastControl(
+  features: AgentFeature[] | undefined,
+  onSetFeature: ((featureId: string, value: unknown) => void) | undefined,
+) {
+  const fast = features?.find((feature) => feature.id === FAST_MODE_FEATURE_ID);
+  if (fast?.type !== "toggle" || !onSetFeature) return undefined;
+  return {
+    on: fast.value,
+    label: getFeatureTooltip(fast),
+    onToggle: () => onSetFeature(FAST_MODE_FEATURE_ID, !fast.value),
+  };
+}
+
+// On the Mac, plan is the toggle beside the mode and fast lives in the model popover.
+function filterToolbarFeatures(
+  features: AgentFeature[] | undefined,
+  desktopThinking: { fast?: unknown } | undefined,
+) {
+  const hasFastControl = Boolean(desktopThinking?.fast);
+  if (!getIsElectronMac()) return features;
+  return features?.filter(
+    (feature) =>
+      feature.id !== PLAN_MODE_FEATURE_ID &&
+      !(feature.id === FAST_MODE_FEATURE_ID && hasFastControl),
+  );
 }
 
 type ActiveSheet = "thinking" | "features" | null;
@@ -476,6 +519,7 @@ function buildOpenChangeHandler(
 }
 
 function ControlledAgentControls({
+  ownerKey,
   provider,
   providerOptions,
   selectedProviderId,
@@ -543,6 +587,14 @@ function ControlledAgentControls({
     selectedThinkingOptionId,
     formattedThinkingOptions[0]?.label ?? t("agentControls.thinking.unknown"),
   );
+
+  const { modeControl: desktopModeControl, planToggle } = useDesktopPlanMode({
+    enabled: getIsElectronMac() && !isCompact,
+    ownerKey,
+    modeControl,
+    features,
+    onSetFeature,
+  });
 
   const hasAnyControl = resolveHasAnyControl({
     providerOptions,
@@ -781,7 +833,8 @@ function ControlledAgentControls({
             handleOpenChange={handleOpenChange}
             handleNestedOpenChange={handleSheetOpenChange}
             renderThinkingOption={renderThinkingOption}
-            modeControl={modeControl}
+            modeControl={desktopModeControl}
+            planToggle={planToggle}
             presentation={presentation}
             glyphSize={layoutContextValue.glyphSize}
             activeSheet={activeSheet}
@@ -882,6 +935,7 @@ interface DesktopAgentControlsContentProps {
     onPress: () => void;
   }) => ReactElement;
   modeControl?: AgentModeControlValue | null;
+  planToggle: PlanToggle | null;
   presentation: ComposerControlPresentation;
   glyphSize: number;
   activeSheet: ActiveSheet;
@@ -939,6 +993,7 @@ function DesktopAgentControlsContent(props: DesktopAgentControlsContentProps) {
     handleNestedOpenChange,
     renderThinkingOption,
     modeControl,
+    planToggle,
     presentation,
     glyphSize,
     activeSheet,
@@ -950,6 +1005,10 @@ function DesktopAgentControlsContent(props: DesktopAgentControlsContentProps) {
     () => ({ glyphSize, showCaret: presentation.showCarets }),
     [glyphSize, presentation.showCarets],
   );
+  const fastControl = useMemo(
+    () => resolveFastControl(features, onSetFeature),
+    [features, onSetFeature],
+  );
   const desktopThinking = useMemo(
     () =>
       getIsElectronMac() && thinkingOptions?.length
@@ -959,6 +1018,7 @@ function DesktopAgentControlsContent(props: DesktopAgentControlsContentProps) {
             label: displayThinking,
             disabled: disabled || !canSelectThinking,
             onSelect: handleThinkingSelect,
+            fast: fastControl,
           }
         : undefined,
     [
@@ -968,7 +1028,12 @@ function DesktopAgentControlsContent(props: DesktopAgentControlsContentProps) {
       disabled,
       canSelectThinking,
       handleThinkingSelect,
+      fastControl,
     ],
+  );
+  const toolbarFeatures = useMemo(
+    () => filterToolbarFeatures(features, desktopThinking),
+    [features, desktopThinking],
   );
   const featuresSheetHeader = useMemo<SheetHeader>(
     () => ({ title: t("agentControls.features.title") }),
@@ -982,6 +1047,7 @@ function DesktopAgentControlsContent(props: DesktopAgentControlsContentProps) {
   return (
     <>
       {desktopChat ? modeButton : null}
+      <DesktopPlanToggle toggle={planToggle} disabled={disabled} />
       {providerOptions && providerOptions.length > 0 ? (
         <>
           <ComboboxTrigger
@@ -1085,7 +1151,7 @@ function DesktopAgentControlsContent(props: DesktopAgentControlsContentProps) {
 
       {desktopChat ? null : modeButton}
 
-      {presentation.aggregateFeatures && features?.length ? (
+      {presentation.aggregateFeatures && toolbarFeatures?.length ? (
         <>
           <Pressable
             onPress={handleOpenFeatures}
@@ -1105,7 +1171,7 @@ function DesktopAgentControlsContent(props: DesktopAgentControlsContentProps) {
             onClose={handleCloseSheet}
             testID="agent-features-sheet"
           >
-            {features.map((feature) => (
+            {toolbarFeatures.map((feature) => (
               <SheetFeatureItem
                 key={`feature-${feature.id}`}
                 feature={feature}
@@ -1118,7 +1184,7 @@ function DesktopAgentControlsContent(props: DesktopAgentControlsContentProps) {
           </AdaptiveModalSheet>
         </>
       ) : (
-        features?.map((feature) => (
+        toolbarFeatures?.map((feature) => (
           <DesktopFeatureItem
             key={`feature-${feature.id}`}
             feature={feature}
@@ -1822,6 +1888,7 @@ export const AgentControls = memo(function AgentControls({
       {commandCenterRegistration}
       {profileEditor.element}
       <ControlledAgentControls
+        ownerKey={agentId}
         provider={agent.provider}
         modelSelectorProviders={agentModelSelectorProviders}
         modelOptions={modelOptions}
@@ -1940,6 +2007,7 @@ export function DraftAgentControls({
     <>
       {profileEditor.element}
       <ControlledAgentControls
+        ownerKey="draft"
         provider={selectedProvider ?? ""}
         modelSelectorProviders={modelSelectorProviders}
         modelOptions={modelOptions}

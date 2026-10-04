@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, Text, View, type PressableStateCallbackType } from "react-native";
 import { useTranslation } from "react-i18next";
+import { Zap } from "lucide-react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import type { AgentProvider } from "@getpaseo/protocol/agent-types";
 import type { AgentProfilePicker, AgentProfileSeed } from "@/agent-profiles";
@@ -24,6 +25,12 @@ const ThemedLoadingSpinner = withUnistyles(LoadingSpinner);
 const foregroundMutedMapping = (theme: Theme) => ({
   color: theme.colors.foregroundMuted,
 });
+
+const mutedFilledIcon = (theme: Theme) => ({
+  color: theme.colors.foregroundMuted,
+  fill: theme.colors.foregroundMuted,
+});
+const FastBadgeIcon = withUnistyles(Zap);
 
 function noop() {}
 
@@ -76,10 +83,11 @@ function ModelSelectorLabel({
   toolbar,
   desktopThinking,
   label,
+  placeholder,
 }: Pick<
   CombinedModelSelectorProps,
   "selectedProvider" | "serverId" | "toolbar" | "desktopThinking"
-> & { label: string }) {
+> & { label: string; placeholder: boolean }) {
   return (
     <>
       {selectedProvider.trim().length > 0 ? (
@@ -91,10 +99,15 @@ function ModelSelectorLabel({
           />
         </View>
       ) : null}
-      <Text style={styles.triggerText} numberOfLines={1} ellipsizeMode="tail">
+      <Text
+        style={placeholder ? styles.triggerTextPlaceholder : styles.triggerText}
+        numberOfLines={1}
+        ellipsizeMode="tail"
+      >
         {label}
         {desktopThinking ? ` ${desktopThinking.label}` : ""}
       </Text>
+      {desktopThinking?.fast?.on ? <FastBadgeIcon size={12} uniProps={mutedFilledIcon} /> : null}
     </>
   );
 }
@@ -179,6 +192,10 @@ export function CombinedModelSelector({
     handleOpenChange(!isOpen);
   }, [handleOpenChange, isOpen]);
   const openModelBrowser = useCallback(() => setShowModelBrowser(true), []);
+  // While models load, a stable placeholder replaces the loading text so the trigger does not
+  // change wording when the real model and effort arrive.
+  const isLabelLoading = browser.triggerLabel === t("providerSelection.loading");
+  const triggerLabel = isLabelLoading ? t("modelSelector.selectModel") : browser.triggerLabel;
   const showPreferences = getIsElectronMac() && Boolean(desktopThinking) && !showModelBrowser;
 
   const triggerStyle = useCallback(
@@ -283,7 +300,7 @@ export function CombinedModelSelector({
         >
           {({ pressed, hovered }: PressableStateCallbackType & { hovered?: boolean }) =>
             renderTrigger({
-              selectedModelLabel: browser.triggerLabel,
+              selectedModelLabel: triggerLabel,
               onPress: handleTriggerPress,
               disabled,
               isOpen,
@@ -311,7 +328,8 @@ export function CombinedModelSelector({
             serverId={serverId}
             toolbar={toolbar}
             desktopThinking={desktopThinking}
-            label={browser.triggerLabel}
+            label={triggerLabel}
+            placeholder={isLabelLoading}
           />
         </ComboboxTrigger>
       )}
@@ -369,6 +387,13 @@ const styles = StyleSheet.create((theme) => ({
   },
   triggerDisabled: {
     opacity: 0.5,
+  },
+  triggerTextPlaceholder: {
+    minWidth: 88,
+    flexShrink: 1,
+    color: theme.colors.foregroundMuted,
+    fontSize: theme.fontSize.base,
+    fontWeight: theme.fontWeight.normal,
   },
   triggerText: {
     minWidth: 0,

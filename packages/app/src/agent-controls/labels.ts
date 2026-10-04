@@ -35,12 +35,12 @@ const DESKTOP_MODE_LABEL_KEYS: Record<string, Record<string, string>> = {
     plan: "agentControls.mode.desktop.plan",
     default: "agentControls.mode.desktop.askForReview",
     acceptEdits: "agentControls.mode.desktop.acceptEdits",
-    auto: "agentControls.mode.desktop.autoPilot",
+    auto: "agentControls.mode.desktop.autoReview",
     bypassPermissions: "agentControls.mode.desktop.fullAccess",
   },
   codex: {
     auto: "agentControls.mode.desktop.askForReview",
-    "auto-review": "agentControls.mode.desktop.reviewForMe",
+    "auto-review": "agentControls.mode.desktop.autoReview",
     "full-access": "agentControls.mode.desktop.fullAccess",
   },
 };

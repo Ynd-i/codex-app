@@ -24,6 +24,19 @@ export interface DesktopThinkingControl {
   label: string;
   disabled: boolean;
   onSelect: (id: string) => void;
+  // Present only when the agent has the fast_mode feature.
+  fast?: { on: boolean; label: string; onToggle: () => void };
+}
+
+const THUMB_SIZE = 28;
+
+// One dot per stop, centered where the thumb sits at that stop.
+function buildStopDots(stops: number): string {
+  if (stops < 2) return "linear-gradient(transparent, transparent)";
+  return Array.from({ length: stops }, (_, index) => {
+    const x = `calc(${THUMB_SIZE / 2}px + (100% - ${THUMB_SIZE}px) * ${index / (stops - 1)})`;
+    return `radial-gradient(circle at ${x} 50%, var(--paseo-effort-dot) 0 2px, transparent 2.5px)`;
+  }).join(", ");
 }
 
 function EffortRange({
@@ -36,6 +49,7 @@ function EffortRange({
   thumbColor: string;
   trackColor: string;
 }) {
+  const stops = Number(props.max) + 1;
   const maximum = Number(props.max);
   const fill =
     maximum > 0 ? Math.max(0, Math.min(100, (Number(props.value) / maximum) * 100)) : 100;
@@ -50,8 +64,10 @@ function EffortRange({
         "--paseo-effort-thumb": thumbColor,
         "--paseo-effort-track": trackColor,
         "--paseo-effort-fill": `${fill}%`,
+        "--paseo-effort-dot": `color-mix(in srgb, ${thumbColor} 45%, transparent)`,
+        "--paseo-effort-dots": buildStopDots(stops),
       }) as CSSProperties,
-    [accentColor, thumbColor, trackColor, fill],
+    [accentColor, thumbColor, trackColor, fill, stops],
   );
   return (
     <>
@@ -63,7 +79,7 @@ function EffortRange({
 
 const RANGE_CSS = `
 .paseo-desktop-effort-range { appearance: none; background: transparent; cursor: pointer; border-radius: 999px; }
-.paseo-desktop-effort-range::-webkit-slider-runnable-track { height: 24px; border-radius: 999px; background: linear-gradient(to right, var(--paseo-effort-color) var(--paseo-effort-fill), var(--paseo-effort-track) var(--paseo-effort-fill)); }
+.paseo-desktop-effort-range::-webkit-slider-runnable-track { height: 24px; border-radius: 999px; background: var(--paseo-effort-dots), linear-gradient(to right, var(--paseo-effort-color) var(--paseo-effort-fill), var(--paseo-effort-track) var(--paseo-effort-fill)); }
 .paseo-desktop-effort-range::-webkit-slider-thumb { appearance: none; width: 28px; height: 28px; margin-top: -2px; border: 0; border-radius: 50%; background: var(--paseo-effort-thumb); }
 .paseo-desktop-effort-range:focus-visible { outline: 2px solid var(--paseo-effort-color); outline-offset: 3px; }
 .paseo-desktop-effort-range:disabled { opacity: 0.5; cursor: default; }
@@ -80,13 +96,20 @@ const Range = withUnistyles(EffortRange, (theme, rt) => ({
 }));
 const RightIcon = withUnistyles(ChevronRight);
 const ResetIcon = withUnistyles(RotateCcw);
-const EffortIcon = withUnistyles(Zap, (theme, rt) => ({
-  color:
-    getIsElectronMac() && rt.themeName === "dark"
-      ? CODEX_EFFORT_ACCENT
-      : theme.colors.palette.orange[500],
+const effortColor = (theme: Theme, rt: { themeName?: string }) =>
+  getIsElectronMac() && rt.themeName === "dark"
+    ? CODEX_EFFORT_ACCENT
+    : theme.colors.palette.orange[500];
+const FastIcon = withUnistyles(Zap, (theme, rt) => ({ color: effortColor(theme, rt) }));
+const FastIconFilled = withUnistyles(Zap, (theme, rt) => ({
+  color: effortColor(theme, rt),
+  fill: effortColor(theme, rt),
 }));
 const mutedIcon = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
+// A sibling of the label (not inline inside Button's Text) so the row centers it vertically.
+const FAST_ON_STATE = { selected: true };
+const FAST_OFF_STATE = { selected: false };
+const chevron = <RightIcon size={14} uniProps={mutedIcon} />;
 
 export function DesktopModelPreferences({
   thinking,
@@ -145,9 +168,24 @@ export function DesktopModelPreferences({
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <View style={styles.resetSpace}>
-          <EffortIcon size={16} />
-        </View>
+        {thinking.fast ? (
+          <HeaderToggleButton
+            onPress={thinking.fast.onToggle}
+            disabled={thinking.disabled}
+            tooltipLabel={thinking.fast.label}
+            tooltipKeys={[]}
+            tooltipSide="top"
+            accessibilityLabel={thinking.fast.label}
+            accessibilityRole="button"
+            accessibilityState={thinking.fast.on ? FAST_ON_STATE : FAST_OFF_STATE}
+            testID="desktop-fast-toggle"
+            style={styles.resetSpace}
+          >
+            {thinking.fast.on ? <FastIconFilled size={16} /> : <FastIcon size={16} />}
+          </HeaderToggleButton>
+        ) : (
+          <View style={styles.resetSpace} />
+        )}
         <Text style={styles.level}>
           {thinking.options[displayedIndex]?.label ?? thinking.label}
         </Text>
@@ -174,13 +212,12 @@ export function DesktopModelPreferences({
         size="sm"
         onPress={onBrowseModels}
         style={styles.modelButton}
+        textStyle={styles.modelLabel}
+        trailing={chevron}
         accessibilityLabel={t("modelSelector.selectedModel", { model: modelLabel })}
         testID="desktop-model-browse"
       >
-        <Text style={styles.modelLabel} numberOfLines={1}>
-          {modelLabel}
-        </Text>
-        <RightIcon size={14} uniProps={mutedIcon} />
+        {modelLabel}
       </Button>
       <Range
         type="range"
@@ -219,6 +256,7 @@ const styles = StyleSheet.create((theme, rt) => ({
     maxWidth: "100%",
     height: 20,
     minHeight: 20,
+    gap: theme.spacing[1],
     paddingVertical: 0,
   },
   modelLabel: { flexShrink: 1, fontSize: theme.fontSize.sm, color: theme.colors.foregroundMuted },
