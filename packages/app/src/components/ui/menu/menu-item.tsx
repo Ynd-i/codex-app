@@ -329,11 +329,7 @@ export function MenuItem({
   );
 
   const itemPressableStyle = useCallback(
-    ({
-      pressed,
-      hovered = false,
-      focused = false,
-    }: PressableStateCallbackType & { hovered?: boolean; focused?: boolean }) => [
+    ({ pressed, hovered = false }: PressableStateCallbackType & { hovered?: boolean }) => [
       styles.item,
       active ? styles.itemActive : null,
       isDisabled ? styles.itemDisabled : null,
@@ -342,7 +338,8 @@ export function MenuItem({
       keyboardFocused && !isDisabled ? styles.itemHovered : null,
       pressed && !isDisabled ? styles.itemPressed : null,
       typeof style === "function"
-        ? style({ pressed, hovered, focused, disabled: Boolean(isDisabled) })
+        ? // Custom styles get keyboard focus only, like the built-in highlight above.
+          style({ pressed, hovered, focused: keyboardFocused, disabled: Boolean(isDisabled) })
         : style,
     ],
     [active, isDisabled, keyboardFocused, muted, style],
