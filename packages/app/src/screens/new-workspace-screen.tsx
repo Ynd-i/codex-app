@@ -240,6 +240,8 @@ const PROJECT_PICK_ACTIONS: readonly KeyboardActionId[] = ["workspace.project.pi
 // Height of a single picker-trigger badge. The Base-row spacer reserves exactly
 // this so toggling Isolation to Local hides the row without shifting the form.
 const BADGE_HEIGHT = 28;
+// Matches the Mac composer radius, so its corners cover the tray bottom.
+const MAC_SETUP_TRAY_OVERLAP = 24;
 
 function RefPickerBadgeContent({
   selectedItem,
@@ -2725,7 +2727,7 @@ const styles = StyleSheet.create((theme) => ({
     fontWeight: theme.fontWeight.normal,
     color: theme.colors.foreground,
   },
-  // Matches the composer's inset and width so the bar fills the card behind it, like Codex.
+  // Matches the composer's inset and width; the tray insets itself from there.
   desktopSetupRail: {
     paddingHorizontal: theme.spacing[4],
     alignItems: "center",
@@ -2769,16 +2771,6 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: theme.spacing[4],
-    ...(getIsElectronMac()
-      ? {
-          marginBottom: 0,
-          backgroundColor: theme.colors.surface1,
-          // The composer's Mac radius, so both cards share one outline.
-          borderTopLeftRadius: 24,
-          borderTopRightRadius: 24,
-          paddingVertical: theme.spacing[2],
-        }
-      : {}),
     // The badge adds its own left padding; offset it so the project icon's left
     // edge lands exactly on the "New workspace" title's left edge. The trailing
     // inset mirrors it so the launch chip stops on the composer's inner content
@@ -2786,6 +2778,21 @@ const styles = StyleSheet.create((theme) => ({
     paddingLeft: theme.spacing[4],
     paddingRight: theme.spacing[4],
     gap: theme.spacing[2],
+    // Like Codex, a narrower tray tucked behind the composer: the inset keeps its
+    // edges inside the composer's 24pt corners and the overlap hides its bottom.
+    ...(getIsElectronMac()
+      ? {
+          marginHorizontal: theme.spacing[3],
+          marginBottom: -MAC_SETUP_TRAY_OVERLAP,
+          backgroundColor: theme.colors.surface1,
+          borderTopLeftRadius: 16,
+          borderTopRightRadius: 16,
+          paddingLeft: theme.spacing[1],
+          paddingRight: theme.spacing[1],
+          paddingTop: theme.spacing[1],
+          paddingBottom: theme.spacing[1] + MAC_SETUP_TRAY_OVERLAP,
+        }
+      : {}),
   },
   desktopControl: {
     minWidth: 0,

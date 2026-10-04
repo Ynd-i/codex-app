@@ -150,6 +150,14 @@ test("desktop composer keeps send and stop reachable with attachments", async ({
     await expect(effort).toHaveCSS("accent-color", "rgb(217, 119, 87)");
     await expect(effortIcon).toHaveCSS("stroke", "rgb(217, 119, 87)");
     await expect(effortLevel).toHaveCSS("color", "rgb(217, 119, 87)");
+    const [levelBox, modelNameBox] = await Promise.all([
+      effortLevel.boundingBox(),
+      effortPopover.getByText("Five minute stream", { exact: true }).boundingBox(),
+    ]);
+    if (!levelBox || !modelNameBox) throw new Error("Effort header did not render");
+    expect(
+      Math.abs(levelBox.x + levelBox.width / 2 - (modelNameBox.x + modelNameBox.width / 2)),
+    ).toBeLessThan(1);
     await page.emulateMedia({ colorScheme: "light" });
     await expect(effort).toHaveCount(0);
     await model.click();

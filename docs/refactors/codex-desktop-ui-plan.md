@@ -1441,7 +1441,13 @@ changes, and a list of sidebar, composer and transcript fixes. All of it is in
   fast button is gone where the popover exists; the pill shows a filled ⚡ while fast
   is on. The effort track has a dot per step. While models load the pill shows the
   existing "Select model" string at a fixed minimum width; no effort placeholder
-  string exists upstream.
+  string exists upstream. Spacing follows the Codex dump (`live/codex-chat-model-effort-selector`):
+  a 4pt panel inset, the model name centered under the effort between equal 16pt columns
+  with the chevron in the right one, the ⚡ and reset buttons 32pt and pinned to the top
+  corners so they center on the effort line, and the slider track 12pt from the edge. The button hovers with `interactionHighlight`, because the Mac popover is
+  already `surface2`. The pill shows the model in foreground and the effort muted. The
+  composer controls row clips overflow, so it carries 4pt of vertical padding, cancelled
+  by a negative margin, to keep Tab focus rings whole.
 - Queue: the user asked whether queueing was missing. It exists. Upstream's
   `sendBehavior` defaults to `"steer"`, so Enter while a chat runs sends into the
   turn and Cmd+Enter queues; Settings › General › Sending makes Enter queue. Mac
@@ -1468,7 +1474,8 @@ changes, and a list of sidebar, composer and transcript fixes. All of it is in
   now replace each other in the desktop history, so one titlebar Back leaves
   settings. The new-chat page always launches a chat. Mac image thumbnails are 72px.
   An attachment's remove button sits at its top-right corner on every platform. The Mac
-  context meter is a 14pt ring in a bordered 28pt box, as in Claude's desktop app.
+  context meter is a 14pt ring in a 28pt box that tints with `interactionHighlight`
+  only on hover, like the composer's icon buttons.
 - Edit project: the Mac sidebar's Edit opens the name-and-source-folder sheet in place
   (`HostProjectEditSheet`), with Remove project at the footer's start, as in Codex.
   Setup, teardown, scripts and metadata prompts stay in Settings › Projects. Codex keeps

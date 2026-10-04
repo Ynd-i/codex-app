@@ -2086,6 +2086,10 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: "center",
     gap: theme.spacing[1],
     overflow: "hidden",
+    // Room above and below the 28px controls so the clip keeps their focus rings.
+    paddingVertical: theme.spacing[1],
+    marginVertical: -theme.spacing[1],
+    pointerEvents: "box-none",
   },
   modeBadge: {
     height: 28,

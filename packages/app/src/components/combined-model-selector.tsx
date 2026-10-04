@@ -100,12 +100,17 @@ function ModelSelectorLabel({
         </View>
       ) : null}
       <Text
-        style={placeholder ? styles.triggerTextPlaceholder : styles.triggerText}
+        style={[
+          placeholder ? styles.triggerTextPlaceholder : styles.triggerText,
+          desktopThinking && !placeholder && styles.triggerModelText,
+        ]}
         numberOfLines={1}
         ellipsizeMode="tail"
       >
         {label}
-        {desktopThinking ? ` ${desktopThinking.label}` : ""}
+        {desktopThinking ? (
+          <Text style={styles.triggerEffortText}>{` ${desktopThinking.label}`}</Text>
+        ) : null}
       </Text>
       {desktopThinking?.fast?.on ? <FastBadgeIcon size={12} uniProps={mutedFilledIcon} /> : null}
     </>
@@ -401,6 +406,13 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.foregroundMuted,
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.normal,
+  },
+  // Codex footer: the model reads in full foreground, the effort after it stays muted.
+  triggerModelText: {
+    color: theme.colors.foreground,
+  },
+  triggerEffortText: {
+    color: theme.colors.foregroundMuted,
   },
   customTriggerWrapper: {
     paddingHorizontal: 0,

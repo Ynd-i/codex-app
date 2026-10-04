@@ -108,8 +108,9 @@ const mutedIcon = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
 // A sibling of the label (not inline inside Button's Text) so the row centers it vertically.
 const FAST_ON_STATE = { selected: true };
 const FAST_OFF_STATE = { selected: false };
-const chevron = <RightIcon size={14} uniProps={mutedIcon} />;
+const chevron = <RightIcon size={12} uniProps={mutedIcon} />;
 // Effort and model are one hover target, as in Codex; hover only tints the background.
+// The popover is surface2 on macOS, so the tint is the translucent highlight the icon buttons use.
 const browseStyle = ({ hovered, pressed }: PressableStateCallbackType & { hovered?: boolean }) => [
   styles.browse,
   (hovered || pressed) && styles.browseHovered,
@@ -183,32 +184,29 @@ export function DesktopModelPreferences({
             accessibilityRole="button"
             accessibilityState={thinking.fast.on ? FAST_ON_STATE : FAST_OFF_STATE}
             testID="desktop-fast-toggle"
-            style={styles.resetSpace}
+            style={[styles.sideButton, styles.sideButtonStart]}
           >
             {thinking.fast.on ? <FastIconFilled size={16} /> : <FastIcon size={16} />}
           </HeaderToggleButton>
-        ) : (
-          <View style={styles.resetSpace} />
-        )}
-        <View style={styles.browseSlot}>
-          <Pressable
-            onPress={onBrowseModels}
-            style={browseStyle}
-            accessibilityRole="button"
-            accessibilityLabel={t("modelSelector.selectedModel", { model: modelLabel })}
-            testID="desktop-model-browse"
-          >
-            <Text style={styles.level}>
-              {thinking.options[displayedIndex]?.label ?? thinking.label}
+        ) : null}
+        <Pressable
+          onPress={onBrowseModels}
+          style={browseStyle}
+          accessibilityRole="button"
+          accessibilityLabel={t("modelSelector.selectedModel", { model: modelLabel })}
+          testID="desktop-model-browse"
+        >
+          <Text style={styles.level}>
+            {thinking.options[displayedIndex]?.label ?? thinking.label}
+          </Text>
+          <View style={styles.modelRow}>
+            <View style={styles.chevronColumn} />
+            <Text style={styles.modelLabel} numberOfLines={1}>
+              {modelLabel}
             </Text>
-            <View style={styles.modelRow}>
-              <Text style={styles.modelLabel} numberOfLines={1}>
-                {modelLabel}
-              </Text>
-              {chevron}
-            </View>
-          </Pressable>
-        </View>
+            <View style={styles.chevronColumn}>{chevron}</View>
+          </View>
+        </Pressable>
         {defaultOption ? (
           <HeaderToggleButton
             onPress={reset}
@@ -219,46 +217,50 @@ export function DesktopModelPreferences({
             accessibilityLabel={t("desktopChat.resetReasoning")}
             accessibilityRole="button"
             testID="desktop-thinking-reset"
-            style={styles.resetSpace}
+            style={[styles.sideButton, styles.sideButtonEnd]}
           >
             <ResetIcon size={16} uniProps={mutedIcon} />
           </HeaderToggleButton>
-        ) : (
-          <View style={styles.resetSpace} />
-        )}
+        ) : null}
       </View>
-      <Range
-        type="range"
-        min={0}
-        max={Math.max(0, thinking.options.length - 1)}
-        step={1}
-        value={displayedIndex}
-        disabled={thinking.disabled || thinking.options.length < 2}
-        aria-label={t("agentControls.thinking.title")}
-        aria-valuetext={thinking.options[displayedIndex]?.label ?? thinking.label}
-        data-testid="desktop-thinking-range"
-        onChange={change}
-        onPointerDown={startDrag}
-        onPointerUp={finishDrag}
-        onPointerCancel={cancelDrag}
-      />
+      <View style={styles.slider}>
+        <Range
+          type="range"
+          min={0}
+          max={Math.max(0, thinking.options.length - 1)}
+          step={1}
+          value={displayedIndex}
+          disabled={thinking.disabled || thinking.options.length < 2}
+          aria-label={t("agentControls.thinking.title")}
+          aria-valuetext={thinking.options[displayedIndex]?.label ?? thinking.label}
+          data-testid="desktop-thinking-range"
+          onChange={change}
+          onPointerDown={startDrag}
+          onPointerUp={finishDrag}
+          onPointerCancel={cancelDrag}
+        />
+      </View>
     </View>
   );
 }
 
+// Measured from the Codex dump (live/codex-chat-model-effort-selector): a 4pt panel inset,
+// 32pt side buttons pinned to the top corners so they center on the effort line, and the
+// slider track 12pt from the popover edge.
 const styles = StyleSheet.create((theme, rt) => ({
-  root: { padding: theme.spacing[3] },
-  // Top-aligned so the side buttons sit on the effort line.
-  header: { flexDirection: "row", alignItems: "flex-start", gap: theme.spacing[2] },
-  browseSlot: { flex: 1, minWidth: 0, alignItems: "center" },
+  root: { padding: theme.spacing[1] },
+  header: { minHeight: 36, alignItems: "center", paddingHorizontal: 32 },
+  sideButton: { position: "absolute", top: 0, width: 32, height: 32 },
+  sideButtonStart: { left: 0 },
+  sideButtonEnd: { right: 0 },
   browse: {
     maxWidth: "100%",
     alignItems: "center",
-    paddingHorizontal: theme.spacing[3],
-    paddingVertical: theme.spacing[1],
+    paddingHorizontal: theme.spacing[2],
+    paddingVertical: 6,
     borderRadius: theme.borderRadius.lg,
   },
-  browseHovered: { backgroundColor: theme.colors.surface2 },
+  browseHovered: { backgroundColor: theme.colors.interactionHighlight },
   level: {
     textAlign: "center",
     fontSize: theme.fontSize.base,
@@ -268,7 +270,10 @@ const styles = StyleSheet.create((theme, rt) => ({
         ? CODEX_EFFORT_ACCENT
         : theme.colors.palette.orange[500],
   },
-  modelRow: { flexDirection: "row", alignItems: "center", gap: theme.spacing[1], maxWidth: "100%" },
+  modelRow: { flexDirection: "row", alignItems: "center", maxWidth: "100%" },
+  // Equal columns on both sides, as in Codex's grid, keep the model name centered under the
+  // effort while the chevron hangs in the right column.
+  chevronColumn: { width: 16 },
   modelLabel: { flexShrink: 1, fontSize: theme.fontSize.sm, color: theme.colors.foregroundMuted },
-  resetSpace: { width: 24, height: 24, alignItems: "center", justifyContent: "center" },
+  slider: { paddingHorizontal: theme.spacing[2], paddingVertical: 6 },
 }));

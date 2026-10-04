@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text, View, type PressableStateCallbackType } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
@@ -36,6 +36,11 @@ const COMPACT_CIRCUMFERENCE = 2 * Math.PI * COMPACT_RADIUS;
 // surface3 itself, so a surface-coloured track disappears into it.
 const TRACK_OPACITY = 0.3;
 const BUFFER_OPACITY = 0.6;
+
+const meterStyle = ({ hovered }: PressableStateCallbackType & { hovered?: boolean }) => [
+  styles.container,
+  hovered && styles.containerHovered,
+];
 
 type Theme = ReturnType<typeof useUnistyles>["theme"];
 
@@ -281,7 +286,7 @@ export function ContextWindowMeter({
     <Tooltip delayDuration={0} enabledOnDesktop enabledOnMobile onOpenChange={setOpen}>
       <TooltipTrigger asChild triggerRefProp="ref">
         <Pressable
-          style={containerStyle}
+          style={showPercentage ? containerStyle : meterStyle}
           testID="context-window-meter"
           accessibilityRole="image"
           accessibilityLabel={t("contextWindow.accessibility", {
@@ -372,19 +377,17 @@ export function ContextWindowMeter({
 }
 
 const styles = StyleSheet.create((theme) => ({
-  // On Mac the ring sits in a box, as in Claude's desktop app.
   container: {
     width: 28,
     height: 28,
     borderRadius: getIsElectronMac() ? theme.borderRadius.md : theme.borderRadius.full,
     alignItems: "center",
     justifyContent: "center",
-    ...(getIsElectronMac() && {
-      backgroundColor: theme.colors.surface0,
-      borderWidth: theme.borderWidth[1],
-      borderColor: theme.colors.border,
-    }),
   },
+  // On Mac the ring's box shows only on hover, tinted like the composer's icon buttons.
+  containerHovered: getIsElectronMac()
+    ? { backgroundColor: theme.colors.interactionHighlight }
+    : {},
   containerWithLabel: {
     height: 28,
     flexDirection: "row",

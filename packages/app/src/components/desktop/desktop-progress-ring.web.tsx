@@ -10,7 +10,8 @@ const TRACK_OPACITY = 0.3;
 const EASE = "0.4 0 0.2 1";
 
 /**
- * A small ring whose arc fills clockwise from the top, then runs back empty. Reduced motion
+ * A small ring whose arc fills clockwise from the top, then its tail follows clockwise until it
+ * empties at the top again, so each cycle reads as one loop. Reduced motion
  * shows a still quarter arc.
  */
 export function DesktopProgressRing({ color }: { color?: string }) {
@@ -41,7 +42,7 @@ export function DesktopProgressRing({ color }: { color?: string }) {
         {reducedMotion ? null : (
           <animate
             attributeName="stroke-dashoffset"
-            values={`${CIRCUMFERENCE};0;${CIRCUMFERENCE}`}
+            values={`${CIRCUMFERENCE};0;${-CIRCUMFERENCE}`}
             keyTimes="0;0.5;1"
             calcMode="spline"
             keySplines={`${EASE};${EASE}`}
