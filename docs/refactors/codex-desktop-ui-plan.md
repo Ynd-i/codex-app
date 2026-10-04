@@ -1460,9 +1460,9 @@ changes, and a list of sidebar, composer and transcript fixes. All of it is in
   Titles follow Codex's marquee (`app-initial` CSS, `_viewport_a3okg`): they span the
   row under the absolutely placed actions, fade out instead of an ellipsis where they
   overflow or meet the status or actions, and scroll to their end at 2em/s while hovered
-  (`desktop-sidebar-title.tsx`). The running and busy indicator is a 12pt ring that fills
-  and empties (`desktop-progress-ring.web.tsx`); Codex's running sidebar row was never
-  captured, so this follows the user's description. Empty workspace rows archive from a
+  (`desktop-sidebar-title.tsx`). The running and busy indicator is a 12pt quarter arc
+  spinning over a faint track (`desktop-progress-ring.web.tsx`); Codex's running sidebar
+  row was never captured, so this follows the user's description. Empty workspace rows archive from a
   hover button or right-click through `useWorkspaceArchive`, so worktrees still confirm
   risky archives. Archiving a project's only workspace archives the project.
 - Usage: the sidebar entry shows the most used window across pinned sources plus

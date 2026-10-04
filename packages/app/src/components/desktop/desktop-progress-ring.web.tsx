@@ -7,13 +7,9 @@ const STROKE_WIDTH = 1.75;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 // Matches the context meter's ring track.
 const TRACK_OPACITY = 0.3;
-const EASE = "0.4 0 0.2 1";
+const ARC = CIRCUMFERENCE * 0.25;
 
-/**
- * A small ring whose arc fills clockwise from the top, then its tail follows clockwise until it
- * empties at the top again, so each cycle reads as one loop. Reduced motion
- * shows a still quarter arc.
- */
+/** A quarter arc spinning clockwise over a faint track. Reduced motion holds it still at the top. */
 export function DesktopProgressRing({ color }: { color?: string }) {
   const reducedMotion = useAppReducedMotion();
   return (
@@ -35,18 +31,16 @@ export function DesktopProgressRing({ color }: { color?: string }) {
         stroke={color}
         strokeWidth={STROKE_WIDTH}
         strokeLinecap="round"
-        strokeDasharray={CIRCUMFERENCE}
-        strokeDashoffset={reducedMotion ? CIRCUMFERENCE * 0.75 : CIRCUMFERENCE}
+        strokeDasharray={`${ARC} ${CIRCUMFERENCE}`}
         transform={`rotate(-90 ${CENTER} ${CENTER})`}
       >
         {reducedMotion ? null : (
-          <animate
-            attributeName="stroke-dashoffset"
-            values={`${CIRCUMFERENCE};0;${-CIRCUMFERENCE}`}
-            keyTimes="0;0.5;1"
-            calcMode="spline"
-            keySplines={`${EASE};${EASE}`}
-            dur="3.2s"
+          <animateTransform
+            attributeName="transform"
+            type="rotate"
+            from={`-90 ${CENTER} ${CENTER}`}
+            to={`270 ${CENTER} ${CENTER}`}
+            dur="0.8s"
             repeatCount="indefinite"
           />
         )}
