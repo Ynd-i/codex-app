@@ -49,7 +49,13 @@ distribution and full migration acceptance remain pending; see the
 ### Changed
 
 - Measured the context window meter of Claude chats against the window Claude compacts at, such as its `autoCompactWindow` setting, as Claude Desktop does, instead of the model's full window. The daemon asks Claude once per model, after the first completed turn.
-- The macOS project picker shows a project's favicon or a folder with only its name, and Claude and Codex permission modes use their apps' names: Ask for review, Review for me, Auto pilot and Full access.
+- The macOS project picker shows a project's favicon or a folder with only its name.
+- The macOS composer offers three permission modes, Ask for approval, Auto-review and Full access, and plan mode is a toggle beside them, as in Codex. Claude's Accept edits is no longer offered. Plan keeps the chosen permission mode: turning it off, or Claude's switch after Implement, returns to that mode. Other providers keep their own non-plan modes.
+- The macOS model popover turns Fast on and off from its ⚡, which is filled when on and then also shows in the model pill; the effort slider marks each step with a dot, and the pill reads "Select model" while models load instead of changing size.
+- macOS chat rows show Pin and Archive on hover and open their full menu on right-click. Pinned hides when nothing is pinned.
+- The sidebar usage entry shows one summary however many providers are pinned: the most used window with its source icon, then "+N" for the other sources. The full breakdown opens on press.
+- macOS settings have no back arrow in their header; the titlebar Back leaves settings in one step. The new-chat page drops its Chat/Terminal choice, and image attachments show larger previews.
+- Grouped tool calls on macOS read like Codex: "Read files, ran commands" with an icon for the kind of work, and finished steps say "Read History.swift" or "Ran pwd". New macOS profiles group tool calls by default.
 - Native forks are titled like Codex, "Chat (2)" then "Chat (3)", and end their inherited history with a "Continued from chat" divider that opens the original chat. The macOS composer starts its first line 4pt lower, keeping its height.
 
 - Added a notification bell beside macOS sidebar search: Priority lists chats waiting on a permission or an error, then finished chats follow by day across every section, with reply previews for chats this window has loaded.
@@ -60,7 +66,7 @@ distribution and full migration acceptance remain pending; see the
 
 - The macOS rail's Usage button opens the usage summary beside the rail instead of leaving the current chat; without a connected host it still opens the Usage screen.
 
-- The macOS navigation rail now holds Add project, Usage, Hosts, Help and Settings instead of the sidebar footer, and project chats show a folder before their titlebar title.
+- The macOS navigation rail now holds Usage, Hosts, Help and Settings instead of the sidebar footer; add projects from the Projects header or Cmd+K, and project chats show a folder before their titlebar title.
 
 - macOS no longer shows the worktree-script setup prompt or the Import session button below the new-chat composer; import stays in History and Cmd+K, and scripts in project settings.
 

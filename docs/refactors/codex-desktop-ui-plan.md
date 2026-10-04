@@ -1262,8 +1262,9 @@ callout (scripts stay in project settings; update and Rosetta callouts remain)
 and the Import session button below the new-chat composer (import stays in History
 and Cmd+K). The composer now sits at the window bottom like the reference.
 
-At the user's request the rail also holds the footer's Add project, Usage and Hosts
-actions above Help and Settings, so the footer keeps only its Usage and plugin rows
+At the user's request the rail also holds the footer's Usage and Hosts actions above
+Help and Settings (its Add project button was removed on 2026-10-04; projects are added
+from the Projects header `+` or Cmd+K), so the footer keeps only its Usage and plugin rows
 while the rail is visible; compact layouts keep the footer icon line. Rail buttons
 reuse the footer test IDs, including `sidebar-settings`, so shared e2e helpers work
 unchanged. Chats in a project show a folder before their titlebar title; the user
@@ -1398,6 +1399,54 @@ removes the project, and every such chat gets its own folder,
 Validation: unit tests for the path helper, selection state, sidebar model, server
 `createParents` and protocol parsing; a browser test for the nested trigger
 button; app typecheck and lint. The packaged UI was not exercised before release.
+
+### Composer, sidebar and activity refinements — 2026-10-04
+
+The user asked for fewer permission modes, Codex's plan workflow without backend
+changes, and a list of sidebar, composer and transcript fixes. All of it is in
+`packages/app`; the daemon, protocol and provider plugins are unchanged.
+
+- Permission modes: Mac lists Ask for approval, Auto-review and Full access (Claude
+  `default`/`auto`/`bypassPermissions`, Codex `auto`/`auto-review`/`full-access`).
+  Planning modes and Claude `acceptEdits` are hidden by one filter in
+  `agent-controls/policy.ts`, shared by the menu, Shift+Tab and the command center.
+  Other providers keep their non-planning modes. An agent left in a hidden mode
+  still shows that mode's label.
+- Plan toggle: Codex exposes plan as the `plan_mode` feature, so it combines with any
+  permission mode. Claude, OpenCode and Copilot expose plan as a mode, which replaces
+  the permission mode. `resolvePlanToggle` drives either. For mode-based plan the app
+  remembers the permission mode in memory, keeps showing it in the trigger, and
+  re-applies it when plan ends: on toggle-off, or when Claude's daemon switches to
+  `acceptEdits` after Implement. Until that `setMode` lands Claude briefly runs in
+  `acceptEdits`; closing that gap needs a daemon change. The memory is not persisted,
+  so a restart during plan falls back to the provider's default mode.
+- Model popover: its ⚡ toggles `fast_mode` (filled when on) and the composer's separate
+  fast button is gone where the popover exists; the pill shows a filled ⚡ while fast
+  is on. The effort track has a dot per step. While models load the pill shows the
+  existing "Select model" string at a fixed minimum width; no effort placeholder
+  string exists upstream.
+- Sidebar: chat rows show Pin and Archive on hover and the full menu on right-click.
+  Pinned hides when it has no chats or projects. The rail drops Add project.
+- Usage: the sidebar entry shows the most used window across pinned sources plus
+  "+N", replacing the per-window line that could not fit more providers. This applies
+  on every platform.
+- Settings and new chat: the Mac settings header drops its back arrow. Settings pages
+  now replace each other in the desktop history, so one titlebar Back leaves
+  settings. The new-chat page always launches a chat. Mac image thumbnails are 72px.
+- Tool activity: on Mac, grouped tool runs are labelled with verbs only, without
+  counts, plus an icon for the run's first kind of work, and finished steps say
+  "Read …"/"Ran …". Grouping (`toolCallDetailLevel: "overview"`) is the default only
+  for Mac profiles that never saved settings; a saved `"detailed"` is kept, so
+  existing users switch it in Settings › Chat. Image reads have no thumbnail row yet.
+
+Validation: app and desktop typecheck, lint and format pass; 409 unit tests in 36
+files pass (agent controls, command center, usage, tool calls, desktop navigation,
+settings, i18n, changelog). Renderer and Electron specs were updated but not run:
+running them outside the sandbox was refused in this session. Nothing was checked
+in a rendered window, so the slider dots, chevron alignment, fast icon, plan toggle,
+thumbnail size and usage summary still need a visual check.
+`scripts/verify-electron-cdp.mjs` still looks for the removed
+`settings-back-to-workspace` in its darwin traffic-light check.
 
 ### Sidebar motion and selection — 2026-10-01
 
