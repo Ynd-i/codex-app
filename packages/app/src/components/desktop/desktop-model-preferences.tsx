@@ -57,31 +57,42 @@ function EffortRange({
       ({
         width: "100%",
         height: 28,
-        margin: 0,
-        accentColor,
         "--paseo-effort-color": accentColor,
         "--paseo-effort-thumb": thumbColor,
         "--paseo-effort-track": trackColor,
-        "--paseo-effort-fill": `${fill}%`,
+        "--paseo-effort-fraction": fill / 100,
         "--paseo-effort-dot": `color-mix(in srgb, ${thumbColor} 45%, transparent)`,
         "--paseo-effort-dots": buildStopDots(stops),
       }) as CSSProperties,
     [accentColor, thumbColor, trackColor, fill, stops],
   );
+  // The native thumb cannot transition, so the input stays transparent on top for input and
+  // accessibility while these layers draw and animate the track, fill and thumb.
   return (
-    <>
+    <div className="paseo-desktop-effort" style={style}>
       <style>{RANGE_CSS}</style>
-      <input {...props} className="paseo-desktop-effort-range" style={style} />
-    </>
+      <div className="paseo-desktop-effort-track" />
+      <div className="paseo-desktop-effort-fill" />
+      <div className="paseo-desktop-effort-thumb" />
+      <input {...props} className="paseo-desktop-effort-range" />
+    </div>
   );
 }
 
 const RANGE_CSS = `
-.paseo-desktop-effort-range { appearance: none; background: transparent; cursor: pointer; border-radius: 999px; }
-.paseo-desktop-effort-range::-webkit-slider-runnable-track { height: 24px; border-radius: 999px; background: var(--paseo-effort-dots), linear-gradient(to right, var(--paseo-effort-color) var(--paseo-effort-fill), var(--paseo-effort-track) var(--paseo-effort-fill)); }
-.paseo-desktop-effort-range::-webkit-slider-thumb { appearance: none; width: 28px; height: 28px; margin-top: -2px; border: 0; border-radius: 50%; background: var(--paseo-effort-thumb); }
-.paseo-desktop-effort-range:focus-visible { outline: 2px solid var(--paseo-effort-color); outline-offset: 3px; }
-.paseo-desktop-effort-range:disabled { opacity: 0.5; cursor: default; }
+.paseo-desktop-effort { position: relative; border-radius: 999px; }
+.paseo-desktop-effort-track, .paseo-desktop-effort-fill { position: absolute; top: 2px; left: 0; height: 24px; border-radius: 999px; pointer-events: none; }
+.paseo-desktop-effort-track { right: 0; background: var(--paseo-effort-track); }
+.paseo-desktop-effort-fill { background: var(--paseo-effort-color); width: calc(14px + (100% - 28px) * var(--paseo-effort-fraction)); transition: width 180ms cubic-bezier(0.25, 0.1, 0.25, 1); }
+.paseo-desktop-effort::after { content: ""; position: absolute; top: 2px; left: 0; right: 0; height: 24px; border-radius: 999px; background: var(--paseo-effort-dots); pointer-events: none; }
+.paseo-desktop-effort-thumb { position: absolute; top: 0; width: 28px; height: 28px; border-radius: 50%; background: var(--paseo-effort-thumb); left: calc((100% - 28px) * var(--paseo-effort-fraction)); pointer-events: none; z-index: 1; transition: left 180ms cubic-bezier(0.25, 0.1, 0.25, 1); }
+.paseo-desktop-effort-range { appearance: none; position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; background: transparent; accent-color: var(--paseo-effort-color); opacity: 0; cursor: pointer; }
+/* Same thumb size as the drawn thumb, so pointer positions map to the stops it shows. */
+.paseo-desktop-effort-range::-webkit-slider-thumb { appearance: none; width: 28px; height: 28px; }
+.paseo-desktop-effort-range:disabled { cursor: default; }
+.paseo-desktop-effort:has(.paseo-desktop-effort-range:focus-visible) { outline: 2px solid var(--paseo-effort-color); outline-offset: 3px; }
+.paseo-desktop-effort:has(.paseo-desktop-effort-range:disabled) { opacity: 0.5; }
+@media (prefers-reduced-motion: reduce) { .paseo-desktop-effort-fill, .paseo-desktop-effort-thumb { transition: none; } }
 `;
 
 const CODEX_EFFORT_ACCENT = "#d97757";
