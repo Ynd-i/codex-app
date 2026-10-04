@@ -44,6 +44,7 @@ import { SidebarMenuToggle } from "@/components/headers/menu-header";
 import { ScreenHeader } from "@/components/headers/screen-header";
 import { useIsCompactFormFactor } from "@/constants/layout";
 import { useToast } from "@/contexts/toast-context";
+import { useBranchSwitcher } from "@/hooks/use-branch-switcher";
 import { useAgentInputDraft } from "@/composer/draft/input-draft";
 import { useForgeSearchQuery } from "@/git/use-forge-search-query";
 import { useCheckoutStatusQuery } from "@/git/use-status-query";
@@ -271,6 +272,7 @@ function RefPickerBadgeContent({
 }
 
 function RefPickerTrigger({
+  testID = "new-workspace-ref-picker-trigger",
   pickerAnchorRef,
   onPress,
   disabled,
@@ -292,6 +294,7 @@ function RefPickerTrigger({
   tooltipLabel: string;
   iconColor: string;
   iconSize: number;
+  testID?: string;
 }) {
   return (
     <Tooltip>
@@ -299,7 +302,7 @@ function RefPickerTrigger({
         <ComboboxTrigger
           chevron={metaChevron}
           ref={pickerAnchorRef}
-          testID="new-workspace-ref-picker-trigger"
+          testID={testID}
           onPress={onPress}
           disabled={disabled}
           style={badgePressableStyle}
@@ -788,6 +791,47 @@ function useWorkspaceIsolation(input: {
     effectiveIsolation: isWorktree ? "worktree" : "local",
     canCreateWorktree,
     showRefPicker: !supportsMultiplicity || isWorktree,
+  };
+}
+
+// Local isolation runs in the project checkout itself, so picking a branch
+// switches that checkout (with the same stash prompt as the diff pane switcher).
+function useLocalBranchControl(input: {
+  enabled: boolean;
+  serverId: string;
+  sourceDirectory: string | null;
+  checkoutStatus: { currentBranch: string | null } | null;
+  anchorRef: RefObject<View | null>;
+}): NewWorkspaceFormStackInput["localBranch"] {
+  const { enabled, serverId, sourceDirectory, anchorRef } = input;
+  const currentBranch =
+    enabled && sourceDirectory ? (input.checkoutStatus?.currentBranch ?? null) : null;
+  const client = useHostRuntimeClient(serverId);
+  const isConnected = useHostRuntimeIsConnected(serverId);
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  const { branchOptions, isOpen, setIsOpen, handleBranchSelect } = useBranchSwitcher({
+    client,
+    normalizedServerId: serverId,
+    normalizedWorkspaceId: sourceDirectory ?? "",
+    workspaceDirectory: sourceDirectory,
+    currentBranchName: currentBranch,
+    isGitCheckout: currentBranch !== null,
+    isConnected,
+    toast,
+    queryClient,
+  });
+  const open = useCallback(() => setIsOpen(true), [setIsOpen]);
+
+  if (!currentBranch) return null;
+  return {
+    anchorRef,
+    open,
+    openState: isOpen,
+    onOpenChange: setIsOpen,
+    currentBranch,
+    options: branchOptions,
+    onSelect: handleBranchSelect,
   };
 }
 
@@ -1500,6 +1544,14 @@ interface NewWorkspaceFormStackInput {
     renderOption: RefPickerRenderOption;
     showRefPicker: boolean;
   };
+  /** Local isolation: switches the project checkout's branch. Null when not on a branch. */
+  localBranch:
+    | (FormPickerControl & {
+        currentBranch: string;
+        options: ComboboxOptionType[];
+        onSelect: (id: string) => void;
+      })
+    | null;
   launch: {
     serverId: string;
     target: LaunchTarget;
@@ -1582,7 +1634,7 @@ function NewWorkspaceProjectControl({
 function useNewWorkspaceFormStack(input: NewWorkspaceFormStackInput): ReactElement {
   const { theme } = useUnistyles();
   const { t } = useTranslation();
-  const { isCompact, isPending, project, host, isolation, base, launch } = input;
+  const { isCompact, isPending, project, host, isolation, base, localBranch, launch } = input;
   const desktopPlacement = getIsElectronMac() ? "top-start" : "bottom-start";
 
   const selectedHostLabel =
@@ -1683,6 +1735,58 @@ function useNewWorkspaceFormStack(input: NewWorkspaceFormStackInput): ReactEleme
     </View>
   ) : null;
 
+  const renderLocalBranchOption = useCallback<RefPickerRenderOption>(
+    ({ option, selected, active, onPress }) => (
+      <PickerOptionItem
+        testID={`new-workspace-local-branch-${option.id}`}
+        label={option.label}
+        description={undefined}
+        selected={selected}
+        active={active}
+        disabled={isPending}
+        onPress={onPress}
+        isBranch
+        iconColor={theme.colors.foregroundMuted}
+        iconSize={theme.iconSize.sm}
+      />
+    ),
+    [isPending, theme.colors.foregroundMuted, theme.iconSize.sm],
+  );
+
+  const localBranchControl = localBranch ? (
+    <View style={desktopControlStyle}>
+      <RefPickerTrigger
+        testID="new-workspace-local-branch-trigger"
+        pickerAnchorRef={localBranch.anchorRef}
+        onPress={localBranch.open}
+        disabled={isPending}
+        badgePressableStyle={badgePressableStyle}
+        selectedItem={null}
+        triggerLabel={localBranch.currentBranch}
+        accessibilityLabel={t("branchSwitcher.currentBranch", {
+          branchName: localBranch.currentBranch,
+        })}
+        tooltipLabel={t("branchSwitcher.triggerTooltip")}
+        iconColor={theme.colors.foregroundMuted}
+        iconSize={theme.iconSize.sm}
+      />
+      <Combobox
+        options={localBranch.options}
+        value={localBranch.currentBranch}
+        onSelect={localBranch.onSelect}
+        searchable
+        searchPlaceholder={t("branchSwitcher.searchPlaceholder")}
+        emptyText={t("branchSwitcher.empty")}
+        title={t("branchSwitcher.title")}
+        open={localBranch.openState}
+        onOpenChange={localBranch.onOpenChange}
+        desktopPlacement={desktopPlacement}
+        anchorRef={localBranch.anchorRef}
+        renderOption={renderLocalBranchOption}
+      />
+    </View>
+  ) : null;
+
   const baseControl = base.showRefPicker ? (
     <View style={desktopControlStyle}>
       <RefPickerTrigger
@@ -1713,7 +1817,9 @@ function useNewWorkspaceFormStack(input: NewWorkspaceFormStackInput): ReactEleme
         renderOption={base.renderOption}
       />
     </View>
-  ) : null;
+  ) : (
+    localBranchControl
+  );
 
   // Like Codex, the Mac desktop always launches a chat, so it has no Chat/Terminal choice.
   const launchControl = getIsElectronMac() ? null : (
@@ -1813,6 +1919,7 @@ export function NewWorkspaceScreen({
   const pickerAnchorRef = useRef<View>(null);
   const projectPickerAnchorRef = useRef<View>(null);
   const isolationPickerAnchorRef = useRef<View>(null);
+  const localBranchPickerAnchorRef = useRef<View>(null);
   const hostPickerAnchorRef = useRef<View | null>(null);
   const isDraftHandoffActive = useIsNewWorkspaceDraftHandoffActive({ draftId, selectedServerId });
   const isStillOnCreateScreen = useNewWorkspaceScreenPresence();
@@ -1958,6 +2065,14 @@ export function NewWorkspaceScreen({
       supportsMultiplicity: supportsWorkspaceMultiplicity,
       worktreeSupport,
     });
+
+  const localBranch = useLocalBranchControl({
+    enabled: effectiveIsolation === "local",
+    serverId: selectedServerId,
+    sourceDirectory: selectedSourceDirectory,
+    checkoutStatus,
+    anchorRef: localBranchPickerAnchorRef,
+  });
 
   const branchSuggestionsQuery = useQuery({
     queryKey: [
@@ -2539,6 +2654,7 @@ export function NewWorkspaceScreen({
       renderOption: renderPickerOption,
       showRefPicker,
     },
+    localBranch,
     launch: {
       serverId: selectedServerId,
       target: launchTarget,
