@@ -171,6 +171,11 @@ export function shouldInstallAppUpdateOnQuit(input: {
 
 class ElectronAppUpdateRuntime implements AppUpdateRuntime {
   private configured = false;
+  // On macOS every check re-runs the cached download, and each download restarts the local
+  // proxy server Squirrel.Mac installs from. Once an install is requested, checks reuse the
+  // last result so the server Squirrel is fetching from stays up.
+  private installRequested = false;
+  private lastCheck: RuntimeUpdateCheckResult | null = null;
 
   configure(input: AppUpdateRuntimeConfiguration): void {
     autoUpdater.autoDownload = true;
@@ -225,19 +230,24 @@ class ElectronAppUpdateRuntime implements AppUpdateRuntime {
       input.onUpdateDownloaded(updateInfo);
     });
     autoUpdater.on("error", (error) => {
+      // A failed install (Squirrel.Mac reports through here) lets the user check and retry.
+      this.installRequested = false;
       if (isUpdateChannelNotPublished(error)) return;
       input.onError(error);
     });
   }
 
   async checkForUpdates(): Promise<RuntimeUpdateCheckResult | null> {
+    if (this.installRequested) return this.lastCheck;
     try {
       const result = await autoUpdater.checkForUpdates();
-      if (!result) return null;
-      return {
-        isUpdateAvailable: result.isUpdateAvailable,
-        updateInfo: result.updateInfo as RuntimeUpdateInfo,
-      };
+      this.lastCheck = result
+        ? {
+            isUpdateAvailable: result.isUpdateAvailable,
+            updateInfo: result.updateInfo as RuntimeUpdateInfo,
+          }
+        : null;
+      return this.lastCheck;
     } catch (error) {
       if (isUpdateChannelNotPublished(error)) return null;
       throw error;
@@ -250,13 +260,23 @@ class ElectronAppUpdateRuntime implements AppUpdateRuntime {
   }
 
   quitAndInstall({ targetVersion, isSilent, isForceRunAfter }: AppUpdateInstallRequest): void {
+    this.installRequested = true;
     autoUpdater.autoRunAppAfterInstall = isForceRunAfter;
     updateLifecycleLog.quitAndInstallRequested({
       targetVersion,
       isSilent,
       isForceRunAfter,
     });
-    autoUpdater.quitAndInstall(isSilent, isForceRunAfter);
+    // The check before every install restarts the proxy server while it re-serves the download.
+    // downloadUpdate() joins that in-flight download, which resolves once Squirrel.Mac points at
+    // the new server; installing before that sends Squirrel to the closed one, and nothing happens.
+    autoUpdater.downloadUpdate().then(
+      () => autoUpdater.quitAndInstall(isSilent, isForceRunAfter),
+      () => {
+        // The updater's error event already reported the failure.
+        this.installRequested = false;
+      },
+    );
   }
 }
 
