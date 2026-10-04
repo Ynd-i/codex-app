@@ -55,7 +55,7 @@ distribution and full migration acceptance remain pending; see the
 - macOS chat rows show Pin and Archive on hover and open their full menu on right-click. Pinned hides when nothing is pinned.
 - The sidebar usage entry shows one summary however many providers are pinned: the most used window with its source icon, then "+N" for the other sources. The full breakdown opens on press.
 - macOS settings have no back arrow in their header; the titlebar Back leaves settings in one step. The new-chat page drops its Chat/Terminal choice, and image attachments show larger previews.
-- Grouped tool calls on macOS read like Codex: "Read files, ran commands" with an icon for the kind of work, and finished steps say "Read History.swift" or "Ran pwd". New macOS profiles group tool calls by default.
+- Grouped tool calls on macOS read like Codex: "Read files, ran commands" with an icon for the kind of work, and finished steps say "Read History.swift" or "Ran pwd". Turn grouping on in Settings › Chat.
 - Native forks are titled like Codex, "Chat (2)" then "Chat (3)", and end their inherited history with a "Continued from chat" divider that opens the original chat. The macOS composer starts its first line 4pt lower, keeping its height.
 
 - Added a notification bell beside macOS sidebar search: Priority lists chats waiting on a permission or an error, then finished chats follow by day across every section, with reply previews for chats this window has loaded.

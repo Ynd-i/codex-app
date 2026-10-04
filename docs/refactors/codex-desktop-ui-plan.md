@@ -1419,7 +1419,8 @@ changes, and a list of sidebar, composer and transcript fixes. All of it is in
   re-applies it when plan ends: on toggle-off, or when Claude's daemon switches to
   `acceptEdits` after Implement. Until that `setMode` lands Claude briefly runs in
   `acceptEdits`; closing that gap needs a daemon change. The memory is not persisted,
-  so a restart during plan falls back to the provider's default mode.
+  so a restart during plan falls back to the provider's default mode. A chat sent from
+  a draft in plan takes over the draft's remembered mode.
 - Model popover: its ⚡ toggles `fast_mode` (filled when on) and the composer's separate
   fast button is gone where the popover exists; the pill shows a filled ⚡ while fast
   is on. The effort track has a dot per step. While models load the pill shows the
@@ -1435,9 +1436,11 @@ changes, and a list of sidebar, composer and transcript fixes. All of it is in
   settings. The new-chat page always launches a chat. Mac image thumbnails are 72px.
 - Tool activity: on Mac, grouped tool runs are labelled with verbs only, without
   counts, plus an icon for the run's first kind of work, and finished steps say
-  "Read …"/"Ran …". Grouping (`toolCallDetailLevel: "overview"`) is the default only
-  for Mac profiles that never saved settings; a saved `"detailed"` is kept, so
-  existing users switch it in Settings › Chat. Image reads have no thumbnail row yet.
+  "Read …"/"Ran …". Grouping stays the `toolCallDetailLevel: "overview"` choice in
+  Settings › Chat. A Mac-only default was tried and reverted: every saved settings
+  blob already stores `"detailed"`, so it reached only fresh profiles, which are the
+  renderer specs that expect ungrouped tool rows. Image reads have no thumbnail row
+  yet.
 
 Validation: app and desktop typecheck, lint and format pass; 409 unit tests in 36
 files pass (agent controls, command center, usage, tool calls, desktop navigation,
