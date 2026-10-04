@@ -55,7 +55,7 @@ in the [migration plan](refactors/codex-desktop-ui-plan.md).
 
 ### Custom releases
 
-The `Ynd-i/codex-app` fork publishes Paseo Custom from `codex-app`, following upstream
+The `Ynd-i/codex-app` fork publishes Paseo Custom from `main`, following upstream
 Paseo **stable** releases only. Tags:
 
 | Tag                      | Meaning                                                                 |
@@ -75,7 +75,7 @@ it in-app. `scripts/custom-release.mjs` computes the plan.
 `.github/workflows/custom-release.yml` runs every six hours in `sync` mode. When upstream
 has a stable release newer than the branch, from `main` or a hotfix branch, it merges that
 tag, runs format, lint, typecheck and the server and app unit suites, builds, signs and
-smoke-tests the arm64 app, then moves `codex-app` and publishes `v<stable>-v1-beta1` with
+smoke-tests the arm64 app, then moves `main` and publishes `v<stable>-v1-beta1` with
 that app as a `.dmg` and a `.zip`. Every build runs on GitHub's macOS runners; nothing
 builds on a schedule except after an upstream merge.
 After pushing UI changes, publish the next beta; promote the latest beta's commit to

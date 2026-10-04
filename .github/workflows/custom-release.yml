@@ -30,7 +30,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  BRANCH: codex-app
+  BRANCH: main
   UPSTREAM: https://github.com/getpaseo/paseo.git
   FEED_BRANCH: update-feed
   # rcodesign reads every RCODESIGN_* variable as configuration, so avoid that prefix.

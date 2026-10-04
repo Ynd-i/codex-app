@@ -7,7 +7,7 @@ complete; this section replaces that handoff.
 
 ### Checkouts and checkpoints
 
-- Primary: `/Users/yndi/dev/projects/codex-app/paseo`, branch `codex-app`.
+- Primary: `/Users/yndi/dev/projects/codex-app`, branch `main`.
   It contains the integrated Markdown block-spacing and inline-code commits
   `2b4e52e`, `6e335c1` and `fb46652`, the 13px text scale `f51630f`, list markers
   `a54288d`, the chat sidebar `009bdea`, `94f0b05` and `c52b0ef`, rail actions `1e8b5fa`,
@@ -20,7 +20,7 @@ complete; this section replaces that handoff.
   its delivery and an app typecheck fix; see [delivery](#delivery--2026-10-03). It is
   fast-forwarded into `codex-app`.
 - Release state (2026-10-03 12:50 UTC): the product branch `codex/desktop-ui` was
-  renamed `codex-app`; it is the default branch of `Ynd-i/codex-app`, where only
+  renamed `codex-app`, and on 2026-10-04 `main`; it is the default branch of `Ynd-i/codex-app`, where only
   `custom-release.yml` is enabled. User decision: releases follow upstream stable
   releases only, tagged `v<stable>-v<N>-beta<M>` and promoted to `v<stable>-v<N>`, each
   with a `.dmg` and a `.zip`. Porting to stable `v0.10.3` was rejected: 50 files conflict
@@ -133,7 +133,7 @@ compact layouts and constrained settings windows. Keep the 320px default width
 for new preferences and retain saved widths.
 
 The upstream baseline is `getpaseo/paseo` commit `53ee9cd` on `main`. Work lives on
-`codex-app`. This document owns the steps, decisions, progress, and evidence.
+`main` of `Ynd-i/codex-app`. This document owns the steps, decisions, progress, and evidence.
 The root [changelog](../../CHANGELOG.md) records custom work under Unreleased;
 the existing versioned entries describe upstream releases.
 
@@ -185,16 +185,16 @@ scope; it does not remove runtime code or add new provider integrations.
 
 ## Steps
 
-| Step                             | Status                                                | Acceptance                                                                                                                                                                                                                                                                |
-| -------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0. Upstream baseline             | Complete for local startup                            | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                                                                                                                   |
-| 1. Window and sidebar appearance | Frame and Appearance controls checked                 | Window frame, navigation, Advanced collapse and motion selection have native evidence. Scoped reset passes isolated renderer and packaged checks; full reference matching remains.                                                                                        |
-| 1a. Upstream integration check   | Refreshed and verified                                | Upstream `e10f6d2` integrated in isolation; provider, usage, sheet, navigation and custom desktop checks pass. Protected daemons are not restarted.                                                                                                                       |
-| 2. Chat navigation               | Single-chat layout verified locally                   | Main tabs removed; tools route right with saved state retained. Mac chat sidebar, current-chat actions, draft isolation and Back/Forward pass; other platforms keep the workspace list.                                                                                   |
-| 3. Transcript and composer       | Composer and activity verified; visual polish pending | Column, input/model controls, tool cards and completed-turn activity are checked in native development. Attachment-menu renderer checks pass; native follow-up and transcript polish remain.                                                                              |
-| 3a. Native session fork          | Same-workspace fork verified; worktree pending        | Codex and Claude fork natively in the same workspace with real-provider, restart and archive evidence. Worktree placement, other providers and clone receipts remain. See [delivery](#delivery--2026-10-03).                                                              |
-| 4. Supporting panels             | Right tools and shared titlebar verified locally      | Terminal, browser, file and diff routing pass. Internal file tree and responsive browser controls pass; detailed panel styling and native tool acceptance remain.                                                                                                         |
-| 5. Custom distribution           | Release pipeline live; waits for upstream 0.11.0      | Stable-only releases `v<stable>-v<N>-beta<M>` and `v<stable>-v<N>` from `codex-app`; see [custom releases](../release.md#custom-releases). Nothing is published while the branch is on upstream `0.11.0-beta.1`. Signing, notarization and OS handler coexistence remain. |
+| Step                             | Status                                                | Acceptance                                                                                                                                                                                                                                                           |
+| -------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0. Upstream baseline             | Complete for local startup                            | Pinned dependencies and workspace builds pass; original Electron screenshot and development daemon connection recorded.                                                                                                                                              |
+| 1. Window and sidebar appearance | Frame and Appearance controls checked                 | Window frame, navigation, Advanced collapse and motion selection have native evidence. Scoped reset passes isolated renderer and packaged checks; full reference matching remains.                                                                                   |
+| 1a. Upstream integration check   | Refreshed and verified                                | Upstream `e10f6d2` integrated in isolation; provider, usage, sheet, navigation and custom desktop checks pass. Protected daemons are not restarted.                                                                                                                  |
+| 2. Chat navigation               | Single-chat layout verified locally                   | Main tabs removed; tools route right with saved state retained. Mac chat sidebar, current-chat actions, draft isolation and Back/Forward pass; other platforms keep the workspace list.                                                                              |
+| 3. Transcript and composer       | Composer and activity verified; visual polish pending | Column, input/model controls, tool cards and completed-turn activity are checked in native development. Attachment-menu renderer checks pass; native follow-up and transcript polish remain.                                                                         |
+| 3a. Native session fork          | Same-workspace fork verified; worktree pending        | Codex and Claude fork natively in the same workspace with real-provider, restart and archive evidence. Worktree placement, other providers and clone receipts remain. See [delivery](#delivery--2026-10-03).                                                         |
+| 4. Supporting panels             | Right tools and shared titlebar verified locally      | Terminal, browser, file and diff routing pass. Internal file tree and responsive browser controls pass; detailed panel styling and native tool acceptance remain.                                                                                                    |
+| 5. Custom distribution           | Release pipeline live; waits for upstream 0.11.0      | Stable-only releases `v<stable>-v<N>-beta<M>` and `v<stable>-v<N>` from `main`; see [custom releases](../release.md#custom-releases). Nothing is published while the branch is on upstream `0.11.0-beta.1`. Signing, notarization and OS handler coexistence remain. |
 
 Each slice leaves a runnable app and a small independently revertible commit.
 Update this table and its evidence before moving to the next slice. Local startup
@@ -2481,7 +2481,7 @@ package), and `/private/tmp/paseo-custom-links-final-{lint,typecheck}.log`.
 
 ## Resume checkpoint
 
-Continue in this checkout on `codex-app`; preserve the user's untracked
+Continue in this checkout on `main`; preserve the user's untracked
 `context-images/` and unrelated plan edits. The Mac was unlocked for October 1
 native attachment-menu, tab and rail checks. Reuse the live development instance
 after checking its status; user activity may have changed it. The pinned
