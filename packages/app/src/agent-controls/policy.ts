@@ -53,6 +53,22 @@ function isPlanningModeId(options: readonly AgentMode[], modeId: string | null):
   return Boolean(mode && isPlanningAgentMode(mode));
 }
 
+export const DRAFT_PLAN_OWNER = "draft";
+
+// A chat sent from a draft in plan keeps the permission mode the draft remembered.
+export function adoptDraftBaseMode(
+  ownerKey: string,
+  options: readonly AgentMode[],
+  selectedId: string | null,
+): boolean {
+  const base = baseModeByOwner.get(DRAFT_PLAN_OWNER);
+  if (ownerKey === DRAFT_PLAN_OWNER || !base || baseModeByOwner.has(ownerKey)) return false;
+  if (!isPlanningModeId(options, selectedId)) return false;
+  baseModeByOwner.delete(DRAFT_PLAN_OWNER);
+  baseModeByOwner.set(ownerKey, base);
+  return true;
+}
+
 export function rememberBaseMode(ownerKey: string, modeId: string): void {
   baseModeByOwner.set(ownerKey, modeId);
 }

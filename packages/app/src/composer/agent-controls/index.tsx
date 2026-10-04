@@ -25,7 +25,11 @@ import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useShallow } from "zustand/shallow";
 import { Settings2 } from "lucide-react-native";
 import { getAgentFeatureIcon, ThinkingIcon } from "@/agent-controls/icons";
-import { FAST_MODE_FEATURE_ID, PLAN_MODE_FEATURE_ID } from "@/agent-controls/policy";
+import {
+  DRAFT_PLAN_OWNER,
+  FAST_MODE_FEATURE_ID,
+  PLAN_MODE_FEATURE_ID,
+} from "@/agent-controls/policy";
 import type { PlanToggle } from "@/agent-controls/policy";
 import { PlanModeToggle, useDesktopPlanMode } from "@/composer/agent-controls/plan-mode";
 import { formatThinkingOptionLabel } from "@/agent-controls/labels";
@@ -2007,7 +2011,7 @@ export function DraftAgentControls({
     <>
       {profileEditor.element}
       <ControlledAgentControls
-        ownerKey="draft"
+        ownerKey={DRAFT_PLAN_OWNER}
         provider={selectedProvider ?? ""}
         modelSelectorProviders={modelSelectorProviders}
         modelOptions={modelOptions}

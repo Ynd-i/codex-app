@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { AgentFeature, AgentMode } from "@getpaseo/protocol/agent-types";
 import {
+  adoptDraftBaseMode,
+  DRAFT_PLAN_OWNER,
   filterDesktopAgentModes,
   getDisplayedModeId,
   isPlanningAgentMode,
+  rememberBaseMode,
   resolveNonPlanningModeId,
   resolvePlanToggle,
   selectPermissionMode,
@@ -118,6 +121,15 @@ describe("mode-based plan toggle", () => {
     setup("auto").toggle?.turnOn();
     expect(takeBaseModeOnPlanExit("agent-1", CLAUDE_MODES, "plan", "acceptEdits")).toBe("auto");
     expect(takeBaseModeOnPlanExit("agent-1", CLAUDE_MODES, "plan", "acceptEdits")).toBeNull();
+  });
+
+  it("hands a draft's base mode to the chat it creates in plan", () => {
+    rememberBaseMode(DRAFT_PLAN_OWNER, "auto");
+    expect(adoptDraftBaseMode("agent-3", CLAUDE_MODES, "auto")).toBe(false);
+    expect(adoptDraftBaseMode("agent-3", CLAUDE_MODES, "plan")).toBe(true);
+    expect(getDisplayedModeId("agent-3", CLAUDE_MODES, "plan")).toBe("auto");
+    expect(adoptDraftBaseMode("agent-4", CLAUDE_MODES, "plan")).toBe(false);
+    expect(takeBaseModeOnPlanExit("agent-3", CLAUDE_MODES, "plan", "acceptEdits")).toBe("auto");
   });
 
   it("does nothing without a remembered base or when the base was restored", () => {

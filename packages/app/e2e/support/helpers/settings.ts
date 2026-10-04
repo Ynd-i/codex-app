@@ -230,6 +230,7 @@ export async function clickSettingsBackToWorkspace(page: Page): Promise<void> {
     .getByTestId("settings-back-to-workspace")
     .or(page.getByTestId("desktop-shell-back"))
     .filter({ visible: true })
+    .first()
     .click();
 }
 

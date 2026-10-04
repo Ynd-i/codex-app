@@ -6,6 +6,7 @@ import type { AgentFeature } from "@getpaseo/protocol/agent-types";
 import { PlanModeIcon } from "@/agent-controls/icons";
 import {
   type PlanToggle,
+  adoptDraftBaseMode,
   getDisplayedModeId,
   resolvePlanToggle,
   selectPermissionMode,
@@ -41,6 +42,11 @@ export function useDesktopPlanMode(input: {
       selectedId,
     );
     if (restoreModeId) modeControl.onSelectMode(restoreModeId);
+  }, [enabled, modeControl, ownerKey, selectedId]);
+
+  useEffect(() => {
+    if (!enabled || !modeControl) return;
+    if (adoptDraftBaseMode(ownerKey, modeControl.modeOptions, selectedId)) bump();
   }, [enabled, modeControl, ownerKey, selectedId]);
 
   const displayedModeControl = useMemo(() => {
