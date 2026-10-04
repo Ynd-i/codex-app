@@ -1027,6 +1027,47 @@ function finalizeActiveThoughts(state: StreamItem[]): StreamItem[] {
   return mutated ? nextState : state;
 }
 
+function settleToolCall(item: AgentToolCallItem, status: AgentToolCallStatus): AgentToolCallItem {
+  return { ...item, payload: { ...item.payload, data: { ...item.payload.data, status } } };
+}
+
+// A plan awaiting approval and a background sub-agent legitimately outlive their turn.
+function isStuckAfterTurn(entry: StreamItem): entry is AgentToolCallItem {
+  if (!isAgentToolCallItem(entry) || entry.payload.data.status !== "running") return false;
+  const detailType = entry.payload.data.detail.type;
+  return (
+    detailType !== "plan" &&
+    detailType !== "sub_agent" &&
+    entry.payload.data.name !== "plan_approval"
+  );
+}
+
+// An agent runs one turn at a time, so once a turn ends its ordinary tool calls are done. Providers
+// can miss a result block (Claude's advisor_tool_result), which would leave a call shimmering.
+function settleRunningToolCalls(state: StreamItem[], status: AgentToolCallStatus): StreamItem[] {
+  let mutated = false;
+  const nextState = state.map((entry) => {
+    if (!isStuckAfterTurn(entry)) return entry;
+    mutated = true;
+    return settleToolCall(entry, status);
+  });
+  return mutated ? nextState : state;
+}
+
+// Hydrated history has no turn events; a running call from an older turn than the newest one
+// cannot still be running. The newest turn may be live, so it is left alone.
+function settleSupersededToolCalls(state: StreamItem[]): StreamItem[] {
+  const newestTurnId = state.findLast((entry) => entry.turnId)?.turnId;
+  if (!newestTurnId) return state;
+  let mutated = false;
+  const nextState = state.map((entry) => {
+    if (!isStuckAfterTurn(entry) || !entry.turnId || entry.turnId === newestTurnId) return entry;
+    mutated = true;
+    return settleToolCall(entry, "completed");
+  });
+  return mutated ? nextState : state;
+}
+
 export function streamTimelineItemIdentity(item: StreamItem): string | null {
   if (isAgentToolCallItem(item)) {
     return agentToolCallIdentity({
@@ -1606,11 +1647,13 @@ export function reduceStreamUpdate(
         ),
         event,
       );
-    case "thread_started":
-    case "turn_started":
     case "turn_completed":
+      return settleRunningToolCalls(finalizeActiveThoughts(state), "completed");
     case "turn_failed":
     case "turn_canceled":
+      return settleRunningToolCalls(finalizeActiveThoughts(state), "canceled");
+    case "thread_started":
+    case "turn_started":
     case "permission_requested":
     case "permission_resolved":
     case "attention_required":
@@ -1680,7 +1723,7 @@ export function hydrateStreamState(
     return reduceStreamUpdate(state, event, timestamp, { ...options, timelineCursor });
   }, []);
 
-  return finalizeActiveThoughts(hydrated);
+  return settleSupersededToolCalls(finalizeActiveThoughts(hydrated));
 }
 
 /**
