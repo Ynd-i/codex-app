@@ -2065,8 +2065,10 @@ export const ko: TranslationResources = {
   },
   contextWindow: {
     title: "컨텍스트 윈도우",
-    used: "{{percentage}}% 사용됨",
-    tokens: "{{used}} / {{max}} 토큰",
+    summary: "{{used}} / {{max}} ({{percentage}}%)",
+    used: "사용됨",
+    free: "여유 공간",
+    buffer: "자동 압축 버퍼",
     sessionCost: "세션 비용 {{cost}}",
     accessibility: "컨텍스트 윈도우 {{percentage}}% 사용됨",
   },

@@ -2632,6 +2632,8 @@ export class Session {
         return this.handleAgentTimelineSearchRequest(msg, source);
       case "agent.timeline.list_prompts.request":
         return this.handleAgentTimelineListPromptsRequest(msg, source);
+      case "agent.get_context_usage.request":
+        return this.handleAgentGetContextUsageRequest(msg, source);
       case "agent.provider_subagents.list.request":
         return this.handleProviderSubagentListRequest(msg);
       case "agent.provider_subagents.timeline.get.request":
@@ -7828,6 +7830,39 @@ export class Session {
             epoch: "",
             locations: [],
             nextCursor: null,
+            error: error instanceof Error ? error.message : String(error),
+          },
+        },
+        source,
+      );
+    }
+  }
+
+  // Asks only a live runtime: measuring costs the provider a request, so it never starts one.
+  private async handleAgentGetContextUsageRequest(
+    msg: Extract<SessionInboundMessage, { type: "agent.get_context_usage.request" }>,
+    source?: object,
+  ): Promise<void> {
+    const { agentId, requestId } = msg;
+    try {
+      const session = this.agentManager.getAgent(agentId)?.session;
+      const usage = session?.getContextUsage ? await session.getContextUsage() : null;
+      this.emitForSource(
+        {
+          type: "agent.get_context_usage.response",
+          payload: { requestId, agentId, usage, error: null },
+        },
+        source,
+      );
+    } catch (error) {
+      this.sessionLogger.warn({ err: error, agentId }, "Failed to read agent context usage");
+      this.emitForSource(
+        {
+          type: "agent.get_context_usage.response",
+          payload: {
+            requestId,
+            agentId,
+            usage: null,
             error: error instanceof Error ? error.message : String(error),
           },
         },

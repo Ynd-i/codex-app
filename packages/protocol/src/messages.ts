@@ -246,6 +246,7 @@ import type {
   ToolCallDetail,
   ToolCallTimelineItem,
   AgentUsage,
+  AgentContextUsage,
   JsonValue,
 } from "./agent-types.js";
 
@@ -389,6 +390,13 @@ const AgentUsageSchema: z.ZodType<AgentUsage> = z.object({
   totalCostUsd: z.number().optional(),
   contextWindowMaxTokens: z.number().optional(),
   contextWindowUsedTokens: z.number().optional(),
+});
+
+const AgentContextUsageSchema: z.ZodType<AgentContextUsage> = z.object({
+  maxTokens: z.number(),
+  usedTokens: z.number(),
+  bufferTokens: z.number(),
+  categories: z.array(z.object({ name: z.string(), tokens: z.number() })),
 });
 
 const McpStdioServerConfigSchema = z.object({
@@ -1863,6 +1871,13 @@ export const AgentTimelineListPromptsRequestMessageSchema = z.object({
   requestId: z.string(),
 });
 
+// Gated by features.agentContextUsage.
+export const AgentGetContextUsageRequestMessageSchema = z.object({
+  type: z.literal("agent.get_context_usage.request"),
+  agentId: z.string(),
+  requestId: z.string(),
+});
+
 export const ProviderSubagentListRequestMessageSchema = z.object({
   type: z.literal("agent.provider_subagents.list.request"),
   parentAgentId: z.string(),
@@ -3273,6 +3288,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   FetchAgentTimelineRequestMessageSchema,
   AgentTimelineSearchRequestMessageSchema,
   AgentTimelineListPromptsRequestMessageSchema,
+  AgentGetContextUsageRequestMessageSchema,
   ProviderSubagentListRequestMessageSchema,
   ProviderSubagentTimelineRequestMessageSchema,
   SetAgentTimelineSubscriptionRequestMessageSchema,
@@ -3687,6 +3703,8 @@ export const ServerInfoStatusPayloadSchema = z
         projectCreateDirectory: z.boolean().optional(),
         // COMPAT(projectCreateDirectoryParents): added in Paseo Custom v0.11.0-beta.3-v1-beta4, remove gate after 2027-04-01.
         projectCreateDirectoryParents: z.boolean().optional(),
+        // COMPAT(agentContextUsage): added in Paseo Custom v0.11.0-beta.3-v1-beta6, remove gate after 2027-04-04.
+        agentContextUsage: z.boolean().optional(),
         // COMPAT(projectList): added in v0.2.4, drop the gate when floor >= v0.2.4.
         projectList: z.boolean().optional(),
         // COMPAT(commitsList): added in v0.1.110, remove gate after 2027-01-16.
@@ -4655,6 +4673,17 @@ export const AgentTimelineSearchResponseMessageSchema = z.object({
       }),
     ),
     nextCursor: z.number().int().nonnegative().nullable(),
+    error: z.string().nullable(),
+  }),
+});
+
+export const AgentGetContextUsageResponseMessageSchema = z.object({
+  type: z.literal("agent.get_context_usage.response"),
+  payload: z.object({
+    requestId: z.string(),
+    agentId: z.string(),
+    // Null when the agent has no live runtime or its provider cannot attribute its usage.
+    usage: AgentContextUsageSchema.nullable(),
     error: z.string().nullable(),
   }),
 });
@@ -6888,6 +6917,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   AgentTimelineReplacementMessageSchema,
   AgentTimelineSearchResponseMessageSchema,
   AgentTimelineListPromptsResponseMessageSchema,
+  AgentGetContextUsageResponseMessageSchema,
   ProviderSubagentListResponseMessageSchema,
   ProviderSubagentTimelineResponseMessageSchema,
   ProviderSubagentUpdateMessageSchema,

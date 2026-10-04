@@ -2080,8 +2080,10 @@ export const en = {
   },
   contextWindow: {
     title: "Context window",
-    used: "{{percentage}}% used",
-    tokens: "{{used}} / {{max}} tokens",
+    summary: "{{used}} / {{max}} ({{percentage}}%)",
+    used: "Used",
+    free: "Free space",
+    buffer: "Autocompact buffer",
     sessionCost: "Session cost {{cost}}",
     accessibility: "Context window {{percentage}}% used",
   },

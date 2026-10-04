@@ -119,6 +119,7 @@ import {
   type SteerResult,
   type AgentStreamEvent,
   type AgentTimelineItem,
+  type AgentContextUsage,
   type AgentUsage,
   type AgentRuntimeInfo,
   type FetchCatalogOptions,
@@ -2746,6 +2747,34 @@ class ClaudeAgentSession implements AgentSession {
       },
       "provider.claude.session_close.complete",
     );
+  }
+
+  // Claude probes the API for this (issue #1685), so it runs only when someone asks.
+  async getContextUsage(): Promise<AgentContextUsage | null> {
+    if (!this.query) {
+      return null;
+    }
+    const response = await this.query.getContextUsage();
+    const categories: AgentContextUsage["categories"] = [];
+    let bufferTokens = 0;
+    for (const category of response.categories) {
+      // Deferred tool schemas sit outside the window, and free space is the remainder.
+      if (category.isDeferred || category.tokens <= 0 || category.name === "Free space") {
+        continue;
+      }
+      // "Autocompact buffer" or "Compact buffer": reserved, not used.
+      if (category.name.endsWith(" buffer")) {
+        bufferTokens += category.tokens;
+      } else {
+        categories.push({ name: category.name, tokens: category.tokens });
+      }
+    }
+    return {
+      maxTokens: response.maxTokens,
+      usedTokens: response.totalTokens,
+      bufferTokens,
+      categories,
+    };
   }
 
   async listCommands(): Promise<AgentSlashCommand[]> {

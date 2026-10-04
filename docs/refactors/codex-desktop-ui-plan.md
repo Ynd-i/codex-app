@@ -1009,6 +1009,33 @@ Plugin-specific resource selection has not been exercised in this slice.
 Maintenance sleep coincided with fixture setup timeouts. The passing renderer run
 used a temporary `caffeinate -i` wrapper; it changes no persistent power or lock settings.
 
+### Context window meter — 2026-10-04
+
+The meter ring draws its unused track as `foregroundMuted` at 30% opacity. A
+surface-token track vanished on the Mac composer, which is `surface3` itself.
+
+The popup follows Claude Desktop's context card: used/window header, segmented
+bar, one row per category, then the compaction buffer and free space. Every
+provider gets the card. Without a breakdown it shows Used and Free space from
+`lastUsage`. Only Claude supplies categories, through the SDK's
+`getContextUsage()`. Category names stay in the provider's language.
+
+The breakdown is fetched on demand: `agent.get_context_usage.request`, gated by
+`features.agentContextUsage`. The client asks only while the popup is open and
+the agent is idle, once per used-token value. The daemon asks only a live
+runtime. Each `getContextUsage()` call is a Claude API probe, and upstream
+removed the per-turn call for doubling requests (getpaseo/paseo#1685, #1701).
+
+The popup header uses Claude's window, which is its compaction window
+(`autoCompactWindow`). The ring still divides by the model window, so with a 1M
+model and a 500k compaction window the two differ.
+
+Evidence: [dark Mac capture](../qa-evidence/codex-desktop/context-window-breakdown-dark.png)
+from desktop dev against the 6768 dev daemon with `claude-haiku-4-5`. The
+`context-window-meter` browser spec checks the ring direction and the two
+fallback rows. `context-window-breakdown.claude.real.spec.ts` checks the real
+Claude rows.
+
 ### Content typography — 2026-10-01
 
 Appearance now exposes a content-font preference independently of interface and

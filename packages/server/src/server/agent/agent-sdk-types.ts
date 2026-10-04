@@ -1,4 +1,5 @@
 import type {
+  AgentContextUsage,
   AgentFeature,
   AgentFeatureSelect,
   AgentFeatureToggle,
@@ -12,6 +13,7 @@ import type { AgentAttachment } from "@getpaseo/protocol/messages";
 import type { PaseoToolCatalog } from "./tools/types.js";
 
 export type {
+  AgentContextUsage,
   AgentFeature,
   AgentFeatureSelect,
   AgentFeatureToggle,
@@ -680,6 +682,8 @@ export interface AgentSession {
   /** Release live runtime resources without archiving or deleting the durable native session. */
   close(): Promise<void>;
   listCommands?(): Promise<AgentSlashCommand[]>;
+  /** What fills the context window right now; null when there is no live runtime to ask. */
+  getContextUsage?(): Promise<AgentContextUsage | null>;
   setModel?(modelId: string | null): Promise<void>;
   setThinkingOption?(thinkingOptionId: string | null): Promise<void | AgentProviderNotice>;
   setFeature?(featureId: string, value: unknown): Promise<void>;

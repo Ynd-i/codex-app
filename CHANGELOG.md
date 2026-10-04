@@ -8,6 +8,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Added
 
+- Added a context window card on the composer meter: a used/window header, a segmented bar and one row per category, then the compaction buffer and free space. Claude chats list what fills the window; other providers show Used and Free space. The breakdown loads when the card opens on an idle chat, because each one is a Claude API request. Hosts need the new `agentContextUsage` feature.
+
 - Added chats without a project: hovering the New chat project chip shows a remove button, and the chat then runs in its own folder, `~/Documents/Paseo/<date>/<name>`, with global settings and rules instead of a project's. Chat folders stay out of Projects and the project picker; their chats show in Recent. Hosts need the new `projectCreateDirectoryParents` feature.
 
 - Added native forks for Codex and Claude: Fork in a new tab on a completed turn or an idle chat copies the provider conversation itself into a new chat in the same workspace, with its own session and no chat-history attachment. Other providers, running chats and new workspaces keep the history attachment.
@@ -127,6 +129,7 @@ distribution and full migration acceptance remain pending; see the
 
 ### Fixed
 
+- Drew the context window meter's unused track on the macOS composer, where it matched the composer surface and only the used arc showed.
 - Fixed in-app updates on macOS needing a second Update click: the first click now installs and relaunches. The fix applies to updates from this release onward.
 - Kept a macOS project row's actions visible while the pointer stays on it after New chat, and stopped menus opened with the pointer from highlighting their first item; keyboard navigation still highlights the focused item.
 

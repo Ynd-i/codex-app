@@ -2055,8 +2055,10 @@ export const ar: TranslationResources = {
   },
   contextWindow: {
     title: "نافذة السياق",
-    used: "تم استخدام{{percentage}}%",
-    tokens: "رموز{{used}}/{{max}}",
+    summary: "{{used}} / {{max}} ({{percentage}}%)",
+    used: "مستخدم",
+    free: "مساحة فارغة",
+    buffer: "احتياطي الضغط التلقائي",
     sessionCost: "تكلفة الجلسة{{cost}}",
     accessibility: "تم استخدام نافذة السياق{{percentage}}%",
   },

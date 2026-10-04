@@ -129,6 +129,7 @@ import type {
   AgentSkillsSaveResult,
 } from "@getpaseo/protocol/messages";
 import type {
+  AgentContextUsage,
   AgentPermissionRequest,
   AgentPermissionResponse,
   AgentPersistenceHandle,
@@ -3315,6 +3316,33 @@ export class DaemonClient {
       throw new Error(payload.error);
     }
     return payload;
+  }
+
+  async getAgentContextUsage(
+    agentId: string,
+    options: { requestId?: string; timeout?: number } = {},
+  ): Promise<AgentContextUsage | null> {
+    const requestId = this.createRequestId(options.requestId);
+    const message = SessionInboundMessageSchema.parse({
+      type: "agent.get_context_usage.request",
+      agentId,
+      requestId,
+    });
+    const payload = await this.sendRequest({
+      requestId,
+      message,
+      timeout: options.timeout,
+      options: { skipQueue: true },
+      select: (response) =>
+        response.type === "agent.get_context_usage.response" &&
+        response.payload.requestId === requestId
+          ? response.payload
+          : null,
+    });
+    if (payload.error) {
+      throw new Error(payload.error);
+    }
+    return payload.usage;
   }
 
   async listProviderSubagents(

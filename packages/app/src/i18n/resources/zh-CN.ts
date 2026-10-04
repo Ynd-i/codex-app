@@ -2033,8 +2033,10 @@ export const zhCN: TranslationResources = {
   },
   contextWindow: {
     title: "上下文窗口",
-    used: "已使用 {{percentage}}%",
-    tokens: "{{used}} / {{max}} tokens",
+    summary: "{{used}} / {{max}} ({{percentage}}%)",
+    used: "已使用",
+    free: "可用空间",
+    buffer: "自动压缩预留",
     sessionCost: "会话费用 {{cost}}",
     accessibility: "上下文窗口已使用 {{percentage}}%",
   },

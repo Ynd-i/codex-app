@@ -751,6 +751,46 @@ describe("ClaudeAgentSession features", () => {
     await session.close();
   });
 
+  test("reports what fills the context window only from a live query", async () => {
+    const { queryFactory, queryMock } = createQueryMock();
+    // Shape captured from a real claude-haiku-4-5 session after one turn.
+    queryMock.getContextUsage.mockResolvedValue({
+      totalTokens: 36_260,
+      maxTokens: 200_000,
+      categories: [
+        { name: "System tools", tokens: 27_594, color: "inactive" },
+        { name: "MCP tools (deferred)", tokens: 1_426, color: "inactive", isDeferred: true },
+        { name: "Custom agents", tokens: 623, color: "permission" },
+        { name: "Skills", tokens: 0, color: "warning" },
+        { name: "Messages", tokens: 5_139, color: "purple_FOR_SUBAGENTS_ONLY" },
+        { name: "Autocompact buffer", tokens: 33_000, color: "inactive" },
+        { name: "Free space", tokens: 130_739, color: "promptBorder" },
+      ],
+    } as never);
+    const client = new ClaudeAgentClient({
+      logger,
+      queryFactory,
+      resolveBinary: async () => "/test/claude/bin",
+    });
+    const session = await client.createSession({ provider: "claude", cwd: process.cwd() });
+
+    await expect(session.getContextUsage?.()).resolves.toBeNull();
+    expect(queryMock.getContextUsage).not.toHaveBeenCalled();
+
+    await (session as unknown as { ensureQuery(): Promise<unknown> }).ensureQuery();
+    await expect(session.getContextUsage?.()).resolves.toEqual({
+      maxTokens: 200_000,
+      usedTokens: 36_260,
+      bufferTokens: 33_000,
+      categories: [
+        { name: "System tools", tokens: 27_594 },
+        { name: "Custom agents", tokens: 623 },
+        { name: "Messages", tokens: 5_139 },
+      ],
+    });
+    await session.close();
+  });
+
   test("preapproves only granted Hub MCP tools while preserving Claude denies", async () => {
     const { queryFactory } = createQueryMock();
     const client = new ClaudeAgentClient({

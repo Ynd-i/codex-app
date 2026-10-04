@@ -2088,8 +2088,10 @@ export const ptBR: TranslationResources = {
   },
   contextWindow: {
     title: "Janela de contexto",
-    used: "{{percentage}}% usado",
-    tokens: "{{used}} / {{max}} tokens",
+    summary: "{{used}} / {{max}} ({{percentage}}%)",
+    used: "Usado",
+    free: "Espaço livre",
+    buffer: "Reserva de compactação automática",
     sessionCost: "Custo da sessão {{cost}}",
     accessibility: "Janela de contexto {{percentage}}% usada",
   },

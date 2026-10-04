@@ -2075,8 +2075,10 @@ export const ja: TranslationResources = {
   },
   contextWindow: {
     title: "コンテキストウィンドウ",
-    used: "{{percentage}}%使用",
-    tokens: "{{used}} / {{max}}トークン",
+    summary: "{{used}} / {{max}} ({{percentage}}%)",
+    used: "使用済み",
+    free: "空き容量",
+    buffer: "自動圧縮バッファ",
     sessionCost: "セッションコスト: {{cost}}",
     accessibility: "コンテキストウィンドウ{{percentage}}%使用",
   },

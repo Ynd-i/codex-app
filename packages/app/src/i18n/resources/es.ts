@@ -2103,8 +2103,10 @@ export const es: TranslationResources = {
   },
   contextWindow: {
     title: "ventana contextual",
-    used: "{{percentage}}% utilizado",
-    tokens: "Fichas{{used}}/{{max}}",
+    summary: "{{used}} / {{max}} ({{percentage}}%)",
+    used: "Usado",
+    free: "Espacio libre",
+    buffer: "Reserva de compactación automática",
     sessionCost: "Costo de la sesión{{cost}}",
     accessibility: "Ventana de contexto{{percentage}}% utilizada",
   },
