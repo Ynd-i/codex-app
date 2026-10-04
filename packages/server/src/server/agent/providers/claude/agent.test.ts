@@ -1928,6 +1928,7 @@ describe("ClaudeAgentSession context window usage", () => {
   interface QueryFactoryForTurnsOptions {
     getContextUsage?: ReturnType<typeof vi.fn>;
     model?: string;
+    featureValues?: Record<string, unknown>;
   }
 
   async function createSessionForTest(): Promise<TestClaudeSession> {
@@ -1952,6 +1953,7 @@ describe("ClaudeAgentSession context window usage", () => {
       provider: "claude",
       cwd: process.cwd(),
       model: options?.model,
+      featureValues: options?.featureValues,
     });
   }
 
@@ -2066,6 +2068,7 @@ describe("ClaudeAgentSession context window usage", () => {
         }),
         setPermissionMode: vi.fn(async () => undefined),
         setModel: vi.fn(async () => undefined),
+        applyFlagSettings: vi.fn(async () => undefined),
         getContextUsage,
         supportedModels: vi.fn(async () => []),
         supportedCommands: vi.fn(async () => []),
@@ -3227,6 +3230,40 @@ describe("ClaudeAgentSession context window usage", () => {
 
       const nextTurn = await collectStreamEvents(session, "next compaction");
       expect(nextTurn.filter(isLoadingCompactionEvent)).toHaveLength(1);
+    } finally {
+      await session.close();
+    }
+  });
+
+  test("fails the turn instead of falling back when fast mode runs out of usage credits", async () => {
+    const session = await createSessionForTurns(
+      [
+        [
+          createInitMessage(),
+          {
+            type: "system",
+            subtype: "notification",
+            key: "fast-mode-overage-rejected",
+            text: "Fast mode disabled · usage credits exhausted",
+            priority: "immediate",
+            color: "error",
+          },
+          // Claude Code's standard-speed retry, which the interrupt discards.
+          createSuccessResult(),
+        ],
+      ],
+      { model: "claude-opus-4-8", featureValues: { fast_mode: true } },
+    );
+
+    try {
+      const events = await collectStreamEvents(session, "fast turn");
+      expect(events).toContainEqual(
+        expect.objectContaining({
+          type: "turn_failed",
+          error: "Fast mode disabled · usage credits exhausted",
+        }),
+      );
+      expect(events.some((event) => event.type === "turn_completed")).toBe(false);
     } finally {
       await session.close();
     }

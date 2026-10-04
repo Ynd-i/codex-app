@@ -4471,9 +4471,35 @@ class ClaudeAgentSession implements AgentSession {
       this.appendTaskNotificationEvents(message, events);
       return;
     }
+    if (message.subtype === "notification") {
+      this.appendFastModeRejectionEvents(message, events);
+      return;
+    }
     if (message.subtype === "task_progress") {
       return;
     }
+  }
+
+  /**
+   * When usage credits run out, Claude Code drops fast mode and silently retries at standard
+   * speed. The user asked for fast, so stop the turn and show why instead.
+   */
+  private appendFastModeRejectionEvents(
+    message: Extract<SDKMessage, { type: "system"; subtype: "notification" }>,
+    events: AgentStreamEvent[],
+  ): void {
+    if (
+      message.key !== "fast-mode-overage-rejected" ||
+      this.config.featureValues?.fast_mode !== true ||
+      (!this.activeForegroundTurnId && !this.autonomousTurn)
+    ) {
+      return;
+    }
+    events.push(...this.sidechainTracker.finishAll("failed"));
+    events.push(this.buildTurnFailedEvent(message.text));
+    void this.interruptActiveTurn().catch((error) => {
+      this.logger.warn({ err: error }, "Failed to interrupt after fast mode was rejected");
+    });
   }
 
   private appendTaskNotificationEvents(
