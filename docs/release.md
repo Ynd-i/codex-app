@@ -105,7 +105,10 @@ upstream's to match the bundled daemon, so the workflow stamps each build with
 (`v0.11.0-v1-beta2` becomes `0.11.0-custom.1.beta.2`) and adds an `app-update.yml` for the
 feed. After publishing, it writes `beta-mac.yml` for every release and `latest-mac.yml`
 for stable ones: the beta release channel in Settings receives betas, the stable channel
-only stable releases. Local builds have neither, so their updates stay disabled.
+only stable releases. Local builds have neither, so their updates stay disabled. Settings ›
+About shows a published build's tag, derived from the stamp, instead of the upstream
+version. The feed is served from `raw.githubusercontent.com`, which caches for five
+minutes, so a check right after publishing can still report the previous release.
 
 Squirrel.Mac installs an update only when the new app is signed by the same certificate as
 the running one, and ad-hoc signatures never match. The workflow signs with a self-signed
