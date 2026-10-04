@@ -198,9 +198,13 @@ export interface MessageInputRef {
 
 const MIN_INPUT_HEIGHT_MOBILE = 30;
 const MIN_INPUT_HEIGHT_DESKTOP = 46;
+// The Mac composer moves 4pt from the input to the top padding, as in Codex, keeping its height.
+const MAC_INPUT_TOP_INSET = 4;
 const DEFAULT_MAX_INPUT_HEIGHT = 160;
 const MAX_INPUT_VIEWPORT_RATIO = 0.5;
-const MIN_INPUT_HEIGHT = isWeb ? MIN_INPUT_HEIGHT_DESKTOP : MIN_INPUT_HEIGHT_MOBILE;
+const MIN_INPUT_HEIGHT = isWeb
+  ? MIN_INPUT_HEIGHT_DESKTOP - (getIsElectronMac() ? MAC_INPUT_TOP_INSET : 0)
+  : MIN_INPUT_HEIGHT_MOBILE;
 type WebTextInputKeyPressEvent = NativeSyntheticEvent<
   TextInputKeyPressEventData & {
     metaKey?: boolean;
@@ -1983,6 +1987,7 @@ const styles = StyleSheet.create((theme: Theme) => ({
     paddingVertical: getIsElectronMac()
       ? theme.spacing[2]
       : { xs: theme.spacing[2], md: theme.spacing[4] },
+    ...(getIsElectronMac() ? { paddingTop: theme.spacing[2] + MAC_INPUT_TOP_INSET } : {}),
     paddingHorizontal: getIsElectronMac()
       ? theme.spacing[3]
       : { xs: theme.spacing[3], md: theme.spacing[4] },
