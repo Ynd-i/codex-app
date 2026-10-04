@@ -701,7 +701,9 @@ and its evidence. No remote push or packaged distribution was performed.
 
 Chat rows now use the existing agent directory and retain host/workspace/agent
 identities. Recent, Pinned, and project groups reuse existing project filters and
-collapsed sections. Empty workspaces retain an entry for files and terminals.
+collapsed sections. Empty workspaces retain an entry for files and terminals, named from
+the workspace descriptor. Archiving a workspace's last chat archives the workspace too, except
+worktrees and a project's last workspace: the daemon treats a project without one as archived.
 The workspace-only display options stay in the original UI; the chat header
 exposes only filters that actually affect chat projection.
 
@@ -1409,9 +1411,10 @@ changes, and a list of sidebar, composer and transcript fixes. All of it is in
 - Permission modes: Mac lists Ask for approval, Auto-review and Full access (Claude
   `default`/`auto`/`bypassPermissions`, Codex `auto`/`auto-review`/`full-access`).
   Planning modes and Claude `acceptEdits` are hidden by one filter in
-  `agent-controls/policy.ts`, shared by the menu, Shift+Tab and the command center.
-  Other providers keep their non-planning modes. An agent left in a hidden mode
-  still shows that mode's label.
+  `agent-controls/policy.ts`, shared by the menu, Shift+Tab cycling and the command
+  center. Other providers keep their non-planning modes. An agent left in a hidden mode
+  still shows that mode's label. The Mac mode trigger has no caret and its tooltip shows
+  no shortcut.
 - Plan toggle: Codex exposes plan as the `plan_mode` feature, so it combines with any
   permission mode. Claude, OpenCode and Copilot expose plan as a mode, which replaces
   the permission mode. `resolvePlanToggle` drives either. For mode-based plan the app
@@ -1420,8 +1423,21 @@ changes, and a list of sidebar, composer and transcript fixes. All of it is in
   `acceptEdits` after Implement. Until that `setMode` lands Claude briefly runs in
   `acceptEdits`; closing that gap needs a daemon change. The memory is not persisted,
   so a restart during plan falls back to the provider's default mode. A chat sent from
-  a draft in plan takes over the draft's remembered mode.
-- Model popover: its ⚡ toggles `fast_mode` (filled when on) and the composer's separate
+  a draft in plan takes over the draft's remembered mode. As in Codex, the composer's
+  plan button shows only while plan is on and turns it off; Shift+Tab, the "+" menu or
+  the command center turns it on. Shift+Tab reuses the `message-input.mode-cycle` action: the plan
+  handler outranks the mode control's cycling, which still runs where no plan toggle
+  exists (compact windows, providers without plan). Settings › Shortcuts still labels
+  that row as cycling the mode. The controls own the plan toggle, so they publish its
+  state to the composer's "+" menu through `ComposerModesContext` (`plan-mode.tsx`).
+- Goal mode: the "+" menu also toggles goal for Codex and Claude, whose CLIs have
+  `/goal`. While on, the composer shows a 目标 pill and Codex's goal placeholder, and
+  the next message is sent as `/goal <text>`, which turns goal mode off. Availability
+  is a provider check, not the command list: listing a live Claude agent's commands
+  can start a CLI process. Paseo handles Codex's `/goal` out of band (`thread/goal/set`);
+  whether Codex then starts working on its own was not verified.
+- Model popover: the effort label and the model name are one button that opens the
+  model list, as in Codex. Its ⚡ toggles `fast_mode` (filled when on) and the composer's separate
   fast button is gone where the popover exists; the pill shows a filled ⚡ while fast
   is on. The effort track has a dot per step. While models load the pill shows the
   existing "Select model" string at a fixed minimum width; no effort placeholder
@@ -1436,18 +1452,38 @@ changes, and a list of sidebar, composer and transcript fixes. All of it is in
 - Sidebar: chat rows show Pin and Archive on hover and the full menu on right-click.
   Pinned hides when it has no chats or projects. The rail drops Add project.
 - Usage: the sidebar entry shows the most used window across pinned sources plus
-  "+N", replacing the per-window line that could not fit more providers. This applies
-  on every platform.
+  "+N", replacing the per-window line that could not fit more providers. The Mac sidebar
+  has no Usage item: `useSidebarNavItems` drops it, so Settings › Sidebar and the usage
+  options menu stop offering it, and saved preferences keep the key. The rail's usage
+  popover replaces it; the Usage screen is reachable only by route there.
 - Settings and new chat: the Mac settings header drops its back arrow. Settings pages
   now replace each other in the desktop history, so one titlebar Back leaves
   settings. The new-chat page always launches a chat. Mac image thumbnails are 72px.
+  An attachment's remove button sits at its top-right corner on every platform. The Mac
+  context meter is a 14pt ring in a bordered 28pt box, as in Claude's desktop app.
+- Edit project: the Mac sidebar's Edit opens the name-and-source-folder sheet in place
+  (`HostProjectEditSheet`), with Remove project at the footer's start, as in Codex.
+  Setup, teardown, scripts and metadata prompts stay in Settings › Projects. Codex keeps
+  their counterparts out of its edit dialog too: worktree setup scripts and toolbar
+  actions live in Settings › Environments (`.codex/environments`). The sheet shows one
+  source folder; a Paseo project is one directory, so Codex's Add folder has no
+  counterpart. It renders nothing while the project's host is offline.
+- Menus: a custom item style receives `focused` only for keyboard focus. Opening a menu
+  focuses its first row, so the raw Pressable state kept that row highlighted in the "+"
+  menu while the pointer hovered another.
 - Tool activity: on Mac, grouped tool runs are labelled with verbs only, without
   counts, plus an icon for the run's first kind of work, and finished steps say
   "Read …"/"Ran …". Grouping stays the `toolCallDetailLevel: "overview"` choice in
   Settings › Chat. A Mac-only default was tried and reverted: every saved settings
   blob already stores `"detailed"`, so it reached only fresh profiles, which are the
   renderer specs that expect ungrouped tool rows. Image reads have no thumbnail row
-  yet.
+  yet. zh-CN joins the verbs with "，".
+- Stuck tool rows: the Claude provider has no case for `advisor_tool_result`, so an
+  advisor call stays running and shimmers. The real fix is that case in the daemon.
+  The app settles running tool calls when a turn ends, except plans awaiting approval
+  and sub-agents, and on hydration settles
+  running calls of turns older than the newest one (`types/stream.ts`). After a
+  reload, a stuck call in the newest turn shimmers until the next turn ends.
 
 Validation: app and desktop typecheck, lint and format pass; 409 unit tests in 36
 files pass (agent controls, command center, usage, tool calls, desktop navigation,
@@ -1457,6 +1493,52 @@ in a rendered window, so the slider dots, chevron alignment, fast icon, plan tog
 thumbnail size and usage summary still need a visual check.
 `scripts/verify-electron-cdp.mjs` still looks for the removed
 `settings-back-to-workspace` in its darwin traffic-light check.
+
+### Claude fast mode without usage credits — 2026-10-04
+
+This is a daemon patch the user approved as an exception to the UI-only rule. Expect
+conflicts in `providers/claude/agent.ts` when upstream changes it. Without usage
+credits the API rejects fast requests (`429 "Usage credits are required for fast
+mode."`). Claude Code then emits a `system/notification` with key
+`fast-mode-overage-rejected` and silently retries at standard speed. Its result
+still reports `fast_mode_state: "on"`. While `fast_mode` is on, the Claude provider
+now fails the turn with that notification's text and interrupts the query, so no
+standard-speed answer arrives. The fast toggle stays on.
+
+Validation: a new `agent.test.ts` case fails without the patch; server typecheck,
+lint and format pass. With Claude Code 2.1.287, a real two-turn SDK run got the
+notification on both turns, and the interrupt ended each turn as
+`error_during_execution` before any answer. The packaged daemon was not restarted,
+so the installed app does not have the patch yet.
+
+### Desktop notifications not appearing — 2026-10-04
+
+The user saw no notifications. In `com.apple.ncprefs.plist`, `local.paseo.custom.desktop`
+lacks flag bit 25, which `sh.paseo.desktop`, Claude and Codex have. The likely cause is
+that macOS does not allow Paseo Custom to notify; the user confirms in System Settings.
+The entry lists 29 code requirements, one per ad-hoc or self-signed build, so an earlier
+"Allow" may not carry over to the signed install. The main process returned `true` from
+`paseo:notification:send` right after `show()`, so the settings test button reported
+success even when macOS refused. It now waits for `show` (true), `failed` (false, logged
+to `main.log`) or 2 s (true); the startup probe logs `failed` too. A `show` event does not
+prove a banner appeared (style None or Focus still hide it).
+
+The user then turned on Allow Notifications (bit 25 is now set). Notifications reached
+Notification Center but showed no banner. Electron 44 presents banners in the foreground
+(`willPresentNotification` returns Banner | List | Sound) and requests Alert | Sound | Badge
+without provisional delivery, so a missing banner points at macOS (Focus, Reduce
+Interruptions, or screen mirroring/sharing), not the app.
+
+Always notify, like Codex: the daemon marks `shouldNotify` on one present client and none
+when that client is visible and focused on the agent, or idle over 3 minutes (then only
+mobile push). Upstream leaves this unchanged. On Electron, `session-context.tsx` now ignores
+`shouldNotify` and the focus check for agent finished/permission events. Errors still
+don't notify, and terminal attention still follows the daemon. Every window receives the
+event, so the main process drops a repeated title/body/data within 5 s. Test notifications
+carry no data, so they are never deduplicated.
+
+Validation: app and desktop typecheck, lint and format pass. Not run in a packaged app; it reaches
+the installed app only after a release.
 
 ### Sidebar motion and selection — 2026-10-01
 
@@ -2752,7 +2834,9 @@ archived/no-composer requests still use their existing inline path.
 
 The card follows the new question reference: 20px corners, neutral dark surface,
 question title/close control, numbered single-choice rows, selected-row arrow,
-free-text entry and compact action buttons. Multi-select retains checkbox
+free-text entry and compact action buttons. The free-text field outlines while focused
+(sampled `#d7b9ad`) and grows with the answer up to 240px, then scrolls; Enter submits
+and Shift+Enter adds a line. Multi-select retains checkbox
 semantics, and multi-question navigation remains available. The initial choice
 is not silently selected. Answer encoding, automatic advance after single-choice,
 required-answer validation and provider dismissal labels remain authoritative.
