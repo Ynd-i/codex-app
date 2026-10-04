@@ -44,6 +44,7 @@ import {
   createAppUpdateLifecycleLogger,
   downloadAndInstallUpdate,
   installAppUpdateOnQuit,
+  releaseTagOfUpdateVersion,
   resolveStagingUserId,
   rolloutManifestSchema,
   shouldAdmitToRollout,
@@ -185,6 +186,17 @@ describe("checkForAppUpdate", () => {
       isSilent: false,
       isForceRunAfter: true,
     });
+  });
+});
+
+describe("releaseTagOfUpdateVersion", () => {
+  it("reverses the stamps of custom-release.mjs", () => {
+    expect(releaseTagOfUpdateVersion("0.11.0-beta.3.custom.1.beta.7")).toBe(
+      "v0.11.0-beta.3-v1-beta7",
+    );
+    expect(releaseTagOfUpdateVersion("0.11.0-custom.2.beta.1")).toBe("v0.11.0-v2-beta1");
+    expect(releaseTagOfUpdateVersion("0.11.0-custom.2.stable")).toBe("v0.11.0-v2");
+    expect(releaseTagOfUpdateVersion("0.11.0-beta.3")).toBeNull();
   });
 });
 

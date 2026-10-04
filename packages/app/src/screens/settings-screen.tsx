@@ -9,6 +9,7 @@ import {
   type PressableStateCallbackType,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useFetchQuery } from "@/data/query";
 import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
@@ -90,7 +91,7 @@ import { BrowserDataSection } from "@/desktop/browser/settings/browser-data-sect
 import { IntegrationsSection } from "@/desktop/components/integrations-section";
 import { isElectronRuntime } from "@/desktop/host";
 import { useDesktopAppUpdater } from "@/desktop/updates/use-desktop-app-updater";
-import { formatVersionWithPrefix } from "@/desktop/updates/desktop-updates";
+import { formatVersionWithPrefix, getDesktopRuntimeInfo } from "@/desktop/updates/desktop-updates";
 import { resolveAppVersion } from "@/utils/app-version";
 import { openChangelog } from "@/changelog";
 import { useAppDiagnosticStore } from "@/diagnostics/store";
@@ -483,8 +484,22 @@ interface AboutSectionProps {
   isDesktopApp: boolean;
 }
 
+// The app version stays upstream's to match the bundled daemon; published builds show their tag.
+function useDesktopReleaseTag(enabled: boolean): string | null {
+  const { data } = useFetchQuery({
+    queryKey: ["desktop-runtime-info"],
+    queryFn: getDesktopRuntimeInfo,
+    enabled,
+    dataShape: "value",
+    // The tag is fixed for the running build.
+    immutableWhen: () => true,
+  });
+  return data?.releaseTag ?? null;
+}
+
 function AboutSection({ appVersion, appVersionText, isDesktopApp }: AboutSectionProps) {
   const { t } = useTranslation();
+  const releaseTag = useDesktopReleaseTag(isDesktopApp);
   return (
     <>
       <SettingsSection title={t("settings.about.title")}>
@@ -494,7 +509,7 @@ function AboutSection({ appVersion, appVersionText, isDesktopApp }: AboutSection
               <Text style={settingsStyles.rowTitle}>{t("settings.about.appVersion")}</Text>
               <Text style={settingsStyles.rowHint}>{t("settings.about.thisDevice")}</Text>
             </View>
-            <Text style={styles.aboutValue}>{appVersionText}</Text>
+            <Text style={styles.aboutValue}>{releaseTag ?? appVersionText}</Text>
           </View>
           <WhatsNewRow />
           {isDesktopApp ? <DesktopAppUpdateRow /> : null}

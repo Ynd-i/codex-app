@@ -62,6 +62,22 @@ function getCustomUpdateVersion(): string | null {
   return cachedCustomUpdateVersion;
 }
 
+const UPDATE_VERSION_PATTERN =
+  /^(?<base>.+?)[.-]custom\.(?<release>\d+)\.(?:beta\.(?<beta>\d+)|stable)$/;
+
+/** Reverses `updateVersion()` in scripts/custom-release.mjs: `0.11.0-custom.1.beta.2` → `v0.11.0-v1-beta2`. */
+export function releaseTagOfUpdateVersion(updateVersion: string): string | null {
+  const groups = UPDATE_VERSION_PATTERN.exec(updateVersion)?.groups;
+  if (!groups) return null;
+  return `v${groups.base}-v${groups.release}${groups.beta ? `-beta${groups.beta}` : ""}`;
+}
+
+/** The release tag of a published Paseo Custom build, shown as its version in Settings. */
+export function getCustomReleaseTag(): string | null {
+  const updateVersion = getCustomUpdateVersion();
+  return updateVersion ? releaseTagOfUpdateVersion(updateVersion) : null;
+}
+
 function updateVersionOf(appVersion: string): string {
   return getCustomUpdateVersion() ?? appVersion;
 }
