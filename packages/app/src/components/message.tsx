@@ -8,6 +8,7 @@ import {
   Pressable,
   type GestureResponderEvent,
   type LayoutChangeEvent,
+  type PressableStateCallbackType,
   StyleProp,
   ViewStyle,
   type TextStyle,
@@ -1035,6 +1036,11 @@ const turnCopyButtonStylesheet = StyleSheet.create((theme) => ({
     padding: theme.spacing[2],
     paddingTop: 0,
     marginTop: theme.spacing[2],
+    borderRadius: theme.borderRadius.md,
+  },
+  // The Mac desktop UI boxes hovered icon buttons; other platforms only recolor the icon.
+  containerHovered: {
+    backgroundColor: getIsElectronMac() ? theme.colors.interactionHighlight : "transparent",
   },
   iconColor: {
     color: theme.colors.foregroundMuted,
@@ -1088,8 +1094,12 @@ export const TurnCopyButton = memo(function TurnCopyButton({
     };
   }, []);
 
-  const pressableStyle = useMemo(
-    () => [turnCopyButtonStylesheet.container, containerStyle],
+  const pressableStyle = useCallback(
+    ({ hovered }: PressableStateCallbackType & { hovered?: boolean }) => [
+      turnCopyButtonStylesheet.container,
+      containerStyle,
+      hovered ? turnCopyButtonStylesheet.containerHovered : null,
+    ],
     [containerStyle],
   );
 

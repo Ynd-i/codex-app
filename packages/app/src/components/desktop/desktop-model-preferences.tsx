@@ -8,13 +8,12 @@ import {
   type InputHTMLAttributes,
   type PointerEvent,
 } from "react";
-import { Text, View } from "react-native";
+import { Pressable, Text, View, type PressableStateCallbackType } from "react-native";
 import { ChevronRight, RotateCcw, Zap } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import type { AgentSelectOption } from "@getpaseo/protocol/agent-types";
 import { HeaderToggleButton } from "@/components/headers/header-toggle-button";
-import { Button } from "@/components/ui/button";
 import type { Theme } from "@/styles/theme";
 import { getIsElectronMac } from "@/constants/platform";
 
@@ -110,6 +109,11 @@ const mutedIcon = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
 const FAST_ON_STATE = { selected: true };
 const FAST_OFF_STATE = { selected: false };
 const chevron = <RightIcon size={14} uniProps={mutedIcon} />;
+// Effort and model are one hover target, as in Codex; hover only tints the background.
+const browseStyle = ({ hovered, pressed }: PressableStateCallbackType & { hovered?: boolean }) => [
+  styles.browse,
+  (hovered || pressed) && styles.browseHovered,
+];
 
 export function DesktopModelPreferences({
   thinking,
@@ -186,9 +190,25 @@ export function DesktopModelPreferences({
         ) : (
           <View style={styles.resetSpace} />
         )}
-        <Text style={styles.level}>
-          {thinking.options[displayedIndex]?.label ?? thinking.label}
-        </Text>
+        <View style={styles.browseSlot}>
+          <Pressable
+            onPress={onBrowseModels}
+            style={browseStyle}
+            accessibilityRole="button"
+            accessibilityLabel={t("modelSelector.selectedModel", { model: modelLabel })}
+            testID="desktop-model-browse"
+          >
+            <Text style={styles.level}>
+              {thinking.options[displayedIndex]?.label ?? thinking.label}
+            </Text>
+            <View style={styles.modelRow}>
+              <Text style={styles.modelLabel} numberOfLines={1}>
+                {modelLabel}
+              </Text>
+              {chevron}
+            </View>
+          </Pressable>
+        </View>
         {defaultOption ? (
           <HeaderToggleButton
             onPress={reset}
@@ -207,18 +227,6 @@ export function DesktopModelPreferences({
           <View style={styles.resetSpace} />
         )}
       </View>
-      <Button
-        variant="ghost"
-        size="sm"
-        onPress={onBrowseModels}
-        style={styles.modelButton}
-        textStyle={styles.modelLabel}
-        trailing={chevron}
-        accessibilityLabel={t("modelSelector.selectedModel", { model: modelLabel })}
-        testID="desktop-model-browse"
-      >
-        {modelLabel}
-      </Button>
       <Range
         type="range"
         min={0}
@@ -240,9 +248,18 @@ export function DesktopModelPreferences({
 
 const styles = StyleSheet.create((theme, rt) => ({
   root: { padding: theme.spacing[3] },
-  header: { flexDirection: "row", alignItems: "center", gap: theme.spacing[2] },
+  // Top-aligned so the side buttons sit on the effort line.
+  header: { flexDirection: "row", alignItems: "flex-start", gap: theme.spacing[2] },
+  browseSlot: { flex: 1, minWidth: 0, alignItems: "center" },
+  browse: {
+    maxWidth: "100%",
+    alignItems: "center",
+    paddingHorizontal: theme.spacing[3],
+    paddingVertical: theme.spacing[1],
+    borderRadius: theme.borderRadius.lg,
+  },
+  browseHovered: { backgroundColor: theme.colors.surface2 },
   level: {
-    flex: 1,
     textAlign: "center",
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.medium,
@@ -251,14 +268,7 @@ const styles = StyleSheet.create((theme, rt) => ({
         ? CODEX_EFFORT_ACCENT
         : theme.colors.palette.orange[500],
   },
-  modelButton: {
-    alignSelf: "center",
-    maxWidth: "100%",
-    height: 20,
-    minHeight: 20,
-    gap: theme.spacing[1],
-    paddingVertical: 0,
-  },
+  modelRow: { flexDirection: "row", alignItems: "center", gap: theme.spacing[1], maxWidth: "100%" },
   modelLabel: { flexShrink: 1, fontSize: theme.fontSize.sm, color: theme.colors.foregroundMuted },
   resetSpace: { width: 24, height: 24, alignItems: "center", justifyContent: "center" },
 }));

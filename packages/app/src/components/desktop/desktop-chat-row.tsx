@@ -10,6 +10,7 @@ import { HeaderToggleButton } from "@/components/headers/header-toggle-button";
 import type { AggregatedAgent } from "@/hooks/use-aggregated-agents";
 import type { Theme } from "@/styles/theme";
 import { navigateToAgent } from "@/utils/navigate-to-agent";
+import { deriveSidebarStateBucket } from "@/utils/sidebar-agent-state";
 import { desktopChatKey } from "./desktop-chat-model";
 import { DesktopChatMenuItems, useChatForkPage, useDesktopChatMenu } from "./desktop-chat-menu";
 import { useSectionMovePage } from "./desktop-chat-section-menus";
@@ -54,6 +55,14 @@ export const ChatRow = memo(function ChatRow({
   const actionStyle = revealed ? undefined : styles.actionHidden;
   const archiveLabel = t("agentList.archiveSheet.archive");
   const title = agent.title || t("agentList.fallbackTitle");
+  const status = agent.turn.phase === "open" ? "running" : agent.status;
+  const running =
+    deriveSidebarStateBucket({
+      status,
+      requiresAttention: unread,
+      attentionReason: agent.attentionReason,
+      pendingPermissionCount: agent.pendingPermissionCount,
+    }) === "running";
   const enter = useCallback(() => setHovered(true), []);
   const leave = useCallback(() => setHovered(false), []);
   const open = useCallback(() => {
@@ -104,16 +113,6 @@ export const ChatRow = memo(function ChatRow({
               <Text numberOfLines={1} style={[styles.chatTitle, unread && styles.unreadTitle]}>
                 {title}
               </Text>
-              {busy ? (
-                <Progress size="small" uniProps={mutedIcon} />
-              ) : (
-                <AgentStatusDot
-                  status={agent.turn.phase === "open" ? "running" : agent.status}
-                  requiresAttention={unread}
-                  attentionReason={agent.attentionReason}
-                  pendingPermissionCount={agent.pendingPermissionCount}
-                />
-              )}
             </Pressable>
             <HeaderToggleButton
               onPress={menuProps.onPin}
@@ -134,21 +133,38 @@ export const ChatRow = memo(function ChatRow({
                 <PinIcon size={16} uniProps={mutedIcon} />
               )}
             </HeaderToggleButton>
-            <HeaderToggleButton
-              onPress={menuProps.onArchive}
-              disabled={busy}
-              onFocus={enter}
-              onBlur={leave}
-              tooltipLabel={archiveLabel}
-              tooltipKeys={[]}
-              tooltipSide="top"
-              style={actionStyle}
-              accessibilityRole="button"
-              accessibilityLabel={archiveLabel}
-              testID={`desktop-chat-archive-${key}`}
-            >
-              <ArchiveIcon size={16} uniProps={mutedIcon} />
-            </HeaderToggleButton>
+            <View>
+              <HeaderToggleButton
+                onPress={menuProps.onArchive}
+                disabled={busy}
+                onFocus={enter}
+                onBlur={leave}
+                tooltipLabel={archiveLabel}
+                tooltipKeys={[]}
+                tooltipSide="top"
+                style={actionStyle}
+                accessibilityRole="button"
+                accessibilityLabel={archiveLabel}
+                testID={`desktop-chat-archive-${key}`}
+              >
+                <ArchiveIcon size={16} uniProps={mutedIcon} />
+              </HeaderToggleButton>
+              {/* Shares the archive slot: hovering swaps the status for the row actions. */}
+              {revealed ? null : (
+                <View style={styles.statusSlot}>
+                  {busy || running ? (
+                    <Progress size="small" uniProps={mutedIcon} />
+                  ) : (
+                    <AgentStatusDot
+                      status={status}
+                      requiresAttention={unread}
+                      attentionReason={agent.attentionReason}
+                      pendingPermissionCount={agent.pendingPermissionCount}
+                    />
+                  )}
+                </View>
+              )}
+            </View>
           </View>
         </ContextMenuTrigger>
         <ContextMenuContent width={210} pages={pages}>
@@ -194,4 +210,14 @@ const styles = StyleSheet.create((theme) => ({
   },
   unreadTitle: { color: theme.colors.foreground, fontWeight: theme.fontWeight.medium },
   actionHidden: { opacity: 0 },
+  statusSlot: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    pointerEvents: "none",
+  },
 }));

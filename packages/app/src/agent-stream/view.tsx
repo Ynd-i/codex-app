@@ -85,7 +85,7 @@ import {
 import { navigateToWorkspace } from "@/stores/navigation-active-workspace-store";
 import { useStableEvent } from "@/hooks/use-stable-event";
 import { useForkAgent } from "@/hooks/use-fork-agent";
-import { isWeb } from "@/constants/platform";
+import { getIsElectronMac, isWeb } from "@/constants/platform";
 import { CHAT_MESSAGE_HORIZONTAL_PADDING, type Theme } from "@/styles/theme";
 import { recordRenderProfileReasons } from "@/utils/render-profiler";
 import { useRetainedPanelActive } from "@/components/retained-panel";
@@ -1192,6 +1192,7 @@ const AgentStreamViewComponent = forwardRef<AgentStreamViewHandle, AgentStreamVi
               activePrompt={chatOutline.activePrompt}
               onJumpToPrompt={chatOutline.jumpToPrompt}
             />
+            <ComposerEdgeFade />
             {(!isNearBottom || isTimelineDetached) && (
               <View style={scrollToBottomContainerStyle} pointerEvents="box-none">
                 <Animated.View entering={scrollIndicatorFadeIn} exiting={scrollIndicatorFadeOut}>
@@ -1213,6 +1214,11 @@ const AgentStreamViewComponent = forwardRef<AgentStreamViewHandle, AgentStreamVi
     );
   },
 );
+
+function ComposerEdgeFade() {
+  if (!getIsElectronMac()) return null;
+  return <View style={stylesheet.composerEdgeFade} pointerEvents="none" />;
+}
 
 function agentCapabilityFlagsEqual(
   left: AgentCapabilityFlags | undefined,
@@ -1470,6 +1476,15 @@ const stylesheet = StyleSheet.create((theme) => ({
     color: theme.colors.foregroundMuted,
     fontSize: theme.fontSize.base,
     textAlign: "center",
+  },
+  // Fades the transcript into the composer edge instead of cutting it off.
+  composerEdgeFade: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: theme.spacing[6],
+    backgroundImage: `linear-gradient(to bottom, transparent, ${theme.colors.surface0})`,
   },
   scrollToBottomContainer: {
     position: "absolute",

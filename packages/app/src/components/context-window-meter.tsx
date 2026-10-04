@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import type { AgentContextUsage } from "@getpaseo/protocol/agent-types";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { getIsElectronMac } from "@/constants/platform";
 import { useFetchQuery } from "@/data/query";
 import { useHostFeature } from "@/runtime/host-features";
 import { useHostRuntimeClient } from "@/runtime/host-runtime";
@@ -371,12 +372,18 @@ export function ContextWindowMeter({
 }
 
 const styles = StyleSheet.create((theme) => ({
+  // On Mac the ring sits in a box, as in Claude's desktop app.
   container: {
     width: 28,
     height: 28,
-    borderRadius: theme.borderRadius.full,
+    borderRadius: getIsElectronMac() ? theme.borderRadius.md : theme.borderRadius.full,
     alignItems: "center",
     justifyContent: "center",
+    ...(getIsElectronMac() && {
+      backgroundColor: theme.colors.surface0,
+      borderWidth: theme.borderWidth[1],
+      borderColor: theme.colors.border,
+    }),
   },
   containerWithLabel: {
     height: 28,

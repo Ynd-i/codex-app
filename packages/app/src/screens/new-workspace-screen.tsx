@@ -2725,11 +2725,12 @@ const styles = StyleSheet.create((theme) => ({
     fontWeight: theme.fontWeight.normal,
     color: theme.colors.foreground,
   },
+  // Matches the composer's inset and width so the bar fills the card behind it, like Codex.
   desktopSetupRail: {
-    paddingHorizontal: theme.spacing[4] + theme.spacing[3],
+    paddingHorizontal: theme.spacing[4],
     alignItems: "center",
   },
-  desktopSetup: { width: "100%", maxWidth: theme.contentMaxWidth - theme.spacing[6] },
+  desktopSetup: { width: "100%", maxWidth: theme.contentMaxWidth },
   container: {
     flex: 1,
     backgroundColor: theme.colors.surface0,
@@ -2772,8 +2773,9 @@ const styles = StyleSheet.create((theme) => ({
       ? {
           marginBottom: 0,
           backgroundColor: theme.colors.surface1,
-          borderTopLeftRadius: theme.borderRadius["2xl"],
-          borderTopRightRadius: theme.borderRadius["2xl"],
+          // The composer's Mac radius, so both cards share one outline.
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
           paddingVertical: theme.spacing[2],
         }
       : {}),
