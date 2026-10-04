@@ -63,9 +63,20 @@ test("macOS question cards preserve drafts, require answers, and submit selected
     await card.getByRole("radio", { name: "Behind feature flag", exact: true }).click();
     const successQuestion = "What success criteria should we use?";
     await expect(card.getByTestId("question-form-current-question")).toHaveText(successQuestion);
-    await card.getByRole("textbox", { name: successQuestion }).fill("No dropped user drafts.");
+    const successInput = card.getByRole("textbox", { name: successQuestion });
+    const answerField = card.getByTestId("question-form-other-input");
+    await expect(answerField).toHaveCSS("border-color", "rgba(0, 0, 0, 0)");
+    await successInput.focus();
+    await expect(answerField).toHaveCSS("border-color", "rgb(215, 185, 173)");
+    const singleLineHeight = (await successInput.boundingBox())!.height;
+    expect(singleLineHeight).toBeLessThanOrEqual(24);
+    await successInput.fill("Line one\nLine two\nLine three");
+    await expect
+      .poll(async () => (await successInput.boundingBox())!.height)
+      .toBeGreaterThan(singleLineHeight);
+    await successInput.fill("No dropped user drafts.");
     await expect(primary).toBeEnabled();
-    await primary.click();
+    await successInput.press("Enter");
     await expect.poll(() => gate.getClientRequestCount("agent_permission_response")).toBe(1);
     expect(gate.getClientRequests("agent_permission_response")[0]).toMatchObject({
       agentId: fixture.agentId,

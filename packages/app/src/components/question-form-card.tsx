@@ -1,6 +1,13 @@
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useState, useCallback, useMemo, useRef, type RefObject } from "react";
-import { View, Text, Pressable, type PressableStateCallbackType } from "react-native";
+import {
+  View,
+  Text,
+  Pressable,
+  type NativeSyntheticEvent,
+  type PressableStateCallbackType,
+  type TextInputKeyPressEventData,
+} from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useIsCompactFormFactor } from "@/constants/layout";
 import { Check, ChevronRight, CircleHelp, Pencil, X } from "lucide-react-native";
@@ -11,6 +18,7 @@ import { getIsElectronMac, isWeb } from "@/constants/platform";
 import type { Theme } from "@/styles/theme";
 import { EditingTextInput as TextInput } from "@/components/ui/text-input";
 import type { EditingTextInputHandle } from "@/components/ui/text-input/types";
+import { isImeComposingKeyboardEvent } from "@/utils/keyboard-ime";
 import {
   areQuestionsAnswered,
   buildQuestionFormAnswers,
@@ -30,6 +38,13 @@ interface QuestionFormCardProps {
 }
 
 const IS_WEB = isWeb;
+// The Mac card only renders in Electron: the textarea grows with the answer up to its
+// maxHeight, then scrolls.
+const MAC_GROWING_INPUT_STYLE = { fieldSizing: "content" };
+
+type QuestionInputKeyPressEvent = NativeSyntheticEvent<
+  TextInputKeyPressEventData & { shiftKey?: boolean; isComposing?: boolean; keyCode?: number }
+>;
 
 function getQuestionInputPlaceholder({
   question,
@@ -307,11 +322,24 @@ function QuestionOtherInput({
   onSubmit,
 }: QuestionOtherInputProps) {
   const { theme } = useUnistyles();
+  const [isFocused, setIsFocused] = useState(false);
   const handleChange = useCallback(
     (text: string) => {
       onChange(qIndex, text);
     },
     [onChange, qIndex],
+  );
+  const handleFocus = useCallback(() => setIsFocused(true), []);
+  const handleBlur = useCallback(() => setIsFocused(false), []);
+  // The Mac field is a growing textarea: Enter submits, Shift+Enter adds a line.
+  const handleMacKeyPress = useCallback(
+    (event: QuestionInputKeyPressEvent) => {
+      const { key, shiftKey } = event.nativeEvent;
+      if (key !== "Enter" || shiftKey || isImeComposingKeyboardEvent(event.nativeEvent)) return;
+      event.preventDefault();
+      onSubmit();
+    },
+    [onSubmit],
   );
   const otherInputStyle = useMemo(
     () =>
@@ -336,20 +364,32 @@ function QuestionOtherInput({
     <TextInput
       ref={inputRef}
       // @ts-expect-error - outlineStyle is web-only
-      style={isMacPresentation ? [otherInputStyle, styles.macOtherInput] : otherInputStyle}
+      style={
+        isMacPresentation
+          ? [otherInputStyle, styles.macOtherInput, MAC_GROWING_INPUT_STYLE]
+          : otherInputStyle
+      }
       accessibilityLabel={accessibilityLabel}
       placeholder={placeholder}
       placeholderTextColor={theme.colors.foregroundMuted}
       initialValue={value}
       onChangeText={handleChange}
       onSubmitEditing={onSubmit}
+      onKeyPress={isMacPresentation ? handleMacKeyPress : undefined}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+      multiline={isMacPresentation}
+      rows={1}
       editable={!isResponding}
       blurOnSubmit={false}
     />
   );
   if (!isMacPresentation) return input;
   return (
-    <View style={styles.macOtherInputRow}>
+    <View
+      style={[styles.macOtherInputRow, isFocused && styles.macOtherInputRowFocused]}
+      testID="question-form-other-input"
+    >
       <Pencil size={18} color={theme.colors.foregroundMuted} />
       {input}
     </View>
@@ -910,9 +950,17 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   macOtherInputRow: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: 10,
     minHeight: 40,
+    paddingHorizontal: 8,
+    paddingVertical: 9,
+    borderWidth: 1,
+    borderRadius: 16,
+    borderColor: "transparent",
+  },
+  macOtherInputRowFocused: {
+    borderColor: rt.themeName === "dark" ? "#d7b9ad" : theme.colors.borderAccent,
   },
   macOtherInput: {
     flex: 1,
@@ -920,6 +968,8 @@ const styles = StyleSheet.create((theme, rt) => ({
     borderRadius: 0,
     paddingHorizontal: 0,
     paddingVertical: 0,
+    lineHeight: 20,
+    maxHeight: 240,
     backgroundColor: "transparent",
   },
   actionsContainer: {
