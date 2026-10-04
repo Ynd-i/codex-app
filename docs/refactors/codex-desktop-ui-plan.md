@@ -1426,6 +1426,13 @@ changes, and a list of sidebar, composer and transcript fixes. All of it is in
   is on. The effort track has a dot per step. While models load the pill shows the
   existing "Select model" string at a fixed minimum width; no effort placeholder
   string exists upstream.
+- Queue: the user asked whether queueing was missing. It exists. Upstream's
+  `sendBehavior` defaults to `"steer"`, so Enter while a chat runs sends into the
+  turn and Cmd+Enter queues; Settings › General › Sending makes Enter queue. Mac
+  queued rows follow Codex: Steer sends with `activeTurnBehavior: "steer"` instead of
+  interrupting, the trash button drops the item, and the menu edits it or sets
+  `sendBehavior` back to `"steer"`. Codex's Open in side chat has no Paseo
+  counterpart.
 - Sidebar: chat rows show Pin and Archive on hover and the full menu on right-click.
   Pinned hides when it has no chats or projects. The rail drops Add project.
 - Usage: the sidebar entry shows the most used window across pinned sources plus

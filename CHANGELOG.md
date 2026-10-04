@@ -52,6 +52,7 @@ distribution and full migration acceptance remain pending; see the
 - The macOS project picker shows a project's favicon or a folder with only its name.
 - The macOS composer offers three permission modes, Ask for approval, Auto-review and Full access, and plan mode is a toggle beside them, as in Codex. Claude's Accept edits is no longer offered. Plan keeps the chosen permission mode: turning it off, or Claude's switch after Implement, returns to that mode. Other providers keep their own non-plan modes.
 - The macOS model popover turns Fast on and off from its ⚡, which is filled when on and then also shows in the model pill; the effort slider marks each step with a dot, and the pill reads "Select model" while models load instead of changing size.
+- macOS queued messages work like Codex's: Steer sends one into the running turn, the trash button deletes it, and its menu edits it or turns queueing off. Enter queues while a chat runs only when Settings › General › Sending is set to Queue; the default, Steer, sends into the turn.
 - macOS chat rows show Pin and Archive on hover and open their full menu on right-click. Pinned hides when nothing is pinned.
 - The sidebar usage entry shows one summary however many providers are pinned: the most used window with its source icon, then "+N" for the other sources. The full breakdown opens on press.
 - macOS settings have no back arrow in their header; the titlebar Back leaves settings in one step. The new-chat page drops its Chat/Terminal choice, and image attachments show larger previews.
