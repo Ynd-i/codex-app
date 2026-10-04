@@ -210,7 +210,7 @@ export async function runAgentDeepLinksRegression({
   await page.getByLabel(/^Code font weight:/).click();
   await page.getByRole("menuitem", { name: "Medium", exact: true }).click();
   await expect(page.getByLabel("Code font weight: Medium", { exact: true })).toBeVisible();
-  await page.getByTestId("settings-back-to-workspace").filter({ visible: true }).click();
+  await page.getByTestId("desktop-shell-back").click();
   await expectChat("A");
   await page.reload();
   await expectChat("A");
@@ -273,7 +273,7 @@ export async function runAgentDeepLinksRegression({
   await expect(page.getByRole("textbox", { name: "Code font size", exact: true })).toHaveValue(
     "12",
   );
-  await page.getByTestId("settings-back-to-workspace").filter({ visible: true }).click();
+  await page.getByTestId("desktop-shell-back").click();
   await expectChat("A");
   await expect(composer).toHaveValue(draft);
   // Check the production renderer with its native preload, preserving chat A's draft.

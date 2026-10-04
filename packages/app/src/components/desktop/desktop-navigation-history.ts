@@ -50,8 +50,15 @@ export function recordDesktopNavigation(
   ) {
     return history;
   }
-  const entries = [...history.entries.slice(0, history.index + 1), entry];
+  // Settings pages replace each other, so one Back leaves settings: the Mac settings
+  // header has no back button of its own.
+  const keep = isSettingsRoute(current?.route) && isSettingsRoute(entry.route) ? 0 : 1;
+  const entries = [...history.entries.slice(0, history.index + keep), entry];
   return { entries, index: entries.length - 1 };
+}
+
+function isSettingsRoute(route: string | undefined): boolean {
+  return route === "/settings" || Boolean(route?.startsWith("/settings/"));
 }
 
 export function moveDesktopNavigation(

@@ -52,7 +52,11 @@ import { useDaemonConfig } from "@/hooks/use-daemon-config";
 import { resolveTerminalProfiles } from "@getpaseo/protocol/terminal-profiles";
 import type { TerminalProfile } from "@getpaseo/protocol/messages";
 import { LaunchControl } from "@/new-workspace-launch/launch-control";
-import { resolveLaunchTarget, type LaunchTarget } from "@/new-workspace-launch/target";
+import {
+  CHAT_LAUNCH_TARGET,
+  resolveLaunchTarget,
+  type LaunchTarget,
+} from "@/new-workspace-launch/target";
 import { useTerminalComposerState } from "@/new-workspace-launch/composer-state";
 import { runCreateTerminalWorkspace } from "./new-workspace-terminal";
 import {
@@ -1709,7 +1713,8 @@ function useNewWorkspaceFormStack(input: NewWorkspaceFormStackInput): ReactEleme
     </View>
   ) : null;
 
-  const launchControl = (
+  // Like Codex, the Mac desktop always launches a chat, so it has no Chat/Terminal choice.
+  const launchControl = getIsElectronMac() ? null : (
     <LaunchControl
       serverId={launch.serverId}
       target={launch.target}
@@ -1726,7 +1731,7 @@ function useNewWorkspaceFormStack(input: NewWorkspaceFormStackInput): ReactEleme
       {hostControl ? <FormRow>{hostControl}</FormRow> : null}
       {isolationControl ? <FormRow>{isolationControl}</FormRow> : null}
       {baseControl ? <FormRow>{baseControl}</FormRow> : null}
-      <FormRow>{launchControl}</FormRow>
+      {launchControl ? <FormRow>{launchControl}</FormRow> : null}
       {/* Keep fixed stack height without separating the visible controls. */}
       {isolationControl ? null : <View style={styles.baseSpacer} pointerEvents="none" />}
       {baseControl ? null : <View style={styles.baseSpacer} pointerEvents="none" />}
@@ -1741,7 +1746,7 @@ function useNewWorkspaceFormStack(input: NewWorkspaceFormStackInput): ReactEleme
       {hostControl}
       {isolationControl}
       {baseControl}
-      <View style={styles.launchSpacer} pointerEvents="none" />
+      {launchControl ? <View style={styles.launchSpacer} pointerEvents="none" /> : null}
       {launchControl}
     </View>
   );
@@ -1828,7 +1833,10 @@ export function NewWorkspaceScreen({
   // daemon-side falls back to chat rather than leaving a dead selection.
   const [manualLaunchTarget, setManualLaunchTarget] = useState<LaunchTarget | null>(null);
   const launchTarget = useMemo(
-    () => resolveLaunchTarget(manualLaunchTarget ?? formPreferences.launchTarget, terminalProfiles),
+    () =>
+      getIsElectronMac()
+        ? CHAT_LAUNCH_TARGET
+        : resolveLaunchTarget(manualLaunchTarget ?? formPreferences.launchTarget, terminalProfiles),
     [manualLaunchTarget, formPreferences.launchTarget, terminalProfiles],
   );
   const [terminalPromptText, setTerminalPromptText] = useState("");

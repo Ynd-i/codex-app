@@ -54,3 +54,18 @@ it("keeps sibling chats distinct and replaces forward history after a new select
   expect(branched).toEqual({ entries: [a, c], index: 1 });
   expect(recordDesktopNavigation(branched, { ...c })).toBe(branched);
 });
+
+it("replaces settings pages so one Back leaves settings", () => {
+  const chat = {
+    route: "/workspace",
+    chat: { serverId: "host", workspaceId: "workspace", agentId: "a" },
+  };
+  const general = { route: "/settings/general", chat: null };
+  const appearance = { route: "/settings/appearance", chat: null };
+  const host = { route: "/settings/hosts/remote/projects", chat: null };
+  let history = recordDesktopNavigation({ entries: [chat], index: 0 }, general);
+  history = recordDesktopNavigation(history, appearance);
+  history = recordDesktopNavigation(history, host);
+  expect(history).toEqual({ entries: [chat, host], index: 1 });
+  expect(moveDesktopNavigation(history, -1).index).toBe(0);
+});

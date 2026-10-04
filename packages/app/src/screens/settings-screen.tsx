@@ -310,16 +310,6 @@ function selectedCodexMacSidebarItemStyle({
   ];
 }
 
-function settingsHeaderBackButtonStyle({
-  hovered = false,
-  pressed,
-}: PressableStateCallbackType & { hovered?: boolean }) {
-  return [
-    sidebarStyles.headerBackButton,
-    (hovered || pressed) && sidebarStyles.headerBackButtonHovered,
-  ];
-}
-
 function getSettingsSidebarItemStyle(useCodexSettingsFrame: boolean, isSelected: boolean) {
   if (useCodexSettingsFrame) {
     return isSelected ? selectedCodexMacSidebarItemStyle : codexMacSidebarItemStyle;
@@ -1120,16 +1110,6 @@ function SettingsSidebar({
             {useCodexSettingsFrame ? (
               <View style={sidebarStyles.headerRow}>
                 <Text style={sidebarStyles.headerTitle}>{t("settings.title")}</Text>
-                <Pressable
-                  onPress={onBackToWorkspace}
-                  testID="settings-back-to-workspace"
-                  accessible
-                  accessibilityRole="button"
-                  accessibilityLabel={t("settings.backToWorkspace")}
-                  style={settingsHeaderBackButtonStyle}
-                >
-                  <ArrowLeft size={theme.iconSize.sm} color={theme.colors.foregroundMuted} />
-                </Pressable>
               </View>
             ) : (
               <SidebarHeaderRow
@@ -1691,16 +1671,6 @@ const sidebarStyles = StyleSheet.create((theme) => ({
     color: theme.colors.foreground,
     fontSize: theme.fontSize.lg,
     fontWeight: theme.fontWeight.medium,
-  },
-  headerBackButton: {
-    width: 32,
-    height: 32,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: theme.borderRadius.full,
-  },
-  headerBackButtonHovered: {
-    backgroundColor: theme.colors.surfaceSidebarHover,
   },
   searchRegion: {
     paddingHorizontal: theme.spacing[3],
