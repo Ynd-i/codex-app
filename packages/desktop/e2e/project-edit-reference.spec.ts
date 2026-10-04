@@ -80,6 +80,8 @@ test("macOS project editor shows its real source folder and preserves name and i
     await expect(page.getByTestId("project-edit-default-icon")).toBeVisible();
     await expect(page.getByTestId("project-edit-image-url")).toBeHidden();
     await expect(page.getByTestId("project-edit-save")).toBeDisabled();
+    // Only the sidebar's in-place editor offers Remove project.
+    await expect(page.getByTestId("project-edit-remove")).toHaveCount(0);
     const field = page.getByTestId("project-edit-name-field");
     const fieldTop = (await field.boundingBox())!.y - (await dialog.boundingBox())!.y;
     expect(fieldTop).toBeGreaterThanOrEqual(60);

@@ -30,7 +30,18 @@ import {
   type ProjectIconIntent,
 } from "@/projects/edit-form";
 import { importProjectIconFromUrl } from "@/projects/import-project-icon";
+import { useProjects } from "@/hooks/use-projects";
+import { createProjectIconTarget } from "@/projects/icon-target";
+import { useProjectIcons } from "@/projects/icons";
+import { useHostFeature } from "@/runtime/host-features";
+import { useHostRuntimeClient } from "@/runtime/host-runtime";
 import { toErrorMessage } from "@/utils/error-messages";
+import {
+  getProjectHostEntry,
+  getProjectSummaryForHostProject,
+  type ProjectHostEntry,
+  type ProjectSummary,
+} from "@/utils/projects";
 
 export interface ProjectEditSheetProps {
   visible: boolean;
@@ -44,6 +55,98 @@ export interface ProjectEditSheetProps {
   snapshot: ProjectEditFormSnapshot;
   sourceDirectory: string;
   hostName: string;
+  /** Mac only: a "Remove project" button at the footer's start, as in Codex. */
+  onRemove?: () => void;
+}
+
+/** The form's starting point and icon for one host's copy of a project. */
+export function useProjectEditSnapshot(project: ProjectSummary, host: ProjectHostEntry) {
+  const supportsCustomIcon = useHostFeature(host.serverId, "projectCustomIcon");
+  const customIconRevision = host.customIconRevision ?? null;
+  const iconTargets = useMemo(() => {
+    const target = createProjectIconTarget({
+      projectViewKey: project.viewKey,
+      placement: { ...host, iconWorkingDir: host.repoRoot },
+    });
+    return target ? [target] : [];
+  }, [project.viewKey, host]);
+  const iconDataUri = useProjectIcons({ projects: iconTargets }).get(project.viewKey) ?? null;
+  const snapshot = useMemo<ProjectEditFormSnapshot>(
+    () => ({
+      projectName: host.projectName,
+      projectCustomName: host.projectCustomName,
+      hasCustomIcon: customIconRevision !== null,
+      currentIconDataUri: iconDataUri,
+    }),
+    [customIconRevision, iconDataUri, host.projectCustomName, host.projectName],
+  );
+  return { snapshot, supportsCustomIcon, iconDataUri };
+}
+
+/**
+ * The edit sheet for a project known only by host and id: the Mac sidebar opens it in place,
+ * as Codex does. Setup, teardown and scripts stay in Settings › Projects. Renders nothing until
+ * the project is loaded on an online host.
+ */
+export function HostProjectEditSheet({
+  serverId,
+  projectId,
+  onClose,
+  onRemove,
+}: {
+  serverId: string;
+  projectId: string;
+  onClose: () => void;
+  onRemove: () => void;
+}) {
+  const { projects } = useProjects();
+  const project = useMemo(
+    () => getProjectSummaryForHostProject(projects, serverId, projectId),
+    [projectId, projects, serverId],
+  );
+  const host = getProjectHostEntry(project, serverId, projectId);
+  const client = useHostRuntimeClient(serverId);
+  if (!project || !host?.isOnline || !client) return null;
+  return (
+    <LoadedHostProjectEditSheet
+      project={project}
+      host={host}
+      client={client}
+      onClose={onClose}
+      onRemove={onRemove}
+    />
+  );
+}
+
+function LoadedHostProjectEditSheet({
+  project,
+  host,
+  client,
+  onClose,
+  onRemove,
+}: {
+  project: ProjectSummary;
+  host: ProjectHostEntry;
+  client: DaemonClient;
+  onClose: () => void;
+  onRemove: () => void;
+}) {
+  const { snapshot, supportsCustomIcon } = useProjectEditSnapshot(project, host);
+  return (
+    <ProjectEditSheet
+      visible
+      onClose={onClose}
+      serverId={host.serverId}
+      projectId={host.projectId}
+      projectViewKey={project.viewKey}
+      client={client}
+      supportsCustomIcon={supportsCustomIcon}
+      snapshot={snapshot}
+      sourceDirectory={host.repoRoot}
+      hostName={host.serverName}
+      onRemove={onRemove}
+    />
+  );
 }
 
 /** Editing a project is its name and its icon, decided together and saved once. */
@@ -57,6 +160,7 @@ export function ProjectEditSheet({
   snapshot,
   sourceDirectory,
   hostName,
+  onRemove,
 }: ProjectEditSheetProps) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -110,6 +214,20 @@ export function ProjectEditSheet({
   const footer = useMemo(
     () => (
       <View style={styles.footer}>
+        {isMac && onRemove ? (
+          <Button
+            variant="secondary"
+            size="sm"
+            style={styles.removeButton}
+            textStyle={styles.removeText}
+            onPress={onRemove}
+            disabled={isSaving}
+            testID="project-edit-remove"
+          >
+            {t("desktopChat.sections.removeProject")}
+          </Button>
+        ) : null}
+        {isMac && onRemove ? <View style={styles.footerSpacer} /> : null}
         <Button
           variant={isMac ? "ghost" : "secondary"}
           size={isMac ? "sm" : "md"}
@@ -132,7 +250,7 @@ export function ProjectEditSheet({
         </Button>
       </View>
     ),
-    [handleClose, handleSubmit, isMac, isSaving, state.canSubmit, t],
+    [handleClose, handleSubmit, isMac, isSaving, onRemove, state.canSubmit, t],
   );
 
   return (
@@ -467,4 +585,11 @@ const styles = StyleSheet.create((theme) => ({
   footerButton: {
     minWidth: 112,
   },
+  footerSpacer: { flex: 1 },
+  // Codex's red-tinted "remove" button; a ghost button would turn its text white on hover.
+  removeButton: {
+    backgroundColor: `${theme.colors.palette.red[500]}26`,
+    borderColor: "transparent",
+  },
+  removeText: { color: theme.colors.palette.red[300] },
 }));

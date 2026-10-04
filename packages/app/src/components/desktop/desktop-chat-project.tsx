@@ -32,13 +32,14 @@ import type {
   SidebarProjectEntry,
   SidebarWorkspacePlacement,
 } from "@/hooks/use-sidebar-workspaces-list";
-import { openProjectSettings } from "@/navigation/settings-navigation";
+import { HostProjectEditSheet } from "@/components/project-edit-sheet";
 import {
   getCurrentProjectRemoveReadiness,
   removeProjectFromHosts,
 } from "@/projects/project-remove";
 import { getHostRuntimeStore } from "@/runtime/host-runtime";
 import { navigateToWorkspace } from "@/stores/navigation-active-workspace-store";
+import { useWorkspaceFields } from "@/stores/session-store-hooks";
 import { useSidebarCollapsedSectionsStore } from "@/stores/sidebar-collapsed-sections-store";
 import type { Theme } from "@/styles/theme";
 import { confirmDialog } from "@/utils/confirm-dialog";
@@ -68,6 +69,13 @@ const archiveLeading = <ArchiveIcon size={16} uniProps={mutedIcon} />;
 const removeLeading = <RemoveIcon size={16} uniProps={mutedIcon} />;
 
 function EmptyWorkspaceRow({ workspace }: { workspace: SidebarWorkspacePlacement }) {
+  // The placement's name is the workspace ID; the descriptor holds the real name.
+  const name =
+    useWorkspaceFields(
+      workspace.serverId,
+      workspace.workspaceId,
+      (descriptor) => descriptor.name,
+    ) ?? workspace.name;
   const open = useCallback(
     () => navigateToWorkspace({ serverId: workspace.serverId, workspaceId: workspace.workspaceId }),
     [workspace.serverId, workspace.workspaceId],
@@ -77,12 +85,12 @@ function EmptyWorkspaceRow({ workspace }: { workspace: SidebarWorkspacePlacement
       onPress={open}
       style={styles.emptyWorkspace}
       accessibilityRole="button"
-      accessibilityLabel={workspace.name}
+      accessibilityLabel={name}
       testID={`sidebar-workspace-row-${workspace.workspaceKey}`}
     >
       <FolderIcon size={14} uniProps={mutedIcon} />
       <Text numberOfLines={1} style={styles.secondaryText}>
-        {workspace.name}
+        {name}
       </Text>
     </Pressable>
   );
@@ -214,7 +222,7 @@ function useProjectMenu(entry: DesktopChatProject, onEdit: () => void) {
       togglePin,
     ],
   );
-  return { items, pages };
+  return { items, pages, remove };
 }
 
 function ProjectActions({
@@ -319,10 +327,15 @@ export const ChatProject = memo(function ChatProject({
         }),
       );
   }, [target, project.projectName]);
-  const edit = useCallback(() => {
-    if (target) openProjectSettings(target.serverId, target.projectId);
-  }, [target]);
-  const { items: menuItems, pages } = useProjectMenu(entry, edit);
+  // Edit opens Codex's name-and-folder dialog in place; scripts stay in Settings › Projects.
+  const [editing, setEditing] = useState(false);
+  const edit = useCallback(() => setEditing(true), []);
+  const closeEdit = useCallback(() => setEditing(false), []);
+  const { items: menuItems, pages, remove } = useProjectMenu(entry, edit);
+  const removeFromEdit = useCallback(() => {
+    setEditing(false);
+    remove();
+  }, [remove]);
   const accessibilityState = useMemo(
     () => (nested ? { expanded: !collapsed } : undefined),
     [collapsed, nested],
@@ -392,6 +405,14 @@ export const ChatProject = memo(function ChatProject({
             <EmptyWorkspaceRow key={workspace.workspaceKey} workspace={workspace} />
           ))}
         </>
+      ) : null}
+      {editing && target ? (
+        <HostProjectEditSheet
+          serverId={target.serverId}
+          projectId={target.projectId}
+          onClose={closeEdit}
+          onRemove={removeFromEdit}
+        />
       ) : null}
     </View>
   );
