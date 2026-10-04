@@ -209,6 +209,10 @@ export const ar: TranslationResources = {
       edit: "تعديل الرسالة",
       turnOff: "إيقاف قائمة الانتظار",
     },
+    goalMode: {
+      label: "الهدف",
+      placeholder: "صف هدفك ونتيجة قابلة للقياس للحصول على أفضل النتائج",
+    },
     placeholders: {
       chat: "اسأل عن أي شيء",
       desktop: "أرسل رسالة إلى الوكيل أو ضع علامة على @files أو استخدم /commands و /skills",

@@ -209,6 +209,10 @@ export const zhCN: TranslationResources = {
       edit: "编辑消息",
       turnOff: "关闭排队",
     },
+    goalMode: {
+      label: "目标",
+      placeholder: "描述你的目标，定义可衡量的成果，以获得最佳效果",
+    },
     placeholders: {
       chat: "随心输入",
       desktop: "给 Agent 发消息，标记 @files，或使用 /commands 和 /skills",
@@ -2029,7 +2033,7 @@ export const zhCN: TranslationResources = {
       other: "调用了 Paseo {{count}} 次",
     },
     and: "并",
-    verbSeparator: "",
+    verbSeparator: "，",
     verbs: {
       loadTools: "加载了工具",
       skill: "使用了技能",

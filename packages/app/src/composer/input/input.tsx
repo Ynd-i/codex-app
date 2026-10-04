@@ -47,6 +47,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useShortcutKeys } from "@/hooks/use-shortcut-keys";
@@ -98,7 +99,9 @@ export interface AttachmentMenuItem {
   onSelect: () => void;
   disabled?: boolean;
   icon?: React.ReactElement | null;
-  section?: "plugins";
+  /** "modes" rows (plan, goal) toggle composer modes and follow a separator. */
+  section?: "plugins" | "modes";
+  selected?: boolean;
 }
 
 export interface ComposerInputSnapshot {
@@ -274,9 +277,13 @@ function AttachmentMenuList({
           {desktop && item.section === "plugins" && items[index - 1]?.section !== "plugins" ? (
             <DropdownMenuLabel>{t("settings.plugins.title")}</DropdownMenuLabel>
           ) : null}
+          {item.section === "modes" && items[index - 1]?.section !== "modes" ? (
+            <DropdownMenuSeparator />
+          ) : null}
           <DropdownMenuItem
             testID={`message-input-attachment-menu-item-${item.id}`}
             disabled={item.disabled}
+            selected={item.selected}
             onSelect={item.onSelect}
             leading={item.icon ?? null}
             style={desktop ? desktopAttachmentItemStyle : undefined}

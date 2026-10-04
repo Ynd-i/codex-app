@@ -39,6 +39,7 @@ import {
   Image as ImageIcon,
   ClipboardPaste,
   Paperclip,
+  Target,
 } from "lucide-react-native";
 import * as Clipboard from "expo-clipboard";
 import { FOOTER_HEIGHT } from "@/constants/layout";
@@ -115,6 +116,12 @@ import type { MessageInputKeyboardActionKind } from "@/keyboard/actions";
 import { submitAgentInput } from "@/composer/submit";
 import { createMessageSubmissionWriter } from "@/composer/submission/writer";
 import { ComposerKeyboardScopeProvider, useComposerKeyboardScope } from "@/composer/keyboard-scope";
+import {
+  ComposerModesContext,
+  type ComposerModesMenuState,
+} from "@/composer/agent-controls/plan-mode";
+import type { PlanToggle } from "@/agent-controls/policy";
+import { PlanModeIcon } from "@/agent-controls/icons";
 import { useAppSettings } from "@/hooks/use-settings";
 import { RenderProfile } from "@/utils/render-profiler";
 import { AfterPaintPublication } from "@/composer/after-paint-publication";
@@ -1404,6 +1411,14 @@ function ComposerContentImpl({
   const [sendError, setSendError] = useState<string | null>(null);
   const [isMessageInputFocused, setIsMessageInputFocused] = useState(false);
   const [isGithubPickerOpen, setIsGithubPickerOpen] = useState(false);
+  const planToggleRef = useRef<PlanToggle | null>(null);
+  const [modesMenu, setModesMenu] = useState<ComposerModesMenuState>(NO_COMPOSER_MODES);
+  const [goalOn, setGoalOn] = useState(false);
+  const goalModeOn = goalOn && modesMenu.goalAvailable;
+  const modesBridge = useMemo(
+    () => ({ planToggleRef, setMenuState: setModesMenu, goalOn, setGoalOn }),
+    [goalOn],
+  );
   const [githubSearchQuery, setGithubSearchQuery] = useState("");
   const [lightboxMetadata, setLightboxMetadata] = useState<AttachmentMetadata | null>(null);
   const attachButtonRef = useRef<View | null>(null);
@@ -1751,12 +1766,23 @@ function ComposerContentImpl({
       });
       if (pluginSlashCommand && runPluginClientSlashCommand(pluginSlashCommand)) return;
 
+      // Goal mode sends the message as the agent's goal, then turns itself off. A typed slash
+      // command is sent as is.
+      const trimmedText = payload.text.trim();
+      const goalText = goalModeOn && !trimmedText.startsWith("/") ? trimmedText : "";
+      if (goalText) setGoalOn(false);
+
       if (blurOnSubmit) {
         messageInputRef.current?.blur();
       }
-      void sendMessageWithContent(payload.text, outgoingAttachments, payload.forceSend);
+      void sendMessageWithContent(
+        goalText ? `/goal ${goalText}` : payload.text,
+        outgoingAttachments,
+        payload.forceSend,
+      );
     },
     [
+      goalModeOn,
       attachments,
       blurOnSubmit,
       buildOutgoingAttachments,
@@ -2119,7 +2145,9 @@ function ComposerContentImpl({
   );
 
   const contextWindowPending = agentState.status === "initializing" || isAgentRunning;
-  const contextWindowMeterGlyphSize = isCompactLayout ? ICON_SIZE.md : buttonIconSize;
+  // The Mac meter is a small ring inside a box (context-window-meter.tsx).
+  const desktopMeterGlyphSize = getIsElectronMac() ? MAC_CONTEXT_METER_SIZE : buttonIconSize;
+  const contextWindowMeterGlyphSize = isCompactLayout ? ICON_SIZE.md : desktopMeterGlyphSize;
 
   const contextWindowMeter = useMemo(
     () =>
@@ -2240,8 +2268,35 @@ function ComposerContentImpl({
       },
       ...pluginAttachments.menuItems,
     );
-    return desktopMenu ? [file, ...items] : [...items, file];
+    if (!desktopMenu) return [...items, file];
+    const modes: AttachmentMenuItem[] = [];
+    if (modesMenu.planOn !== null) {
+      modes.push({
+        id: "plan-mode",
+        label: t("shell.commandCenter.planModeGroupLabel"),
+        icon: <ThemedPlanModeIcon size={ICON_SIZE.md} uniProps={iconForegroundMutedMapping} />,
+        section: "modes",
+        selected: modesMenu.planOn,
+        onSelect: () => {
+          const toggle = planToggleRef.current;
+          if (toggle) void (toggle.isOn ? toggle.turnOff() : toggle.turnOn());
+        },
+      });
+    }
+    if (modesMenu.goalAvailable) {
+      modes.push({
+        id: "goal-mode",
+        label: t("composer.goalMode.label"),
+        icon: <ThemedTarget size={ICON_SIZE.md} uniProps={iconForegroundMutedMapping} />,
+        section: "modes",
+        selected: goalModeOn,
+        onSelect: () => setGoalOn((on) => !on),
+      });
+    }
+    return [file, ...items, ...modes];
   }, [
+    goalModeOn,
+    modesMenu,
     forgePresentation,
     handlePasteImage,
     handlePickFile,
@@ -2454,7 +2509,7 @@ function ComposerContentImpl({
     : t("composer.github.noResults");
 
   return (
-    <>
+    <ComposerModesContext.Provider value={modesBridge}>
       <ComposerKeyboardRegistration
         handlerId={keyboardHandlerIdRef.current}
         messageInputRef={messageInputRef}
@@ -2513,7 +2568,7 @@ function ComposerContentImpl({
                   onPasteImages={handleNativePasteImages}
                   client={client}
                   isReadyForDictation={isDictationReady}
-                  placeholder={messagePlaceholder}
+                  placeholder={goalModeOn ? t("composer.goalMode.placeholder") : messagePlaceholder}
                   autoFocus={messageInputAutoFocus}
                   autoFocusKey={`${serverId}:${agentId}:${autoFocusKey ?? ""}`}
                   disabled={isSubmitLoading}
@@ -2564,7 +2619,7 @@ function ComposerContentImpl({
           </View>
         </View>
       </View>
-    </>
+    </ComposerModesContext.Provider>
   );
 }
 
@@ -2715,6 +2770,10 @@ const ThemedCircleDot = withUnistyles(CircleDot);
 const ThemedAudioLines = withUnistyles(AudioLines);
 const ThemedPaperclip = withUnistyles(Paperclip);
 const ThemedImageIcon = withUnistyles(ImageIcon);
+const ThemedPlanModeIcon = withUnistyles(PlanModeIcon);
+const ThemedTarget = withUnistyles(Target);
+const MAC_CONTEXT_METER_SIZE = 14;
+const NO_COMPOSER_MODES: ComposerModesMenuState = { planOn: null, goalAvailable: false };
 const ThemedClipboardPaste = withUnistyles(ClipboardPaste);
 const ThemedFileText = withUnistyles(FileText);
 const iconForegroundMapping = (theme: Theme) => ({ color: theme.colors.foreground });

@@ -210,6 +210,10 @@ export const ja: TranslationResources = {
       edit: "メッセージを編集",
       turnOff: "キューをオフにする",
     },
+    goalMode: {
+      label: "目標",
+      placeholder: "最適な結果を得るには、目標と測定可能な成果を記述してください",
+    },
     placeholders: {
       chat: "なんでも聞いてください",
       desktop: "エージェントにメッセージ、@ファイル、/コマンドや/スキルを入力",

@@ -210,6 +210,10 @@ export const es: TranslationResources = {
       edit: "Editar mensaje",
       turnOff: "Desactivar cola",
     },
+    goalMode: {
+      label: "Objetivo",
+      placeholder: "Describe tu objetivo y un resultado medible para obtener mejores resultados",
+    },
     placeholders: {
       chat: "Pregunta lo que quieras",
       desktop: "Envíe un mensaje al agente, etiquete@fileso use/commandsy/skills",

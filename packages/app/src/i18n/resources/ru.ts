@@ -210,6 +210,10 @@ export const ru: TranslationResources = {
       edit: "Изменить сообщение",
       turnOff: "Выключить очередь",
     },
+    goalMode: {
+      label: "Цель",
+      placeholder: "Опишите цель и измеримый результат для лучшего итога",
+    },
     placeholders: {
       chat: "Спросите о чём угодно",
       desktop: "Напишите агенту сообщение, отметьте @files или используйте /commands и /skills.",

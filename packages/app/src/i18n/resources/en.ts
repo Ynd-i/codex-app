@@ -205,6 +205,10 @@ export const en = {
       edit: "Edit message",
       turnOff: "Turn off queue",
     },
+    goalMode: {
+      label: "Goal",
+      placeholder: "Describe your goal and how to measure it for best results",
+    },
     placeholders: {
       chat: "Ask anything",
       desktop: "Message the agent, tag @files, or use /commands and /skills",

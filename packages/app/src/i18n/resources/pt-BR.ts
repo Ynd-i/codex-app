@@ -210,6 +210,10 @@ export const ptBR: TranslationResources = {
       edit: "Editar mensagem",
       turnOff: "Desativar fila",
     },
+    goalMode: {
+      label: "Objetivo",
+      placeholder: "Descreva seu objetivo e um resultado mensurável para obter melhores resultados",
+    },
     placeholders: {
       chat: "Pergunte o que quiser",
       desktop: "Envie uma mensagem ao agente, marque @files ou use /commands e /skills",

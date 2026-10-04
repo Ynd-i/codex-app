@@ -31,7 +31,13 @@ import {
   PLAN_MODE_FEATURE_ID,
 } from "@/agent-controls/policy";
 import type { PlanToggle } from "@/agent-controls/policy";
-import { PlanModeToggle, useDesktopPlanMode } from "@/composer/agent-controls/plan-mode";
+import {
+  GoalModeToggle,
+  PlanModeToggle,
+  useDesktopPlanMode,
+  usePlanModeShortcut,
+  usePublishComposerModes,
+} from "@/composer/agent-controls/plan-mode";
 import { formatThinkingOptionLabel } from "@/agent-controls/labels";
 import { ComboboxTrigger } from "@/components/ui/combobox-trigger";
 import { CombinedModelSelector } from "@/components/combined-model-selector";
@@ -245,16 +251,45 @@ function getFeatureIconColor(
   }
 }
 
-function DesktopPlanToggle({ toggle, disabled }: { toggle: PlanToggle | null; disabled: boolean }) {
+// Providers whose CLI has a `/goal` command: Codex (0.128+) and Claude Code.
+const GOAL_PROVIDERS = new Set(["codex", "claude"]);
+
+// As in Codex, plan and goal show only while on; Shift+Tab, the "+" menu or the command center
+// turns them on.
+function DesktopComposerModes({
+  toggle,
+  provider,
+  disabled,
+}: {
+  toggle: PlanToggle | null;
+  provider: string;
+  disabled: boolean;
+}) {
   const { theme } = useUnistyles();
-  if (!toggle) return null;
+  usePlanModeShortcut(toggle, disabled);
+  const goalAvailable = getIsElectronMac() && GOAL_PROVIDERS.has(provider);
+  const modes = usePublishComposerModes(toggle, goalAvailable);
+  const setGoalOn = modes?.setGoalOn;
+  const turnOffGoal = useCallback(() => setGoalOn?.(false), [setGoalOn]);
+  const planOn = toggle?.isOn === true;
+  const goalOn = goalAvailable && modes?.goalOn === true;
+  if (!planOn && !goalOn) return null;
   const iconColor = getFeatureIconColor(
     PLAN_MODE_FEATURE_ID,
-    toggle.isOn,
+    true,
     theme.colors.palette,
     theme.colors.foregroundMuted,
   );
-  return <PlanModeToggle toggle={toggle} iconColor={iconColor} disabled={disabled} />;
+  return (
+    <>
+      {toggle && planOn ? (
+        <PlanModeToggle toggle={toggle} iconColor={iconColor} disabled={disabled} />
+      ) : null}
+      {goalOn ? (
+        <GoalModeToggle iconColor={iconColor} disabled={disabled} onTurnOff={turnOffGoal} />
+      ) : null}
+    </>
+  );
 }
 
 function resolveFastControl(
@@ -1051,7 +1086,7 @@ function DesktopAgentControlsContent(props: DesktopAgentControlsContentProps) {
   return (
     <>
       {desktopChat ? modeButton : null}
-      <DesktopPlanToggle toggle={planToggle} disabled={disabled} />
+      <DesktopComposerModes toggle={planToggle} provider={provider} disabled={disabled} />
       {providerOptions && providerOptions.length > 0 ? (
         <>
           <ComboboxTrigger

@@ -28,6 +28,7 @@ import type { AgentMode } from "@getpaseo/protocol/agent-types";
 import type { AgentProviderDefinition } from "@getpaseo/protocol/provider-manifest";
 import { getAgentModeIcon, getAgentModeOptionIcon } from "@/agent-controls/icons";
 import { getSelectableAgentModes } from "@/agent-controls/policy";
+import { getIsElectronMac } from "@/constants/platform";
 interface ModeComboboxOptionProps {
   option: ComboboxOption;
   selected: boolean;
@@ -212,7 +213,7 @@ export function AgentModeControl({
             label={t("agentControls.mode.title")}
             value={selectedModeLabel}
             showToolbarLabel={presentation.showModeLabel}
-            showCaret={surface === "toolbar" && presentation.showCarets}
+            showCaret={surface === "toolbar" && presentation.showCarets && !getIsElectronMac()}
             open={open}
             disabled={disabled}
             onPress={handlePress}
@@ -225,7 +226,10 @@ export function AgentModeControl({
         <TooltipContent side="top" align="center" offset={8}>
           <View style={styles.tooltipRow}>
             <Text style={styles.tooltipText}>{t(getAgentControlHintKey("mode"))}</Text>
-            {isActiveComposer && cycleShortcutKeys ? <Shortcut chord={cycleShortcutKeys} /> : null}
+            {/* On the Mac desktop Shift+Tab toggles plan instead (plan-mode.tsx). */}
+            {isActiveComposer && cycleShortcutKeys && !getIsElectronMac() ? (
+              <Shortcut chord={cycleShortcutKeys} />
+            ) : null}
           </View>
         </TooltipContent>
       </Tooltip>

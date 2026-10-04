@@ -212,6 +212,10 @@ export const fr: TranslationResources = {
       edit: "Modifier le message",
       turnOff: "Désactiver la file",
     },
+    goalMode: {
+      label: "Objectif",
+      placeholder: "Décrivez votre objectif et un résultat mesurable pour de meilleurs résultats",
+    },
     placeholders: {
       chat: "Posez toutes vos questions",
       desktop: "Envoyez un message à l'agent, marquez@filesou utilisez/commandset/skills",
