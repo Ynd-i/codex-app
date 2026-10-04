@@ -48,6 +48,7 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- Measured the context window meter of Claude chats against the window Claude compacts at, such as its `autoCompactWindow` setting, as Claude Desktop does, instead of the model's full window. The daemon asks Claude once per model, after the first completed turn.
 - The macOS project picker shows a project's favicon or a folder with only its name, and Claude and Codex permission modes use their apps' names: Ask for review, Review for me, Auto pilot and Full access.
 - Native forks are titled like Codex, "Chat (2)" then "Chat (3)", and end their inherited history with a "Continued from chat" divider that opens the original chat. The macOS composer starts its first line 4pt lower, keeping its height.
 

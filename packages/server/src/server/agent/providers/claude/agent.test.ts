@@ -2526,7 +2526,8 @@ describe("ClaudeAgentSession context window usage", () => {
     try {
       const result = await session.run("turn");
 
-      expect(getContextUsage).not.toHaveBeenCalled();
+      // Only the one compaction-window request, after the result; its failure changes nothing.
+      expect(getContextUsage).toHaveBeenCalledTimes(1);
       expect(result.usage).toEqual({
         inputTokens: 9_000,
         cachedInputTokens: 700,
@@ -2682,7 +2683,8 @@ describe("ClaudeAgentSession context window usage", () => {
     try {
       const result = await session.run("turn");
 
-      expect(getContextUsage).not.toHaveBeenCalled();
+      // Only the one compaction-window request, after the result; its failure changes nothing.
+      expect(getContextUsage).toHaveBeenCalledTimes(1);
       expect(result.usage).toEqual({
         inputTokens: 4,
         cachedInputTokens: 16_999,
@@ -2781,6 +2783,75 @@ describe("ClaudeAgentSession context window usage", () => {
         totalCostUsd: 0.1,
         contextWindowMaxTokens: 200_000,
       });
+    } finally {
+      await session.close();
+    }
+  });
+
+  test("measures usage against Claude's compaction window, asked once per model", async () => {
+    const getContextUsage = vi.fn(async () => ({
+      maxTokens: 150_000,
+      totalTokens: 15,
+      categories: [],
+    }));
+    const session = await createSessionForTurns(
+      [
+        [createInitMessage(), createSuccessResult()],
+        [createSuccessResult({ uuid: "result-2" })],
+        [createSuccessResult({ uuid: "result-3" })],
+      ],
+      { getContextUsage },
+    );
+    const events: AgentStreamEvent[] = [];
+    session.subscribe((event) => events.push(event));
+
+    try {
+      await session.run("turn 1");
+      await vi.waitFor(() =>
+        expect(events).toContainEqual(
+          expect.objectContaining({
+            type: "usage_updated",
+            usage: {
+              inputTokens: 10,
+              cachedInputTokens: 5,
+              outputTokens: 7,
+              totalCostUsd: 0.25,
+              contextWindowMaxTokens: 150_000,
+              contextWindowUsedTokens: 22,
+            },
+          }),
+        ),
+      );
+      const secondTurn = await session.run("turn 2");
+      await session.run("turn 3");
+
+      expect(secondTurn.usage?.contextWindowMaxTokens).toBe(150_000);
+      expect(getContextUsage).toHaveBeenCalledTimes(1);
+    } finally {
+      await session.close();
+    }
+  });
+
+  test("keeps the model window and does not ask again when the compaction window request fails", async () => {
+    const getContextUsage = vi.fn(async () => {
+      throw new Error("context usage unavailable");
+    });
+    const session = await createSessionForTurns(
+      [
+        [createInitMessage(), createSuccessResult()],
+        [createSuccessResult({ uuid: "result-2" })],
+        [createSuccessResult({ uuid: "result-3" })],
+      ],
+      { getContextUsage },
+    );
+
+    try {
+      await session.run("turn 1");
+      await session.run("turn 2");
+      const thirdTurn = await session.run("turn 3");
+
+      expect(thirdTurn.usage?.contextWindowMaxTokens).toBe(200_000);
+      expect(getContextUsage).toHaveBeenCalledTimes(1);
     } finally {
       await session.close();
     }

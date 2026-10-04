@@ -1026,9 +1026,14 @@ the agent is idle, once per used-token value. The daemon asks only a live
 runtime. Each `getContextUsage()` call is a Claude API probe, and upstream
 removed the per-turn call for doubling requests (getpaseo/paseo#1685, #1701).
 
-The popup header uses Claude's window, which is its compaction window
-(`autoCompactWindow`). The ring still divides by the model window, so with a 1M
-model and a 500k compaction window the two differ.
+Claude measures usage against its compaction window, which the CLI resolves from
+the environment, settings (`autoCompactWindow`), account defaults and the model.
+Paseo cannot resolve it, so after a chat's first completed turn the daemon asks
+for the breakdown once per model and measures the ring and later usage against
+that window. The ring then matches the card. A failed request keeps the model
+window and is not retried until the model changes. With `claude-haiku-4-5` and
+`CLAUDE_CODE_AUTO_COMPACT_WINDOW=150000`, `lastUsage.contextWindowMaxTokens`
+became 150000.
 
 Evidence: [dark Mac capture](../qa-evidence/codex-desktop/context-window-breakdown-dark.png)
 from desktop dev against the 6768 dev daemon with `claude-haiku-4-5`. The

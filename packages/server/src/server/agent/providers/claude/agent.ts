@@ -1904,8 +1904,22 @@ function readClaudeParentToolUseId(message: SDKMessage): string | null {
   return typeof parentToolUseId === "string" && parentToolUseId.length > 0 ? parentToolUseId : null;
 }
 
+interface CompactionWindowTicket {
+  modelEpoch: number;
+  turnGeneration: number;
+}
+
 class ClaudeContextUsageState {
   private contextWindowMaxTokens: number | undefined;
+  /**
+   * The window Claude itself measures against and compacts at. Settings, the account and the
+   * model all shape it, so only the CLI can resolve it, through its context breakdown.
+   */
+  private compactionWindowTokens: number | undefined;
+  /** One breakdown per model: each is a Claude API request (getpaseo/paseo#1685). */
+  private compactionWindowRequested = false;
+  private modelEpoch = 0;
+  private turnGeneration = 0;
   private streamRequestInputTokens: number | undefined;
   private streamRequestOutputTokens: number | undefined;
   private compactedContextWindowUsedTokens: number | undefined;
@@ -1916,6 +1930,7 @@ class ClaudeContextUsageState {
   }
 
   beginTurn(): void {
+    this.turnGeneration += 1;
     this.streamRequestInputTokens = undefined;
     this.streamRequestOutputTokens = undefined;
     this.compactedContextWindowUsedTokens = undefined;
@@ -1923,6 +1938,52 @@ class ClaudeContextUsageState {
 
   setInitialContextWindowMaxTokens(contextWindowMaxTokens: number | undefined): void {
     this.contextWindowMaxTokens = contextWindowMaxTokens;
+    this.modelEpoch += 1;
+    this.compactionWindowTokens = undefined;
+    this.compactionWindowRequested = false;
+  }
+
+  currentModelEpoch(): number {
+    return this.modelEpoch;
+  }
+
+  /** The ticket for this model's one breakdown request, or null once it has had it. */
+  requestCompactionWindow(): CompactionWindowTicket | null {
+    if (this.compactionWindowRequested) {
+      return null;
+    }
+    this.compactionWindowRequested = true;
+    return { modelEpoch: this.modelEpoch, turnGeneration: this.turnGeneration };
+  }
+
+  recordCompactionWindow(windowTokens: number, modelEpoch: number): void {
+    if (modelEpoch === this.modelEpoch) {
+      this.compactionWindowTokens = windowTokens;
+    }
+  }
+
+  /** Re-measures a completed turn against the compaction window, unless a newer turn has begun. */
+  buildCompactionWindowCorrection(
+    usage: AgentUsage,
+    ticket: CompactionWindowTicket,
+  ): AgentStreamEvent | null {
+    if (
+      ticket.modelEpoch !== this.modelEpoch ||
+      ticket.turnGeneration !== this.turnGeneration ||
+      this.compactionWindowTokens === undefined
+    ) {
+      return null;
+    }
+    return {
+      type: "usage_updated",
+      provider: "claude",
+      // The manager replaces lastUsage with this, so it carries the whole turn's usage.
+      usage: { ...usage, contextWindowMaxTokens: this.compactionWindowTokens },
+    };
+  }
+
+  private windowMaxTokens(): number | undefined {
+    return this.compactionWindowTokens ?? this.contextWindowMaxTokens;
   }
 
   recordModelUsage(modelUsage: unknown): number | undefined {
@@ -1975,11 +2036,10 @@ class ClaudeContextUsageState {
         totalCostUsd: message.total_cost_usd,
       };
 
-      const modelContextWindowMaxTokens = this.recordModelUsage(modelUsage ?? message.modelUsage);
-      if (this.contextWindowMaxTokens !== undefined) {
-        usage.contextWindowMaxTokens = this.contextWindowMaxTokens;
-      } else if (modelContextWindowMaxTokens !== undefined) {
-        usage.contextWindowMaxTokens = modelContextWindowMaxTokens;
+      this.recordModelUsage(modelUsage ?? message.modelUsage);
+      const windowMaxTokens = this.windowMaxTokens();
+      if (windowMaxTokens !== undefined) {
+        usage.contextWindowMaxTokens = windowMaxTokens;
       }
 
       const activeResultUsageTokens =
@@ -2012,8 +2072,9 @@ class ClaudeContextUsageState {
     const usage: AgentUsage = {
       contextWindowUsedTokens,
     };
-    if (this.contextWindowMaxTokens !== undefined) {
-      usage.contextWindowMaxTokens = this.contextWindowMaxTokens;
+    const windowMaxTokens = this.windowMaxTokens();
+    if (windowMaxTokens !== undefined) {
+      usage.contextWindowMaxTokens = windowMaxTokens;
     }
     return {
       type: "usage_updated",
@@ -2027,8 +2088,9 @@ class ClaudeContextUsageState {
     this.streamRequestOutputTokens = undefined;
     this.compactedContextWindowUsedTokens = postTokens;
     const usage: AgentUsage = {};
-    if (this.contextWindowMaxTokens !== undefined) {
-      usage.contextWindowMaxTokens = this.contextWindowMaxTokens;
+    const windowMaxTokens = this.windowMaxTokens();
+    if (windowMaxTokens !== undefined) {
+      usage.contextWindowMaxTokens = windowMaxTokens;
     }
     if (postTokens !== undefined) {
       usage.contextWindowUsedTokens = postTokens;
@@ -2754,7 +2816,9 @@ class ClaudeAgentSession implements AgentSession {
     if (!this.query) {
       return null;
     }
+    const modelEpoch = this.contextUsage.currentModelEpoch();
     const response = await this.query.getContextUsage();
+    this.contextUsage.recordCompactionWindow(response.maxTokens, modelEpoch);
     const categories: AgentContextUsage["categories"] = [];
     let bufferTokens = 0;
     for (const category of response.categories) {
@@ -3994,6 +4058,27 @@ class ClaudeAgentSession implements AgentSession {
     }
 
     this.dispatchEvents(events);
+    void this.learnCompactionWindow(events);
+  }
+
+  /** Measures the ring against the window Claude compacts at, as Claude's own context card does. */
+  private async learnCompactionWindow(events: AgentStreamEvent[]): Promise<void> {
+    const completed = events.find((event) => event.type === "turn_completed");
+    const usage = completed?.type === "turn_completed" ? completed.usage : undefined;
+    const ticket = usage ? this.contextUsage.requestCompactionWindow() : null;
+    if (!usage || !ticket) {
+      return;
+    }
+    try {
+      await this.getContextUsage();
+    } catch (error) {
+      this.logger.debug({ err: error }, "Claude compaction window unavailable");
+      return;
+    }
+    const event = this.contextUsage.buildCompactionWindowCorrection(usage, ticket);
+    if (event) {
+      this.notifySubscribers(event);
+    }
   }
 
   private async buildPumpedMessageEvents(
