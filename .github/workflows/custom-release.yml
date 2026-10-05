@@ -131,6 +131,8 @@ jobs:
       - name: Build Paseo Custom
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          # Metro's web bundle ran out of heap on the runner (run 37387649334).
+          NODE_OPTIONS: --max-old-space-size=4096
           VERSION: ${{ needs.plan.outputs.version }}
         run: npm run build:desktop:custom -- --arm64 --dir "-c.extraMetadata.paseoCustomUpdateVersion=$VERSION"
       # Squirrel.Mac installs an update only when it is signed by the same certificate as the
