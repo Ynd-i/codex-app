@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from "react";
 import { Text, View, useWindowDimensions } from "react-native";
 import Animated from "react-native-reanimated";
+import { useIsFocused } from "@react-navigation/native";
 import { usePathname } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native-unistyles";
@@ -36,7 +37,10 @@ export function revealNewChatExplorer(serverId: string, workspaceId: string) {
 export function NewChatExplorerDock() {
   const { t } = useTranslation();
   const open = useWorkspaceLayoutStore((state) => state.newChatExplorerOpen);
-  const routeFocused = usePathname() === "/new";
+  // Every "New chat" click can leave an older /new screen mounted; only the focused one owns the titlebar.
+  const isFocused = useIsFocused();
+  const onNewRoute = usePathname() === "/new";
+  const routeFocused = isFocused && onNewRoute;
   const { width: windowWidth } = useWindowDimensions();
   const width = resolveExplorerSidebarWidth({ containerWidth: windowWidth });
   const dock = useAnimatedDock(open, width);
