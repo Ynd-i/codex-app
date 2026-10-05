@@ -51,15 +51,17 @@ import { useWorkspaceFields } from "@/stores/session-store-hooks";
 import { useSidebarCollapsedSectionsStore } from "@/stores/sidebar-collapsed-sections-store";
 import type { Theme } from "@/styles/theme";
 import { confirmDialog } from "@/utils/confirm-dialog";
+import { deriveSidebarStateBucket } from "@/utils/sidebar-agent-state";
 import { buildNewWorkspaceRoute } from "@/utils/host-routes";
 import { resolveSidebarProjectLocalPath } from "@/utils/sidebar-project-row-model";
 import { redirectIfArchivingActiveWorkspace } from "@/utils/sidebar-workspace-archive-redirect";
 import { OpenInFileManagerMenuItem } from "@/workspace/open-in-file-manager/menu-item";
 import { useWorkspaceArchive } from "@/workspace/use-workspace-archive";
-import type { DesktopChatProject } from "./desktop-chat-model";
+import { isDesktopChatUnread, type DesktopChatProject } from "./desktop-chat-model";
 import { SectionChatList } from "./desktop-chat-section-list";
 import { useArchiveChats, useSectionMovePage } from "./desktop-chat-section-menus";
 import { useChatSectionsStore } from "./desktop-chat-sections-store";
+import { DesktopProgressRing } from "./desktop-progress-ring";
 import { DesktopSidebarTitle } from "./desktop-sidebar-title";
 
 const FolderIcon = withUnistyles(FolderOpen);
@@ -71,6 +73,7 @@ const PinIcon = withUnistyles(Pin);
 const UnpinIcon = withUnistyles(PinOff);
 const ArchiveIcon = withUnistyles(Archive);
 const RemoveIcon = withUnistyles(X);
+const Progress = withUnistyles(DesktopProgressRing);
 const mutedIcon = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
 const editLeading = <EditIcon size={16} uniProps={mutedIcon} />;
 const sectionLeading = <SectionIcon size={16} uniProps={mutedIcon} />;
@@ -425,6 +428,20 @@ export const ChatProject = memo(function ChatProject({
     ...dragAttributes
   } = dragHandleProps?.attributes ?? {};
   const revealed = hovered || focused || menuOpen || contextOpen;
+  // A collapsed project stands in for its hidden chats, so it keeps their spinner.
+  const running = useMemo(
+    () =>
+      chats.some(
+        (agent) =>
+          deriveSidebarStateBucket({
+            status: agent.turn.phase === "open" ? "running" : agent.status,
+            requiresAttention: isDesktopChatUnread(agent),
+            attentionReason: agent.attentionReason,
+            pendingPermissionCount: agent.pendingPermissionCount,
+          }) === "running",
+      ),
+    [chats],
+  );
   return (
     <View style={styles.project}>
       <ContextMenu open={contextOpen} onOpenChange={setContextOpen}>
@@ -462,6 +479,11 @@ export const ChatProject = memo(function ChatProject({
               onFocus={focus}
               onBlur={blur}
             />
+            {nested && collapsed && running && !revealed ? (
+              <View style={styles.statusSlot}>
+                <Progress uniProps={mutedIcon} />
+              </View>
+            ) : null}
           </View>
         </ContextMenuTrigger>
         <ContextMenuContent width={200} pages={pages}>
@@ -517,6 +539,17 @@ const styles = StyleSheet.create((theme) => ({
   },
   projectTitle: { flex: 1, color: theme.colors.foreground, fontSize: theme.fontSize.base },
   projectActions: { flexDirection: "row", alignItems: "center" },
+  // Over the New chat button, like a chat row's status over its archive button.
+  statusSlot: {
+    position: "absolute",
+    top: 0,
+    right: 4,
+    bottom: 0,
+    width: 26,
+    alignItems: "center",
+    justifyContent: "center",
+    pointerEvents: "none",
+  },
   actionButton: {
     width: 24,
     height: 28,
