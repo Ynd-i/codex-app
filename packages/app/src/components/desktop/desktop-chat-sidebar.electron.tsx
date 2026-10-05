@@ -1,10 +1,11 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { Bell, Search } from "lucide-react-native";
 import { ScrollView, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { HeaderToggleButton } from "@/components/headers/header-toggle-button";
 import { SidebarDisplayPreferencesMenu } from "@/components/sidebar/display-preferences/menu";
+import type { DraggableListDragHandleProps } from "@/components/draggable-list.types";
 import { useSidebarModel } from "@/components/sidebar/sidebar-model";
 import { Button } from "@/components/ui/button";
 import { useAggregatedAgents } from "@/hooks/use-aggregated-agents";
@@ -19,7 +20,12 @@ import {
   ProjectsSection,
   RecentSection,
 } from "./desktop-chat-sections";
-import { useChatSectionsStore } from "./desktop-chat-sections-store";
+import {
+  CHAT_SECTION,
+  orderChatSections,
+  useChatSectionsStore,
+} from "./desktop-chat-sections-store";
+import { SidebarDndContext, SortableSection, SortableSections } from "./desktop-chat-sidebar-dnd";
 import { useActiveDesktopChat } from "./use-desktop-chat";
 import { usesDesktopShell } from "./desktop-shell";
 
@@ -82,7 +88,10 @@ function ChatSidebarHeader() {
   );
 }
 
-/** Pinned, then custom sections, then Recent and Projects, as in the reference sidebar. */
+/**
+ * Pinned, then custom sections, Recent and Projects, as in the reference sidebar, until the user
+ * drags the sections into another order.
+ */
 function ChatSidebarList({ onAddProject }: { onAddProject: () => void }) {
   const { t } = useTranslation();
   const { projects, allProjects } = useSidebarModel();
@@ -95,6 +104,7 @@ function ChatSidebarList({ onAddProject }: { onAddProject: () => void }) {
   const hideProjects = useChatSectionsStore((state) => state.hideProjects);
   const pinnedProjects = useChatSectionsStore((state) => state.pinnedProjects);
   const inboxOpen = useChatSectionsStore((state) => state.inboxOpen);
+  const savedSectionOrder = useChatSectionsStore((state) => state.sectionOrder);
   const model = useMemo(() => buildDesktopChatSidebar({ projects, agents }), [projects, agents]);
   const partition = useMemo(
     () =>
@@ -109,6 +119,53 @@ function ChatSidebarList({ onAddProject }: { onAddProject: () => void }) {
     [chatSection, model.projects, model.recent, pinnedProjects, projectSection, sections],
   );
   const inboxChats = useMemo(() => [...model.pinned, ...model.recent], [model]);
+  const sectionOrder = useMemo(
+    () =>
+      orderChatSections(
+        savedSectionOrder,
+        sections.map((section) => section.id),
+      ),
+    [savedSectionOrder, sections],
+  );
+  const shownSections = useMemo(
+    () => (hideProjects ? sectionOrder.filter((id) => id !== CHAT_SECTION.projects) : sectionOrder),
+    [hideProjects, sectionOrder],
+  );
+  const renderSection = useCallback(
+    (sectionId: string, dragHandleProps: DraggableListDragHandleProps) => {
+      if (sectionId === CHAT_SECTION.recent)
+        return (
+          <RecentSection
+            chats={partition.recent}
+            selectedKey={selectedKey}
+            dragHandleProps={dragHandleProps}
+          />
+        );
+      if (sectionId === CHAT_SECTION.projects)
+        return (
+          <ProjectsSection
+            projects={partition.projects}
+            selectedKey={selectedKey}
+            onAddProject={onAddProject}
+            dragHandleProps={dragHandleProps}
+          />
+        );
+      const section = partition.custom.find((custom) => custom.id === sectionId);
+      return section ? (
+        <CustomSection
+          section={section}
+          selectedKey={selectedKey}
+          dragHandleProps={dragHandleProps}
+        />
+      ) : null;
+    },
+    [onAddProject, partition, selectedKey],
+  );
+  const sectionLabel = (sectionId: string) => {
+    if (sectionId === CHAT_SECTION.recent) return t("agentList.dateSections.recent");
+    if (sectionId === CHAT_SECTION.projects) return t("desktopChat.sections.projects");
+    return sections.find((section) => section.id === sectionId)?.name ?? "";
+  };
   return (
     <ScrollView
       style={styles.list}
@@ -118,24 +175,25 @@ function ChatSidebarList({ onAddProject }: { onAddProject: () => void }) {
       {inboxOpen ? (
         <ChatInbox chats={inboxChats} selectedKey={selectedKey} />
       ) : (
-        <>
+        <SidebarDndContext sectionOrder={sectionOrder}>
           <PinnedSection
             chats={model.pinned}
             projects={partition.pinnedProjects}
             selectedKey={selectedKey}
           />
-          {partition.custom.map((section) => (
-            <CustomSection key={section.id} section={section} selectedKey={selectedKey} />
-          ))}
-          <RecentSection chats={partition.recent} selectedKey={selectedKey} />
-          {hideProjects ? null : (
-            <ProjectsSection
-              projects={partition.projects}
-              selectedKey={selectedKey}
-              onAddProject={onAddProject}
-            />
-          )}
-        </>
+          <SortableSections sectionIds={shownSections}>
+            {shownSections.map((sectionId) => (
+              <SortableSection
+                key={sectionId}
+                sectionId={sectionId}
+                label={sectionLabel(sectionId)}
+                acceptsProjects={sectionId !== CHAT_SECTION.recent}
+              >
+                {(dragHandleProps) => renderSection(sectionId, dragHandleProps)}
+              </SortableSection>
+            ))}
+          </SortableSections>
+        </SidebarDndContext>
       )}
       {model.projects.length === 0 && model.recent.length === 0 && model.pinned.length === 0 ? (
         <View style={styles.empty}>

@@ -38,6 +38,8 @@ interface ChatSectionsPersistedState {
   /** Project view keys shown in Pinned, in pin order. */
   pinnedProjects: string[];
   organize: SidebarOrganize;
+  /** Custom section ids, Recent and Projects, in the order the user dragged them. */
+  sectionOrder: string[];
 }
 
 interface ChatSectionsState extends ChatSectionsPersistedState {
@@ -55,6 +57,7 @@ interface ChatSectionsState extends ChatSectionsPersistedState {
   moveProject: (viewKey: string, sectionId: string | null) => void;
   togglePinnedProject: (viewKey: string) => void;
   setOrganize: (organize: SidebarOrganize) => void;
+  setSectionOrder: (sectionIds: string[]) => void;
 }
 
 const SortSchema = z.enum(["latest", "manual"]);
@@ -69,6 +72,7 @@ export const ChatSectionsPersistedSchema = z.strictObject({
   // Fields added after the first release stay optional so earlier saved state still loads.
   pinnedProjects: z.array(z.string()).optional(),
   organize: z.enum(["projects", "merged"]).optional(),
+  sectionOrder: z.array(z.string()).optional(),
 });
 
 export function sectionSort(
@@ -76,6 +80,22 @@ export function sectionSort(
   sectionId: string,
 ): ChatSectionSort {
   return state.sortBySection[sectionId] ?? DEFAULT_SORT[sectionId] ?? "latest";
+}
+
+/**
+ * The draggable sections below Pinned. Without a saved order, custom sections come first and then
+ * Recent and Projects; a section the saved order has not placed yet takes that default slot, and
+ * saved ids that no longer exist are skipped.
+ */
+export function orderChatSections(
+  saved: readonly string[],
+  customIds: readonly string[],
+): string[] {
+  const builtIn = [CHAT_SECTION.recent, CHAT_SECTION.projects];
+  const known = new Set([...customIds, ...builtIn]);
+  const placed = saved.filter((id) => known.has(id));
+  const unplaced = (id: string) => !placed.includes(id);
+  return [...customIds.filter(unplaced), ...placed, ...builtIn.filter(unplaced)];
 }
 
 function withEntry(record: Record<string, string>, key: string, value: string | null) {
@@ -103,6 +123,7 @@ export const useChatSectionsStore = create<ChatSectionsState>()(
       projectSection: {},
       pinnedProjects: [],
       organize: "projects",
+      sectionOrder: [],
       inboxOpen: false,
       toggleInbox: () => set((state) => ({ inboxOpen: !state.inboxOpen })),
       setSort: (sectionId, sort) =>
@@ -147,6 +168,7 @@ export const useChatSectionsStore = create<ChatSectionsState>()(
             : [...state.pinnedProjects, viewKey],
         })),
       setOrganize: (organize) => set({ organize }),
+      setSectionOrder: (sectionOrder) => set({ sectionOrder }),
     }),
     {
       name: "desktop-chat-sections",
@@ -161,6 +183,7 @@ export const useChatSectionsStore = create<ChatSectionsState>()(
         projectSection: state.projectSection,
         pinnedProjects: state.pinnedProjects,
         organize: state.organize,
+        sectionOrder: state.sectionOrder,
       }),
       version: 1,
     },

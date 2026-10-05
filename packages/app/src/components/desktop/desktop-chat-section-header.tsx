@@ -1,8 +1,9 @@
-import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ReactNode, type Ref } from "react";
 import { ChevronDown, ChevronRight, MoreHorizontal } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
+import type { DraggableListDragHandleProps } from "@/components/draggable-list.types";
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from "@/components/ui/context-menu";
 import {
   DropdownMenu,
@@ -31,6 +32,7 @@ export function ChatSectionHeader({
   onSortChange,
   actions,
   contextMenu,
+  dragHandleProps,
   testID,
 }: {
   title: string;
@@ -41,6 +43,8 @@ export function ChatSectionHeader({
   actions?: ReactNode;
   /** A right-click menu on the header, with any submenu pages it declares. */
   contextMenu?: { items: ReactNode; pages?: MenuPageDefinition[] };
+  /** Drags the whole section; dnd-kit's role would replace the title button's. */
+  dragHandleProps?: DraggableListDragHandleProps;
   testID: string;
 }) {
   const { t } = useTranslation();
@@ -58,8 +62,22 @@ export function ChatSectionHeader({
   ) : (
     <DownIcon size={13} uniProps={mutedIcon} />
   );
+  const {
+    role: _dragRole,
+    tabIndex: _dragTabIndex,
+    "aria-roledescription": _dragRoleDescription,
+    ...dragAttributes
+  } = dragHandleProps?.attributes ?? {};
   const header = (
-    <View style={styles.header} onPointerEnter={enter} onPointerLeave={leave} testID={testID}>
+    <View
+      {...dragAttributes}
+      {...dragHandleProps?.listeners}
+      ref={dragHandleProps?.setActivatorNodeRef as unknown as Ref<View>}
+      style={styles.header}
+      onPointerEnter={enter}
+      onPointerLeave={leave}
+      testID={testID}
+    >
       <Pressable
         onPress={onToggle}
         disabled={!onToggle}

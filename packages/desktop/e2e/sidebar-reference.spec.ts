@@ -1,6 +1,6 @@
 import { mkdir, readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import { test, expect } from "../../app/e2e/support/fixtures";
 import { gotoAppShell } from "../../app/e2e/support/helpers/app";
 import { getE2EDaemonPort } from "../../app/e2e/support/helpers/daemon-port";
@@ -317,6 +317,70 @@ test("macOS custom sections hold chats and return them when removed", async ({
     await page.locator('[data-testid$="-remove"]').click();
     await expect(work).toHaveCount(0);
     await expect.poll(() => above(firstRow, recent)).toBe(false);
+  } finally {
+    await fixture.cleanup();
+  }
+});
+
+// Presses the row, then moves in steps so dnd-kit's 6px activation and collision both see it.
+async function dragOnto(page: Page, from: Locator, to: Locator): Promise<void> {
+  const start = (await from.boundingBox())!;
+  const end = (await to.boundingBox())!;
+  const x = start.x + 40;
+  const fromY = start.y + start.height / 2;
+  const toY = end.y + end.height / 2;
+  await page.mouse.move(x, fromY);
+  await page.mouse.down();
+  for (let step = 1; step <= 10; step += 1)
+    await page.mouse.move(x, fromY + ((toY - fromY) * step) / 10);
+  await page.mouse.up();
+}
+
+test("macOS sections reorder by their headers and projects drag between sections", async ({
+  page,
+}) => {
+  const fixture = await seedMockAgentWorkspace({
+    repoPrefix: "section-drag-",
+    title: "Dragged chat",
+  });
+  try {
+    const serverId = getServerId();
+    await installDesktopRuntime(page, {
+      serverId,
+      manageBuiltInDaemon: false,
+      daemonListen: `127.0.0.1:${getE2EDaemonPort()}`,
+    });
+    await page.setViewportSize({ width: 1352, height: 782 });
+    await page.emulateMedia({ colorScheme: "dark" });
+    await openAgentRoute(page, fixture);
+    const list = page.getByTestId("sidebar-project-list");
+    const recent = page.getByTestId("desktop-section-recent");
+    const projects = page.getByTestId("desktop-section-projects");
+    const project = list.locator('[data-testid^="sidebar-project-row-"]').first();
+    const top = async (locator: Locator) => (await locator.boundingBox())!.y;
+
+    await recent.click({ button: "right" });
+    await page.getByTestId("desktop-section-recent-new-section").click();
+    await page.getByTestId("desktop-section-create-input").fill("Work");
+    await page.getByTestId("desktop-section-create-submit").click();
+    const work = list.getByText("Work", { exact: true });
+    await expect(work).toBeVisible();
+    // A new section starts above Recent; dragging Recent's header onto it gives Recent, Work, Projects.
+    await expect.poll(async () => (await top(work)) < (await top(recent))).toBe(true);
+    await dragOnto(page, recent, work);
+    await expect.poll(async () => (await top(recent)) < (await top(work))).toBe(true);
+    await page.reload();
+    await expect(work).toBeVisible();
+    await expect.poll(async () => (await top(recent)) < (await top(work))).toBe(true);
+    await expect.poll(async () => (await top(work)) < (await top(projects))).toBe(true);
+
+    // Dropping the project on Work files it there; dropping it on Projects returns it.
+    await expect.poll(async () => (await top(projects)) < (await top(project))).toBe(true);
+    await dragOnto(page, project, work);
+    await expect.poll(async () => (await top(project)) < (await top(projects))).toBe(true);
+    await expect.poll(async () => (await top(work)) < (await top(project))).toBe(true);
+    await dragOnto(page, project, projects);
+    await expect.poll(async () => (await top(projects)) < (await top(project))).toBe(true);
   } finally {
     await fixture.cleanup();
   }

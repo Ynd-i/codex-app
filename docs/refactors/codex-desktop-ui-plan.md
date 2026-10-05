@@ -1325,6 +1325,13 @@ and asked that every change keep upstream Paseo backend updates mergeable.
   Projects and New section. Chats and projects move through a Section › submenu. A
   custom section's right-click menu edits it, marks its chats read, archives them or
   removes the section, which returns its items to their default places.
+- Dragging (2026-10-05, modelled on Claude desktop's draggable project groups): the
+  sections below Pinned drag by their headers, and a project drags by its header onto
+  any custom section or Projects; Recent holds chats only and Pinned stays fixed. A
+  project reorders inside a section only in Manual order. All of it shares one dnd-kit
+  context in `desktop-chat-sidebar-dnd.tsx`, because each `DraggableList` owns its own
+  context and a row inside one can never reach another section. Chats still move
+  through the Section › submenu. A new section appears at the top of the dragged order.
 - Notifications (`4e80d44`): the bell beside search replaces the sections with
   Priority (pending permissions and errors) and finished chats grouped by day. Reply
   previews come only from timelines this window already holds, because fetching
@@ -1344,7 +1351,7 @@ and asked that every change keep upstream Paseo backend updates mergeable.
   project changes.
 
 All section state is client-side, in the `desktop-chat-sections` persisted store.
-Fields added after its first version (pinned projects, organize mode) are optional
+Fields added after its first version (pinned projects, organize mode, section order) are optional
 because the validated storage deletes any saved state its schema rejects; a unit
 test loads the earlier shape. Pins, unread state and titles keep using existing
 agent labels and RPCs. The daemon, server and protocol are unchanged. The only shell

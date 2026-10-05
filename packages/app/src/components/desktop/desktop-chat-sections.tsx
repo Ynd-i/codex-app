@@ -12,8 +12,7 @@ import {
 } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { withUnistyles } from "react-native-unistyles";
-import { DraggableList } from "@/components/draggable-list";
-import type { DraggableRenderItemInfo } from "@/components/draggable-list.types";
+import type { DraggableListDragHandleProps } from "@/components/draggable-list.types";
 import { HeaderToggleButton } from "@/components/headers/header-toggle-button";
 import {
   DropdownMenuItem,
@@ -23,9 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { AggregatedAgent } from "@/hooks/use-aggregated-agents";
 import { useSidebarCollapsedSectionsStore } from "@/stores/sidebar-collapsed-sections-store";
-import { useSidebarOrderStore } from "@/stores/sidebar-order-store";
 import type { Theme } from "@/styles/theme";
-import { hasVisibleOrderChanged, mergeWithRemainder } from "@/utils/sidebar-reorder";
 import {
   isDesktopChatUnread,
   orderSectionChats,
@@ -43,6 +40,7 @@ import {
   useSectionCollapsed,
   useSectionSort,
 } from "./desktop-chat-sections-store";
+import { SortableProjects } from "./desktop-chat-sidebar-dnd";
 import { useDesktopChatMutation } from "./use-desktop-chat";
 
 const PlusIcon = withUnistyles(Plus);
@@ -113,9 +111,11 @@ export function PinnedSection({
 export function RecentSection({
   chats,
   selectedKey,
+  dragHandleProps,
 }: {
   chats: AggregatedAgent[];
   selectedKey: string | null;
+  dragHandleProps?: DraggableListDragHandleProps;
 }) {
   const { t } = useTranslation();
   const { collapsed, toggle } = useSectionCollapsed(CHAT_SECTION.recent);
@@ -231,6 +231,7 @@ export function RecentSection({
         sort={sort}
         onSortChange={setSort}
         contextMenu={contextMenu}
+        dragHandleProps={dragHandleProps}
         testID="desktop-section-recent"
       />
       {collapsed ? null : (
@@ -251,9 +252,11 @@ export function RecentSection({
 export function CustomSection({
   section,
   selectedKey,
+  dragHandleProps,
 }: {
   section: CustomChatSection;
   selectedKey: string | null;
+  dragHandleProps?: DraggableListDragHandleProps;
 }) {
   const { t } = useTranslation();
   const dialogs = useSectionDialogs();
@@ -326,6 +329,7 @@ export function CustomSection({
         sort={sort}
         onSortChange={setSort}
         contextMenu={contextMenu}
+        dragHandleProps={dragHandleProps}
         testID={`desktop-section-${section.id}`}
       />
       {collapsed ? null : (
@@ -338,50 +342,33 @@ export function CustomSection({
             limit={10}
             moreTestID={`desktop-section-${section.id}-more`}
           />
-          {projects.map((entry) => (
-            <ChatProject key={entry.project.viewKey} entry={entry} selectedKey={selectedKey} />
-          ))}
+          <SortableProjects
+            sectionId={section.id}
+            projects={projects}
+            reorderable={sort === "manual"}
+            selectedKey={selectedKey}
+          />
         </>
       )}
     </>
   );
 }
 
-function projectKeyExtractor(entry: DesktopChatProject): string {
-  return entry.project.viewKey;
-}
-
 export function ProjectsSection({
   projects,
   selectedKey,
   onAddProject,
+  dragHandleProps,
 }: {
   projects: DesktopChatProject[];
   selectedKey: string | null;
   onAddProject: () => void;
+  dragHandleProps?: DraggableListDragHandleProps;
 }) {
   const { t } = useTranslation();
   const { collapsed, toggle } = useSectionCollapsed(CHAT_SECTION.projects);
   const { sort, setSort } = useSectionSort(CHAT_SECTION.projects);
   const ordered = useMemo(() => orderSectionProjects(projects, sort), [projects, sort]);
-  const getProjectOrder = useSidebarOrderStore((state) => state.getProjectOrder);
-  const setProjectOrder = useSidebarOrderStore((state) => state.setProjectOrder);
-  // Manual order is the sidebar's shared project order, so both sidebars agree on it.
-  const handleDragEnd = useCallback(
-    (reordered: DesktopChatProject[]) => {
-      const reorderedVisibleKeys = reordered.map(projectKeyExtractor);
-      const currentOrder = getProjectOrder();
-      if (!hasVisibleOrderChanged({ currentOrder, reorderedVisibleKeys })) return;
-      setProjectOrder(mergeWithRemainder({ currentOrder, reorderedVisibleKeys }));
-    },
-    [getProjectOrder, setProjectOrder],
-  );
-  const renderProject = useCallback(
-    ({ item, dragHandleProps }: DraggableRenderItemInfo<DesktopChatProject>) => (
-      <ChatProject entry={item} selectedKey={selectedKey} dragHandleProps={dragHandleProps} />
-    ),
-    [selectedKey],
-  );
   const addProject = useMemo(
     () => (
       <HeaderToggleButton
@@ -398,22 +385,6 @@ export function ProjectsSection({
     ),
     [onAddProject, t],
   );
-  const list =
-    sort === "manual" ? (
-      <DraggableList
-        testID="desktop-section-list-projects"
-        data={ordered}
-        keyExtractor={projectKeyExtractor}
-        renderItem={renderProject}
-        onDragEnd={handleDragEnd}
-        scrollEnabled={false}
-        useDragHandle
-      />
-    ) : (
-      ordered.map((entry) => (
-        <ChatProject key={entry.project.viewKey} entry={entry} selectedKey={selectedKey} />
-      ))
-    );
   return (
     <>
       <ChatSectionHeader
@@ -423,9 +394,18 @@ export function ProjectsSection({
         sort={sort}
         onSortChange={setSort}
         actions={addProject}
+        dragHandleProps={dragHandleProps}
         testID="desktop-section-projects"
       />
-      {collapsed ? null : list}
+      {collapsed ? null : (
+        // Manual order is the sidebar's shared project order, so both sidebars agree on it.
+        <SortableProjects
+          sectionId={CHAT_SECTION.projects}
+          projects={ordered}
+          reorderable={sort === "manual"}
+          selectedKey={selectedKey}
+        />
+      )}
     </>
   );
 }

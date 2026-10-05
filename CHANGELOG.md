@@ -8,6 +8,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Added
 
+- Added drag and drop to the macOS chat sidebar: drag a section header to reorder the sections below Pinned, such as Recent, a custom section and Projects, and drag a project header onto another section to move the project there. The order is saved on this machine.
+
 - Added a context window card on the composer meter: a used/window header, a segmented bar and one row per category, then the compaction buffer and free space. Claude chats list what fills the window; other providers show Used and Free space. The breakdown loads when the card opens on an idle chat, because each one is a Claude API request. Hosts need the new `agentContextUsage` feature.
 
 - Added chats without a project: hovering the New chat project chip shows a remove button, and the chat then runs in its own folder, `~/Documents/Paseo/<date>/<name>`, with global settings and rules instead of a project's. Chat folders stay out of Projects and the project picker; their chats show in Recent. Hosts need the new `projectCreateDirectoryParents` feature.
