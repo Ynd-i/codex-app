@@ -44,6 +44,17 @@ describe("createMarkdownStyles", () => {
     }
   });
 
+  it("colors links and inline code on the macOS dark theme", () => {
+    const desktopDark = { ...darkTheme, colors: { ...darkTheme.colors, surface0: "#2c2c2b" } };
+    const styles = createMarkdownStyles(desktopDark);
+    expect(styles.link.color).toBe("#7aa6e7");
+    expect(styles.code_inline.color).toBe("#de8481");
+
+    const baseline = createMarkdownStyles(darkTheme);
+    expect(baseline.link.color).toBe(darkTheme.colors.accentBright);
+    expect(baseline.code_inline.color).toBe(darkTheme.colors.foreground);
+  });
+
   it("uses the content font for prose while code remains monospace", () => {
     const theme = {
       ...darkTheme,
