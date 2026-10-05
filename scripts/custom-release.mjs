@@ -5,13 +5,14 @@
 //   v<stable>-v<N>          release N promoted to stable
 //
 // <stable> is the newest upstream release merged into the branch. While that is an upstream
-// beta, nothing is released unless `beta --upstream-beta` asks for a one-off on it, tagged
-// v<upstream-beta>-v<N>-beta<M>.
+// beta, nothing is released unless `--upstream-beta` asks for a one-off on it, tagged
+// v<upstream-beta>-v<N>-beta<M>, or v<upstream-beta>-v<N> once promoted.
 //
 //   node scripts/custom-release.mjs sync    merge a newer upstream stable release as -v1-beta1
 //   node scripts/custom-release.mjs beta    release the branch as the next beta
 //   node scripts/custom-release.mjs beta --upstream-beta   the same, on an upstream beta
 //   node scripts/custom-release.mjs stable  promote the latest beta to stable
+//   node scripts/custom-release.mjs stable --upstream-beta   the same, on an upstream beta
 //
 // Prints key=value lines for $GITHUB_OUTPUT: merge, backend, tag, from, reason, prerelease,
 // version (the semver the in-app updater compares).
@@ -116,7 +117,7 @@ export function planRelease({
   if (mode !== "beta" && mode !== "stable") {
     throw new Error(`Unknown mode "${mode}"; use sync, beta or stable`);
   }
-  if (parseUpstreamTag(current).isPrerelease && !(mode === "beta" && upstreamBeta)) {
+  if (parseUpstreamTag(current).isPrerelease && !upstreamBeta) {
     return skip(`the branch is on upstream beta ${current}; wait for an upstream stable release`);
   }
   if (mode === "beta") {
@@ -158,7 +159,7 @@ function main([mode, flag]) {
       Boolean(latest) && git("rev-parse", `${latest.tag}^{commit}`) === git("rev-parse", "HEAD"),
     upstreamBeta: flag === "--upstream-beta",
   });
-  const prerelease = String(plan.tag.includes("-beta"));
+  const prerelease = String(/-beta\d+$/.test(plan.tag));
   const version = plan.tag ? updateVersion(plan.tag) : "";
   for (const [key, value] of Object.entries({ ...plan, prerelease, version })) {
     console.log(`${key}=${value}`);

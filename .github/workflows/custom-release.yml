@@ -1,6 +1,6 @@
 # Paseo Custom releases for the Ynd-i/codex-app fork. See docs/release.md#custom-releases.
 # Follows upstream Paseo stable releases only; nothing publishes while the branch is on an
-# upstream beta, except a one-off beta run with upstream_beta.
+# upstream beta, except a one-off run with upstream_beta.
 # sync (scheduled): merge a newer upstream stable release, test, publish v<stable>-v1-beta1.
 # beta (manual): test and publish the branch as the next v<stable>-v<N>-beta<M>.
 # stable (manual): rebuild the latest beta's commit and publish it as v<stable>-v<N>.
@@ -17,7 +17,7 @@ on:
         options: [sync, beta, stable]
         default: sync
       upstream_beta:
-        description: "beta only: publish a one-off although the branch is on an upstream beta"
+        description: "beta or stable: release although the branch is on an upstream beta"
         type: boolean
         default: false
 

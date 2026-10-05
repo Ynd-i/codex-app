@@ -41,7 +41,10 @@ test("a one-off beta on an upstream beta is numbered apart from the stable relea
   const oneOff = planRelease({ mode: "beta", current, tags, upstreamBeta: true });
   assert.equal(oneOff.tag, "v0.11.0-beta.3-v1-beta2");
   assert.equal(oneOff.from, "HEAD");
-  assert.equal(planRelease({ mode: "stable", current, tags, upstreamBeta: true }).tag, "");
+  assert.equal(planRelease({ mode: "stable", current, tags }).tag, "");
+  const stable = planRelease({ mode: "stable", current, tags, upstreamBeta: true });
+  assert.equal(stable.tag, "v0.11.0-beta.3-v1");
+  assert.equal(stable.from, "v0.11.0-beta.3-v1-beta1");
   assert.equal(nextBetaTag("v0.11.0", tags), "v0.11.0-v1-beta1");
 });
 
@@ -67,6 +70,7 @@ test("update versions order betas, then their stable release, then the next rele
   const versions = tags.map(updateVersion);
   assert.equal(versions[0], "0.11.0-custom.1.beta.2");
   assert.equal(versions[2], "0.11.0-custom.1.stable");
+  assert.equal(updateVersion("v0.11.0-beta.3-v1"), "0.11.0-beta.3.custom.1.stable");
   assert.deepEqual([...versions].sort(semver.compare), versions);
   assert.ok(semver.gt(versions[0], "0.11.0-beta.3"));
   const oneOffs = ["v0.11.0-beta.3-v1-beta2", "v0.11.0-beta.10-v1-beta1"].map(updateVersion);

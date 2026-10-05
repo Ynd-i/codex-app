@@ -68,9 +68,10 @@ release (`v0.11.0-v1-beta1`, `-v1-beta2`), promotion drops the suffix (`v0.11.0-
 the next UI change starts `v0.11.0-v2-beta1`. A newer upstream stable release starts again
 at `-v1-beta1`. While the branch is on an upstream beta, as it is until upstream ships
 `0.11.0`, nothing is released unless you ask for a one-off beta on it, tagged
-`v<upstream-beta>-v<N>-beta<M>` (`v0.11.0-beta.3-v1-beta2`). One-offs never promote to
-stable and sort before every release on the stable version, so their installs update to
-it in-app. `scripts/custom-release.mjs` computes the plan.
+`v<upstream-beta>-v<N>-beta<M>` (`v0.11.0-beta.3-v1-beta2`). A one-off promotes with
+`mode=stable -f upstream_beta=true` to `v<upstream-beta>-v<N>` (`v0.11.0-beta.3-v1`) and
+is a full GitHub release. One-offs sort before every release on the stable version, so
+their installs update to it in-app. `scripts/custom-release.mjs` computes the plan.
 
 `.github/workflows/custom-release.yml` runs every six hours in `sync` mode. When upstream
 has a stable release newer than the branch, from `main` or a hotfix branch, it merges that
@@ -85,6 +86,7 @@ stable once it has proven itself:
 gh workflow run custom-release.yml -R Ynd-i/codex-app -f mode=beta
 gh workflow run custom-release.yml -R Ynd-i/codex-app -f mode=stable
 gh workflow run custom-release.yml -R Ynd-i/codex-app -f mode=beta -f upstream_beta=true
+gh workflow run custom-release.yml -R Ynd-i/codex-app -f mode=stable -f upstream_beta=true
 ```
 
 A merge conflict or failure publishes nothing, unless only the update feed step failed
