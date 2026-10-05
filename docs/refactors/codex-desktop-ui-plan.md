@@ -77,7 +77,7 @@ approval and question cards with draft retention; styled quotes/code blocks;
 chat/composer edge alignment; plain replies without empty activity headers;
 completion timestamps; 82px default code cards and tighter list rows; reference
 gaps between paragraphs, lists and code cards; inline code that keeps the prose
-line height; the reference 13px text scale and list markers; the Paseox brand label, sliding Explorer dock (also toggleable on the new chat screen) an animated effort slider (2026-10-04), and a Run button on shell code blocks that types the command into one reusable terminal tab per workspace so `cd` and exports persist (2026-10-05, modelled on Claude desktop's terminal tools; reference notes in `codex-extracted/CLAUDE-README.md`; the tab is dropped from the registry when its terminal is closed, and the next Run opens a new one). Detailed commit IDs, evidence and platform limitations remain in
+line height; the reference 13px text scale and list markers; the Paseox brand label, sliding Explorer dock (also toggleable on the new chat screen) an animated effort slider (2026-10-04), and a Run button on shell code blocks that types the command into one reusable terminal tab per workspace so `cd` and exports persist (2026-10-05, modelled on Claude desktop's terminal tools; reference notes in `codex-extracted/CLAUDE-README.md`; the tab is dropped from the registry when its terminal is closed, and the next Run opens a new one), draggable sidebar sections and projects (2026-10-05; see [sections and menus](#chat-sections-and-menus--2026-10-03)), and blue links and red inline code on the macOS dark theme, sampled from a Claude desktop screenshot (2026-10-06). Detailed commit IDs, evidence and platform limitations remain in
 their sections below. Local commits are not pushed.
 
 ### Next work and boundaries
@@ -1379,6 +1379,10 @@ runner passed on the `9275863` bundle.
 [Organize sidebar](../qa-evidence/codex-desktop/sidebar-organize-menu.png) and
 [New section dialog](../qa-evidence/codex-desktop/sidebar-new-section-dialog.png)
 were inspected.
+The 2026-10-05 dragging adds a spec case for section reorder across a reload and a
+project moved into a custom section and back, plus a unit test for the section order.
+The spec case was written but not run: this session's sandbox blocks the local ports
+the renderer specs need. Unit tests, typecheck and lint pass.
 
 ### Chats without a project — 2026-10-03
 
