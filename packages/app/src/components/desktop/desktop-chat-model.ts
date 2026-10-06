@@ -149,16 +149,6 @@ export function orderSectionChats(
   return applyStoredOrdering({ items: chats, storedOrder, getKey: desktopChatKey });
 }
 
-/** Manual keeps the sidebar's stored project order; latest ranks by each project's newest chat. */
-export function orderSectionProjects(
-  projects: DesktopChatProject[],
-  sort: ChatSectionSort,
-): DesktopChatProject[] {
-  if (sort === "manual") return projects;
-  const newest = (entry: DesktopChatProject) => entry.chats[0]?.lastActivityAt.getTime() ?? 0;
-  return [...projects].sort((left, right) => newest(right) - newest(left));
-}
-
 export interface CustomChatSection {
   id: string;
   name: string;

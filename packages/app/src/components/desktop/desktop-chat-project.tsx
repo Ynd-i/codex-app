@@ -14,6 +14,7 @@ import {
 import { Pressable, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
+import { AgentStatusDot } from "@/components/agent-status-dot";
 import type { DraggableListDragHandleProps } from "@/components/draggable-list.types";
 import { HeaderToggleButton } from "@/components/headers/header-toggle-button";
 import {
@@ -51,7 +52,10 @@ import { useWorkspaceFields } from "@/stores/session-store-hooks";
 import { useSidebarCollapsedSectionsStore } from "@/stores/sidebar-collapsed-sections-store";
 import type { Theme } from "@/styles/theme";
 import { confirmDialog } from "@/utils/confirm-dialog";
-import { deriveSidebarStateBucket } from "@/utils/sidebar-agent-state";
+import {
+  aggregateSidebarStateBuckets,
+  deriveSidebarStateBucket,
+} from "@/utils/sidebar-agent-state";
 import { buildNewWorkspaceRoute } from "@/utils/host-routes";
 import { resolveSidebarProjectLocalPath } from "@/utils/sidebar-project-row-model";
 import { redirectIfArchivingActiveWorkspace } from "@/utils/sidebar-workspace-archive-redirect";
@@ -84,6 +88,11 @@ const removeLeading = <RemoveIcon size={16} uniProps={mutedIcon} />;
 // The archive button covers this much of the title's right edge (the md+ button width, as in
 // the chat row).
 const EMPTY_WORKSPACE_ACTION_WIDTH = 26;
+
+/** The chat row's status: an open turn counts as running. */
+function chatStatus(agent: DesktopChatProject["chats"][number]) {
+  return agent.turn.phase === "open" ? "running" : agent.status;
+}
 
 function EmptyWorkspaceRow({ workspace }: { workspace: SidebarWorkspacePlacement }) {
   const { t } = useTranslation();
@@ -428,20 +437,19 @@ export const ChatProject = memo(function ChatProject({
     ...dragAttributes
   } = dragHandleProps?.attributes ?? {};
   const revealed = hovered || focused || menuOpen || contextOpen;
-  // A collapsed project stands in for its hidden chats, so it keeps their spinner.
-  const running = useMemo(
-    () =>
-      chats.some(
-        (agent) =>
-          deriveSidebarStateBucket({
-            status: agent.turn.phase === "open" ? "running" : agent.status,
-            requiresAttention: isDesktopChatUnread(agent),
-            attentionReason: agent.attentionReason,
-            pendingPermissionCount: agent.pendingPermissionCount,
-          }) === "running",
-      ),
-    [chats],
-  );
+  // A collapsed project stands in for its hidden chats: their spinner, else their most urgent dot.
+  const hiddenStatus = useMemo(() => {
+    const buckets = chats.map((agent) =>
+      deriveSidebarStateBucket({
+        status: chatStatus(agent),
+        requiresAttention: isDesktopChatUnread(agent),
+        attentionReason: agent.attentionReason,
+        pendingPermissionCount: agent.pendingPermissionCount,
+      }),
+    );
+    const bucket = aggregateSidebarStateBuckets(buckets);
+    return bucket === "done" ? null : { bucket, agent: chats[buckets.indexOf(bucket)] };
+  }, [chats]);
   return (
     <View style={styles.project}>
       <ContextMenu open={contextOpen} onOpenChange={setContextOpen}>
@@ -479,9 +487,18 @@ export const ChatProject = memo(function ChatProject({
               onFocus={focus}
               onBlur={blur}
             />
-            {nested && collapsed && running && !revealed ? (
+            {nested && collapsed && hiddenStatus && !revealed ? (
               <View style={styles.statusSlot}>
-                <Progress uniProps={mutedIcon} />
+                {hiddenStatus.bucket === "running" ? (
+                  <Progress uniProps={mutedIcon} />
+                ) : (
+                  <AgentStatusDot
+                    status={chatStatus(hiddenStatus.agent)}
+                    requiresAttention={isDesktopChatUnread(hiddenStatus.agent)}
+                    attentionReason={hiddenStatus.agent.attentionReason}
+                    pendingPermissionCount={hiddenStatus.agent.pendingPermissionCount}
+                  />
+                )}
               </View>
             ) : null}
           </View>

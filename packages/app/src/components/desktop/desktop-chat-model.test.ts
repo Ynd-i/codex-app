@@ -10,7 +10,6 @@ import {
   isDesktopChatUnread,
   latestReplyPreview,
   orderSectionChats,
-  orderSectionProjects,
   partitionChatSections,
   selectEmptiedWorkspaces,
   type DesktopChatProject,
@@ -141,23 +140,6 @@ it("keeps new chats on top of a manually ordered section", () => {
     "middle",
     "older",
   ]);
-});
-
-it("ranks projects by their newest chat only in latest order", () => {
-  const quiet: DesktopChatProject = {
-    project: project("quiet", "local", []),
-    chats: [],
-    emptyWorkspaces: [],
-  };
-  const busyChat = chat("busy", "local", "one");
-  const busy: DesktopChatProject = {
-    project: project("busy", "local", ["one"]),
-    chats: [busyChat],
-    emptyWorkspaces: [],
-  };
-  const names = (entries: DesktopChatProject[]) => entries.map((entry) => entry.project.viewKey);
-  expect(names(orderSectionProjects([quiet, busy], "manual"))).toEqual(["quiet", "busy"]);
-  expect(names(orderSectionProjects([quiet, busy], "latest"))).toEqual(["busy", "quiet"]);
 });
 
 it("moves assigned chats and projects into existing custom sections only", () => {

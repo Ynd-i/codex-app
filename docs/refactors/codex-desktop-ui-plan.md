@@ -1320,7 +1320,10 @@ and asked that every change keep upstream Paseo backend updates mergeable.
 - Sections (`e636690`): Pinned, Recent and Projects headers collapse and show a `…`
   menu on hover: Recently updated or Manual order. Manual order drags rows; chats it
   has not seen stay where activity puts them, so a new chat still arrives on top.
-  Projects reuse the shared project order and add a project from the header `+`.
+  Projects reuse the shared project order in both sorts, so a finished chat reorders the
+  chats inside its project but never the projects (2026-10-06). A collapsed project shows
+  its chats' spinner, else their most urgent dot (unread included). Projects add a project
+  from the header `+`.
 - Custom sections (`273459e`): right-clicking Recent offers Sort chats, Show ›
   Projects and New section. Chats and projects move through a Section › submenu. A
   custom section's right-click menu edits it, marks its chats read, archives them or

@@ -26,7 +26,6 @@ import type { Theme } from "@/styles/theme";
 import {
   isDesktopChatUnread,
   orderSectionChats,
-  orderSectionProjects,
   type CustomChatSection,
   type DesktopChatProject,
 } from "./desktop-chat-model";
@@ -267,10 +266,6 @@ export function CustomSection({
     () => orderSectionChats(section.chats, sort, order),
     [order, section.chats, sort],
   );
-  const projects = useMemo(
-    () => orderSectionProjects(section.projects, sort),
-    [section.projects, sort],
-  );
   const { update } = useDesktopChatMutation();
   const hasUnread = section.chats.some(isDesktopChatUnread);
   const edit = useCallback(
@@ -344,7 +339,7 @@ export function CustomSection({
           />
           <SortableProjects
             sectionId={section.id}
-            projects={projects}
+            projects={section.projects}
             reorderable={sort === "manual"}
             selectedKey={selectedKey}
           />
@@ -368,7 +363,6 @@ export function ProjectsSection({
   const { t } = useTranslation();
   const { collapsed, toggle } = useSectionCollapsed(CHAT_SECTION.projects);
   const { sort, setSort } = useSectionSort(CHAT_SECTION.projects);
-  const ordered = useMemo(() => orderSectionProjects(projects, sort), [projects, sort]);
   const addProject = useMemo(
     () => (
       <HeaderToggleButton
@@ -401,7 +395,7 @@ export function ProjectsSection({
         // Manual order is the sidebar's shared project order, so both sidebars agree on it.
         <SortableProjects
           sectionId={CHAT_SECTION.projects}
-          projects={ordered}
+          projects={projects}
           reorderable={sort === "manual"}
           selectedKey={selectedKey}
         />
