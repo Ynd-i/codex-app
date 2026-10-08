@@ -21,4 +21,10 @@ describe("command runner terminal", () => {
   it("ends the command with one carriage return", () => {
     expect(toTerminalCommandInput("ls\n\n")).toBe("ls\r");
   });
+
+  it("brackets a multi-line block so the shell buffers every line before running it", () => {
+    expect(toTerminalCommandInput("gh pr merge 164\ngit push\n")).toBe(
+      "\x1b[200~gh pr merge 164\ngit push\x1b[201~\r",
+    );
+  });
 });
