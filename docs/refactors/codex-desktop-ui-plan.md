@@ -3179,6 +3179,40 @@ renderer/preload, isolated daemon, CLI/terminal, identity/update protection and
 the deeper desktop menu/font/reload/file/browser/deep-link checks. Protected
 daemons were not restarted. Package logs and artifacts are listed above.
 
+### Upstream refresh to v0.11.1 — 2026-10-08
+
+The scheduled `sync` run failed at its merge step on 40 conflicted files, so
+`v0.11.1` was merged by hand. Three resolutions decide how the fork diverges and
+will come back at the next refresh:
+
+- **Explorer rail.** Upstream deleted `explorer-sidebar-tab-rail.tsx` and hosts the
+  Explorer tabs in the shared `WorkspaceDesktopTabsRow` (`host="explorer"`). The fork
+  keeps its own rail, because that rail is what moves into the macOS titlebar. Upstream
+  also dropped `toggleTarget` from the launch catalog; it is restored in
+  `workspace-tabs/launcher/index.tsx` for the rail's configuration menu. Upstream's
+  Explorer tab context menus (rename, copy id, close others/left/right) are not adopted.
+- **Context window.** The fork's composer card with Claude's category breakdown is kept,
+  so upstream's `context-window-details.tsx` and `context-window-sheet.tsx` stay unwired
+  and its account usage cards in that popover are not adopted.
+- **Anchored surfaces.** Upstream made horizontal flipping opt-in through `flipHorizontal`;
+  the fork's rule — flip only when the requested side cannot fit and the other can —
+  now applies to every surface, and the flag is gone.
+
+Upstream behavior adopted: the sidebar Usage summary is hidden by default on every
+layout and pinning follows `effectiveUsagePins`, the Usage screen route is replaced by
+`UsageModal` under `UsageSidebarRoot` (the Mac rail keeps its in-place popover), and the
+Codex usage plugin takes upstream's `windowFromReportedDuration` labels while keeping the
+fork's nullish schema for absent readings.
+
+Validation: `build:server`, root `typecheck`, `lint`, `format:check`, the full app unit
+project (629 of 630 files; `e2e-metro-readiness.test.ts` cannot bind a port in the agent
+sandbox), `custom-release.test.mjs`, and the server/plugin suites for the files both sides
+changed (`claude/agent.test.ts`, `agent-manager.test.ts`, `mock-load-test-agent.test.ts`,
+`codex-usage-source`, `antigravity-provider`). Not run: every Playwright spec, including
+the usage, explorer and desktop-browser specs whose assertions were converted to the
+fork's single-window summary by inference, and the browser vitest project. Merge commit
+`5fec673` has parents `8942bd2` and `ab10a66`.
+
 ### Recording references — 2026-09-30
 
 Source: user-provided `录屏2026-09-30 12.55.37.mov` (205.383 seconds, 2704×1562).
