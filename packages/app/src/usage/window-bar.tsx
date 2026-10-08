@@ -3,8 +3,6 @@ import { Pin } from "lucide-react-native";
 import { useMemo } from "react";
 import { Pressable, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import { useIsCompactFormFactor } from "@/constants/layout";
-import { isNative } from "@/constants/platform";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { usageCopy } from "./copy";
 import { clampPct, formatDisplayPct, formatPct, formatUsageDeadline } from "./format";
@@ -26,6 +24,7 @@ export function UsageWindowBar({
   window,
   overview = false,
   displayAs,
+  pinnable,
   pinned,
   onTogglePin,
   pinLabel,
@@ -34,6 +33,8 @@ export function UsageWindowBar({
   window: UsageWindow;
   overview?: boolean;
   displayAs: UsageDisplayAs;
+  /** Whether the row pins the window to the sidebar. When false the row is a plain bar. */
+  pinnable: boolean;
   pinned: boolean;
   onTogglePin: () => void;
   /** What the row pins, naming the source and window: "Pin Claude Session". */
@@ -41,7 +42,6 @@ export function UsageWindowBar({
   pinTestID: string;
 }) {
   const { t } = useTranslation();
-  const isCompact = useIsCompactFormFactor();
   const shownPct = displayPercent(window, displayAs);
   const tone = windowTone(window);
 
@@ -72,6 +72,28 @@ export function UsageWindowBar({
     [fillWidth, value],
   );
   const accessibilityState = useMemo(() => ({ checked: pinned }), [pinned]);
+  const content = {
+    label: window.label,
+    value,
+    deadline,
+    deadlineKind,
+    isAtRisk,
+    tone,
+    overview,
+    complement,
+    shownPct,
+    accessibilityValue,
+    pinned,
+  } as const;
+
+  // Same padding as the pinnable row, so bars line up in both modes.
+  if (!pinnable) {
+    return (
+      <View style={styles.row(overview)}>
+        <WindowRowContent {...content} highlight={styles.highlightNone} pinnable={false} />
+      </View>
+    );
+  }
 
   // The whole row pins the window to the sidebar Usage item. Pinned or not, it keeps the same
   // padding so toggling only changes the background.
@@ -87,19 +109,9 @@ export function UsageWindowBar({
     >
       {({ hovered }: { hovered?: boolean }) => (
         <WindowRowContent
+          {...content}
           highlight={highlightStyle(pinned, Boolean(hovered))}
-          label={window.label}
-          value={value}
-          deadline={deadline}
-          deadlineKind={deadlineKind}
-          isAtRisk={isAtRisk}
-          tone={tone}
-          overview={overview}
-          complement={complement}
-          shownPct={shownPct}
-          accessibilityValue={accessibilityValue}
-          pinVisible={Boolean(hovered) || isNative || isCompact}
-          pinned={pinned}
+          pinnable
         />
       )}
     </Pressable>
@@ -118,7 +130,7 @@ function WindowRowContent({
   complement,
   shownPct,
   accessibilityValue,
-  pinVisible,
+  pinnable,
   pinned,
 }: {
   highlight: StyleProp<ViewStyle>;
@@ -132,7 +144,7 @@ function WindowRowContent({
   complement: string | null;
   shownPct: number | null;
   accessibilityValue: { min: number; max: number; now: number; text: string };
-  pinVisible: boolean;
+  pinnable: boolean;
   pinned: boolean;
 }) {
   const deadlineStyle = isAtRisk ? styles.atRisk : styles.reset;
@@ -175,7 +187,7 @@ function WindowRowContent({
             />
           ) : null}
         </View>
-        <UsagePinGlyph visible={pinVisible} pinned={pinned} />
+        {pinnable ? <UsagePinGlyph pinned={pinned} /> : null}
       </View>
     </>
   );
@@ -183,7 +195,7 @@ function WindowRowContent({
 
 const ThemedPin = withUnistyles(Pin);
 
-function UsagePinGlyph({ visible, pinned }: { visible: boolean; pinned: boolean }) {
+function UsagePinGlyph({ pinned }: { pinned: boolean }) {
   const iconMapping = useMemo(
     () => (theme: { colors: { foregroundMuted: string } }) => ({
       color: theme.colors.foregroundMuted,
@@ -195,14 +207,14 @@ function UsagePinGlyph({ visible, pinned }: { visible: boolean; pinned: boolean 
     <Tooltip delayDuration={300} enabledOnDesktop enabledOnMobile={false}>
       <TooltipTrigger asChild>
         <View
-          style={visible ? styles.pin : styles.pinHidden}
+          style={styles.pin}
           testID={pinned ? "usage-pin-glyph-pinned" : "usage-pin-glyph-unpinned"}
         >
           <ThemedPin size={12} uniProps={iconMapping} />
         </View>
       </TooltipTrigger>
       <TooltipContent side="top">
-        <Text style={styles.tooltipText}>{usageCopy.pin}</Text>
+        <Text style={styles.tooltipText}>{pinned ? usageCopy.unpin : usageCopy.pin}</Text>
       </TooltipContent>
     </Tooltip>
   );
@@ -212,7 +224,6 @@ const styles = StyleSheet.create((theme) => ({
   contentRow: { flexDirection: "row", alignItems: "center", gap: theme.spacing[2] },
   windowContent: (overview: boolean) => ({ flex: 1, gap: overview ? 8 : 3 }),
   pin: { width: 12, alignItems: "center" },
-  pinHidden: { width: 12, alignItems: "center", opacity: 0 },
   tooltipText: { color: theme.colors.popoverForeground, fontSize: theme.fontSize.sm },
   row: (overview: boolean) => ({
     gap: overview ? 8 : 3,

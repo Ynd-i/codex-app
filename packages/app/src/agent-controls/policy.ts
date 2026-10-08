@@ -3,6 +3,7 @@ import { getIsElectronMac } from "@/constants/platform";
 
 export const PLAN_MODE_FEATURE_ID = "plan_mode";
 export const FAST_MODE_FEATURE_ID = "fast_mode";
+export const SPEED_FEATURE_ID = "service_tier";
 
 export function isPlanningAgentMode(mode: Pick<AgentMode, "id" | "colorTier">): boolean {
   return mode.colorTier === "planning" || mode.id === "plan" || mode.id.endsWith("#plan");

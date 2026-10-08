@@ -7,7 +7,7 @@ import { UsageSection } from "./usage-section";
 export function HostUsageSection({ serverId }: { serverId: string }) {
   const { t } = useTranslation();
   const { view, refresh } = useHostUsage(serverId);
-  const { display } = useUsagePreferences();
+  const { display } = useUsagePreferences(serverId);
   return (
     <UsageSection
       serverId={serverId}

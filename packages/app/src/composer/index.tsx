@@ -27,6 +27,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { useIsCompactFormFactor } from "@/constants/layout";
+import { useHasFinePointer } from "@/hooks/use-fine-pointer";
 import { useShallow } from "zustand/shallow";
 import {
   ArrowUp,
@@ -1028,9 +1029,6 @@ interface ComposerProps {
   placeholder?: string;
 }
 
-const EMPTY_ARRAY: readonly QueuedMessage[] = [];
-const StableMessageInput = memo(MessageInput);
-
 function resolveContextWindowValues(
   rawMax: number | null,
   rawUsed: number | null,
@@ -1040,6 +1038,9 @@ function resolveContextWindowValues(
   }
   return { contextWindowMaxTokens: null, contextWindowUsedTokens: null };
 }
+
+const EMPTY_ARRAY: readonly QueuedMessage[] = [];
+const StableMessageInput = memo(MessageInput);
 
 interface ComposerAutocompleteHandle {
   onKeyPress: (event: ComposerKeyPressEvent) => boolean;
@@ -1340,6 +1341,7 @@ function ComposerContentImpl({
   const isCompactFormFactor = useIsCompactFormFactor();
   const isCompactLayout = resolveCompactLayout(isCompactLayoutOverride, isCompactFormFactor);
   const isDesktopWebBreakpoint = resolveIsDesktopWebBreakpoint(isCompactFormFactor);
+  const hasFinePointer = useHasFinePointer();
   const isDesktopLayout = resolveIsDesktopWebBreakpoint(isCompactLayout);
   const messagePlaceholder = resolveMessagePlaceholder(inputMode, isDesktopLayout, t, placeholder);
   const hasText = useSyncExternalStore(
@@ -2171,6 +2173,7 @@ function ComposerContentImpl({
       contextWindowMeterGlyphSize,
     ],
   );
+
   const beforeVoiceContent = useMemo(
     () => <>{resolveContextWindowPlacement(contextWindowMeter, hasAgent)}</>,
     [contextWindowMeter, hasAgent],
@@ -2493,7 +2496,8 @@ function ComposerContentImpl({
     { disabled: isSubmitLoadingVisible },
   );
 
-  const messageInputAutoFocus = autoFocus && isDesktopWebBreakpoint;
+  // Focusing the composer on a touch screen raises the on-screen keyboard over the conversation.
+  const messageInputAutoFocus = autoFocus && isDesktopWebBreakpoint && hasFinePointer;
   const submitLoadingPressHandler = isAgentRunning ? handleCancelAgent : undefined;
   const sendErrorNode = useMemo(
     () =>

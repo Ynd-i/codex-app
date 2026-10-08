@@ -72,4 +72,14 @@ export const usageCopy = {
   get displayRemaining() {
     return i18n.t("usage.displayRemaining");
   },
+  get refreshAll() {
+    return i18n.t("usage.refreshAll");
+  },
+  get unpin() {
+    return i18n.t("usage.unpin");
+  },
+  get showInSidebarHint() {
+    return i18n.t("usage.showInSidebarHint");
+  },
+  agentError: (reason: string) => i18n.t("usage.agentError", { reason }),
 } as const;

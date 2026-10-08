@@ -350,7 +350,9 @@ export function ExplorerSidebarTabRail({
     serverId: normalizedServerId,
     purpose: "supporting",
     host: "explorer",
+    surface: "menu",
   });
+  const panePanelKinds = useMemo(() => tabs.map(({ tab }) => tab.kind), [tabs]);
   const singletonConfigurationItems = useMemo(
     () => groups.flatMap((group) => group.items).filter((item) => item.toggleTarget !== null),
     [groups],
@@ -453,6 +455,7 @@ export function ExplorerSidebarTabRail({
                   serverId={normalizedServerId}
                   purpose="supporting"
                   host="explorer"
+                  panePanelKinds={panePanelKinds}
                   paneId={paneId}
                 />
               </DropdownMenu>

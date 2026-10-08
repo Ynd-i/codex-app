@@ -1,8 +1,10 @@
+export { AgentUsage } from "./agent-usage";
 export { HostUsageSection } from "./host-usage-section";
-export { UsageScreen } from "./usage-screen";
+export { useHostReportsUsage } from "./queries";
 export {
   UsageRailPopover,
   UsageSidebarItem,
+  UsageSidebarRoot,
   useHasUsageSummary,
-  useOpenUsageScreen,
+  useOpenSidebarUsage,
 } from "./sidebar-item";

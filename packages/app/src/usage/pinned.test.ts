@@ -47,16 +47,16 @@ function windows(reports: UsageReportEntry[], prefs: UsagePreferences): PinnedUs
 }
 
 function preferences(
-  pinned: UsagePreferences["pinned"],
+  pinned: UsagePreferences["pins"],
   displayAs: UsagePreferences["displayAs"] = "used",
 ): UsagePreferences {
-  return { displayAs, pinned, serverId: null };
+  return { displayAs, pins: pinned, serverId: null };
 }
 
 describe("mostConstrainedWindow", () => {
   it("picks the highest used share across sources, whatever the display preference", () => {
     for (const displayAs of ["used", "remaining"] as const) {
-      const sources = resolvePinnedUsage([claude, codex], preferences([], displayAs));
+      const sources = resolvePinnedUsage([claude, codex], preferences(null, displayAs));
       const best = mostConstrainedWindow(sources);
       expect(best?.window.key).toBe("claude:default/five-hour");
     }
@@ -81,17 +81,17 @@ describe("resolvePinnedUsage", () => {
   it("localizes pinned meanings without altering source, account, order or percent", async () => {
     await i18n.changeLanguage("zh-CN");
     expect(
-      resolvePinnedUsage([claude, codex], preferences([]), i18n.t)
+      resolvePinnedUsage([claude, codex], preferences(null), i18n.t)
         .flatMap((source) => source.windows)
         .map((item) => item.label),
     ).toEqual(["Claude Session 已用 31%", "Codex Weekly 已用 12%"]);
     expect(
-      resolvePinnedUsage([claude, codex], preferences([], "remaining"), i18n.t)
+      resolvePinnedUsage([claude, codex], preferences(null, "remaining"), i18n.t)
         .flatMap((source) => source.windows)
         .map((item) => item.label),
     ).toEqual(["Claude Session 剩余 69%", "Codex Weekly 剩余 88%"]);
   });
-  it("defaults to the first window with a percent for each source account", () => {
+  it("defaults to source-wide pins collected from each account", () => {
     const work = report({
       sourceId: "claude",
       sourceLabel: "Claude",
@@ -107,12 +107,13 @@ describe("resolvePinnedUsage", () => {
       windows: [{ id: "empty", label: "Empty" }],
     });
     expect(
-      windows([claude, codex, work, empty], preferences([])).map((item) => [
+      windows([claude, codex, work, empty], preferences(null)).map((item) => [
         item.key,
         item.percentText,
       ]),
     ).toEqual([
       ["claude:default/five-hour", "31%"],
+      ["claude:default/weekly", "80%"],
       ["claude:work/weekly", "90%"],
       ["codex:default/weekly", "12%"],
     ]);
@@ -125,7 +126,7 @@ describe("resolvePinnedUsage", () => {
         (item) => item.key,
       ),
     ).toEqual(["claude:default/weekly"]);
-    expect(windows(reports, preferences([])).map((item) => item.key)).toEqual([
+    expect(windows(reports, preferences(null)).map((item) => item.key)).toEqual([
       "claude:default/five-hour",
       "codex:default/weekly",
     ]);
@@ -196,7 +197,7 @@ describe("resolvePinnedUsage", () => {
       ],
     });
 
-    expect(windows([marked, codex], preferences([])).map((item) => item.key)).toEqual([
+    expect(windows([marked, codex], preferences(null)).map((item) => item.key)).toEqual([
       "claude:default/five-hour",
       "claude:default/weekly",
       "codex:default/weekly",
@@ -209,7 +210,7 @@ describe("resolvePinnedUsage", () => {
       sourceLabel: "OpenCode Go",
       windows: [{ id: "rolling", label: "Rolling", shortLabel: "", usedPct: 21 }],
     });
-    const items = windows([opencode], preferences([]));
+    const items = windows([opencode], preferences(null));
 
     expect(items.map((item) => item.shortLabel)).toEqual([""]);
   });
@@ -288,5 +289,5 @@ it("keeps unavailable and error reports out of the sidebar summary", () => {
     ...codex,
     report: { status: "error", error: "Store deleted" },
   };
-  expect(resolvePinnedUsage([expired, failed], preferences([]))).toEqual([]);
+  expect(resolvePinnedUsage([expired, failed], preferences(null))).toEqual([]);
 });

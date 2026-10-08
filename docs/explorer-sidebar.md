@@ -53,8 +53,10 @@ fixed-target labels and icons from that registration, filter by host, and never 
 panel type for another. Tab moves reject unsupported destinations, and placement resolves only to
 a compatible pane.
 
-Files and Changes are the Explorer defaults and its singleton navigation views. On other platforms,
-compatible tabs, including agents, terminals, files, and diffs, can move between Explorer and main panes.
+Files and Changes are the Explorer defaults. Their panel manifests mark them as singletons,
+so a pane’s + menu omits each while that pane already contains it. Closing one makes its menu
+item available again. Other compatible tabs, including agents, terminals, files, and diffs,
+can move between Explorer and main panes.
 Keep panel implementations independent of either shell. `WorkspacePanelHost` owns mounting and
 retention, while each shell owns its tabs, focus, dragging, resizing, and shortcuts.
 

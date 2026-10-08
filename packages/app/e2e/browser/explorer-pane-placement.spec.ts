@@ -25,13 +25,16 @@ function draftTabChip(page: Page): Locator {
   return page.locator('[data-testid^="workspace-tab-draft_"]').filter({ visible: true });
 }
 
-/** The Explorer has its own fixed tab rail, separate from workspace pane rows. */
+/** Scope the shared tab row to the Explorer dock. */
 function explorerTabRow(page: Page): Locator {
-  return visible(page, "explorer-sidebar-tab-rail");
+  return visible(page, "workspace-explorer-sidebar").getByTestId("workspace-tabs-row");
 }
 
 function mainTabRow(page: Page): Locator {
-  return visible(page, "workspace-tabs-row");
+  return page
+    .locator('[data-testid^="workspace-pane-"]')
+    .getByTestId("workspace-tabs-row")
+    .filter({ visible: true });
 }
 
 async function selectExplorerChanges(page: Page): Promise<void> {
@@ -173,7 +176,7 @@ test.describe("explorer pane tab placement", () => {
         contentType: "image/png",
       });
       // The split must have taken: agent pane + New main. Explorer keeps its own rail.
-      await expect(visible(page, "workspace-tabs-row")).toHaveCount(2, { timeout: 10_000 });
+      await expect(mainTabRow(page)).toHaveCount(2, { timeout: 10_000 });
       await expect(explorerTabRow(page)).toHaveCount(1);
       await expect(page.getByTestId("workspace-new-tab-panel")).toBeVisible();
     });
@@ -240,7 +243,7 @@ async function moveOnlyDraftIntoRightSplit(page: Page): Promise<void> {
     x: target.x + target.width / 2,
     y: target.y + target.height / 2,
   });
-  await expect(visible(page, "workspace-tabs-row")).toHaveCount(1);
+  await expect(mainTabRow(page)).toHaveCount(1);
 }
 
 async function expectNewLauncher(page: Page): Promise<void> {

@@ -24,6 +24,8 @@ import {
 import { buildWorkspaceTabPersistenceKey } from "@/workspace-tabs/model";
 import { useBrowserStore, type BrowserRecord } from "../store";
 
+const EMPTY_PANE_PANEL_KINDS: readonly [] = [];
+
 function IconGlyph({
   Icon,
   size = 16,
@@ -111,6 +113,7 @@ export function BrowserNewTabPage({
     serverId,
     purpose: "supporting",
     host: "explorer",
+    surface: "panel",
   });
   const items = groups.find((group) => group.id === "tabs")?.items ?? [];
   const key = buildWorkspaceTabPersistenceKey({ serverId, workspaceId });
@@ -167,7 +170,12 @@ export function BrowserNewTabPage({
             </Text>
             <ThemedIcon Icon={ChevronDown} size={14} uniProps={iconColors} />
           </DropdownMenuTrigger>
-          <WorkspaceNewTabMenuContent serverId={serverId} purpose="supporting" host="explorer" />
+          <WorkspaceNewTabMenuContent
+            serverId={serverId}
+            purpose="supporting"
+            host="explorer"
+            panePanelKinds={EMPTY_PANE_PANEL_KINDS}
+          />
         </DropdownMenu>
       </View>
       {openPages.length > 0 ? (

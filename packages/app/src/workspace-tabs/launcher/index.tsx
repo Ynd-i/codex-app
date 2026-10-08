@@ -19,7 +19,7 @@ import { buildSettingsHostSectionRoute } from "@/utils/host-routes";
 import type { NewTabSelection } from "@/workspace-tabs/new-tab";
 import type { WorkspaceTabTarget } from "@/workspace-tabs/model";
 import type { TerminalProfile } from "@getpaseo/protocol/messages";
-import { panelSupportsHost, type PaneHost } from "@/panels/panel-manifest";
+import { panelCanLaunchInPane, panelSupportsHost, type PaneHost } from "@/panels/panel-manifest";
 import {
   getPanelRegistration,
   type PanelIconProps,
@@ -66,6 +66,8 @@ export interface WorkspaceTabLaunchGroup {
   accessory?: { id: string; label: string; run: () => void };
 }
 
+const EMPTY_PANE_PANEL_KINDS: readonly WorkspaceTabTarget["kind"][] = [];
+
 const NewTabLauncherContext = createContext<NewTabLauncher | null>(null);
 
 export function NewTabLauncherProvider({
@@ -98,8 +100,10 @@ export function useWorkspaceTabLaunchCatalog(input: {
   serverId: string;
   purpose: WorkspaceTabLaunchPurpose;
   host: PaneHost;
+  surface: "menu" | "panel";
+  panePanelKinds?: readonly WorkspaceTabTarget["kind"][];
 }): readonly WorkspaceTabLaunchGroup[] {
-  const { serverId, purpose, host } = input;
+  const { serverId, purpose, host, surface, panePanelKinds = EMPTY_PANE_PANEL_KINDS } = input;
   const { t } = useTranslation();
   const router = useRouter();
   const launcher = useContext(NewTabLauncherContext);
@@ -120,6 +124,7 @@ export function useWorkspaceTabLaunchCatalog(input: {
   }, [router, serverId]);
 
   return useMemo(() => {
+    const isExplorerMenu = host === "explorer" && surface === "menu";
     const changesPresentation = getLaunchPresentation("changes_tree");
     const diffPresentation = getLaunchPresentation("working_diff");
     const filesPresentation = getLaunchPresentation("files");
@@ -133,6 +138,7 @@ export function useWorkspaceTabLaunchCatalog(input: {
         disabled: false,
         panelKind: "draft",
         toggleTarget: null,
+        hidden: isExplorerMenu,
         launch: launchSelection(BUILT_IN_SELECTIONS.agent),
       },
       terminal: {
@@ -230,7 +236,7 @@ export function useWorkspaceTabLaunchCatalog(input: {
     if (pluginItems.length > 0) {
       groups.push({ id: "plugin-panels", label: null, items: pluginItems });
     }
-    if (showTerminalProfiles && profiles.length > 0) {
+    if (showTerminalProfiles && !isExplorerMenu && profiles.length > 0) {
       groups.push({
         id: "terminal-profiles",
         label: t("workspace.tabs.actions.terminalProfilesMenu"),
@@ -250,7 +256,13 @@ export function useWorkspaceTabLaunchCatalog(input: {
         },
       });
     }
-    return groups;
+    if (surface !== "menu") return groups;
+    return groups.flatMap((group) => {
+      const items = group.items.filter((item) =>
+        panelCanLaunchInPane(item.panelKind, panePanelKinds),
+      );
+      return items.length > 0 ? [{ ...group, items }] : [];
+    });
   }, [
     config?.terminalProfiles,
     editTerminalProfiles,
@@ -259,6 +271,8 @@ export function useWorkspaceTabLaunchCatalog(input: {
     plugins,
     purpose,
     host,
+    surface,
+    panePanelKinds,
     serverId,
     showTerminalProfiles,
     t,

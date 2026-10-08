@@ -13,6 +13,7 @@ afterEach(() => {
   desktop.mac = false;
   pluginRegistry.removeHost("host-1");
 });
+const audio = { play: async () => 0 };
 
 vi.mock("../navigation", () => ({
   createPluginNavigation: () => ({}),
@@ -47,6 +48,7 @@ function install(locations: readonly ("workspace" | "explorer")[]) {
     [{ id: "review", requirements: { paseo: `>=${appPackage.version}` }, clientBundle: bundle }],
     {
       client: {} as DaemonClient,
+      audio,
     },
   );
   return pluginRegistry.getSnapshot()[0]!;

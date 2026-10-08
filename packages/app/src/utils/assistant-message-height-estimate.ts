@@ -1,4 +1,7 @@
-import { estimateAssistantMessageHeightFromCache as estimateAssistantImageMessageHeightFromCache } from "@/utils/assistant-image-metadata";
+import {
+  type AssistantMessageHeightEstimateInput,
+  estimateAssistantMessageHeightFromCache as estimateAssistantImageMessageHeightFromCache,
+} from "@/utils/assistant-image-metadata";
 import { splitMarkdownBlocks } from "@/utils/split-markdown-blocks";
 import { CHAT_MESSAGE_HORIZONTAL_PADDING } from "@/styles/theme";
 
@@ -106,13 +109,14 @@ function estimateAssistantMarkdownBlockHeightFromCache(
   );
 }
 
-export function estimateAssistantMessageHeightFromCache(
-  markdown: string,
-  contentMaxWidth: number,
-): number | null {
+export function estimateAssistantMessageHeightFromCache({
+  markdown,
+  contentMaxWidth,
+  imageContext,
+}: AssistantMessageHeightEstimateInput): number | null {
   return (
     estimateAssistantMarkdownBlockHeightFromCache(markdown, contentMaxWidth) ??
-    estimateAssistantImageMessageHeightFromCache(markdown, contentMaxWidth)
+    estimateAssistantImageMessageHeightFromCache({ markdown, contentMaxWidth, imageContext })
   );
 }
 

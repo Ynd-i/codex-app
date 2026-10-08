@@ -68,6 +68,7 @@ import type {
 import type { AgentProviderDefinition } from "@getpaseo/protocol/provider-manifest";
 import {
   getFeatureHighlightColor,
+  isFeatureActive,
   getFeatureTooltip,
   getAgentControlHintKey,
   resolveAgentModelSelection,
@@ -225,20 +226,18 @@ function getModeProviderDefinitions(modeControl: AgentModeControlValue | null) {
   return modeControl?.providerDefinitions ?? EMPTY_AGENT_PROVIDER_DEFINITIONS;
 }
 
-function getFeatureIconColor(
+interface FeatureIconPalette {
+  blue: { 400: string };
+  green: { 400: string };
+  yellow: { 400: string };
+}
+
+/** The accent an active feature's icon carries, for callers that already know it is on. */
+function getActiveFeatureIconColor(
   featureId: string,
-  enabled: boolean,
-  palette: {
-    blue: { 400: string };
-    green: { 400: string };
-    yellow: { 400: string };
-  },
+  palette: FeatureIconPalette,
   foregroundMuted: string,
 ): string {
-  if (!enabled) {
-    return foregroundMuted;
-  }
-
   switch (getFeatureHighlightColor(featureId)) {
     case "blue":
       return palette.blue[400];
@@ -249,6 +248,17 @@ function getFeatureIconColor(
     default:
       return foregroundMuted;
   }
+}
+
+function getFeatureIconColor(
+  feature: AgentFeature,
+  palette: FeatureIconPalette,
+  foregroundMuted: string,
+): string {
+  if (!isFeatureActive(feature)) {
+    return foregroundMuted;
+  }
+  return getActiveFeatureIconColor(feature.id, palette, foregroundMuted);
 }
 
 // Providers whose CLI has a `/goal` command: Codex (0.128+) and Claude Code.
@@ -274,9 +284,8 @@ function DesktopComposerModes({
   const planOn = toggle?.isOn === true;
   const goalOn = goalAvailable && modes?.goalOn === true;
   if (!planOn && !goalOn) return null;
-  const iconColor = getFeatureIconColor(
+  const iconColor = getActiveFeatureIconColor(
     PLAN_MODE_FEATURE_ID,
-    true,
     theme.colors.palette,
     theme.colors.foregroundMuted,
   );
@@ -1468,8 +1477,7 @@ function DesktopFeatureItem({
           <AgentControlTrigger
             icon={FeatureIcon}
             iconColor={getFeatureIconColor(
-              feature.id,
-              feature.value,
+              feature,
               theme.colors.palette,
               theme.colors.foregroundMuted,
             )}
@@ -1503,6 +1511,11 @@ function DesktopFeatureItem({
             <AgentControlTrigger
               ref={featureAnchorRef}
               icon={FeatureIcon}
+              iconColor={getFeatureIconColor(
+                feature,
+                theme.colors.palette,
+                theme.colors.foregroundMuted,
+              )}
               surface="toolbar"
               label={feature.label}
               value={selectedOption?.label ?? feature.label}
@@ -1586,8 +1599,7 @@ function SheetFeatureItem({
           ref={featureAnchorRef}
           icon={FeatureIcon}
           iconColor={getFeatureIconColor(
-            feature.id,
-            feature.value,
+            feature,
             theme.colors.palette,
             theme.colors.foregroundMuted,
           )}
@@ -1623,6 +1635,11 @@ function SheetFeatureItem({
         <AgentControlTrigger
           ref={featureAnchorRef}
           icon={FeatureIcon}
+          iconColor={getFeatureIconColor(
+            feature,
+            theme.colors.palette,
+            theme.colors.foregroundMuted,
+          )}
           surface="sheet"
           label={feature.label}
           value={selectedOption?.label ?? feature.label}

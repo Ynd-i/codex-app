@@ -1991,10 +1991,13 @@ const styles = StyleSheet.create((theme: Theme) => ({
     borderWidth: getIsElectronMac() ? 0 : theme.borderWidth[1],
     borderColor: theme.colors.borderAccent,
     borderRadius: getIsElectronMac() ? 24 : theme.borderRadius["2xl"],
-    paddingVertical: getIsElectronMac()
-      ? theme.spacing[2]
+    paddingTop: getIsElectronMac()
+      ? theme.spacing[2] + MAC_INPUT_TOP_INSET
       : { xs: theme.spacing[2], md: theme.spacing[4] },
-    ...(getIsElectronMac() ? { paddingTop: theme.spacing[2] + MAC_INPUT_TOP_INSET } : {}),
+    // The button row bleeds 6px horizontally, so match its corner inset at the bottom.
+    paddingBottom: getIsElectronMac()
+      ? theme.spacing[2]
+      : { xs: theme.spacing[2], md: theme.spacing[3] },
     paddingHorizontal: getIsElectronMac()
       ? theme.spacing[3]
       : { xs: theme.spacing[3], md: theme.spacing[4] },
