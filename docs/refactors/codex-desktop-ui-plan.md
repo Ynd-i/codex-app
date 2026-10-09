@@ -1540,6 +1540,31 @@ notification on both turns, and the interrupt ended each turn as
 `error_during_execution` before any answer. The packaged daemon was not restarted,
 so the installed app does not have the patch yet.
 
+### `.agents` workspace contract, phase 1 — 2026-10-09
+
+This is a daemon change, an exception to the UI-only rule like the Claude fast-mode
+patch above. It adds `packages/server/src/server/agent/workspace-contract/` and three
+call sites in `prepareSessionConfig` in `agent-manager.ts`, plus one option set in
+`bootstrap.ts`. Expect conflicts there when upstream changes how launch configs are
+built. No provider, protocol or plugin file changed. Behavior is in
+[workspace-contract.md](../workspace-contract.md).
+
+Decisions:
+
+- Registry MCP servers and the appended `~/.agents/AGENTS.md` reach the launch
+  config only, beside the runtime `paseo` server. The stored agent record is unchanged,
+  so a removed `.mcp.json` entry disappears on the next launch.
+- `AgentManager` reads the contract only when `workspaceContractHome` is set.
+  `bootstrap.ts` passes `os.homedir()`. Tests that omit it never touch the real home.
+- Archived-history loads skip the contract, because their cwd may already be gone.
+- The MCP capability check still looks at explicit servers only, so a provider without
+  MCP support ignores registry servers instead of failing creation.
+- ACP providers take no system prompt. They do not get the instructions, and no second
+  mechanism was added.
+
+Validation: unit tests in `workspace-contract/*.test.ts` and two `agent-manager.test.ts`
+cases. Server typecheck, lint and format pass.
+
 ### Desktop notifications not appearing — 2026-10-04
 
 The user saw no notifications. In `com.apple.ncprefs.plist`, `local.paseo.custom.desktop`
