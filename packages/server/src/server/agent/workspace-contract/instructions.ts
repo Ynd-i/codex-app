@@ -38,7 +38,7 @@ export async function resolveContractInstructions(params: {
 
   const vendorText = await readFile(vendorPath, "utf8").catch(() => null);
   if (vendorText === null) return instructions.text;
-  if (vendorText === instructions.text) return null;
+  if (vendorText.trim() === instructions.text.trim()) return null;
   if (vendor.followsImports) {
     const imports = new Set(["@~/.agents/AGENTS.md", `@${instructions.path}`]);
     if (vendorText.split(/\s+/).some((word) => imports.has(word))) return null;

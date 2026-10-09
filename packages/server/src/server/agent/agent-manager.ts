@@ -86,11 +86,9 @@ import { isSystemInjectedEnvelope } from "./agent-prompt.js";
 import { isStaleProviderSessionError } from "./stale-provider-session-error.js";
 import { stripInternalPaseoMcpServer, withRuntimePaseoMcpServer } from "./runtime-mcp-config.js";
 import { composeSystemPromptParts } from "./system-prompt.js";
-import {
-  loadWorkspaceContract,
-  mirrorAgentsSkillsIntoClaude,
-  resolveContractInstructions,
-} from "./workspace-contract/index.js";
+import { mirrorAgentsSkillsIntoClaude } from "./workspace-contract/claude-skills-mirror.js";
+import { resolveContractInstructions } from "./workspace-contract/instructions.js";
+import { loadWorkspaceContract } from "./workspace-contract/load-workspace-contract.js";
 import { resolveCreateAgentTitles } from "./create-agent-title.js";
 import { forkTitle } from "./fork-title.js";
 import type { PaseoToolCatalogFactory } from "./tools/types.js";

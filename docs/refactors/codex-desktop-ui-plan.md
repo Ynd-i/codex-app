@@ -1543,7 +1543,8 @@ so the installed app does not have the patch yet.
 ### `.agents` workspace contract, phase 1 — 2026-10-09
 
 This is a daemon change, an exception to the UI-only rule like the Claude fast-mode
-patch above. It adds `packages/server/src/server/agent/workspace-contract/` and three
+patch above. On 2026-10-09 the user allowed backend changes that serve the unified
+`.agents/` theme. It adds `packages/server/src/server/agent/workspace-contract/` and three
 call sites in `prepareSessionConfig` in `agent-manager.ts`, plus one option set in
 `bootstrap.ts`. Expect conflicts there when upstream changes how launch configs are
 built. No provider, protocol or plugin file changed. Behavior is in
