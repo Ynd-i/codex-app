@@ -1,6 +1,6 @@
 import { expect, test, vi } from "vitest";
 import { spawn } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readlinkSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
@@ -3002,6 +3002,98 @@ test("createAgent injects paseo MCP server only into provider launch config", as
       command: "custom-mcp",
     },
   });
+});
+
+test("createAgent merges the .agents contract into the launch config only", async () => {
+  const workdir = mkdtempSync(join(tmpdir(), "agent-manager-test-"));
+  const home = join(workdir, "home");
+  const repo = join(workdir, "repo");
+  mkdirSync(join(home, ".agents"), { recursive: true });
+  mkdirSync(join(repo, ".git"), { recursive: true });
+  mkdirSync(join(repo, ".agents"), { recursive: true });
+  writeFileSync(join(home, ".agents", "AGENTS.md"), "Contract instructions.\n");
+  writeFileSync(
+    join(repo, ".agents", ".mcp.json"),
+    JSON.stringify({
+      mcpServers: {
+        demo: { command: "echo", args: ["mcp"] },
+        shared: { command: "registry-shared" },
+      },
+    }),
+  );
+  const storage = new AgentStorage(join(workdir, "agents"), logger);
+
+  class McpTestClient extends TestAgentClient {
+    override async createSession(config: AgentSessionConfig): Promise<AgentSession> {
+      this.createdConfigs.push(config);
+      return new McpCapableTestAgentSession(config);
+    }
+  }
+
+  const client = new McpTestClient();
+  const manager = new AgentManager({
+    clients: { codex: client },
+    registry: storage,
+    logger,
+    appendSystemPrompt: "Daemon instructions.",
+    workspaceContractHome: home,
+    idFactory: () => "00000000-0000-4000-8000-000000000105",
+  });
+
+  try {
+    const snapshot = await manager.createAgent(
+      {
+        provider: "codex",
+        cwd: repo,
+        mcpServers: { shared: { type: "stdio", command: "explicit-shared" } },
+      },
+      undefined,
+      { workspaceId: undefined },
+    );
+
+    expect(client.createdConfigs[0]?.mcpServers).toEqual({
+      demo: { type: "stdio", command: "echo", args: ["mcp"] },
+      shared: { type: "stdio", command: "explicit-shared" },
+    });
+    expect(client.createdConfigs[0]?.daemonAppendSystemPrompt).toBe(
+      "Daemon instructions.\n\nContract instructions.",
+    );
+    expect(snapshot.config.mcpServers).toEqual({
+      shared: { type: "stdio", command: "explicit-shared" },
+    });
+    const stored = await storage.get(snapshot.id);
+    expect(stored?.config?.mcpServers).toEqual({
+      shared: { type: "stdio", command: "explicit-shared" },
+    });
+  } finally {
+    rmSync(workdir, { recursive: true, force: true });
+  }
+});
+
+test("creating a Claude-based agent mirrors ~/.agents/skills into ~/.claude/skills", async () => {
+  const workdir = mkdtempSync(join(tmpdir(), "agent-manager-test-"));
+  const home = join(workdir, "home");
+  const skillDir = join(home, ".agents", "skills", "review");
+  mkdirSync(skillDir, { recursive: true });
+  writeFileSync(join(skillDir, "SKILL.md"), "# review\n");
+  const client = new TestAgentClient("claude-work");
+  const manager = new AgentManager({
+    clients: { "claude-work": client },
+    providerDefinitions: { "claude-work": { enabled: true, derivedFromProviderId: "claude" } },
+    logger,
+    workspaceContractHome: home,
+    idFactory: () => "00000000-0000-4000-8000-000000000106",
+  });
+
+  try {
+    await manager.createAgent({ provider: "claude-work", cwd: workdir }, undefined, {
+      workspaceId: undefined,
+    });
+
+    expect(readlinkSync(join(home, ".claude", "skills", "review"))).toBe(skillDir);
+  } finally {
+    rmSync(workdir, { recursive: true, force: true });
+  }
 });
 
 test("createAgent closes and rejects a provider session that cannot honor MCP servers", async () => {

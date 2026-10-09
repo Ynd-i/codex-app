@@ -55,6 +55,7 @@ import {
   type ImportedTimelineEntry,
   type ImportableProviderSession,
   type ListImportableSessionsOptions,
+  type McpServerConfig,
 } from "./agent-sdk-types.js";
 import { buildArchivedAgentRecord, type ArchivedStoredAgentRecord } from "./agent-archive.js";
 import type { StoredAgentRecord, AgentStorage } from "./agent-storage.js";
@@ -84,6 +85,12 @@ import { invokeRewindCapability, type RewindMode } from "./rewind/rewind.js";
 import { isSystemInjectedEnvelope } from "./agent-prompt.js";
 import { isStaleProviderSessionError } from "./stale-provider-session-error.js";
 import { stripInternalPaseoMcpServer, withRuntimePaseoMcpServer } from "./runtime-mcp-config.js";
+import { composeSystemPromptParts } from "./system-prompt.js";
+import {
+  loadWorkspaceContract,
+  mirrorAgentsSkillsIntoClaude,
+  resolveContractInstructions,
+} from "./workspace-contract/index.js";
 import { resolveCreateAgentTitles } from "./create-agent-title.js";
 import { forkTitle } from "./fork-title.js";
 import type { PaseoToolCatalogFactory } from "./tools/types.js";
@@ -334,6 +341,8 @@ export interface AgentManagerOptions {
   paseoToolCatalogFactory?: PaseoToolCatalogFactory;
   resolvePaseoToolPolicy?: (provider: AgentProvider) => ProviderPaseoToolsPolicy | undefined;
   appendSystemPrompt?: string;
+  /** Home holding the user-level `.agents` contract. Unset disables the contract bridges. */
+  workspaceContractHome?: string;
   agentStreamCoalesceWindowMs?: number;
   rescueTimeouts?: AgentManagerRescueTimeouts;
   beforeSteerUnavailableFallback?: (input: {
@@ -751,6 +760,7 @@ export class AgentManager {
     provider: AgentProvider,
   ) => ProviderPaseoToolsPolicy | undefined;
   private appendSystemPrompt: string;
+  private readonly workspaceContractHome: string | undefined;
   private onAgentAttention?: AgentAttentionCallback;
   private onAgentArchived?: AgentArchivedCallback;
   private onWorkspaceStateMayHaveChanged?: (params: { cwd: string }) => void;
@@ -771,6 +781,7 @@ export class AgentManager {
     this.configurePaseoTools(options);
     this.resolvePaseoToolPolicy = options.resolvePaseoToolPolicy ?? (() => undefined);
     this.appendSystemPrompt = options.appendSystemPrompt ?? "";
+    this.workspaceContractHome = options.workspaceContractHome;
     this.logger = options.logger.child({ module: "agent", component: "agent-manager" });
     this.rescueTimeouts = {
       reloadSessionCloseMs:
@@ -5261,9 +5272,12 @@ export class AgentManager {
     const paseoToolPolicy = this.paseoToolsEnabled
       ? this.resolvePaseoToolPolicy(storedConfig.provider)
       : { enabled: false };
+    const contract = await this.loadLaunchWorkspaceContract(storedConfig, options.purpose);
     const launchConfig = this.applyDaemonAppendSystemPrompt(
       withRuntimePaseoMcpServer({
-        config: storedConfig,
+        config: Object.keys(contract.mcpServers).length
+          ? { ...storedConfig, mcpServers: { ...contract.mcpServers, ...storedConfig.mcpServers } }
+          : storedConfig,
         agentId,
         mcpBaseUrl:
           this.paseoToolsEnabled && isPaseoToolPolicyEnabled(paseoToolPolicy)
@@ -5271,12 +5285,65 @@ export class AgentManager {
             : null,
         mcpAuthToken: this.mcpAuthToken,
       }),
+      contract.instructions,
     );
     return { storedConfig, launchConfig, paseoToolPolicy };
   }
 
-  private applyDaemonAppendSystemPrompt(config: AgentSessionConfig): AgentSessionConfig {
-    const daemonAppendSystemPrompt = this.appendSystemPrompt.trim();
+  /**
+   * The `.agents` contract parts that reach the launch config only, never the stored
+   * record. See docs/workspace-contract.md.
+   */
+  private async loadLaunchWorkspaceContract(
+    config: AgentSessionConfig,
+    purpose: AgentResumePurpose | undefined,
+  ): Promise<{ mcpServers: Record<string, McpServerConfig>; instructions: string | null }> {
+    const home = this.workspaceContractHome;
+    if (!home || purpose === "history") return { mcpServers: {}, instructions: null };
+    const baseProviderId = this.resolveBaseProviderId(config.provider);
+    if (baseProviderId === "claude") {
+      await mirrorAgentsSkillsIntoClaude({ home, logger: this.logger });
+    }
+    const contract = await loadWorkspaceContract({
+      home,
+      cwd: config.cwd,
+      onWarning: (message) => this.logger.warn({ cwd: config.cwd }, message),
+    });
+    if (contract.layers.length > 0) {
+      this.logger.info(
+        {
+          cwd: config.cwd,
+          layers: contract.layers.map((layer) => layer.dir),
+          mcpServers: Object.keys(contract.mcpServers),
+        },
+        "Loaded .agents workspace contract",
+      );
+    }
+    return {
+      mcpServers: contract.mcpServers,
+      instructions: await resolveContractInstructions({ contract, baseProviderId, home }),
+    };
+  }
+
+  private resolveBaseProviderId(provider: AgentProvider): string {
+    let current: string = provider;
+    // Bounded in case a misconfigured profile chain loops.
+    for (let depth = 0; depth < 8; depth++) {
+      const base = this.providerDefinitions.get(current)?.derivedFromProviderId;
+      if (!base) break;
+      current = base;
+    }
+    return current;
+  }
+
+  private applyDaemonAppendSystemPrompt(
+    config: AgentSessionConfig,
+    contractInstructions: string | null,
+  ): AgentSessionConfig {
+    const daemonAppendSystemPrompt = composeSystemPromptParts(
+      this.appendSystemPrompt,
+      contractInstructions,
+    );
     const next = { ...config };
     delete next.daemonAppendSystemPrompt;
 
