@@ -3156,6 +3156,43 @@ test("createAgent skips project .agents layers of an untrusted repo and logs why
   }
 });
 
+test("resuming a stored agent drops registry servers kept in provider metadata", async () => {
+  const workdir = mkdtempSync(join(tmpdir(), "agent-manager-test-"));
+  const home = join(workdir, "home");
+  const repo = join(workdir, "repo");
+  mkdirSync(home, { recursive: true });
+  mkdirSync(join(repo, ".git"), { recursive: true });
+  mkdirSync(join(repo, ".agents"), { recursive: true });
+  writeFileSync(
+    join(repo, ".agents", ".mcp.json"),
+    JSON.stringify({ mcpServers: { demo: { command: "echo", args: ["mcp"] } } }),
+  );
+  const client = new McpCapableTestAgentClient();
+  const manager = new AgentManager({
+    clients: { codex: client },
+    logger,
+    workspaceContract: { home, trustedRoots: [] },
+    idFactory: () => "00000000-0000-4000-8000-000000000109",
+  });
+
+  try {
+    // Codex persists its launch servers in metadata; buildConfigOverrides always sets the key.
+    const snapshot = await manager.resumeAgentFromPersistence(
+      {
+        provider: "codex",
+        sessionId: "session-demo",
+        metadata: { cwd: repo, mcpServers: { demo: { type: "stdio", command: "echo" } } },
+      },
+      { cwd: repo, mcpServers: undefined },
+    );
+
+    expect(client.resumeOverrides[0]?.mcpServers).toBeUndefined();
+    expect(snapshot.config.mcpServers).toBeUndefined();
+  } finally {
+    rmSync(workdir, { recursive: true, force: true });
+  }
+});
+
 test("creating a Claude-based agent mirrors ~/.agents/skills into ~/.claude/skills", async () => {
   const workdir = mkdtempSync(join(tmpdir(), "agent-manager-test-"));
   const home = join(workdir, "home");
