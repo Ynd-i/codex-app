@@ -1,4 +1,5 @@
 import { expect, test, vi } from "vitest";
+import pino from "pino";
 import { spawn } from "node:child_process";
 import { mkdirSync, mkdtempSync, readlinkSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -3036,7 +3037,7 @@ test("createAgent merges the .agents contract into the launch config only", asyn
     registry: storage,
     logger,
     appendSystemPrompt: "Daemon instructions.",
-    workspaceContractHome: home,
+    workspaceContract: { home, trustedRoots: [repo] },
     idFactory: () => "00000000-0000-4000-8000-000000000105",
   });
 
@@ -3070,6 +3071,56 @@ test("createAgent merges the .agents contract into the launch config only", asyn
   }
 });
 
+test("createAgent skips project .agents layers of an untrusted repo and logs why", async () => {
+  const workdir = mkdtempSync(join(tmpdir(), "agent-manager-test-"));
+  const home = join(workdir, "home");
+  const repo = join(workdir, "repo");
+  mkdirSync(home, { recursive: true });
+  mkdirSync(join(repo, ".git"), { recursive: true });
+  mkdirSync(join(repo, ".agents"), { recursive: true });
+  writeFileSync(
+    join(repo, ".agents", ".mcp.json"),
+    JSON.stringify({ mcpServers: { demo: { command: "echo", args: ["mcp"] } } }),
+  );
+  const logLines: string[] = [];
+
+  class McpTestClient extends TestAgentClient {
+    override async createSession(config: AgentSessionConfig): Promise<AgentSession> {
+      this.createdConfigs.push(config);
+      return new McpCapableTestAgentSession(config);
+    }
+  }
+
+  const client = new McpTestClient();
+  const manager = new AgentManager({
+    clients: { codex: client },
+    logger: pino({ level: "warn" }, { write: (line: string) => logLines.push(line) }),
+    workspaceContract: { home, trustedRoots: [join(workdir, "elsewhere")] },
+    idFactory: () => "00000000-0000-4000-8000-000000000107",
+  });
+
+  try {
+    await manager.createAgent(
+      {
+        provider: "codex",
+        cwd: repo,
+        mcpServers: { explicit: { type: "stdio", command: "explicit-mcp" } },
+      },
+      undefined,
+      { workspaceId: undefined },
+    );
+
+    expect(client.createdConfigs[0]?.mcpServers).toEqual({
+      explicit: { type: "stdio", command: "explicit-mcp" },
+    });
+    const warning = logLines.find((line) => line.includes("untrusted repo root"));
+    expect(warning).toContain(repo);
+    expect(warning).toContain("daemon.workspaceContract.trustedRoots");
+  } finally {
+    rmSync(workdir, { recursive: true, force: true });
+  }
+});
+
 test("creating a Claude-based agent mirrors ~/.agents/skills into ~/.claude/skills", async () => {
   const workdir = mkdtempSync(join(tmpdir(), "agent-manager-test-"));
   const home = join(workdir, "home");
@@ -3081,7 +3132,7 @@ test("creating a Claude-based agent mirrors ~/.agents/skills into ~/.claude/skil
     clients: { "claude-work": client },
     providerDefinitions: { "claude-work": { enabled: true, derivedFromProviderId: "claude" } },
     logger,
-    workspaceContractHome: home,
+    workspaceContract: { home, trustedRoots: [] },
     idFactory: () => "00000000-0000-4000-8000-000000000106",
   });
 

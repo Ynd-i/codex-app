@@ -411,6 +411,8 @@ export interface PaseoDaemonConfig {
   appendSystemPrompt?: string;
   terminalProfiles?: TerminalProfile[];
   agentProfiles?: AgentProfile[];
+  /** Raw `daemon.workspaceContract.trustedRoots` entries. Startup-only. */
+  workspaceContractTrustedRoots?: string[];
   skillSelection?: AgentSkillSelection;
   pluginsEnabled?: boolean;
   plugins?: Record<string, PluginSource>;
@@ -949,7 +951,10 @@ export async function createPaseoDaemon(
     providerDefinitions: initialAgentManagerState.providerDefinitions,
     registry: agentStorage,
     appendSystemPrompt: config.appendSystemPrompt,
-    workspaceContractHome: homedir(),
+    workspaceContract: {
+      home: homedir(),
+      trustedRoots: config.workspaceContractTrustedRoots ?? [],
+    },
     onWorkspaceStateMayHaveChanged: ({ cwd }) => {
       workspaceGitService.onWorkspaceStateMayHaveChanged(cwd);
     },

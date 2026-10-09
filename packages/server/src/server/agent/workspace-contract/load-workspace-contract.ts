@@ -1,5 +1,6 @@
 import { lstat, readFile, stat } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, resolve } from "node:path";
+import { isRealpathInsideRoot } from "../../../utils/path.js";
 import type { McpServerConfig } from "../agent-sdk-types.js";
 import { parseMcpJson } from "./mcp-json.js";
 import type { WorkspaceContract, WorkspaceContractLayer } from "./types.js";
@@ -7,19 +8,25 @@ import type { WorkspaceContract, WorkspaceContractLayer } from "./types.js";
 const AGENTS_DIR = ".agents";
 const RESERVED_MCP_SERVER_NAME = "paseo";
 const MAX_REPO_ROOT_DEPTH = 64;
+const TRUSTED_ROOTS_CONFIG_KEY = "daemon.workspaceContract.trustedRoots";
 
 /**
  * Reads the `.agents` contract that applies to `cwd`: the user layer under `home`,
- * then every `.agents` directory from the git repo root down to `cwd`. Unreadable
- * or malformed files are reported through `onWarning` and skipped.
+ * then every `.agents` directory from the git repo root down to `cwd`. Project layers
+ * apply only when the repo root is at or below one of `trustedRoots`, because they
+ * launch repo-defined commands. Unreadable or malformed files are reported through
+ * `onWarning` and skipped.
  */
 export async function loadWorkspaceContract(params: {
   home: string;
   cwd: string;
+  /** Absolute or `~`-prefixed directories, as written in the daemon config. */
+  trustedRoots: readonly string[];
   onWarning: (message: string) => void;
 }): Promise<WorkspaceContract> {
-  const { home, onWarning } = params;
-  const layers = await resolveLayers(resolve(home), resolve(params.cwd));
+  const { onWarning } = params;
+  const home = resolve(params.home);
+  const layers = await resolveLayers(home, resolve(params.cwd), params.trustedRoots, onWarning);
 
   const entries: Array<[string, McpServerConfig]> = [];
   for (const layer of layers) {
@@ -47,17 +54,44 @@ export async function loadWorkspaceContract(params: {
   return { layers, mcpServers, instructions };
 }
 
-async function resolveLayers(home: string, cwd: string): Promise<WorkspaceContractLayer[]> {
+async function resolveLayers(
+  home: string,
+  cwd: string,
+  trustedRoots: readonly string[],
+  onWarning: (message: string) => void,
+): Promise<WorkspaceContractLayer[]> {
   const userDir = join(home, AGENTS_DIR);
-  const projectDirs = (await projectDirsFromRepoRoot(cwd))
-    .map((dir) => join(dir, AGENTS_DIR))
-    .filter((dir) => dir !== userDir);
+  const repoDirs = await projectDirsFromRepoRoot(cwd);
+  const repoRoot = repoDirs[0]!;
+  const projectDirs = repoDirs.map((dir) => join(dir, AGENTS_DIR)).filter((dir) => dir !== userDir);
   const candidates: WorkspaceContractLayer[] = [
     { kind: "user", dir: userDir },
     ...projectDirs.map((dir) => ({ kind: "project" as const, dir })),
   ];
   const exists = await Promise.all(candidates.map((layer) => isDirectory(layer.dir)));
-  return candidates.filter((_, index) => exists[index]);
+  const layers = candidates.filter((_, index) => exists[index]);
+  if (
+    layers.some((layer) => layer.kind === "project") &&
+    !isTrustedRepoRoot(repoRoot, home, trustedRoots)
+  ) {
+    onWarning(
+      `Ignoring project .agents under untrusted repo root ${repoRoot}; add it to ${TRUSTED_ROOTS_CONFIG_KEY} to apply them`,
+    );
+    return layers.filter((layer) => layer.kind === "user");
+  }
+  return layers;
+}
+
+function isTrustedRepoRoot(
+  repoRoot: string,
+  home: string,
+  trustedRoots: readonly string[],
+): boolean {
+  return trustedRoots.some((root) => {
+    const expanded = root === "~" || root.startsWith("~/") ? join(home, root.slice(1)) : root;
+    // A relative entry would resolve against the daemon's cwd, so it trusts nothing.
+    return isAbsolute(expanded) && isRealpathInsideRoot(resolve(expanded), repoRoot);
+  });
 }
 
 /** Directories from the git repo root down to `cwd`, or `cwd` alone outside a repo. */

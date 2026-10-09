@@ -323,6 +323,13 @@ export interface CreateAgentOptions {
   owner?: AgentOwner;
 }
 
+export interface WorkspaceContractOptions {
+  /** Home holding the user-level `.agents` contract. */
+  home: string;
+  /** Directories whose repos may apply project `.agents` layers. */
+  trustedRoots: readonly string[];
+}
+
 export interface AgentManagerOptions {
   pluginLifecycle?: PluginLifecycle;
   clients?: ProviderClientMap;
@@ -339,8 +346,8 @@ export interface AgentManagerOptions {
   paseoToolCatalogFactory?: PaseoToolCatalogFactory;
   resolvePaseoToolPolicy?: (provider: AgentProvider) => ProviderPaseoToolsPolicy | undefined;
   appendSystemPrompt?: string;
-  /** Home holding the user-level `.agents` contract. Unset disables the contract bridges. */
-  workspaceContractHome?: string;
+  /** Unset disables the `.agents` contract bridges. */
+  workspaceContract?: WorkspaceContractOptions;
   agentStreamCoalesceWindowMs?: number;
   rescueTimeouts?: AgentManagerRescueTimeouts;
   beforeSteerUnavailableFallback?: (input: {
@@ -758,7 +765,7 @@ export class AgentManager {
     provider: AgentProvider,
   ) => ProviderPaseoToolsPolicy | undefined;
   private appendSystemPrompt: string;
-  private readonly workspaceContractHome: string | undefined;
+  private readonly workspaceContract: WorkspaceContractOptions | undefined;
   private onAgentAttention?: AgentAttentionCallback;
   private onAgentArchived?: AgentArchivedCallback;
   private onWorkspaceStateMayHaveChanged?: (params: { cwd: string }) => void;
@@ -779,7 +786,7 @@ export class AgentManager {
     this.configurePaseoTools(options);
     this.resolvePaseoToolPolicy = options.resolvePaseoToolPolicy ?? (() => undefined);
     this.appendSystemPrompt = options.appendSystemPrompt ?? "";
-    this.workspaceContractHome = options.workspaceContractHome;
+    this.workspaceContract = options.workspaceContract;
     this.logger = options.logger.child({ module: "agent", component: "agent-manager" });
     this.rescueTimeouts = {
       reloadSessionCloseMs:
@@ -5296,8 +5303,10 @@ export class AgentManager {
     config: AgentSessionConfig,
     purpose: AgentResumePurpose | undefined,
   ): Promise<{ mcpServers: Record<string, McpServerConfig>; instructions: string | null }> {
-    const home = this.workspaceContractHome;
-    if (!home || purpose === "history") return { mcpServers: {}, instructions: null };
+    if (!this.workspaceContract || purpose === "history") {
+      return { mcpServers: {}, instructions: null };
+    }
+    const { home, trustedRoots } = this.workspaceContract;
     const baseProviderId = this.resolveBaseProviderId(config.provider);
     if (baseProviderId === "claude") {
       await mirrorAgentsSkillsIntoClaude({ home, logger: this.logger });
@@ -5305,6 +5314,7 @@ export class AgentManager {
     const contract = await loadWorkspaceContract({
       home,
       cwd: config.cwd,
+      trustedRoots,
       onWarning: (message) => this.logger.warn({ cwd: config.cwd }, message),
     });
     if (contract.layers.length > 0) {

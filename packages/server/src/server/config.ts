@@ -623,6 +623,7 @@ export function resolveConfigFromPersisted(
     appendSystemPrompt,
     terminalProfiles,
     agentProfiles,
+    workspaceContractTrustedRoots: persisted.daemon?.workspaceContract?.trustedRoots ?? [],
     skillSelection: persisted.agents?.skills?.selection,
     pluginsEnabled: persisted.pluginsEnabled ?? false,
     plugins: persisted.plugins,
