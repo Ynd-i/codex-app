@@ -185,7 +185,10 @@ export interface AgentManagerProviderState {
   providerDefinitions: Partial<
     Record<
       AgentProvider,
-      Pick<ProviderDefinition, "enabled" | "derivedFromProviderId" | "applyToolPolicy">
+      Pick<ProviderDefinition, "enabled" | "derivedFromProviderId" | "applyToolPolicy"> & {
+        /** Configured env overlay, profile env merged over its base provider's. */
+        env?: Record<string, string>;
+      }
     >
   >;
   clients: Partial<Record<AgentProvider, AgentClient>>;
@@ -367,6 +370,7 @@ export class ProviderSnapshotManager {
         enabled: definition.enabled,
         derivedFromProviderId: definition.derivedFromProviderId,
         applyToolPolicy: definition.applyToolPolicy,
+        env: definition.configuration?.runtimeSettings?.env,
       };
       if (definition.enabled) {
         clients[provider] = this.ensureClient(provider, definition, providerClients);
