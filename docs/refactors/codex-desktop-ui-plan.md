@@ -1555,8 +1555,9 @@ Decisions:
 - Registry MCP servers and the appended `~/.agents/AGENTS.md` reach the launch
   config only, beside the runtime `paseo` server. The stored agent record is unchanged,
   so a removed `.mcp.json` entry disappears on the next launch.
-- `AgentManager` reads the contract only when `workspaceContractHome` is set.
-  `bootstrap.ts` passes `os.homedir()`. Tests that omit it never touch the real home.
+- `AgentManager` reads the contract only when its `workspaceContract` option is set.
+  `bootstrap.ts` passes `os.homedir()` and the trusted roots. Tests that omit it never
+  touch the real home.
 - Archived-history loads skip the contract, because their cwd may already be gone.
 - The MCP capability check still looks at explicit servers only, so a provider without
   MCP support ignores registry servers instead of failing creation.
@@ -1565,6 +1566,25 @@ Decisions:
 
 Validation: unit tests in `workspace-contract/*.test.ts` and two `agent-manager.test.ts`
 cases. Server typecheck, lint and format pass.
+
+Phase 1b, same day:
+
+- Project `.agents` layers need a trusted repo root, from
+  `daemon.workspaceContract.trustedRoots`. Claude Code and Codex gate project MCP config
+  the same way. Trust stays a list of directories so a later in-app "trust this repo"
+  prompt appends to the same list. The key is startup-only: making it reloadable means
+  adding it to `MutableDaemonConfigSchema` in `packages/protocol`, which is broadcast to
+  clients, and this change keeps protocol untouched.
+- The instructions dedupe reads `CLAUDE_CONFIG_DIR` and `CODEX_HOME` from the provider's
+  launch env. `ProviderSnapshotManager` projects each provider's configured env into the
+  `AgentManager` provider state next to `derivedFromProviderId`, so a provider config
+  reload reaches it without a new `AgentManager` option. The env is built with
+  `createProviderEnv`, the precedence providers use.
+- Proof on the dev daemon (port 6768): a Codex agent in a trusted temp repo logged
+  `Loaded .agents workspace contract` with `mcpServers: ["demo"]`, Codex logged a failed
+  MCP handshake for `demo` (expected for `echo`), and the stored record had no
+  `config.mcpServers`. Codex's provider persistence metadata did list `demo`; see
+  [workspace-contract.md](../workspace-contract.md).
 
 ### Desktop notifications not appearing — 2026-10-04
 
