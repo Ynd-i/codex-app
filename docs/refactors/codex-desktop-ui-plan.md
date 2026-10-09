@@ -1580,6 +1580,14 @@ Phase 1b, same day:
   `AgentManager` provider state next to `derivedFromProviderId`, so a provider config
   reload reaches it without a new `AgentManager` option. The env is built with
   `createProviderEnv`, the precedence providers use.
+- The `daemon` config object is strict. A daemon or CLI built before this change rejects
+  the whole `config.json` when it holds `workspaceContract` (the stale dev CLI did:
+  `daemon: Unrecognized key: "workspaceContract"`). Add the key only once the packaged
+  app ships this branch.
+- A resume keeps Codex's metadata servers out of the stored config only because
+  `buildConfigOverrides` always sets `mcpServers`, even to `undefined`. The resume RPC
+  for a handle with no stored record passes client overrides alone, so metadata servers
+  from an earlier trusted launch would become explicit servers there. Not fixed.
 - Proof on the dev daemon (port 6768): a Codex agent in a trusted temp repo logged
   `Loaded .agents workspace contract` with `mcpServers: ["demo"]`, Codex logged a failed
   MCP handshake for `demo` (expected for `echo`), and the stored record had no
