@@ -27,10 +27,12 @@ describe("resolveContractInstructions", () => {
     const { home, contract } = createHome();
     writeVendorFile(home, ".claude/CLAUDE.md", "Other rules.\n");
 
-    expect(await resolveContractInstructions({ contract, baseProviderId: "claude", home })).toBe(
-      TEXT,
-    );
-    expect(await resolveContractInstructions({ contract, baseProviderId: "pi", home })).toBe(TEXT);
+    expect(
+      await resolveContractInstructions({ contract, baseProviderId: "claude", home, env: {} }),
+    ).toBe(TEXT);
+    expect(
+      await resolveContractInstructions({ contract, baseProviderId: "pi", home, env: {} }),
+    ).toBe(TEXT);
   });
 
   test("returns null without a contract instructions file", async () => {
@@ -41,6 +43,7 @@ describe("resolveContractInstructions", () => {
         contract: { ...contract, instructions: null },
         baseProviderId: "codex",
         home,
+        env: {},
       }),
     ).toBeNull();
   });
@@ -51,7 +54,7 @@ describe("resolveContractInstructions", () => {
     symlinkSync(contract.instructions!.path, join(home, ".codex", "AGENTS.md"));
 
     expect(
-      await resolveContractInstructions({ contract, baseProviderId: "codex", home }),
+      await resolveContractInstructions({ contract, baseProviderId: "codex", home, env: {} }),
     ).toBeNull();
   });
 
@@ -60,7 +63,7 @@ describe("resolveContractInstructions", () => {
     writeVendorFile(home, ".config/opencode/AGENTS.md", TEXT);
 
     expect(
-      await resolveContractInstructions({ contract, baseProviderId: "opencode", home }),
+      await resolveContractInstructions({ contract, baseProviderId: "opencode", home, env: {} }),
     ).toBeNull();
   });
 
@@ -69,7 +72,7 @@ describe("resolveContractInstructions", () => {
     writeVendorFile(home, ".claude/CLAUDE.md", "# Mine\n\n@~/.agents/AGENTS.md\n");
 
     expect(
-      await resolveContractInstructions({ contract, baseProviderId: "claude", home }),
+      await resolveContractInstructions({ contract, baseProviderId: "claude", home, env: {} }),
     ).toBeNull();
   });
 
@@ -78,7 +81,7 @@ describe("resolveContractInstructions", () => {
     writeVendorFile(home, ".claude/CLAUDE.md", `@${contract.instructions!.path}\n`);
 
     expect(
-      await resolveContractInstructions({ contract, baseProviderId: "claude", home }),
+      await resolveContractInstructions({ contract, baseProviderId: "claude", home, env: {} }),
     ).toBeNull();
   });
 
@@ -86,8 +89,41 @@ describe("resolveContractInstructions", () => {
     const { home, contract } = createHome();
     writeVendorFile(home, ".codex/AGENTS.md", "@~/.agents/AGENTS.md\n");
 
-    expect(await resolveContractInstructions({ contract, baseProviderId: "codex", home })).toBe(
-      TEXT,
-    );
+    expect(
+      await resolveContractInstructions({ contract, baseProviderId: "codex", home, env: {} }),
+    ).toBe(TEXT);
+  });
+
+  test("checks the Claude file under CLAUDE_CONFIG_DIR", async () => {
+    const { home, contract } = createHome();
+    const configDir = mkdtempSync(join(tmpdir(), "workspace-contract-claude-"));
+    writeVendorFile(configDir, "CLAUDE.md", TEXT);
+    const env = { CLAUDE_CONFIG_DIR: configDir };
+
+    expect(
+      await resolveContractInstructions({ contract, baseProviderId: "claude", home, env }),
+    ).toBeNull();
+  });
+
+  test("ignores the default Claude file when CLAUDE_CONFIG_DIR moves it", async () => {
+    const { home, contract } = createHome();
+    writeVendorFile(home, ".claude/CLAUDE.md", TEXT);
+    const configDir = mkdtempSync(join(tmpdir(), "workspace-contract-claude-"));
+    const env = { CLAUDE_CONFIG_DIR: configDir };
+
+    expect(
+      await resolveContractInstructions({ contract, baseProviderId: "claude", home, env }),
+    ).toBe(TEXT);
+  });
+
+  test("checks the Codex file under CODEX_HOME", async () => {
+    const { home, contract } = createHome();
+    const codexHome = mkdtempSync(join(tmpdir(), "workspace-contract-codex-"));
+    writeVendorFile(codexHome, "AGENTS.md", TEXT);
+    const env = { CODEX_HOME: codexHome };
+
+    expect(
+      await resolveContractInstructions({ contract, baseProviderId: "codex", home, env }),
+    ).toBeNull();
   });
 });

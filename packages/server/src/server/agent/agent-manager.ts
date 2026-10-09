@@ -86,6 +86,7 @@ import { isSystemInjectedEnvelope } from "./agent-prompt.js";
 import { isStaleProviderSessionError } from "./stale-provider-session-error.js";
 import { stripInternalPaseoMcpServer, withRuntimePaseoMcpServer } from "./runtime-mcp-config.js";
 import { composeSystemPromptParts } from "./system-prompt.js";
+import { createProviderEnv } from "./provider-launch-config.js";
 import { mirrorAgentsSkillsIntoClaude } from "./workspace-contract/claude-skills-mirror.js";
 import { resolveContractInstructions } from "./workspace-contract/instructions.js";
 import { loadWorkspaceContract } from "./workspace-contract/load-workspace-contract.js";
@@ -304,6 +305,7 @@ interface AgentManagerRescueTimeouts {
 interface ProviderEnabledFlag {
   enabled: boolean;
   derivedFromProviderId?: string | null;
+  env?: Record<string, string>;
   applyToolPolicy?: (
     config: AgentSessionConfig,
     toolPolicy: ToolPolicy | undefined,
@@ -5277,7 +5279,7 @@ export class AgentManager {
     const paseoToolPolicy = this.paseoToolsEnabled
       ? this.resolvePaseoToolPolicy(storedConfig.provider)
       : { enabled: false };
-    const contract = await this.loadLaunchWorkspaceContract(storedConfig, options.purpose);
+    const contract = await this.loadLaunchWorkspaceContract(storedConfig, options);
     const launchConfig = this.applyDaemonAppendSystemPrompt(
       withRuntimePaseoMcpServer({
         config: Object.keys(contract.mcpServers).length
@@ -5301,9 +5303,9 @@ export class AgentManager {
    */
   private async loadLaunchWorkspaceContract(
     config: AgentSessionConfig,
-    purpose: AgentResumePurpose | undefined,
+    options: { env?: Record<string, string>; purpose?: AgentResumePurpose },
   ): Promise<{ mcpServers: Record<string, McpServerConfig>; instructions: string | null }> {
-    if (!this.workspaceContract || purpose === "history") {
+    if (!this.workspaceContract || options.purpose === "history") {
       return { mcpServers: {}, instructions: null };
     }
     const { home, trustedRoots } = this.workspaceContract;
@@ -5329,7 +5331,16 @@ export class AgentManager {
     }
     return {
       mcpServers: contract.mcpServers,
-      instructions: await resolveContractInstructions({ contract, baseProviderId, home }),
+      instructions: await resolveContractInstructions({
+        contract,
+        baseProviderId,
+        home,
+        // The env the provider process gets, so a profile's CLAUDE_CONFIG_DIR or CODEX_HOME counts.
+        env: createProviderEnv({
+          runtimeSettings: { env: this.providerDefinitions.get(config.provider)?.env },
+          overlays: [options.env],
+        }),
+      }),
     };
   }
 

@@ -3071,6 +3071,41 @@ test("createAgent merges the .agents contract into the launch config only", asyn
   }
 });
 
+test("createAgent dedupes contract instructions against the profile's CODEX_HOME", async () => {
+  const workdir = mkdtempSync(join(tmpdir(), "agent-manager-test-"));
+  const home = join(workdir, "home");
+  const codexHome = join(workdir, "codex-work");
+  mkdirSync(join(home, ".agents"), { recursive: true });
+  mkdirSync(codexHome, { recursive: true });
+  writeFileSync(join(home, ".agents", "AGENTS.md"), "Contract instructions.\n");
+  writeFileSync(join(codexHome, "AGENTS.md"), "Contract instructions.\n");
+  const client = new TestAgentClient("codex-work");
+  const manager = new AgentManager({
+    clients: { "codex-work": client },
+    providerDefinitions: {
+      "codex-work": {
+        enabled: true,
+        derivedFromProviderId: "codex",
+        env: { CODEX_HOME: codexHome },
+      },
+    },
+    logger,
+    appendSystemPrompt: "Daemon instructions.",
+    workspaceContract: { home, trustedRoots: [] },
+    idFactory: () => "00000000-0000-4000-8000-000000000108",
+  });
+
+  try {
+    await manager.createAgent({ provider: "codex-work", cwd: workdir }, undefined, {
+      workspaceId: undefined,
+    });
+
+    expect(client.createdConfigs[0]?.daemonAppendSystemPrompt).toBe("Daemon instructions.");
+  } finally {
+    rmSync(workdir, { recursive: true, force: true });
+  }
+});
+
 test("createAgent skips project .agents layers of an untrusted repo and logs why", async () => {
   const workdir = mkdtempSync(join(tmpdir(), "agent-manager-test-"));
   const home = join(workdir, "home");
