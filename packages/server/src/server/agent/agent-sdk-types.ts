@@ -11,6 +11,7 @@ import type {
 } from "@getpaseo/protocol/agent-types";
 import type { AgentAttachment } from "@getpaseo/protocol/messages";
 import type { PaseoToolCatalog } from "./tools/types.js";
+import type { LaunchWorkspaceContract } from "./workspace-contract/types.js";
 
 export type {
   AgentContextUsage,
@@ -600,6 +601,11 @@ export interface AgentSessionConfig {
    * persisted into agent config so daemon setting changes apply cleanly.
    */
   daemonAppendSystemPrompt?: string;
+  /**
+   * Launch-only `.agents` contract parts that the provider maps itself. The daemon replaces it at
+   * every launch, so a value from stored metadata or a client never reaches a provider.
+   */
+  workspaceContract?: LaunchWorkspaceContract;
   modeId?: string;
   model?: string;
   thinkingOptionId?: string;
