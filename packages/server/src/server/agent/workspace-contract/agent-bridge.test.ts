@@ -86,16 +86,17 @@ describe("bridgeAgentDefinitions for Claude", () => {
   test("repoints a link into the wrong source and removes a link whose source is gone", async () => {
     const home = createDir("agent-bridge-");
     const reviewer = writeSource(home, "reviewer");
+    const other = writeSource(home, "other");
     writeSource(home, "retired");
     await bridge({ home, baseProviderId: "claude" });
     const claudeAgents = join(home, ".claude", "agents");
     rmSync(join(claudeAgents, "reviewer.md"));
-    symlinkSync(join(home, ".agents", "agents", "old.md"), join(claudeAgents, "reviewer.md"));
+    symlinkSync(other, join(claudeAgents, "reviewer.md"));
     rmSync(join(home, ".agents", "agents", "retired.md"));
 
     await bridge({ home, baseProviderId: "claude" });
 
-    expect(readdirSync(claudeAgents)).toEqual(["reviewer.md"]);
+    expect(readdirSync(claudeAgents)).toEqual(["other.md", "reviewer.md"]);
     expect(readlinkSync(join(claudeAgents, "reviewer.md"))).toBe(reviewer);
   });
 
