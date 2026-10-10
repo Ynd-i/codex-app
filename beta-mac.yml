@@ -1,6 +1,6 @@
-version: 0.11.1-custom.1.beta.2
+version: 0.11.2-custom.1.beta.1
 files:
-  - url: https://github.com/Ynd-i/codex-app/releases/download/v0.11.1-v1-beta2/Paseo-Custom-v0.11.1-v1-beta2-arm64.zip
-    sha512: U0P2F1DymQ5AbJFSAfgHluP51K7s4fLJDdCElelZY4E6EgsAoJ38YkvblyPIjh5hG5KWvIuZqyt2b238i1IK2A==
-    size: 185842312
-releaseDate: '2026-10-09T13:32:08.000Z'
+  - url: https://github.com/Ynd-i/codex-app/releases/download/v0.11.2-v1-beta1/Paseo-Custom-v0.11.2-v1-beta1-arm64.zip
+    sha512: NpPMkU+VPoz3u48iVf5RYyvoGC4CDwXYhYSxNvfs0bckTUTGqL3GtzaWhPxklVo5x/6Q2+Y/KJMeKtVHQScuBA==
+    size: 185846117
+releaseDate: '2026-10-10T10:20:02.000Z'
