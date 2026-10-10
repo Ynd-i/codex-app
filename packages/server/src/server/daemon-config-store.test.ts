@@ -29,6 +29,7 @@ function reloadableConfig(
     appendSystemPrompt: daemon.appendSystemPrompt ?? "",
     terminalProfiles: daemon.terminalProfiles,
     agentProfiles: daemon.agentProfiles,
+    workspaceContract: { trustedRoots: reloadableTrustedRoots(persisted) },
     cors: { allowedOrigins: [] },
     trustedProxies: ["loopback"],
     git: {
@@ -39,6 +40,10 @@ function reloadableConfig(
     pluginsEnabled: persisted.pluginsEnabled ?? false,
     plugins: persisted.plugins ?? {},
   };
+}
+
+function reloadableTrustedRoots(persisted: PersistedConfig): string[] {
+  return persisted.daemon?.workspaceContract?.trustedRoots ?? [];
 }
 
 describe("applyMutableProviderConfigToOverrides", () => {
@@ -982,6 +987,21 @@ describe("DaemonConfigStore reload", () => {
     });
     expect(store.get().browserTools.enabled).toBe(true);
     expect(store.get().git).toEqual({ maxProcessesPerSecond: 12, maxProcessConcurrency: 3 });
+  });
+
+  test("applies edited workspace contract trusted roots without a restart", () => {
+    const { paseoHome, store, persisted } = createReloadableStore();
+    writeConfig(paseoHome, {
+      ...persisted,
+      daemon: { ...persisted.daemon, workspaceContract: { trustedRoots: ["~/code"] } },
+    });
+
+    expect(store.reload()).toEqual({
+      appliedPaths: ["daemon.workspaceContract.trustedRoots"],
+      restartRequiredPaths: [],
+      overrideControlledPaths: [],
+    });
+    expect(store.get().workspaceContract).toEqual({ trustedRoots: ["~/code"] });
   });
 
   test("applies the global plugin switch in both directions", () => {

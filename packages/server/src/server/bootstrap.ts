@@ -411,8 +411,8 @@ export interface PaseoDaemonConfig {
   appendSystemPrompt?: string;
   terminalProfiles?: TerminalProfile[];
   agentProfiles?: AgentProfile[];
-  /** Raw `daemon.workspaceContract.trustedRoots` entries. Startup-only. */
-  workspaceContractTrustedRoots?: string[];
+  /** Trusted roots as written in config.json, `~` unexpanded. */
+  workspaceContract?: { trustedRoots: string[] };
   skillSelection?: AgentSkillSelection;
   pluginsEnabled?: boolean;
   plugins?: Record<string, PluginSource>;
@@ -565,6 +565,7 @@ function createInitialMutableDaemonConfig(config: PaseoDaemonConfig): MutableDae
     autoArchiveAfterMerge: config.autoArchiveAfterMerge ?? false,
     enableTerminalAgentHooks: config.enableTerminalAgentHooks ?? false,
     appendSystemPrompt: config.appendSystemPrompt ?? "",
+    workspaceContract: config.workspaceContract,
     pluginsEnabled: config.pluginsEnabled ?? false,
     plugins: config.plugins ?? {},
     skills: { selection: config.skillSelection },
@@ -953,7 +954,7 @@ export async function createPaseoDaemon(
     appendSystemPrompt: config.appendSystemPrompt,
     workspaceContract: {
       home: homedir(),
-      trustedRoots: config.workspaceContractTrustedRoots ?? [],
+      trustedRoots: () => daemonConfigStore.get().workspaceContract?.trustedRoots ?? [],
     },
     onWorkspaceStateMayHaveChanged: ({ cwd }) => {
       workspaceGitService.onWorkspaceStateMayHaveChanged(cwd);
