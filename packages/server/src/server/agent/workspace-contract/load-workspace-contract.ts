@@ -1,4 +1,3 @@
-import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import type { McpServerConfig } from "../agent-sdk-types.js";
 import { parseHooksJson } from "./hooks-json.js";
@@ -9,6 +8,7 @@ import {
   isDirectory,
 } from "./inspect-workspace-contract.js";
 import { parseMcpJson } from "./mcp-json.js";
+import { parseOptionalFile, readOptionalFile } from "./optional-file.js";
 import type {
   WorkspaceContract,
   WorkspaceContractLayer,
@@ -87,29 +87,4 @@ async function resolveLayers(
     return userLayers;
   }
   return [...userLayers, ...projectLayers.map((dir) => ({ kind: "project" as const, dir }))];
-}
-
-async function parseOptionalFile<T>(
-  path: string,
-  parse: (text: string, options: { onWarning: (message: string) => void }) => T,
-  onWarning: (message: string) => void,
-): Promise<T | null> {
-  const text = await readOptionalFile(path, onWarning);
-  return text === null
-    ? null
-    : parse(text, { onWarning: (message) => onWarning(`${path}: ${message}`) });
-}
-
-async function readOptionalFile(
-  path: string,
-  onWarning: (message: string) => void,
-): Promise<string | null> {
-  try {
-    return await readFile(path, "utf8");
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-      onWarning(`${path}: ${error instanceof Error ? error.message : String(error)}`);
-    }
-    return null;
-  }
 }
