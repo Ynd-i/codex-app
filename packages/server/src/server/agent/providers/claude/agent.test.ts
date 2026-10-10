@@ -1100,9 +1100,14 @@ describe("ClaudeAgentSession features", () => {
       UserPromptSubmit: [{ hooks: [{ type: "command" as const, command: "echo user" }] }],
     };
     const repoHooks = { Stop: [{ hooks: [{ type: "command" as const, command: "echo repo" }] }] };
+    const pluginHooks = {
+      SessionStart: [{ hooks: [{ type: "command" as const, command: "echo plugin" }] }],
+    };
     const workspaceContract = {
       projectLayers: ["/repo/.agents", "/repo/packages/app/.agents"],
+      plugins: [{ name: "kit", dir: "/home/.agents/plugins/kit" }],
       hooks: [
+        { kind: "plugin" as const, dir: "/home/.agents/plugins/kit", hooks: pluginHooks },
         { kind: "user" as const, dir: "/home/.agents", hooks: userHooks },
         { kind: "project" as const, dir: "/repo/.agents", hooks: repoHooks },
       ],
@@ -1126,15 +1131,16 @@ describe("ClaudeAgentSession features", () => {
       return queryFactory.mock.calls[0]?.[0].options;
     }
 
-    test("sends user hooks in settings and project layers as plugins while fast mode is on", async () => {
+    test("sends user hooks in settings, and plugins and project layers as plugins, while fast mode is on", async () => {
       const options = await launchOptions({
         model: "claude-opus-4-8",
         featureValues: { fast_mode: true },
       });
 
-      // Project hooks stay out of settings, because each plugin runs its own hooks file.
+      // Plugin and project hooks stay out of settings, because each plugin runs its own hooks file.
       expect(options.settings).toEqual({ fastMode: true, hooks: userHooks });
       expect(options.plugins).toEqual([
+        { type: "local", path: "/home/.agents/plugins/kit", skipMcpDiscovery: true },
         { type: "local", path: "/repo/.agents", skipMcpDiscovery: true },
         { type: "local", path: "/repo/packages/app/.agents", skipMcpDiscovery: true },
       ]);

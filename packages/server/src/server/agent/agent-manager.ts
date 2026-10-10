@@ -90,6 +90,7 @@ import { createProviderEnv } from "./provider-launch-config.js";
 import { mirrorAgentsSkillsIntoClaude } from "./workspace-contract/claude-skills-mirror.js";
 import { resolveContractInstructions } from "./workspace-contract/instructions.js";
 import { loadWorkspaceContract } from "./workspace-contract/load-workspace-contract.js";
+import { linkPluginSkills } from "./workspace-contract/plugins.js";
 import type { LaunchWorkspaceContract } from "./workspace-contract/types.js";
 import { resolveCreateAgentTitles } from "./create-agent-title.js";
 import { forkTitle } from "./fork-title.js";
@@ -5330,20 +5331,22 @@ export class AgentManager {
     }
     const { home, trustedRoots } = this.workspaceContract;
     const baseProviderId = this.resolveBaseProviderId(config.provider);
-    if (baseProviderId === "claude") {
-      await mirrorAgentsSkillsIntoClaude({ home, logger: this.logger });
-    }
     const contract = await loadWorkspaceContract({
       home,
       cwd: config.cwd,
       trustedRoots: trustedRoots(),
       onWarning: (message) => this.logger.warn({ cwd: config.cwd }, message),
     });
-    if (contract.layers.length > 0) {
+    await linkPluginSkills({ home, plugins: contract.plugins, logger: this.logger });
+    if (baseProviderId === "claude") {
+      await mirrorAgentsSkillsIntoClaude({ home, logger: this.logger });
+    }
+    if (contract.layers.length > 0 || contract.plugins.length > 0) {
       this.logger.info(
         {
           cwd: config.cwd,
           layers: contract.layers.map((layer) => layer.dir),
+          plugins: contract.plugins.map((plugin) => plugin.name),
           mcpServers: Object.keys(contract.mcpServers),
           hookEvents: [...new Set(contract.hooks.flatMap((layer) => Object.keys(layer.hooks)))],
         },
@@ -5353,9 +5356,11 @@ export class AgentManager {
     const projectLayers = contract.layers.flatMap((layer) =>
       layer.kind === "project" ? [layer.dir] : [],
     );
-    // Internal agents do daemon work such as naming a branch, so no user or repo hooks run there.
+    // Internal agents do daemon work such as naming a branch, so no user, plugin or repo hooks
+    // run there.
     const hasLaunchParts =
-      !config.internal && (projectLayers.length > 0 || contract.hooks.length > 0);
+      !config.internal &&
+      (projectLayers.length > 0 || contract.plugins.length > 0 || contract.hooks.length > 0);
     return {
       mcpServers: contract.mcpServers,
       instructions: await resolveContractInstructions({
@@ -5368,7 +5373,9 @@ export class AgentManager {
           overlays: [options.env],
         }),
       }),
-      launch: hasLaunchParts ? { projectLayers, hooks: contract.hooks } : null,
+      launch: hasLaunchParts
+        ? { projectLayers, plugins: contract.plugins, hooks: contract.hooks }
+        : null,
     };
   }
 
