@@ -17,7 +17,13 @@ export interface AgentDefinition {
 
 // The name is also the file name in every vendor's agents dir.
 const AGENT_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
-const FRONTMATTER = /^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/;
+// The capture keeps the last line break, so a CRLF line keeps its `\r` in the retry below and,
+// as in Claude Code, is never quoted.
+const FRONTMATTER = /^---[ \t]*\r?\n([\s\S]*?\r?\n)---[ \t]*(?:\r?\n|$)/;
+const TOP_LEVEL_VALUE = /^([a-zA-Z_-]+):\s+(\S.*)$/;
+const YAML_SPECIAL = /[{}[\]*&#!|>%@`]|: /;
+// Claude Code parses with Bun.YAML, which keeps the last of duplicate keys.
+const YAML_OPTIONS = { prettyErrors: false, uniqueKeys: false };
 // Codex block keys are written unquoted, so each must be a bare TOML key.
 const TOML_BARE_KEY = /^[A-Za-z0-9_-]+$/;
 const RESERVED_CODEX_KEYS = new Set(["name", "description", "developer_instructions"]);
@@ -56,17 +62,19 @@ function parseAgentDefinition(
   file: { name: string; path: string; text: string },
   onWarning: (message: string) => void,
 ): AgentDefinition | null {
-  const { name, path, text } = file;
+  const { name, path } = file;
   const skip = (reason: string): null => {
     onWarning(`${reason}; skipped`);
     return null;
   };
   if (!AGENT_NAME.test(name)) return skip(`'${name}' is not a plain file name`);
+  // Claude Code drops a byte order mark before it looks for the frontmatter.
+  const text = file.text.replace(/^\uFEFF/, "");
   const match = FRONTMATTER.exec(text);
   if (!match) return skip("no frontmatter between --- lines");
   let frontmatter: unknown;
   try {
-    frontmatter = YAML.parse(match[1], { prettyErrors: false });
+    frontmatter = parseFrontmatter(match[1]);
   } catch (error) {
     return skip(
       `invalid YAML frontmatter: ${error instanceof Error ? error.message : String(error)}`,
@@ -82,10 +90,48 @@ function parseAgentDefinition(
   return {
     name,
     path,
-    description: description.trim(),
+    // Claude Code reads a literal `\n` in the description as a line break.
+    description: description.replaceAll("\\n", "\n").trim(),
     prompt,
     codex: parseCodexBlock(frontmatter.codex, onWarning),
   };
+}
+
+/**
+ * Runs Claude Code 2.1.290's fallback. On invalid YAML it retries with special-character values
+ * quoted and tab indents as spaces, so `description: Use it when: ...` loads.
+ */
+function parseFrontmatter(yaml: string): unknown {
+  try {
+    return YAML.parse(yaml, YAML_OPTIONS);
+  } catch (error) {
+    const lines = yaml.split("\n").map((line) => {
+      const [, key, value] = TOP_LEVEL_VALUE.exec(line) ?? [];
+      if (!key || !value || isQuoted(value) || isFlowList(value) || !YAML_SPECIAL.test(value)) {
+        return line;
+      }
+      return `${key}: "${value.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`;
+    });
+    const retry = lines.join("\n").replace(/^\t+/gm, (tabs) => "  ".repeat(tabs.length));
+    try {
+      return YAML.parse(retry, YAML_OPTIONS);
+    } catch {
+      throw error;
+    }
+  }
+}
+
+function isQuoted(value: string): boolean {
+  return ['"', "'"].some((quote) => value.startsWith(quote) && value.endsWith(quote));
+}
+
+function isFlowList(value: string): boolean {
+  if (!value.startsWith("[") || !value.endsWith("]")) return false;
+  try {
+    return Array.isArray(YAML.parse(value, YAML_OPTIONS));
+  } catch {
+    return false;
+  }
 }
 
 function parseCodexBlock(

@@ -162,17 +162,99 @@ describe("readAgentDefinitions", () => {
   test("skips a file without YAML mapping frontmatter", async () => {
     const { home, agentsDir } = createHome();
     const plain = writeAgent(agentsDir, "plain.md", "# Just markdown\n");
-    const broken = writeAgent(agentsDir, "broken.md", agentFile("name: broken\nname: twice"));
+    const broken = writeAgent(agentsDir, "broken.md", agentFile("name: broken\n bad: b"));
     const scalar = writeAgent(agentsDir, "scalar.md", agentFile("just text"));
 
     const { agents, warnings } = await read(home);
 
     expect(agents).toEqual([]);
     expect(warnings).toEqual([
-      `${broken}: invalid YAML frontmatter: Map keys must be unique; skipped`,
+      `${broken}: invalid YAML frontmatter: Nested mappings are not allowed in compact mappings; skipped`,
       `${plain}: no frontmatter between --- lines; skipped`,
       `${scalar}: the frontmatter is not a mapping; skipped`,
     ]);
+  });
+
+  test("reads frontmatter that Claude Code reads only after quoting values and untabbing", async () => {
+    const { home, agentsDir } = createHome();
+    const helperDescription =
+      "Use this agent when the user asks for help. Examples: <example>Context: the user is stuck.</example>";
+    writeAgent(
+      agentsDir,
+      "helper.md",
+      agentFile(`name: helper\ndescription: ${helperDescription}`),
+    );
+    writeAgent(
+      agentsDir,
+      "tabbed.md",
+      agentFile("name: tabbed\ndescription: Says C:\\temp is: fine.\ncodex:\n\tmodel: gpt-5.5"),
+    );
+    writeAgent(agentsDir, "marked.md", `\uFEFF${agentFile("name: marked\ndescription: BOM.")}`);
+    writeAgent(
+      agentsDir,
+      "quoted.md",
+      agentFile("name: quoted\ndescription: 'Says: hi'\nmodel: a: b"),
+    );
+    const listed = writeAgent(
+      agentsDir,
+      "listed.md",
+      agentFile("name: listed\ndescription: [Lists, tools]\nmodel: a: b"),
+    );
+    writeAgent(agentsDir, "say.md", agentFile('name: say\ndescription: Say "hi" when: asked'));
+    writeAgent(agentsDir, "mention.md", agentFile("name: mention\ndescription: @reviewer helps"));
+
+    const { agents, warnings } = await read(home);
+
+    expect(agents.map(({ name, description, codex }) => ({ name, description, codex }))).toEqual([
+      { name: "helper", description: helperDescription, codex: {} },
+      { name: "marked", description: "BOM.", codex: {} },
+      { name: "mention", description: "@reviewer helps", codex: {} },
+      { name: "quoted", description: "Says: hi", codex: {} },
+      { name: "say", description: 'Say "hi" when: asked', codex: {} },
+      { name: "tabbed", description: "Says C:\\temp is: fine.", codex: { model: "gpt-5.5" } },
+    ]);
+    // The retry keeps a flow list, so a list description is skipped, as in Claude Code.
+    expect(warnings).toEqual([`${listed}: no \`description\`; skipped`]);
+  });
+
+  test("keeps the last of duplicate keys and reads a literal \\n as a line break", async () => {
+    const { home, agentsDir } = createHome();
+    writeAgent(
+      agentsDir,
+      "twice.md",
+      agentFile("name: twice\ndescription: A.\ndescription: B.\ncodex:\n  model: a\n  model: b"),
+    );
+    writeAgent(agentsDir, "lines.md", agentFile("name: lines\ndescription: One.\\nTwo."));
+
+    const { agents, warnings } = await read(home);
+
+    expect(agents.map(({ name, description, codex }) => ({ name, description, codex }))).toEqual([
+      { name: "lines", description: "One.\nTwo.", codex: {} },
+      { name: "twice", description: "B.", codex: { model: "b" } },
+    ]);
+    expect(warnings).toEqual([]);
+  });
+
+  test("reports the first YAML error when the quoted retry fails too", async () => {
+    const { home, agentsDir } = createHome();
+    const broken = writeAgent(
+      agentsDir,
+      "broken.md",
+      agentFile("name: broken\ndescription: Use it when: needed\ncodex:\n  model: a\n bad: b"),
+    );
+    const crlf = writeAgent(
+      agentsDir,
+      "crlf.md",
+      "---\r\nname: crlf\r\ndescription: Use it when: needed\r\n---\r\nBody.\r\n",
+    );
+
+    expect(await read(home)).toEqual({
+      agents: [],
+      warnings: [
+        `${broken}: invalid YAML frontmatter: Nested mappings are not allowed in compact mappings; skipped`,
+        `${crlf}: invalid YAML frontmatter: Nested mappings are not allowed in compact mappings; skipped`,
+      ],
+    });
   });
 
   test("keeps scalar codex keys and drops the others with a warning each", async () => {
