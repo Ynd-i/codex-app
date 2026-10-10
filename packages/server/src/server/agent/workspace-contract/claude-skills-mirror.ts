@@ -2,7 +2,7 @@ import { readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 import type { Logger } from "pino";
 import { ifMissing } from "./optional-file.js";
-import { syncSkillLinks } from "./skill-links.js";
+import { syncOwnedLinks } from "./owned-links.js";
 
 /**
  * Claude Code only discovers personal skills in `~/.claude/skills`, so each skill in
@@ -19,7 +19,7 @@ export async function mirrorAgentsSkillsIntoClaude(params: {
   try {
     const skills = await listMirrorableSkills(agentsSkills);
     if (skills === null) return 0;
-    return await syncSkillLinks({
+    return await syncOwnedLinks({
       dir: join(params.home, ".claude", "skills"),
       ownedRoot: agentsSkills,
       wanted: skills,

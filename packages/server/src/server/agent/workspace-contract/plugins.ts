@@ -7,7 +7,7 @@ import { type HooksByEvent, parseHooksJson } from "./hooks-json.js";
 import { AGENTS_DIR, isDirectory } from "./inspect-workspace-contract.js";
 import { parseMcpJson } from "./mcp-json.js";
 import { parseOptionalFile } from "./optional-file.js";
-import { syncSkillLinks } from "./skill-links.js";
+import { syncOwnedLinks } from "./owned-links.js";
 import type { WorkspaceContractPlugin } from "./types.js";
 
 const PLUGIN_MANIFEST = join(".claude-plugin", "plugin.json");
@@ -97,7 +97,7 @@ export async function linkPluginSkills(params: {
       const skills = join(plugin.dir, "skills");
       if (await isDirectory(skills)) wanted.set(plugin.name, skills);
     }
-    return await syncSkillLinks({
+    return await syncOwnedLinks({
       dir: join(agentsDir, "skills"),
       ownedRoot: join(agentsDir, "plugins"),
       wanted,

@@ -4,13 +4,15 @@ import type { Logger } from "pino";
 import { ifMissing } from "./optional-file.js";
 
 /**
- * Makes `dir` hold a link `<name> -> <target>` for each entry of `wanted`. Links that point inside
- * `ownedRoot` belong to the caller: they are repointed when `wanted` names another target, and
- * removed once their target is gone. Real directories, files and other links are never touched.
+ * Makes `dir` hold a link `<name> -> <target>` for each entry of `wanted`, to a skill directory or
+ * an agent file. Links that point inside `ownedRoot` belong to the caller: they are repointed when
+ * `wanted` names another target, and removed once their target is gone. An owned link that
+ * `wanted` does not name stays while its target exists. Real directories, files and other links
+ * are never touched.
  *
  * @returns the number of links created or removed.
  */
-export async function syncSkillLinks(params: {
+export async function syncOwnedLinks(params: {
   dir: string;
   ownedRoot: string;
   wanted: ReadonlyMap<string, string>;
@@ -28,7 +30,7 @@ export async function syncSkillLinks(params: {
     const wantedTarget = wanted.get(entry.name);
     if (!ownedLink) {
       occupied.add(entry.name);
-      if (wantedTarget) params.logger.debug({ path: linkPath }, "Skill link name is taken");
+      if (wantedTarget) params.logger.debug({ path: linkPath }, "Link name is taken");
       continue;
     }
     if (target === wantedTarget || (wantedTarget === undefined && (await exists(target)))) {
@@ -43,7 +45,7 @@ export async function syncSkillLinks(params: {
   for (const [name, target] of wanted) {
     if (occupied.has(name)) continue;
     await mkdir(dir, { recursive: true });
-    const created = await symlink(target, join(dir, name), "dir").then(() => true, ifExists(false));
+    const created = await symlink(target, join(dir, name)).then(() => true, ifExists(false));
     if (created) changes++;
   }
   return changes;
