@@ -267,6 +267,37 @@ describe("bridgeAgentDefinitions for OpenCode", () => {
     expect(readlinkSync(join(openCodeAgents, "explorer.md"))).toBe(agentFile);
   });
 
+  test("leaves out a definition named after a built-in OpenCode agent, with a warning", async () => {
+    const home = createDir("agent-bridge-");
+    const plan = writeSource(home, "plan");
+    writeSource(home, "reviewer");
+    const openCodeAgents = join(home, ".config", "opencode", "agent");
+    const generatedDir = join(home, ".agents", ".generated", "agents", "opencode");
+    mkdirSync(generatedDir, { recursive: true });
+    writeFileSync(join(generatedDir, "plan.md"), "---\nmode: subagent\n---\nOld.\n");
+    mkdirSync(openCodeAgents, { recursive: true });
+    symlinkSync(join(generatedDir, "plan.md"), join(openCodeAgents, "plan.md"));
+    const logLines: string[] = [];
+
+    await bridgeAgentDefinitions({
+      home,
+      baseProviderId: "opencode",
+      env: {},
+      agents: await readAgentDefinitions({ home, onWarning: () => {} }),
+      logger: pino({ level: "warn" }, { write: (line: string) => logLines.push(line) }),
+    });
+
+    expect(readdirSync(generatedDir)).toEqual(["reviewer.md"]);
+    expect(readdirSync(openCodeAgents)).toEqual(["reviewer.md"]);
+    expect(logLines.map((line) => JSON.parse(line).msg)).toEqual([
+      `${plan}: 'plan' is a built-in opencode agent; not bridged`,
+    ]);
+
+    await bridge({ home, baseProviderId: "claude" });
+
+    expect(readlinkSync(join(home, ".claude", "agents", "plan.md"))).toBe(plan);
+  });
+
   test("links into XDG_CONFIG_HOME when the launch env sets it, and an empty one is unset", async () => {
     const home = createDir("agent-bridge-");
     const xdgConfigHome = createDir("agent-bridge-xdg-");

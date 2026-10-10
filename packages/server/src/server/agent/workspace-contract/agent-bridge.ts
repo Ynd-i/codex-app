@@ -14,13 +14,37 @@ interface AgentBridge {
   extension: string;
   /** The vendor's own file for a definition, or null to link the source file itself. */
   render: ((agent: AgentDefinition) => string) | null;
+  /** Names of built-in agents that a definition must not replace in this vendor. */
+  reservedNames: ReadonlySet<string>;
 }
 
 const AGENT_BRIDGES: Readonly<Record<Vendor, AgentBridge>> = {
   // Claude Code reads the source format and ignores the `codex:` block.
-  claude: { dirName: "agents", extension: ".md", render: null },
-  codex: { dirName: "agents", extension: ".toml", render: renderCodexRole },
-  opencode: { dirName: "agent", extension: ".md", render: renderOpenCodeAgent },
+  claude: { dirName: "agents", extension: ".md", render: null, reservedNames: new Set() },
+  codex: {
+    dirName: "agents",
+    extension: ".toml",
+    render: renderCodexRole,
+    reservedNames: new Set(),
+  },
+  opencode: {
+    dirName: "agent",
+    extension: ".md",
+    render: renderOpenCodeAgent,
+    // OpenCode 1.18.32 merges an agent file into the built-in agent with its name. The file's
+    // prompt would replace the built-in one, including the hidden compaction, summary and title
+    // prompts, under the built-in's permissions, and `mode: subagent` would take Build or Plan out
+    // of the modes that Paseo offers.
+    reservedNames: new Set([
+      "build",
+      "compaction",
+      "explore",
+      "general",
+      "plan",
+      "summary",
+      "title",
+    ]),
+  },
 };
 
 /**
@@ -37,9 +61,14 @@ export async function bridgeAgentDefinitions(params: {
   agents: readonly AgentDefinition[];
   logger: Logger;
 }): Promise<void> {
-  const { home, baseProviderId: vendor, agents, logger } = params;
+  const { home, baseProviderId: vendor, logger } = params;
   if (!isVendor(vendor)) return;
-  const { dirName, extension, render } = AGENT_BRIDGES[vendor];
+  const { dirName, extension, render, reservedNames } = AGENT_BRIDGES[vendor];
+  const agents = params.agents.filter((agent) => {
+    if (!reservedNames.has(agent.name)) return true;
+    logger.warn(`${agent.path}: '${agent.name}' is a built-in ${vendor} agent; not bridged`);
+    return false;
+  });
   try {
     let ownedRoot = join(home, AGENTS_DIR, "agents");
     let wanted = new Map(agents.map((agent) => [agent.name + extension, agent.path]));
