@@ -1,4 +1,4 @@
-import { readdir, stat } from "node:fs/promises";
+import { stat } from "node:fs/promises";
 import { basename, join, resolve, sep } from "node:path";
 import type { Logger } from "pino";
 import { z } from "zod";
@@ -6,7 +6,7 @@ import type { McpServerConfig } from "../agent-sdk-types.js";
 import { type HooksByEvent, parseHooksJson } from "./hooks-json.js";
 import { AGENTS_DIR, isDirectory } from "./inspect-workspace-contract.js";
 import { parseMcpJson } from "./mcp-json.js";
-import { parseOptionalFile } from "./optional-file.js";
+import { listOptionalDir, parseOptionalFile } from "./optional-file.js";
 import { syncOwnedLinks } from "./owned-links.js";
 import type { WorkspaceContractPlugin } from "./types.js";
 
@@ -44,7 +44,7 @@ export async function discoverPlugins(params: {
 }): Promise<WorkspaceContractPlugin[]> {
   const { onWarning } = params;
   const pluginsDir = join(params.home, AGENTS_DIR, "plugins");
-  const entries = await listEntries(pluginsDir, onWarning);
+  const entries = await listOptionalDir(pluginsDir, onWarning);
 
   const byName = new Map<string, WorkspaceContractPlugin>();
   for (const entry of entries) {
@@ -164,18 +164,6 @@ function exportPluginRoot(hooks: HooksByEvent, dir: string): HooksByEvent {
 
 function quoteShellWord(value: string): string {
   return `'${value.replaceAll("'", "'\\''")}'`;
-}
-
-async function listEntries(dir: string, onWarning: (message: string) => void): Promise<string[]> {
-  try {
-    const names = await readdir(dir);
-    return names.filter((name) => !name.startsWith(".")).sort();
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-      onWarning(`${dir}: ${error instanceof Error ? error.message : String(error)}`);
-    }
-    return [];
-  }
 }
 
 async function resolveEntry(

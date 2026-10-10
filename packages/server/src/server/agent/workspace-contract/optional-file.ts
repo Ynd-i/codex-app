@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 
 /** Reads and parses a file that may be missing. Other failures are reported through `onWarning`. */
 export async function parseOptionalFile<T>(
@@ -17,6 +17,25 @@ export function ifMissing<T>(fallback: T): (error: NodeJS.ErrnoException) => T {
     if (error.code === "ENOENT") return fallback;
     throw error;
   };
+}
+
+/**
+ * The sorted entry names of a directory that may be missing, without dotfiles. Other failures are
+ * reported through `onWarning`.
+ */
+export async function listOptionalDir(
+  dir: string,
+  onWarning: (message: string) => void,
+): Promise<string[]> {
+  try {
+    const names = await readdir(dir);
+    return names.filter((name) => !name.startsWith(".")).sort();
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      onWarning(`${dir}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    return [];
+  }
 }
 
 export async function readOptionalFile(
