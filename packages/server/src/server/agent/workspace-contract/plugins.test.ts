@@ -4,19 +4,28 @@ import {
   mkdtempSync,
   readdirSync,
   readlinkSync,
+  rmSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test } from "vitest";
 import { createTestLogger } from "../../../test-utils/test-logger.js";
 import { discoverPlugins, linkPluginSkills } from "./plugins.js";
 
 const logger = createTestLogger();
+const homes: string[] = [];
+
+afterEach(() => {
+  for (const home of homes.splice(0)) {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
 
 function createHome(): { home: string; plugins: string } {
   const home = mkdtempSync(join(tmpdir(), "workspace-plugins-"));
+  homes.push(home);
   return { home, plugins: join(home, ".agents", "plugins") };
 }
 
@@ -216,7 +225,8 @@ describe("linkPluginSkills", () => {
     mkdirSync(join(agentsSkills, "kit"), { recursive: true });
     writeFileSync(join(agentsSkills, "kit", "SKILL.md"), "# my own kit skill\n");
     writeFileSync(join(agentsSkills, "notes.md"), "notes\n");
-    const foreign = mkdtempSync(join(tmpdir(), "workspace-plugins-foreign-"));
+    const foreign = join(home, "foreign");
+    mkdirSync(foreign);
     symlinkSync(foreign, join(agentsSkills, "other"));
     symlinkSync(join(foreign, "gone"), join(agentsSkills, "dangling"));
     symlinkSync(pluginSkill, join(agentsSkills, "how"));
