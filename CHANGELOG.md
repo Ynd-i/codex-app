@@ -163,6 +163,12 @@ distribution and full migration acceptance remain pending; see the
 - Fixed the model popover intercepting the reasoning slider's native arrow keys.
 - Fixed new-chat history dropping its target host query parameter, and removed the redundant macOS model tooltip that could cover the reasoning slider.
 
+## 0.11.2 - 2026-10-09
+
+### Fixed
+
+- Fixed intermittent text clipping in iOS chats and Markdown previews ([#6445](https://github.com/getpaseo/paseo/pull/6445))
+
 ## 0.11.1 - 2026-10-07
 
 ### Added
