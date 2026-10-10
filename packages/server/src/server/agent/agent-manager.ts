@@ -90,6 +90,7 @@ import { createProviderEnv } from "./provider-launch-config.js";
 import { mirrorAgentsSkillsIntoClaude } from "./workspace-contract/claude-skills-mirror.js";
 import { resolveContractInstructions } from "./workspace-contract/instructions.js";
 import { loadWorkspaceContract } from "./workspace-contract/load-workspace-contract.js";
+import type { LaunchWorkspaceContract } from "./workspace-contract/types.js";
 import { resolveCreateAgentTitles } from "./create-agent-title.js";
 import { forkTitle } from "./fork-title.js";
 import type { PaseoToolCatalogFactory } from "./tools/types.js";
@@ -330,6 +331,12 @@ export interface WorkspaceContractOptions {
   home: string;
   /** Directories whose repos may apply project `.agents` layers, read at every launch. */
   trustedRoots: () => readonly string[];
+}
+
+interface LaunchContractParts {
+  mcpServers: Record<string, McpServerConfig>;
+  instructions: string | null;
+  launch: LaunchWorkspaceContract | null;
 }
 
 export interface AgentManagerOptions {
@@ -583,6 +590,15 @@ function attachPersistenceCwd(
       cwd,
     },
   };
+}
+
+// Sets the key even when the value is undefined. Providers lay the launch config over the resume
+// handle's metadata, and that metadata comes from clients.
+function withLaunchWorkspaceContract(
+  config: AgentSessionConfig,
+  workspaceContract: LaunchWorkspaceContract | null,
+): AgentSessionConfig {
+  return { ...config, workspaceContract: workspaceContract ?? undefined };
 }
 
 interface SubscriptionRecord {
@@ -5294,7 +5310,11 @@ export class AgentManager {
       }),
       contract.instructions,
     );
-    return { storedConfig, launchConfig, paseoToolPolicy };
+    return {
+      storedConfig,
+      launchConfig: withLaunchWorkspaceContract(launchConfig, contract.launch),
+      paseoToolPolicy,
+    };
   }
 
   /**
@@ -5304,9 +5324,9 @@ export class AgentManager {
   private async loadLaunchWorkspaceContract(
     config: AgentSessionConfig,
     options: { env?: Record<string, string>; purpose?: AgentResumePurpose },
-  ): Promise<{ mcpServers: Record<string, McpServerConfig>; instructions: string | null }> {
+  ): Promise<LaunchContractParts> {
     if (!this.workspaceContract || options.purpose === "history") {
-      return { mcpServers: {}, instructions: null };
+      return { mcpServers: {}, instructions: null, launch: null };
     }
     const { home, trustedRoots } = this.workspaceContract;
     const baseProviderId = this.resolveBaseProviderId(config.provider);
@@ -5325,10 +5345,17 @@ export class AgentManager {
           cwd: config.cwd,
           layers: contract.layers.map((layer) => layer.dir),
           mcpServers: Object.keys(contract.mcpServers),
+          hookEvents: [...new Set(contract.hooks.flatMap((layer) => Object.keys(layer.hooks)))],
         },
         "Loaded .agents workspace contract",
       );
     }
+    const projectLayers = contract.layers.flatMap((layer) =>
+      layer.kind === "project" ? [layer.dir] : [],
+    );
+    // Internal agents do daemon work such as naming a branch, so no user or repo hooks run there.
+    const hasLaunchParts =
+      !config.internal && (projectLayers.length > 0 || contract.hooks.length > 0);
     return {
       mcpServers: contract.mcpServers,
       instructions: await resolveContractInstructions({
@@ -5341,6 +5368,7 @@ export class AgentManager {
           overlays: [options.env],
         }),
       }),
+      launch: hasLaunchParts ? { projectLayers, hooks: contract.hooks } : null,
     };
   }
 
