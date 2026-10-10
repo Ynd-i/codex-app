@@ -1,4 +1,5 @@
 import type { McpServerConfig } from "../agent-sdk-types.js";
+import type { AgentDefinition } from "./agent-definitions.js";
 import type { HooksByEvent } from "./hooks-json.js";
 
 /** An existing `.agents` directory. Layers are ordered from lowest to highest precedence. */
@@ -33,6 +34,8 @@ export interface WorkspaceContract {
   instructions: { path: string; text: string } | null;
   /** Plugins, then layers, each only when it declares at least one hook. */
   hooks: WorkspaceContractLayerHooks[];
+  /** User level only. The daemon bridges them into vendor files, never into the launch config. */
+  agents: AgentDefinition[];
 }
 
 /**

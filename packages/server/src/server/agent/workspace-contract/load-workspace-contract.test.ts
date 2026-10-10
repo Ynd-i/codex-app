@@ -102,6 +102,7 @@ describe("loadWorkspaceContract", () => {
       mcpServers: {},
       instructions: null,
       hooks: [],
+      agents: [],
     });
   });
 
@@ -182,6 +183,36 @@ describe("loadWorkspaceContract", () => {
       path: join(home, ".agents", "AGENTS.md"),
       text: "Be brief.\n",
     });
+  });
+
+  test("reads agent definitions from the user layer only", async () => {
+    const { home, repo } = createRoots();
+    function writeAgent(dir: string, name: string): void {
+      mkdirSync(join(dir, ".agents", "agents"), { recursive: true });
+      writeFileSync(
+        join(dir, ".agents", "agents", `${name}.md`),
+        `---\nname: ${name}\ndescription: The ${name} agent.\n---\nDo ${name} work.\n`,
+      );
+    }
+    writeAgent(home, "reviewer");
+    writeAgent(repo, "repo-only");
+
+    const contract = await loadWorkspaceContract({
+      home,
+      cwd: repo,
+      trustedRoots: [repo],
+      onWarning: () => {},
+    });
+
+    expect(contract.agents).toEqual([
+      {
+        name: "reviewer",
+        path: join(home, ".agents", "agents", "reviewer.md"),
+        description: "The reviewer agent.",
+        prompt: "Do reviewer work.",
+        codex: {},
+      },
+    ]);
   });
 
   test("a home that is also the repo root is read once, as the user layer", async () => {

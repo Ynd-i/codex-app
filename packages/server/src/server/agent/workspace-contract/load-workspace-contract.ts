@@ -1,5 +1,6 @@
 import { join, resolve } from "node:path";
 import type { McpServerConfig } from "../agent-sdk-types.js";
+import { readAgentDefinitions } from "./agent-definitions.js";
 import { parseHooksJson } from "./hooks-json.js";
 import {
   AGENTS_DIR,
@@ -70,8 +71,9 @@ export async function loadWorkspaceContract(params: {
   const instructions = instructionsText?.trim()
     ? { path: instructionsPath, text: instructionsText }
     : null;
+  const agents = await readAgentDefinitions({ home, onWarning });
 
-  return { layers, plugins, mcpServers, instructions, hooks };
+  return { layers, plugins, mcpServers, instructions, hooks, agents };
 }
 
 async function resolveLayers(
