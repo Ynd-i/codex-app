@@ -1594,6 +1594,56 @@ Phase 1b, same day:
   `config.mcpServers`. Codex's provider persistence metadata did list `demo`; see
   [workspace-contract.md](../workspace-contract.md).
 
+### `.agents` workspace contract, phase 2a: in-app trust — 2026-10-10
+
+This is the daemon and protocol half of trusting a repo from the app, under the same
+`.agents` exception as phase 1. Protocol gains one optional config field, two RPC pairs and one
+feature flag in `messages.ts`. The server change stays in the workspace-contract module
+plus call sites in `bootstrap.ts`, `config.ts`, `daemon-config-store.ts`,
+`agent-manager.ts`, `session.ts`, `websocket-server.ts` and
+`authorization/operation-permissions.ts`. Expect conflicts in those lists when upstream
+edits them. The app banner and `@getpaseo/client` methods are a later task. Behavior is
+in [workspace-contract.md](../workspace-contract.md#trust-from-a-client).
+
+Decisions:
+
+- `daemon.workspaceContract.trustedRoots` is reloadable now, which reverses the phase 1b
+  choice. `MutableDaemonConfig` carries an optional `workspaceContract`, so clients with
+  `daemon.read` see the list in config responses and `daemon_config_changed`.
+  `AgentManager` reads it through a getter at each launch.
+- `workspaceContract` stays out of `MutableDaemonConfigPatchSchema`. `set_daemon_config`
+  cannot replace or clear the list, so the trust RPC is the only client write and
+  untrusting stays a manual edit.
+- Trust saves with `editPersistedConfig`, the editor behind `paseo daemon config set`,
+  then calls `DaemonConfigStore.reload()`. Patching the store from its live list would
+  drop entries edited into `config.json` but not reloaded yet. The handler reads, checks
+  and writes the file with no await in between, so concurrent requests neither lose nor
+  repeat an entry. A repo the live list already trusts returns without reading the file.
+- Inspect needs `workspace.read`. Trust needs `daemon.manage`, like `set_daemon_config`
+  and `daemon.config.reload`, because it lets a repo start its own commands.
+- `inspectWorkspaceContract` owns the repo walk, the project-layer check and the trust
+  match. The loader and both RPCs call it.
+- `PaseoDaemonConfig.workspaceContractTrustedRoots` became a `workspaceContract` object
+  instead of being removed. The store's reload source builds the mutable config from
+  `PaseoDaemonConfig`, as it does for every reloadable field, and the store is the only
+  live owner.
+
+Validation: unit tests pass in `inspect-workspace-contract.test.ts` (4),
+`load-workspace-contract.test.ts` (14), `daemon-config-store.test.ts` (35),
+`agent-manager.test.ts` (203), `config.test.ts` (11), `session.test.ts` (152),
+`authorization/index.test.ts` (7) and protocol `messages.workspace-contract.test.ts` (6).
+Each new test failed with the expected diff when its behavior was removed. Repo-wide
+typecheck, lint and format check pass. Proof on the dev daemon (port 6768, one PID
+throughout): with `trustedRoots: []`, inspect on a temp git repo with
+`.agents/.mcp.json` returned `trusted: false` and one project layer. Trust appended the
+repo root to `.dev/paseo-home/config.json`, a second trust changed nothing, and inspect
+then returned `trusted: true`. A Codex agent (`gpt-5.6-luna`) created there logged
+`Loaded .agents workspace contract` with `demo` in `mcpServers` and answered. A hand edit
+of the list followed by `paseo reload` reported `daemon.workspaceContract.trustedRoots`
+as applied with no restart-required paths, and inspect then returned `trusted: false`.
+`scripts/dev-home.sh` rewrites `daemon.listen` in the dev `config.json` on every dev
+command, so the original bytes were restored from a copy taken before the first one.
+
 ### Desktop notifications not appearing — 2026-10-04
 
 The user saw no notifications. In `com.apple.ncprefs.plist`, `local.paseo.custom.desktop`
