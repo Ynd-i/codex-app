@@ -11,6 +11,7 @@ import { orderCheckoutDiffFiles } from "@/git/diff-order";
 import { daemonConfigQueryKey } from "@/data/daemon-config";
 import { daemonPairingOfferQueryKey } from "@/data/daemon-pairing";
 import { type ProviderSnapshotCache } from "@/data/provider-snapshot-cache";
+import { workspaceContractQueryRoot } from "@/workspace-contract/trust-notice-model";
 import {
   normalizeProvidersSnapshotCwd,
   fetchProvidersSnapshot,
@@ -422,6 +423,9 @@ function applyDaemonConfigStatus(input: {
   );
   void input.queryClient.invalidateQueries({
     queryKey: daemonPairingOfferQueryKey(input.serverId),
+  });
+  void input.queryClient.invalidateQueries({
+    queryKey: workspaceContractQueryRoot(input.serverId),
   });
 }
 
