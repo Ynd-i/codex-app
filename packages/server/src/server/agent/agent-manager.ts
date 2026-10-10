@@ -87,6 +87,7 @@ import { isStaleProviderSessionError } from "./stale-provider-session-error.js";
 import { stripInternalPaseoMcpServer, withRuntimePaseoMcpServer } from "./runtime-mcp-config.js";
 import { composeSystemPromptParts } from "./system-prompt.js";
 import { createProviderEnv } from "./provider-launch-config.js";
+import { bridgeAgentDefinitions } from "./workspace-contract/agent-bridge.js";
 import { mirrorAgentsSkillsIntoClaude } from "./workspace-contract/claude-skills-mirror.js";
 import { resolveContractInstructions } from "./workspace-contract/instructions.js";
 import { loadWorkspaceContract } from "./workspace-contract/load-workspace-contract.js";
@@ -5337,10 +5338,22 @@ export class AgentManager {
       trustedRoots: trustedRoots(),
       onWarning: (message) => this.logger.warn({ cwd: config.cwd }, message),
     });
+    // The env the provider process gets, so a profile's CLAUDE_CONFIG_DIR or CODEX_HOME counts.
+    const providerEnv = createProviderEnv({
+      runtimeSettings: { env: this.providerDefinitions.get(config.provider)?.env },
+      overlays: [options.env],
+    });
     await linkPluginSkills({ home, plugins: contract.plugins, logger: this.logger });
     if (baseProviderId === "claude") {
       await mirrorAgentsSkillsIntoClaude({ home, logger: this.logger });
     }
+    await bridgeAgentDefinitions({
+      home,
+      baseProviderId,
+      env: providerEnv,
+      agents: contract.agents,
+      logger: this.logger,
+    });
     if (contract.layers.length > 0 || contract.plugins.length > 0) {
       this.logger.info(
         {
@@ -5349,6 +5362,7 @@ export class AgentManager {
           plugins: contract.plugins.map((plugin) => plugin.name),
           mcpServers: Object.keys(contract.mcpServers),
           hookEvents: [...new Set(contract.hooks.flatMap((layer) => Object.keys(layer.hooks)))],
+          agents: contract.agents.map((agent) => agent.name),
         },
         "Loaded .agents workspace contract",
       );
@@ -5367,11 +5381,7 @@ export class AgentManager {
         contract,
         baseProviderId,
         home,
-        // The env the provider process gets, so a profile's CLAUDE_CONFIG_DIR or CODEX_HOME counts.
-        env: createProviderEnv({
-          runtimeSettings: { env: this.providerDefinitions.get(config.provider)?.env },
-          overlays: [options.env],
-        }),
+        env: providerEnv,
       }),
       launch: hasLaunchParts
         ? { projectLayers, plugins: contract.plugins, hooks: contract.hooks }

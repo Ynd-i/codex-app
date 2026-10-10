@@ -1,7 +1,7 @@
 import { expect, test, vi } from "vitest";
 import pino from "pino";
 import { spawn } from "node:child_process";
-import { mkdirSync, mkdtempSync, readlinkSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readlinkSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
@@ -3251,6 +3251,47 @@ test("creating a Claude-based agent mirrors ~/.agents/skills into ~/.claude/skil
     });
 
     expect(readlinkSync(join(home, ".claude", "skills", "review"))).toBe(skillDir);
+  } finally {
+    rmSync(workdir, { recursive: true, force: true });
+  }
+});
+
+test("creating a Codex-based agent bridges ~/.agents/agents into the profile's CODEX_HOME", async () => {
+  const workdir = mkdtempSync(join(tmpdir(), "agent-manager-test-"));
+  const home = join(workdir, "home");
+  const codexHome = join(workdir, "codex-work");
+  mkdirSync(join(home, ".agents", "agents"), { recursive: true });
+  writeFileSync(
+    join(home, ".agents", "agents", "reviewer.md"),
+    "---\nname: reviewer\ndescription: Reviews diffs.\n---\nReview the diff.\n",
+  );
+  const logLines: string[] = [];
+  const client = new TestAgentClient("codex-work");
+  const manager = new AgentManager({
+    clients: { "codex-work": client },
+    providerDefinitions: {
+      "codex-work": {
+        enabled: true,
+        derivedFromProviderId: "codex",
+        env: { CODEX_HOME: codexHome },
+      },
+    },
+    logger: pino({ level: "info" }, { write: (line: string) => logLines.push(line) }),
+    workspaceContract: { home, trustedRoots: () => [] },
+    idFactory: () => "00000000-0000-4000-8000-000000000112",
+  });
+
+  try {
+    await manager.createAgent({ provider: "codex-work", cwd: workdir }, undefined, {
+      workspaceId: undefined,
+    });
+
+    expect(readlinkSync(join(codexHome, "agents", "reviewer.toml"))).toBe(
+      join(home, ".agents", ".generated", "agents", "codex", "reviewer.toml"),
+    );
+    expect(existsSync(join(home, ".codex"))).toBe(false);
+    const loaded = logLines.find((line) => line.includes("Loaded .agents workspace contract"));
+    expect(JSON.parse(loaded ?? "{}").agents).toEqual(["reviewer"]);
   } finally {
     rmSync(workdir, { recursive: true, force: true });
   }
