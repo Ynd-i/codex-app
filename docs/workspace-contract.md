@@ -4,16 +4,18 @@ You keep shared agent configuration in `.agents/` directories and log in to each
 
 ## What `.agents/` holds
 
-| Path                             | Level   | Read natively by        | Bridged by the daemon                                                     |
-| -------------------------------- | ------- | ----------------------- | ------------------------------------------------------------------------- |
-| `~/.agents/.mcp.json`            | user    | nobody                  | MCP registry, every provider                                              |
-| `<dir>/.agents/.mcp.json`        | project | nobody                  | MCP registry, trusted repos only                                          |
-| `~/.agents/AGENTS.md`            | user    | nobody                  | Appended instructions (see below)                                         |
-| `~/.agents/hooks/hooks.json`     | user    | nobody                  | Claude and Codex hooks (see [Hooks](#hooks))                              |
-| `<dir>/.agents/hooks/hooks.json` | project | nobody                  | Claude and Codex hooks, trusted repos only                                |
-| `~/.agents/skills/<name>/`       | user    | Codex, OpenCode, Gemini | Symlinked into `~/.claude/skills` for Claude                              |
-| `<repo>/.agents/skills/<name>/`  | project | Codex, OpenCode, Gemini | Claude plugin, trusted repos only (see [Project skills](#project-skills)) |
-| `~/.agents/plugins/<name>/`      | user    | nobody                  | Every provider (see [Plugins](#plugins))                                  |
+| Path                              | Level   | Read natively by        | Bridged by the daemon                                                           |
+| --------------------------------- | ------- | ----------------------- | ------------------------------------------------------------------------------- |
+| `~/.agents/.mcp.json`             | user    | nobody                  | MCP registry, every provider                                                    |
+| `<dir>/.agents/.mcp.json`         | project | nobody                  | MCP registry, trusted repos only                                                |
+| `~/.agents/AGENTS.md`             | user    | nobody                  | Appended instructions (see below)                                               |
+| `~/.agents/hooks/hooks.json`      | user    | nobody                  | Claude and Codex hooks (see [Hooks](#hooks))                                    |
+| `<dir>/.agents/hooks/hooks.json`  | project | nobody                  | Claude and Codex hooks, trusted repos only                                      |
+| `~/.agents/skills/<name>/`        | user    | Codex, OpenCode, Gemini | Symlinked into `~/.claude/skills` for Claude                                    |
+| `<repo>/.agents/skills/<name>/`   | project | Codex, OpenCode, Gemini | Claude plugin, trusted repos only (see [Project skills](#project-skills))       |
+| `~/.agents/plugins/<name>/`       | user    | nobody                  | Every provider (see [Plugins](#plugins))                                        |
+| `~/.agents/agents/<name>.md`      | user    | nobody                  | Claude link, Codex role, OpenCode subagent (see [Agents](#agents))              |
+| `<repo>/.agents/agents/<name>.md` | project | nobody                  | Claude only, as `.agents:<name>` through the project plugin, trusted repos only |
 
 `.mcp.json` uses the Claude Code and Codex plugin shape, `{ "mcpServers": { "<name>": { ... } } }`. An entry with `command` is stdio, and `"type": "http"` or `"type": "sse"` with `url` is remote. Entries with `"enabled": false` are skipped. Fields the launch config does not carry, such as Codex's `cwd` or `startup_timeout_sec`, are dropped. `${VAR}` references are passed through as literal text. A malformed file or entry logs a warning in `daemon.log` and is skipped. It never fails agent creation.
 
@@ -161,6 +163,60 @@ A plugin that you also installed in a vendor can appear twice there.
 - Codex lists every pstack skill twice, once from its plugin cache and once from `~/.agents/skills/pstack`. Run `codex plugin remove pstack@pstack-claude`.
 - Claude needs no change, because the `~/.agents/plugins` copy replaces the marketplace install in Paseo sessions. If you no longer use pstack in Claude Code outside Paseo, run `claude plugin uninstall pstack@pstack-claude`.
 
+## Agents
+
+Keep the agent types you want in every vendor in `~/.agents/agents/<name>.md`, in the Claude Code subagent format:
+
+```markdown
+---
+name: reviewer
+description: Read-only reviewer for correctness, regressions and missing tests.
+model: opus
+disallowedTools: Edit, Write
+codex:
+  model: gpt-5.5
+  model_reasoning_effort: xhigh
+  sandbox_mode: read-only
+---
+
+You are a critical read-only code reviewer.
+```
+
+- `name` is required and must equal the file name without `.md`. Claude Code skips an agent file without `name`. The name is also the file name in each vendor's agents directory, so it starts with a letter or digit and uses only letters, digits, `.`, `_` and `-`.
+- `description` and the prompt below the frontmatter are required.
+- The `codex:` block holds Codex config keys for this role, such as `model`, `model_reasoning_effort` and `sandbox_mode`. The daemon copies each string, number or boolean into the role file. It drops lists, maps, keys that are not bare TOML keys, and `name`, `description` or `developer_instructions`, with a warning each. Claude Code ignores the block.
+- Only files at the top of `~/.agents/agents` count. The daemon ignores subdirectories and dotfiles. A file that breaks a rule, or whose frontmatter is not valid YAML, logs a warning in `daemon.log` and is skipped.
+
+At every launch, the daemon links each agent into the personal agents directory of the vendor it launches:
+
+| Vendor   | Link                                 | Target                                                               |
+| -------- | ------------------------------------ | -------------------------------------------------------------------- |
+| Claude   | `~/.claude/agents/<name>.md`         | The source file                                                      |
+| Codex    | `~/.codex/agents/<name>.toml`        | A role file generated in `~/.agents/.generated/agents/codex/`        |
+| OpenCode | `~/.config/opencode/agent/<name>.md` | A subagent file generated in `~/.agents/.generated/agents/opencode/` |
+
+`CLAUDE_CONFIG_DIR` and `CODEX_HOME` move the Claude and Codex links, read from the launch env as for [instructions](#instructions). Claude reads the source file itself. The Codex role file holds `name`, `description`, the `codex:` keys and the prompt as `developer_instructions`. The OpenCode file holds `description`, `mode: subagent` and the prompt, and `mode: subagent` keeps the agent out of the modes Paseo offers for OpenCode.
+
+The daemon maps nothing else, so `model`, `tools`, `disallowedTools` and `color` apply in Claude only. One value that OpenCode reads differently, such as `tools: Read, Grep` or `color: blue`, makes OpenCode reject its whole config. Codex has no tool list. Limit a Codex role with `sandbox_mode` instead.
+
+Do not edit the generated files. The daemon rewrites a generated file when its source changes, and deletes it and its link when the source is gone. A Claude link stays while its source file exists, even after the file starts breaking a rule.
+
+### Which copy wins
+
+A repo's own agent with the same name wins over yours: `.claude/agents` for Claude, `.codex/agents` in a trusted Codex project, and `.opencode/agent` for OpenCode. Each vendor ranks project agents above personal ones, and the links go into the personal directory.
+
+A real file, or a link the daemon did not make, with the same name in the vendor's directory blocks the link. The daemon leaves it alone, and logs it at debug level only.
+
+Project `<repo>/.agents/agents/*.md` files reach Claude only, as `.agents:<name>`, through the [project plugin](#project-skills). Codex and OpenCode do not read them.
+
+### OpenCode sessions
+
+An OpenCode server reads the agents of a directory once, when it first serves that directory. A session whose launch config has MCP servers, such as registry servers or Paseo's own tools, runs its own server and sees the current agents. Sessions without MCP servers or extra env share one `opencode serve`, which shows an added or edited agent only after it restarts.
+
+### Remove vendor copies
+
+When an agent moves into `~/.agents/agents`, delete its old copies, `~/.claude/agents/<name>.md` and `~/.codex/agents/<name>.toml`. Otherwise each vendor keeps reading its own copy, because a real file blocks the link. Move the Codex keys of the old role file, such as `model` and `sandbox_mode`, into the `codex:` block first. After the next launch of each vendor, `ls -l ~/.claude/agents ~/.codex/agents` shows the agent as a link into `~/.agents`.
+
 ## What is not covered
 
-The bridges run only when Paseo launches an agent. Running `claude`, `codex`, or `opencode` in a terminal outside Paseo gets none of them.
+The bridges run only when Paseo launches an agent. Running `claude`, `codex`, or `opencode` in a terminal outside Paseo gets no registry MCP servers, appended instructions or bridged hooks. It does see the links the daemon leaves in place: the Claude skills mirror, plugin skills and bridged agents, as the last Paseo launch that synced them left them.

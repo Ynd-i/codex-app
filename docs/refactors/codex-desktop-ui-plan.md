@@ -1863,6 +1863,89 @@ Open:
 - `listDraftCommands` still skips `prepareSessionConfig`, so a draft Claude composer probably
   lists no plugin skills until the agent exists.
 
+### `.agents` workspace contract, phase 4: agents — 2026-10-10
+
+Agent types in `~/.agents/agents/<name>.md` reach Claude, Codex and OpenCode, under the same
+`.agents` exception as phase 1. Protocol is untouched. The server change adds
+`workspace-contract/agent-definitions.ts`, `agent-bridge.ts` and `vendor-config-dir.ts`, renames
+`skill-links.ts` to `owned-links.ts` (`syncSkillLinks` to `syncOwnedLinks`), moves the directory
+listing from `plugins.ts` to `optional-file.ts` as `listOptionalDir`, and edits
+`load-workspace-contract.ts`, `types.ts`, `instructions.ts` and `loadLaunchWorkspaceContract` in
+`agent-manager.ts`. Expect conflicts in that function when upstream edits it. Behavior is in
+[workspace-contract.md](../workspace-contract.md#agents).
+
+Decisions, including where the measurements overrode the design:
+
+- Links, not injection. Claude Code 2.1.290, Codex 0.159.0 (trusted projects) and OpenCode
+  1.18.32 each rank project agents above personal ones, and the links go into the personal
+  directories. In the research probes, the injection routes (SDK `agents`, Codex `thread/start`
+  `config.agents`, `OPENCODE_CONFIG_CONTENT`) outranked project agents.
+- `name` is required. The design made it optional. With the Agent SDK initialize response, Claude
+  Code listed a user agent file with `name` and dropped one without it, silently. The Claude link
+  points at the source file, so a nameless file would have reached Codex and OpenCode only.
+- `JSON.stringify` encodes TOML strings with one fix. Python's tomllib rejected a raw U+007F
+  (`Illegal character '\x7f'`) and parsed quotes, backslashes, CRLF, `"""`, control characters and
+  non-BMP text once DEL was escaped as `\u007f`. `.tasks/phase4/toml-string-check.mjs` reruns it.
+- The `codex:` block keeps bare TOML keys with finite scalar values, so one bad line cannot make
+  Codex drop the role. `codex:` with nothing below it counts as absent.
+- Generated files live in `~/.agents/.generated/agents/<vendor>/`, not under `$PASEO_HOME`, so the
+  packaged and dev daemons write the same files and links.
+- `syncOwnedLinks` keeps an owned link while its target exists, and `plugins.test.ts` pins that rule
+  for a hand-made link. The bridge deletes stale generated files before the link sync, which is
+  what removes Codex and OpenCode links. A Claude link to a source file that starts breaking a rule
+  stays. Not fixed.
+- The parser and the bridge are two files, because the source format and the vendor outputs change
+  for different reasons, and together they pass the 250-line budget the design set.
+- `symlink()` no longer forces a directory link, so Node picks the type on Windows for agent files.
+  The bridge writes OpenCode frontmatter with `lineWidth: 0`, so a long description stays on one
+  line.
+
+Validation: unit tests pass in `agent-definitions.test.ts` (9), `agent-bridge.test.ts` (13),
+`load-workspace-contract.test.ts` (22), `agent-manager.test.ts` (208), and, for the refactors,
+`claude-skills-mirror.test.ts` (7), `plugins.test.ts` (12) and `instructions.test.ts` (10).
+`.tasks/phase4/mutate.mjs` broke each behavior once, and 26 of 27 mutations failed a test with the
+predicted diff, among them the name rule, the DEL escape, the prune before the link sync, compare
+before write, `mode: subagent`, the profile env at the call site and the log field. The survivor
+accepts a YAML list as frontmatter, which the name rule then skips. Repo-wide typecheck, lint and
+format check pass.
+
+Proof on this worktree's dev daemon (port 6769) with `HOME` set to a temp dir holding
+`.agents/agents/probe-bridge.md`, a description over 80 characters with `: `, `#` and quotes, a
+`codex:` block, and Claude-only `tools` and `color`. `.tasks/phase4/e2e.sh` reruns it.
+
+- The script created one Claude, one Codex and one OpenCode agent. `daemon.log` showed
+  `Loaded .agents workspace contract` with `agents: ["probe-bridge"]` for each. Their turns failed,
+  because the sandbox blocks the provider APIs. The bridge runs before the session opens.
+- `~/.claude/agents/probe-bridge.md` linked to the source. The Agent SDK initialize response with
+  `CLAUDE_CONFIG_DIR` set to the temp `.claude` listed `probe-bridge` with its description and
+  `model: haiku`.
+- `~/.codex/agents/probe-bridge.toml` linked to the generated role file, and tomllib parsed it into
+  `name`, `description`, `model_reasoning_effort`, `sandbox_mode` and `developer_instructions` with
+  the prompt intact.
+- `~/.config/opencode/agent/probe-bridge.md` linked to the generated file. `opencode agent list`,
+  with `HOME` and every `XDG_*` variable in the temp dir, exited 0 and listed
+  `probe-bridge (subagent)`, so the Claude `tools` and `color` values never reached it.
+- After the source was deleted, a second round of launches logged `agents: []` and left the three
+  link directories and both generated directories empty.
+
+Sandbox limits found on the way. `npm run cli` runs the tsx CLI, whose IPC socket the sandbox
+refuses (`listen EPERM`), so the proof runs the CLI entry with `node --import tsx`. The CLI's home
+lookup calls `os.uptime()`, which the sandbox also refuses, so it addresses the daemon with
+`--host 127.0.0.1:6769`. The script stops the daemon by its process group, and an unsandboxed `ps`
+afterwards found no daemon or provider process from the proof.
+
+Open:
+
+- Codex lists roles only in a model turn, which needs auth. The research measured that Codex 0.159
+  registers a symlinked role file in `$CODEX_HOME/agents`, and here the generated file parsed as
+  TOML. No Codex turn saw the bridged role.
+- Whether a role named after a Codex built-in (`default`, `explorer`, `worker`) replaces it was not
+  measured.
+- The user's agents still live in `~/.claude/agents` and `~/.codex/agents` as real files, which
+  block the links until removed.
+- The bridge writes generated files in place. A vendor that reads one while a concurrent launch
+  rewrites it, after a source edit, could see a partial file.
+
 ### Desktop notifications not appearing — 2026-10-04
 
 The user saw no notifications. In `com.apple.ncprefs.plist`, `local.paseo.custom.desktop`
