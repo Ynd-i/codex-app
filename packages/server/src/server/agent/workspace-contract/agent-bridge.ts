@@ -32,7 +32,7 @@ const AGENT_BRIDGES: Readonly<Record<Vendor, AgentBridge>> = {
 export async function bridgeAgentDefinitions(params: {
   home: string;
   baseProviderId: string;
-  /** The env the provider process is launched with, for `CLAUDE_CONFIG_DIR` and `CODEX_HOME`. */
+  /** The env the provider process is launched with, for the vendor's config dir. */
   env: NodeJS.ProcessEnv;
   agents: readonly AgentDefinition[];
   logger: Logger;

@@ -1,17 +1,14 @@
 import { join } from "node:path";
 
-interface VendorConfigDir {
-  /** Env var that moves the config dir, as `claudeConfigDir` and `resolveCodexHomeDir` read it. */
-  envVar: string | null;
-  defaultDir: readonly string[];
-}
+type ResolveConfigDir = (params: { home: string; env: NodeJS.ProcessEnv }) => string;
 
+// `??` as in `claudeConfigDir` and `resolveCodexHomeDir`. OpenCode resolves its dir through
+// xdg-basedir, which skips an empty XDG_CONFIG_HOME.
 const VENDOR_CONFIG_DIRS = {
-  claude: { envVar: "CLAUDE_CONFIG_DIR", defaultDir: [".claude"] },
-  codex: { envVar: "CODEX_HOME", defaultDir: [".codex"] },
-  // Paseo's OpenCode provider never moves OpenCode's config dir.
-  opencode: { envVar: null, defaultDir: [".config", "opencode"] },
-} satisfies Record<string, VendorConfigDir>;
+  claude: ({ home, env }) => env.CLAUDE_CONFIG_DIR ?? join(home, ".claude"),
+  codex: ({ home, env }) => env.CODEX_HOME ?? join(home, ".codex"),
+  opencode: ({ home, env }) => join(env.XDG_CONFIG_HOME || join(home, ".config"), "opencode"),
+} satisfies Record<string, ResolveConfigDir>;
 
 /** A base provider whose CLI reads its own config dir. */
 export type Vendor = keyof typeof VENDOR_CONFIG_DIRS;
@@ -25,7 +22,5 @@ export function resolveVendorConfigDir(
   vendor: Vendor,
   params: { home: string; env: NodeJS.ProcessEnv },
 ): string {
-  const { envVar, defaultDir } = VENDOR_CONFIG_DIRS[vendor];
-  const configuredDir = envVar ? params.env[envVar] : undefined;
-  return configuredDir ?? join(params.home, ...defaultDir);
+  return VENDOR_CONFIG_DIRS[vendor](params);
 }

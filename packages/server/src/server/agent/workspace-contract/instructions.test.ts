@@ -126,4 +126,16 @@ describe("resolveContractInstructions", () => {
       await resolveContractInstructions({ contract, baseProviderId: "codex", home, env }),
     ).toBeNull();
   });
+
+  test("checks the OpenCode file under XDG_CONFIG_HOME", async () => {
+    const { home, contract } = createHome();
+    writeVendorFile(home, ".config/opencode/AGENTS.md", "Other rules.\n");
+    const xdgConfigHome = mkdtempSync(join(tmpdir(), "workspace-contract-xdg-"));
+    writeVendorFile(xdgConfigHome, "opencode/AGENTS.md", TEXT);
+    const env = { XDG_CONFIG_HOME: xdgConfigHome };
+
+    expect(
+      await resolveContractInstructions({ contract, baseProviderId: "opencode", home, env }),
+    ).toBeNull();
+  });
 });

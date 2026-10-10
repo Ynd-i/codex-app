@@ -266,6 +266,22 @@ describe("bridgeAgentDefinitions for OpenCode", () => {
     expect(readdirSync(openCodeAgents)).toEqual(["explorer.md"]);
     expect(readlinkSync(join(openCodeAgents, "explorer.md"))).toBe(agentFile);
   });
+
+  test("links into XDG_CONFIG_HOME when the launch env sets it, and an empty one is unset", async () => {
+    const home = createDir("agent-bridge-");
+    const xdgConfigHome = createDir("agent-bridge-xdg-");
+    writeSource(home, "reviewer");
+    const agentFile = generated(home, "opencode", "reviewer.md");
+
+    await bridge({ home, baseProviderId: "opencode", env: { XDG_CONFIG_HOME: xdgConfigHome } });
+
+    expect(readlinkSync(join(xdgConfigHome, "opencode", "agent", "reviewer.md"))).toBe(agentFile);
+    expect(existsSync(join(home, ".config"))).toBe(false);
+
+    await bridge({ home, baseProviderId: "opencode", env: { XDG_CONFIG_HOME: "" } });
+
+    expect(readlinkSync(join(home, ".config", "opencode", "agent", "reviewer.md"))).toBe(agentFile);
+  });
 });
 
 describe("bridgeAgentDefinitions without work", () => {
