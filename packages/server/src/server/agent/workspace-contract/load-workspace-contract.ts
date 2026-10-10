@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import type { McpServerConfig } from "../agent-sdk-types.js";
+import { parseHooksJson } from "./hooks-json.js";
 import {
   AGENTS_DIR,
   TRUSTED_ROOTS_CONFIG_KEY,
@@ -8,7 +9,11 @@ import {
   isDirectory,
 } from "./inspect-workspace-contract.js";
 import { parseMcpJson } from "./mcp-json.js";
-import type { WorkspaceContract, WorkspaceContractLayer } from "./types.js";
+import type {
+  WorkspaceContract,
+  WorkspaceContractLayer,
+  WorkspaceContractLayerHooks,
+} from "./types.js";
 
 const RESERVED_MCP_SERVER_NAME = "paseo";
 
@@ -31,14 +36,18 @@ export async function loadWorkspaceContract(params: {
   const layers = await resolveLayers(home, resolve(params.cwd), params.trustedRoots, onWarning);
 
   const entries: Array<[string, McpServerConfig]> = [];
+  const hooks: WorkspaceContractLayerHooks[] = [];
   for (const layer of layers) {
-    const path = join(layer.dir, ".mcp.json");
-    const text = await readOptionalFile(path, onWarning);
-    if (text === null) continue;
-    const servers = parseMcpJson(text, {
-      onWarning: (message) => onWarning(`${path}: ${message}`),
-    });
-    entries.push(...Object.entries(servers));
+    const servers = await parseOptionalFile(join(layer.dir, ".mcp.json"), parseMcpJson, onWarning);
+    entries.push(...Object.entries(servers ?? {}));
+    const layerHooks = await parseOptionalFile(
+      join(layer.dir, "hooks", "hooks.json"),
+      parseHooksJson,
+      onWarning,
+    );
+    if (layerHooks && Object.keys(layerHooks).length > 0) {
+      hooks.push({ ...layer, hooks: layerHooks });
+    }
   }
   // Later entries win, so a nearer layer overrides a farther one.
   const mcpServers = Object.fromEntries(entries);
@@ -53,7 +62,7 @@ export async function loadWorkspaceContract(params: {
     ? { path: instructionsPath, text: instructionsText }
     : null;
 
-  return { layers, mcpServers, instructions };
+  return { layers, mcpServers, instructions, hooks };
 }
 
 async function resolveLayers(
@@ -78,6 +87,17 @@ async function resolveLayers(
     return userLayers;
   }
   return [...userLayers, ...projectLayers.map((dir) => ({ kind: "project" as const, dir }))];
+}
+
+async function parseOptionalFile<T>(
+  path: string,
+  parse: (text: string, options: { onWarning: (message: string) => void }) => T,
+  onWarning: (message: string) => void,
+): Promise<T | null> {
+  const text = await readOptionalFile(path, onWarning);
+  return text === null
+    ? null
+    : parse(text, { onWarning: (message) => onWarning(`${path}: ${message}`) });
 }
 
 async function readOptionalFile(
