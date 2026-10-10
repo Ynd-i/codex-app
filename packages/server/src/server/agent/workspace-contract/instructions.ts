@@ -1,36 +1,18 @@
 import { readFile, realpath } from "node:fs/promises";
 import { join } from "node:path";
 import type { WorkspaceContract } from "./types.js";
+import { type Vendor, isVendor, resolveVendorConfigDir } from "./vendor-config-dir.js";
 
 interface VendorInstructions {
-  /** Env var that moves the config dir, as `claudeConfigDir` and `resolveCodexHomeDir` read it. */
-  dirEnvVar: string | null;
-  defaultDir: readonly string[];
   file: string;
   /** Claude Code expands `@path` imports, so CLAUDE.md can pull the contract in itself. */
   followsImports: boolean;
 }
 
-const VENDOR_INSTRUCTIONS: Readonly<Record<string, VendorInstructions>> = {
-  claude: {
-    dirEnvVar: "CLAUDE_CONFIG_DIR",
-    defaultDir: [".claude"],
-    file: "CLAUDE.md",
-    followsImports: true,
-  },
-  codex: {
-    dirEnvVar: "CODEX_HOME",
-    defaultDir: [".codex"],
-    file: "AGENTS.md",
-    followsImports: false,
-  },
-  // Paseo's OpenCode provider never moves OpenCode's config dir.
-  opencode: {
-    dirEnvVar: null,
-    defaultDir: [".config", "opencode"],
-    file: "AGENTS.md",
-    followsImports: false,
-  },
+const VENDOR_INSTRUCTIONS: Readonly<Record<Vendor, VendorInstructions>> = {
+  claude: { file: "CLAUDE.md", followsImports: true },
+  codex: { file: "AGENTS.md", followsImports: false },
+  opencode: { file: "AGENTS.md", followsImports: false },
 };
 
 /**
@@ -46,11 +28,10 @@ export async function resolveContractInstructions(params: {
 }): Promise<string | null> {
   const instructions = params.contract.instructions;
   if (!instructions) return null;
+  if (!isVendor(params.baseProviderId)) return instructions.text;
   const vendor = VENDOR_INSTRUCTIONS[params.baseProviderId];
-  if (!vendor) return instructions.text;
 
-  const configuredDir = vendor.dirEnvVar ? params.env[vendor.dirEnvVar] : undefined;
-  const vendorPath = join(configuredDir ?? join(params.home, ...vendor.defaultDir), vendor.file);
+  const vendorPath = join(resolveVendorConfigDir(params.baseProviderId, params), vendor.file);
   const [vendorRealPath, contractRealPath] = await Promise.all(
     [vendorPath, instructions.path].map((path) => realpath(path).catch(() => null)),
   );
