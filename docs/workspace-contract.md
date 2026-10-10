@@ -74,7 +74,7 @@ The daemon skips the append when the provider already loads the same text from i
 
 The file carries the contract when it resolves to `~/.agents/AGENTS.md` (a symlink), has identical content, or, for Claude only, imports it with `@~/.agents/AGENTS.md` or the absolute path. Custom profiles use their base provider's row.
 
-The daemon reads the file from the directory the provider process uses. `CLAUDE_CONFIG_DIR` replaces `~/.claude` and `CODEX_HOME` replaces `~/.codex` when the launch env sets them: the daemon's own env, then `agents.providers.<id>.env` (a profile's env merged over its base provider's), then per-agent env. A plugin `agent.session_open` hook that changes the env is not seen. OpenCode is always checked at `~/.config/opencode`, because Paseo never moves it.
+The daemon reads the file from the directory the provider process uses. `CLAUDE_CONFIG_DIR` replaces `~/.claude`, `CODEX_HOME` replaces `~/.codex`, and a non-empty `XDG_CONFIG_HOME` replaces `~/.config` when the launch env sets them: the daemon's own env, then `agents.providers.<id>.env` (a profile's env merged over its base provider's), then per-agent env. A plugin `agent.session_open` hook that changes the env is not seen.
 
 ## Claude skills mirror
 
@@ -184,8 +184,9 @@ You are a critical read-only code reviewer.
 
 - `name` is required and must equal the file name without `.md`. Claude Code skips an agent file without `name`. The name is also the file name in each vendor's agents directory, so it starts with a letter or digit and uses only letters, digits, `.`, `_` and `-`.
 - `description` and the prompt below the frontmatter are required.
+- An agent named after a built-in OpenCode agent reaches Claude and Codex but not OpenCode, and the daemon logs a warning. In OpenCode 1.18.32 those names are `build`, `compaction`, `explore`, `general`, `plan`, `summary` and `title`. OpenCode merges an agent file into the built-in agent with the same name: your prompt would replace the built-in one, including the hidden compaction, summary and title prompts, under the built-in's permissions, and a bridged `plan.md` would turn Plan into a subagent that Paseo no longer offers as a mode.
 - The `codex:` block holds Codex config keys for this role, such as `model`, `model_reasoning_effort` and `sandbox_mode`. The daemon copies each string, number or boolean into the role file. It drops lists, maps, keys that are not bare TOML keys, and `name`, `description` or `developer_instructions`, with a warning each. Claude Code ignores the block.
-- Only files at the top of `~/.agents/agents` count. The daemon ignores subdirectories and dotfiles. A file that breaks a rule, or whose frontmatter is not valid YAML, logs a warning in `daemon.log` and is skipped.
+- Only files at the top of `~/.agents/agents` count. The daemon ignores subdirectories and dotfiles. A file that breaks a rule, or whose frontmatter does not parse, logs a warning in `daemon.log` and is skipped. Like Claude Code 2.1.290, the daemon accepts an unquoted value with `: ` or another YAML special character, such as `description: Use it when: ...`, keeps the last of duplicate keys, and reads `\n` in a description as a line break.
 
 At every launch, the daemon links each agent into the personal agents directory of the vendor it launches:
 
@@ -195,7 +196,7 @@ At every launch, the daemon links each agent into the personal agents directory 
 | Codex    | `~/.codex/agents/<name>.toml`        | A role file generated in `~/.agents/.generated/agents/codex/`        |
 | OpenCode | `~/.config/opencode/agent/<name>.md` | A subagent file generated in `~/.agents/.generated/agents/opencode/` |
 
-`CLAUDE_CONFIG_DIR` and `CODEX_HOME` move the Claude and Codex links, read from the launch env as for [instructions](#instructions). Claude reads the source file itself. The Codex role file holds `name`, `description`, the `codex:` keys and the prompt as `developer_instructions`. The OpenCode file holds `description`, `mode: subagent` and the prompt, and `mode: subagent` keeps the agent out of the modes Paseo offers for OpenCode.
+`CLAUDE_CONFIG_DIR`, `CODEX_HOME` and `XDG_CONFIG_HOME` move the Claude, Codex and OpenCode links, read from the launch env as for [instructions](#instructions). Claude reads the source file itself. The Codex role file holds `name`, `description`, the `codex:` keys and the prompt as `developer_instructions`. The OpenCode file holds `description`, `mode: subagent` and the prompt, and `mode: subagent` keeps the agent out of the modes Paseo offers for OpenCode.
 
 The daemon maps nothing else, so `model`, `tools`, `disallowedTools` and `color` apply in Claude only. One value that OpenCode reads differently, such as `tools: Read, Grep` or `color: blue`, makes OpenCode reject its whole config. Codex has no tool list. Limit a Codex role with `sandbox_mode` instead.
 
@@ -213,7 +214,7 @@ Project `<repo>/.agents/agents/*.md` files reach Claude only, as `.agents:<name>
 
 An OpenCode server reads the agents of a directory once, when it first serves that directory. A session whose launch config has MCP servers, such as registry servers or Paseo's own tools, runs its own server and sees the current agents. Sessions without MCP servers or extra env share one `opencode serve`, which shows an added or edited agent only after it restarts.
 
-### Remove vendor copies
+### Move existing agents
 
 When an agent moves into `~/.agents/agents`, delete its old copies, `~/.claude/agents/<name>.md` and `~/.codex/agents/<name>.toml`. Otherwise each vendor keeps reading its own copy, because a real file blocks the link. Move the Codex keys of the old role file, such as `model` and `sandbox_mode`, into the `codex:` block first. After the next launch of each vendor, `ls -l ~/.claude/agents ~/.codex/agents` shows the agent as a link into `~/.agents`.
 

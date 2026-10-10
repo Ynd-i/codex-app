@@ -1883,11 +1883,41 @@ Decisions, including where the measurements overrode the design:
 - `name` is required. The design made it optional. With the Agent SDK initialize response, Claude
   Code listed a user agent file with `name` and dropped one without it, silently. The Claude link
   points at the source file, so a nameless file would have reached Codex and OpenCode only.
+- The parser runs Claude Code 2.1.290's fallbacks. The first version used strict YAML. Two reviews
+  found that Claude Code drops a leading BOM, retries invalid YAML with special-character values
+  double-quoted and tab indents as spaces, parses with Bun.YAML, which keeps the last of duplicate
+  keys, and reads a literal `\n` in a description as a line break. An agent with
+  `description: ... Examples: <example>Context: ...`, or with a key written twice, loaded in
+  Claude and was skipped here, in every vendor. Claude Code and `readAgentDefinitions` now give 15
+  fixtures the same verdict and description, among them a BOM, tab indents with a backslash, a
+  flow list, quoted values, a list description, duplicate keys, a literal `\n`, a double quote and
+  an `@` in a retried value, a file that fails both parses, and two CRLF files. Claude Code never
+  quotes a CRLF line, because `.` in its line pattern stops at `\r`, so the parser keeps the `\r`
+  as well. Known differences: Claude Code also accepts a closing `---` with text after it or with
+  indentation, because its split pattern takes the first `---` anywhere, which also cuts a
+  description at `---`. The two YAML engines may differ on input that no fixture covers.
 - `JSON.stringify` encodes TOML strings with one fix. Python's tomllib rejected a raw U+007F
   (`Illegal character '\x7f'`) and parsed quotes, backslashes, CRLF, `"""`, control characters and
-  non-BMP text once DEL was escaped as `\u007f`. `.tasks/phase4/toml-string-check.mjs` reruns it.
-- The `codex:` block keeps bare TOML keys with finite scalar values, so one bad line cannot make
-  Codex drop the role. `codex:` with nothing below it counts as absent.
+  non-BMP text once DEL was escaped as `\u007f`.
+- The `codex:` block keeps bare TOML keys with finite scalar values, so the role file always parses
+  as TOML. A value of the right type that Codex rejects, such as `sandbox_mode: readonly`, may
+  still make Codex drop the role (not measured). `codex:` with nothing below it counts as absent.
+- OpenCode's config dir is `$XDG_CONFIG_HOME/opencode`, or `~/.config/opencode` when the variable
+  is unset or empty, as OpenCode 1.18.32 resolves it through xdg-basedir. Phase 1's instructions
+  dedupe assumed `~/.config/opencode`, so the fix in `vendor-config-dir.ts` corrects that check
+  too. `OPENCODE_CONFIG_DIR` adds a directory to OpenCode's list and keeps the global one, so the
+  bridge ignores it.
+- OpenCode merges an agent file into the built-in agent with the same name. A personal `plan.md`
+  with `mode: subagent` made `opencode agent list` show `plan (subagent)`, which takes Plan out of
+  Paseo's OpenCode modes. For the other names the file's prompt would replace the built-in one,
+  including the hidden compaction, summary and title prompts, under the built-in's permissions.
+  The bridge leaves the seven built-in names out of OpenCode and logs a warning. Claude and Codex
+  still get the definition. Codex is not guarded: its binary embeds built-in roles such as
+  `explorer.toml` and `awaiter.toml`, and the user's `explorer` role has the same name as one of
+  them.
+- A read error on `~/.agents/agents` counts as no definitions, so that launch deletes the generated
+  files and their links, and the next launch that can read the directory restores them. Not fixed,
+  because nothing can be regenerated while the source is unreadable.
 - Generated files live in `~/.agents/.generated/agents/<vendor>/`, not under `$PASEO_HOME`, so the
   packaged and dev daemons write the same files and links.
 - `syncOwnedLinks` keeps an owned link while its target exists, and `plugins.test.ts` pins that rule
@@ -1900,18 +1930,21 @@ Decisions, including where the measurements overrode the design:
   The bridge writes OpenCode frontmatter with `lineWidth: 0`, so a long description stays on one
   line.
 
-Validation: unit tests pass in `agent-definitions.test.ts` (9), `agent-bridge.test.ts` (13),
-`load-workspace-contract.test.ts` (22), `agent-manager.test.ts` (208), and, for the refactors,
-`claude-skills-mirror.test.ts` (7), `plugins.test.ts` (12) and `instructions.test.ts` (10).
-`.tasks/phase4/mutate.mjs` broke each behavior once, and 26 of 27 mutations failed a test with the
-predicted diff, among them the name rule, the DEL escape, the prune before the link sync, compare
-before write, `mode: subagent`, the profile env at the call site and the log field. The survivor
-accepts a YAML list as frontmatter, which the name rule then skips. Repo-wide typecheck, lint and
-format check pass.
+Validation: unit tests pass in `agent-definitions.test.ts` (12), `agent-bridge.test.ts` (15),
+`load-workspace-contract.test.ts` (22), `agent-manager.test.ts` (208), and, for the refactors and
+the OpenCode config dir, `claude-skills-mirror.test.ts` (7), `plugins.test.ts` (12) and
+`instructions.test.ts` (11). A mutation script broke each behavior once, and 26 of 27 mutations
+failed a test with the predicted diff, among them the name rule, the DEL escape, the prune before
+the link sync, compare before write, `mode: subagent`, the profile env at the call site and the
+log field. The survivor accepts a YAML list as frontmatter, which the name rule then skips. Runs
+against the review fixes killed all 19 mutations, among them `??` for `XDG_CONFIG_HOME`, the BOM
+strip, each part of the retry, duplicate keys, the literal `\n`, the CRLF line break, the built-in
+name filter, and keeping an owned link whose wrong target exists, which the first repoint test
+missed. Repo-wide typecheck, lint and format check pass.
 
 Proof on this worktree's dev daemon (port 6769) with `HOME` set to a temp dir holding
 `.agents/agents/probe-bridge.md`, a description over 80 characters with `: `, `#` and quotes, a
-`codex:` block, and Claude-only `tools` and `color`. `.tasks/phase4/e2e.sh` reruns it.
+`codex:` block, and Claude-only `tools` and `color`.
 
 - The script created one Claude, one Codex and one OpenCode agent. `daemon.log` showed
   `Loaded .agents workspace contract` with `agents: ["probe-bridge"]` for each. Their turns failed,
@@ -1927,6 +1960,10 @@ Proof on this worktree's dev daemon (port 6769) with `HOME` set to a temp dir ho
   `probe-bridge (subagent)`, so the Claude `tools` and `color` values never reached it.
 - After the source was deleted, a second round of launches logged `agents: []` and left the three
   link directories and both generated directories empty.
+- After review, a bridge run with `XDG_CONFIG_HOME` moved out of `~/.config` linked `xdg-probe.md`
+  into `$XDG_CONFIG_HOME/opencode/agent`, created no `~/.config`, and skipped `plan.md` with the
+  warning. `opencode agent list` with the same env exited 0 and listed `xdg-probe (subagent)`,
+  `plan (primary)` and `build (primary)`.
 
 Sandbox limits found on the way. `npm run cli` runs the tsx CLI, whose IPC socket the sandbox
 refuses (`listen EPERM`), so the proof runs the CLI entry with `node --import tsx`. The CLI's home
@@ -1939,8 +1976,8 @@ Open:
 - Codex lists roles only in a model turn, which needs auth. The research measured that Codex 0.159
   registers a symlinked role file in `$CODEX_HOME/agents`, and here the generated file parsed as
   TOML. No Codex turn saw the bridged role.
-- Whether a role named after a Codex built-in (`default`, `explorer`, `worker`) replaces it was not
-  measured.
+- Whether a personal Codex role named after a built-in role, such as the user's `explorer`,
+  replaces it was not measured.
 - The user's agents still live in `~/.claude/agents` and `~/.codex/agents` as real files, which
   block the links until removed.
 - The bridge writes generated files in place. A vendor that reads one while a concurrent launch
