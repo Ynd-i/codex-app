@@ -1761,6 +1761,14 @@ export const en = {
     dialogTitle: "Attach images",
     dialogFilterName: "Images",
   },
+  workspaceContract: {
+    trustNotice: {
+      title: "This project has .agents configuration",
+      body: "Paseo is not applying its MCP servers, skills and hooks because the project is not trusted.",
+      trust: "Trust project",
+      notNow: "Not now",
+    },
+  },
   workspaceSetup: {
     title: "Create workspace",
     errors: {

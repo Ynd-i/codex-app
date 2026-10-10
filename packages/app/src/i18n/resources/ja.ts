@@ -1753,6 +1753,14 @@ export const ja: TranslationResources = {
     dialogTitle: "画像を添付",
     dialogFilterName: "画像",
   },
+  workspaceContract: {
+    trustNotice: {
+      title: "このプロジェクトには .agents 設定があります",
+      body: "このプロジェクトは信頼されていないため、Paseo はその MCP サーバー、スキル、フックを適用していません。",
+      trust: "プロジェクトを信頼",
+      notNow: "今はしない",
+    },
+  },
   workspaceSetup: {
     title: "ワークスペースを作成",
     errors: {

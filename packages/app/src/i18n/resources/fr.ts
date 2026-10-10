@@ -1777,6 +1777,14 @@ export const fr: TranslationResources = {
     dialogTitle: "Joindre des images",
     dialogFilterName: "Images",
   },
+  workspaceContract: {
+    trustNotice: {
+      title: "Ce projet contient une configuration .agents",
+      body: "Paseo n’applique pas ses serveurs MCP, skills et hooks, car le projet n’est pas approuvé.",
+      trust: "Faire confiance au projet",
+      notNow: "Pas maintenant",
+    },
+  },
   workspaceSetup: {
     title: "Créer un espace de travail",
     errors: {

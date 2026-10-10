@@ -1736,6 +1736,14 @@ export const ar: TranslationResources = {
     dialogTitle: "إرفاق الصور",
     dialogFilterName: "الصور",
   },
+  workspaceContract: {
+    trustNotice: {
+      title: "يحتوي هذا المشروع على إعدادات .agents",
+      body: "لا يطبّق Paseo خوادم MCP والمهارات والخطافات الخاصة به لأن المشروع غير موثوق.",
+      trust: "الوثوق بالمشروع",
+      notNow: "ليس الآن",
+    },
+  },
   workspaceSetup: {
     title: "إنشاء مساحة عمل",
     errors: {
