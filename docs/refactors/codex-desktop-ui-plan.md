@@ -1602,7 +1602,8 @@ feature flag in `messages.ts`. The server change stays in the workspace-contract
 plus call sites in `bootstrap.ts`, `config.ts`, `daemon-config-store.ts`,
 `agent-manager.ts`, `session.ts`, `websocket-server.ts` and
 `authorization/operation-permissions.ts`. Expect conflicts in those lists when upstream
-edits them. The app banner and `@getpaseo/client` methods are a later task. Behavior is
+edits them. The client methods and the app notice are
+[phase 2b](#agents-workspace-contract-phase-2b-trust-notice--2026-10-10). Behavior is
 in [workspace-contract.md](../workspace-contract.md#trust-from-a-client).
 
 Decisions:
@@ -1643,6 +1644,70 @@ of the list followed by `paseo reload` reported `daemon.workspaceContract.truste
 as applied with no restart-required paths, and inspect then returned `trusted: false`.
 `scripts/dev-home.sh` rewrites `daemon.listen` in the dev `config.json` on every dev
 command, so the original bytes were restored from a copy taken before the first one.
+
+### `.agents` workspace contract, phase 2b: trust notice — 2026-10-10
+
+This is the client and app half of phase 2a, with no daemon or protocol change.
+`@getpaseo/client` gains `inspectWorkspaceContract(cwd)` and `trustWorkspaceContract(cwd)`.
+The notice lives in `packages/app/src/workspace-contract/` and mounts twice: in
+`NewWorkspaceLayout` (`new-workspace-screen.tsx`), above the setup tray on the Mac new chat
+and above the title in the other layouts, and in `ActiveAgentComposer` (`agent-panel.tsx`),
+above the permission dock and the composer. `data/push-router.ts` gains one invalidation.
+Expect conflicts in `daemon-client.ts`, `new-workspace-screen.tsx`, `agent-panel.tsx` and
+`push-router.ts` when upstream edits them. Behavior is in
+[workspace-contract.md](../workspace-contract.md#trust-from-a-client).
+
+Decisions:
+
+- The notice is the existing `<Alert size="sm" variant="warning">` with two outline
+  buttons, on a rail with the composer's inset and width. It lines up with the input in
+  both mounts and at compact widths, so it needs no form-factor branch. Nothing gates it
+  to the Mac.
+- Inspect is a React Query fetch keyed by host and cwd. It runs only when the host
+  advertises `workspaceContractTrust`, so an old daemon gets no request and shows nothing.
+- A successful trust marks the cached inspection trusted, then re-inspects every
+  workspace on that host, so the notice hides without waiting for the second RPC. A
+  failure keeps the notice and shows the client's error text under the body. The
+  component is keyed by host and cwd, so that error never carries over to another
+  workspace.
+- Not now is an in-memory set keyed by host and repo root, shared by both mounts. A
+  renderer reload clears it.
+- `daemon_config_changed` invalidates the host's inspections, next to the existing
+  pairing-offer invalidation. Any config change re-inspects. Comparing the old and new
+  lists first would add a branch to save one cheap RPC per open workspace.
+- The app has no per-principal gating for `daemon.manage` actions, so Trust project is
+  always enabled. A denied trust shows the daemon's `access_denied` error in the notice.
+- The notice appears when the inspection returns, so the transcript or the new-chat hero
+  moves up once at mount. Reserving its height in every workspace would leave a gap.
+- The copy names MCP servers, skills and hooks. Today trust gates only project
+  `.mcp.json`. Project skills and hooks are phase 2 work.
+
+Validation: unit tests pass in client `daemon-client.test.ts` (159, two new) and app
+`trust-notice-model.test.ts` (6), `push-router.test.ts` (8) and `i18n/resources.test.ts`
+(39). Each new assertion failed with the expected diff when its behavior was broken: eight
+injected model defects, the push-router invalidation removed, and the trust request sent
+with the inspect type. Repo-wide typecheck, lint and format check pass. Proof on the dev
+daemon (port 6768, one PID throughout) with Electron dev (Metro 8082) driven over CDP, in
+the zh-CN UI, with `trustedRoots: []` and a temp git repo whose `.agents/.mcp.json`
+declares `demo`:
+
+- The notice showed on the repo's Mac new chat and in a Mock chat there. The Mock launch
+  logged `Ignoring project .agents under untrusted repo root`.
+- Not now in the chat hid it there and on the new chat. A renderer reload brought it back.
+- Trust project hid it, `config.json` gained the repo root, and the new chat stayed clear.
+  A Codex agent (`gpt-5.6-luna`) created afterwards logged
+  `Loaded .agents workspace contract` with the repo's `.agents` in `layers` and `demo` in
+  `mcpServers`, and answered.
+- With `config.json` made invalid, Trust project kept the notice and showed
+  `Request failed: [Config] Invalid JSON in …` under the body. A second click after
+  restoring the file trusted the repo.
+- A hand edit back to `trustedRoots: []` and `paseo daemon reload` brought the notice back
+  on the open new chat within about one second, with no navigation or focus change.
+- At 430px wide, both mounts render in the compact layouts, aligned with the composer.
+
+Screenshots stayed in the gitignored `.tasks/` directory. Cleanup archived the proof chats,
+deleted the proof project and restored the dev `config.json` bytes. The packaged app was not
+rebuilt.
 
 ### Desktop notifications not appearing — 2026-10-04
 
