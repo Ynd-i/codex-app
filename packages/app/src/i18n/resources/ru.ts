@@ -1764,6 +1764,14 @@ export const ru: TranslationResources = {
     dialogTitle: "Прикрепить изображения",
     dialogFilterName: "Изображения",
   },
+  workspaceContract: {
+    trustNotice: {
+      title: "В этом проекте есть конфигурация .agents",
+      body: "Paseo не применяет его MCP-серверы, навыки и хуки, потому что проект не отмечен как доверенный.",
+      trust: "Доверять проекту",
+      notNow: "Не сейчас",
+    },
+  },
   workspaceSetup: {
     title: "Создать рабочее пространство",
     errors: {

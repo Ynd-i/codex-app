@@ -1719,6 +1719,14 @@ export const zhCN: TranslationResources = {
     dialogTitle: "附加图片",
     dialogFilterName: "图片",
   },
+  workspaceContract: {
+    trustNotice: {
+      title: "此项目包含 .agents 配置",
+      body: "此项目未受信任，Paseo 不会应用它的 MCP 服务器、skills 和 hooks。",
+      trust: "信任项目",
+      notNow: "暂不",
+    },
+  },
   workspaceSetup: {
     title: "创建 workspace",
     errors: {

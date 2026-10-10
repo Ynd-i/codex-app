@@ -11,3 +11,11 @@ export interface WorkspaceContract {
   mcpServers: Record<string, McpServerConfig>;
   instructions: { path: string; text: string } | null;
 }
+
+export interface WorkspaceContractInspection {
+  /** The directory holding `.git`, or the cwd itself outside a repo. */
+  repoRoot: string;
+  trusted: boolean;
+  /** Existing project `.agents` directories, repo root first. */
+  projectLayers: string[];
+}

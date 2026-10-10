@@ -328,8 +328,8 @@ export interface CreateAgentOptions {
 export interface WorkspaceContractOptions {
   /** Home holding the user-level `.agents` contract. */
   home: string;
-  /** Directories whose repos may apply project `.agents` layers. */
-  trustedRoots: readonly string[];
+  /** Directories whose repos may apply project `.agents` layers, read at every launch. */
+  trustedRoots: () => readonly string[];
 }
 
 export interface AgentManagerOptions {
@@ -5316,7 +5316,7 @@ export class AgentManager {
     const contract = await loadWorkspaceContract({
       home,
       cwd: config.cwd,
-      trustedRoots,
+      trustedRoots: trustedRoots(),
       onWarning: (message) => this.logger.warn({ cwd: config.cwd }, message),
     });
     if (contract.layers.length > 0) {

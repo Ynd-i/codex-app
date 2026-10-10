@@ -40,7 +40,20 @@ A repo is trusted when its root is one of these directories or below one. The re
 
 `~/.agents` always applies. When a repo is not trusted and has a project `.agents` directory, the daemon skips every project layer and logs one warning per launch in `daemon.log` that names the repo root and `daemon.workspaceContract.trustedRoots`. Agent creation still succeeds.
 
-The list is read at daemon start. `paseo reload` reports `daemon.workspaceContract.trustedRoots` under "These changes require a daemon restart", so restart the daemon after editing it.
+The daemon reads the list at every agent launch. After you edit it, run `paseo reload`, and the next launch uses the new list without a daemon restart. To untrust a repo, remove its entry and reload.
+
+### Trust from a client
+
+Two RPCs let a client show a repo's trust state and trust it. Gate both on `server_info.features.workspaceContractTrust`.
+
+| RPC                          | Permission       | Result                                                                                                |
+| ---------------------------- | ---------------- | ----------------------------------------------------------------------------------------------------- |
+| `workspace.contract.inspect` | `workspace.read` | The repo root for a cwd, whether it is trusted, and its existing project `.agents` directories        |
+| `workspace.contract.trust`   | `daemon.manage`  | Appends the repo root to `trustedRoots` in `config.json`, reloads the daemon config, returns the list |
+
+Trust writes the repo root as an absolute path and keeps existing entries as written. When a listed root already covers the repo, it writes nothing. It saves through the same editor as `paseo daemon config set`, which rewrites the whole file in schema key order. Inspect, trust, and agent launches share one function, `inspectWorkspaceContract`, for the repo root and the trust check, so the app and the next launch agree.
+
+When inspect reports project `.agents` directories in an untrusted repo, the app shows a warning above the composer, on the new chat screen and in that workspace's chats. **Trust project** calls the trust RPC and hides the warning. **Not now** hides it for that repo until you restart the app. The app re-inspects open workspaces on every `daemon_config_changed`, so an edit followed by `paseo reload` updates the warning too. Code: `packages/app/src/workspace-contract/`.
 
 ## Instructions
 
