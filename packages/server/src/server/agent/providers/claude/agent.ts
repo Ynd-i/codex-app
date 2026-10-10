@@ -3562,14 +3562,19 @@ class ClaudeAgentSession implements AgentSession {
   }
 
   private buildPluginOptions(): Pick<ClaudeOptions, "plugins"> | Record<string, never> {
-    const projectLayers = this.config.workspaceContract?.projectLayers ?? [];
-    if (projectLayers.length === 0) {
+    const contract = this.config.workspaceContract;
+    const dirs = [
+      ...(contract?.plugins ?? []).map((plugin) => plugin.dir),
+      ...(contract?.projectLayers ?? []),
+    ];
+    if (dirs.length === 0) {
       return {};
     }
-    // Claude loads each layer's skills, hooks, agents and commands as a plugin. The daemon
-    // already injects the layer's .mcp.json servers, so the plugin must not start them again.
+    // Claude loads the skills, hooks, agents and commands of each `~/.agents/plugins` plugin and
+    // each project layer. The daemon already injects their .mcp.json servers, so the plugin must
+    // not start them again.
     return {
-      plugins: projectLayers.map((dir) => ({ type: "local", path: dir, skipMcpDiscovery: true })),
+      plugins: dirs.map((dir) => ({ type: "local", path: dir, skipMcpDiscovery: true })),
     };
   }
 
@@ -3595,8 +3600,8 @@ class ClaudeAgentSession implements AgentSession {
     };
   }
 
-  // The SDK sends exactly one --settings, so user hooks go into this object. Project layers load
-  // as plugins that run their own hooks/hooks.json, so adding them here would run them twice.
+  // The SDK sends exactly one --settings, so user hooks go into this object. Plugins and project
+  // layers load as plugins that run their own hooks, so adding them here would run them twice.
   private resolveUserLayerHooks(): HooksByEvent | null {
     const userLayers = (this.config.workspaceContract?.hooks ?? []).filter(
       (layer) => layer.kind === "user",
