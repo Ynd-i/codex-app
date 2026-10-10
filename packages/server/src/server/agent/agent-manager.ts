@@ -5339,11 +5339,12 @@ export class AgentManager {
       trustedRoots: trustedRoots(),
       onWarning: (message) => this.logger.warn({ cwd: config.cwd }, message),
     });
-    if (contract.layers.length > 0) {
+    if (contract.layers.length > 0 || contract.plugins.length > 0) {
       this.logger.info(
         {
           cwd: config.cwd,
           layers: contract.layers.map((layer) => layer.dir),
+          plugins: contract.plugins.map((plugin) => plugin.name),
           mcpServers: Object.keys(contract.mcpServers),
           hookEvents: [...new Set(contract.hooks.flatMap((layer) => Object.keys(layer.hooks)))],
         },
@@ -5353,9 +5354,11 @@ export class AgentManager {
     const projectLayers = contract.layers.flatMap((layer) =>
       layer.kind === "project" ? [layer.dir] : [],
     );
-    // Internal agents do daemon work such as naming a branch, so no user or repo hooks run there.
+    // Internal agents do daemon work such as naming a branch, so no user, plugin or repo hooks
+    // run there.
     const hasLaunchParts =
-      !config.internal && (projectLayers.length > 0 || contract.hooks.length > 0);
+      !config.internal &&
+      (projectLayers.length > 0 || contract.plugins.length > 0 || contract.hooks.length > 0);
     return {
       mcpServers: contract.mcpServers,
       instructions: await resolveContractInstructions({
@@ -5368,7 +5371,9 @@ export class AgentManager {
           overlays: [options.env],
         }),
       }),
-      launch: hasLaunchParts ? { projectLayers, hooks: contract.hooks } : null,
+      launch: hasLaunchParts
+        ? { projectLayers, plugins: contract.plugins, hooks: contract.hooks }
+        : null,
     };
   }
 

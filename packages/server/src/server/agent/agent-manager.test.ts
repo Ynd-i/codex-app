@@ -3297,6 +3297,7 @@ describe("launch workspace contract", () => {
 
       expect(client.createdConfigs[0]?.workspaceContract).toEqual({
         projectLayers: [join(repo, ".agents")],
+        plugins: [],
         hooks: [
           { kind: "user", dir: join(home, ".agents"), hooks: userHooks },
           { kind: "project", dir: join(repo, ".agents"), hooks: repoHooks },
@@ -3306,6 +3307,36 @@ describe("launch workspace contract", () => {
       const stored = await storage.get(snapshot.id);
       expect(stored?.id).toBe(snapshot.id);
       expect(JSON.stringify(stored)).not.toContain("workspaceContract");
+    } finally {
+      rmSync(workdir, { recursive: true, force: true });
+    }
+  });
+
+  test("a plugin without hooks still reaches the launch config", async () => {
+    const workdir = mkdtempSync(join(tmpdir(), "agent-manager-test-"));
+    const home = join(workdir, "home");
+    const plugin = join(home, ".agents", "plugins", "kit");
+    mkdirSync(join(plugin, ".claude-plugin"), { recursive: true });
+    writeFileSync(join(plugin, ".claude-plugin", "plugin.json"), JSON.stringify({ name: "kit" }));
+    mkdirSync(join(plugin, "skills", "demo"), { recursive: true });
+    writeFileSync(join(plugin, "skills", "demo", "SKILL.md"), "# demo\n");
+    const client = new TestAgentClient();
+    const manager = new AgentManager({
+      clients: { codex: client },
+      logger,
+      workspaceContract: { home, trustedRoots: () => [] },
+    });
+
+    try {
+      await manager.createAgent({ provider: "codex", cwd: workdir }, undefined, {
+        workspaceId: undefined,
+      });
+
+      expect(client.createdConfigs[0]?.workspaceContract).toEqual({
+        projectLayers: [],
+        plugins: [{ name: "kit", dir: plugin }],
+        hooks: [],
+      });
     } finally {
       rmSync(workdir, { recursive: true, force: true });
     }
