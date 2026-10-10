@@ -90,6 +90,7 @@ import { createProviderEnv } from "./provider-launch-config.js";
 import { mirrorAgentsSkillsIntoClaude } from "./workspace-contract/claude-skills-mirror.js";
 import { resolveContractInstructions } from "./workspace-contract/instructions.js";
 import { loadWorkspaceContract } from "./workspace-contract/load-workspace-contract.js";
+import { linkPluginSkills } from "./workspace-contract/plugins.js";
 import type { LaunchWorkspaceContract } from "./workspace-contract/types.js";
 import { resolveCreateAgentTitles } from "./create-agent-title.js";
 import { forkTitle } from "./fork-title.js";
@@ -5330,15 +5331,16 @@ export class AgentManager {
     }
     const { home, trustedRoots } = this.workspaceContract;
     const baseProviderId = this.resolveBaseProviderId(config.provider);
-    if (baseProviderId === "claude") {
-      await mirrorAgentsSkillsIntoClaude({ home, logger: this.logger });
-    }
     const contract = await loadWorkspaceContract({
       home,
       cwd: config.cwd,
       trustedRoots: trustedRoots(),
       onWarning: (message) => this.logger.warn({ cwd: config.cwd }, message),
     });
+    await linkPluginSkills({ home, plugins: contract.plugins, logger: this.logger });
+    if (baseProviderId === "claude") {
+      await mirrorAgentsSkillsIntoClaude({ home, logger: this.logger });
+    }
     if (contract.layers.length > 0 || contract.plugins.length > 0) {
       this.logger.info(
         {

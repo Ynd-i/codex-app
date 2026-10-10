@@ -1,8 +1,19 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import {
+  lstatSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readlinkSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { describe, expect, test } from "vitest";
-import { discoverPlugins } from "./plugins.js";
+import { createTestLogger } from "../../../test-utils/test-logger.js";
+import { discoverPlugins, linkPluginSkills } from "./plugins.js";
+
+const logger = createTestLogger();
 
 function createHome(): { home: string; plugins: string } {
   const home = mkdtempSync(join(tmpdir(), "workspace-plugins-"));
@@ -131,5 +142,105 @@ describe("discoverPlugins", () => {
     const { home } = createHome();
 
     expect(await discover(home)).toEqual({ plugins: [], warnings: [] });
+  });
+});
+
+describe("linkPluginSkills", () => {
+  function addSkills(dir: string, ...names: string[]): string {
+    for (const name of names) {
+      mkdirSync(join(dir, "skills", name), { recursive: true });
+      writeFileSync(join(dir, "skills", name, "SKILL.md"), `# ${name}\n`);
+    }
+    return join(dir, "skills");
+  }
+
+  test("links each plugin's skills directory under the plugin name", async () => {
+    const { home, plugins } = createHome();
+    const kitSkills = addSkills(join(plugins, "kit-repo"), "how", "tdd");
+    const bare = join(plugins, "bare");
+    mkdirSync(bare, { recursive: true });
+
+    const changes = await linkPluginSkills({
+      home,
+      plugins: [
+        { name: "kit", dir: join(plugins, "kit-repo") },
+        { name: "bare", dir: bare },
+      ],
+      logger,
+    });
+
+    const agentsSkills = join(home, ".agents", "skills");
+    expect(changes).toBe(1);
+    expect(readdirSync(agentsSkills)).toEqual(["kit"]);
+    expect(readlinkSync(join(agentsSkills, "kit"))).toBe(kitSkills);
+  });
+
+  test("a second run changes nothing", async () => {
+    const { home, plugins } = createHome();
+    addSkills(join(plugins, "kit"), "how");
+    const params = { home, plugins: [{ name: "kit", dir: join(plugins, "kit") }], logger };
+    await linkPluginSkills(params);
+    const link = join(home, ".agents", "skills", "kit");
+    const before = lstatSync(link).mtimeMs;
+
+    expect(await linkPluginSkills(params)).toBe(0);
+    expect(lstatSync(link).mtimeMs).toBe(before);
+  });
+
+  test("repoints its links and removes the ones whose plugin is gone", async () => {
+    const { home, plugins } = createHome();
+    const kitSkills = addSkills(join(plugins, "kit-v2"), "how");
+    addSkills(join(plugins, "kit-v1"), "how");
+    const agentsSkills = join(home, ".agents", "skills");
+    mkdirSync(agentsSkills, { recursive: true });
+    symlinkSync(join(plugins, "kit-v1", "skills"), join(agentsSkills, "kit"));
+    symlinkSync(join(plugins, "removed", "skills"), join(agentsSkills, "removed"));
+
+    const changes = await linkPluginSkills({
+      home,
+      plugins: [{ name: "kit", dir: join(plugins, "kit-v2") }],
+      logger,
+    });
+
+    expect(changes).toBe(3);
+    expect(readdirSync(agentsSkills)).toEqual(["kit"]);
+    expect(readlinkSync(join(agentsSkills, "kit"))).toBe(kitSkills);
+  });
+
+  test("leaves real directories, files and other links alone", async () => {
+    const { home, plugins } = createHome();
+    addSkills(join(plugins, "kit"), "how");
+    addSkills(join(plugins, "other"), "why");
+    const pluginSkill = join(plugins, "kit", "skills", "how");
+    const agentsSkills = join(home, ".agents", "skills");
+    mkdirSync(join(agentsSkills, "kit"), { recursive: true });
+    writeFileSync(join(agentsSkills, "kit", "SKILL.md"), "# my own kit skill\n");
+    writeFileSync(join(agentsSkills, "notes.md"), "notes\n");
+    const foreign = mkdtempSync(join(tmpdir(), "workspace-plugins-foreign-"));
+    symlinkSync(foreign, join(agentsSkills, "other"));
+    symlinkSync(join(foreign, "gone"), join(agentsSkills, "dangling"));
+    symlinkSync(pluginSkill, join(agentsSkills, "how"));
+
+    const changes = await linkPluginSkills({
+      home,
+      plugins: [
+        { name: "kit", dir: join(plugins, "kit") },
+        { name: "other", dir: join(plugins, "other") },
+      ],
+      logger,
+    });
+
+    expect(changes).toBe(0);
+    expect(lstatSync(join(agentsSkills, "kit")).isDirectory()).toBe(true);
+    expect(readlinkSync(join(agentsSkills, "other"))).toBe(foreign);
+    expect(readlinkSync(join(agentsSkills, "dangling"))).toBe(join(foreign, "gone"));
+    expect(readlinkSync(join(agentsSkills, "how"))).toBe(pluginSkill);
+    expect(readdirSync(agentsSkills).sort()).toEqual([
+      "dangling",
+      "how",
+      "kit",
+      "notes.md",
+      "other",
+    ]);
   });
 });

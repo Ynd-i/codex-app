@@ -1,11 +1,13 @@
 import { readdir, stat } from "node:fs/promises";
 import { basename, join, resolve, sep } from "node:path";
+import type { Logger } from "pino";
 import { z } from "zod";
 import type { McpServerConfig } from "../agent-sdk-types.js";
 import { type HooksByEvent, parseHooksJson } from "./hooks-json.js";
 import { AGENTS_DIR, isDirectory } from "./inspect-workspace-contract.js";
 import { parseMcpJson } from "./mcp-json.js";
 import { parseOptionalFile } from "./optional-file.js";
+import { syncSkillLinks } from "./skill-links.js";
 import type { WorkspaceContractPlugin } from "./types.js";
 
 const PLUGIN_MANIFEST = join(".claude-plugin", "plugin.json");
@@ -74,6 +76,40 @@ export async function readPluginParts(
     mcpServers: resolvePluginRootInServers(servers ?? {}, plugin.dir),
     hooks: exportPluginRoot(hooks ?? {}, plugin.dir),
   };
+}
+
+/**
+ * Codex and OpenCode read `~/.agents/skills` and the directories below it, so each plugin with a
+ * `skills/` directory gets the link `~/.agents/skills/<plugin name>`. Links into
+ * `~/.agents/plugins` belong to this sync, and nothing else there is touched.
+ *
+ * @returns the number of links created or removed.
+ */
+export async function linkPluginSkills(params: {
+  home: string;
+  plugins: readonly WorkspaceContractPlugin[];
+  logger: Logger;
+}): Promise<number> {
+  const agentsDir = join(params.home, AGENTS_DIR);
+  try {
+    const wanted = new Map<string, string>();
+    for (const plugin of params.plugins) {
+      const skills = join(plugin.dir, "skills");
+      if (await isDirectory(skills)) wanted.set(plugin.name, skills);
+    }
+    return await syncSkillLinks({
+      dir: join(agentsDir, "skills"),
+      ownedRoot: join(agentsDir, "plugins"),
+      wanted,
+      logger: params.logger,
+    });
+  } catch (error) {
+    params.logger.warn(
+      { err: error },
+      "Failed to link ~/.agents/plugins skills into ~/.agents/skills",
+    );
+    return 0;
+  }
 }
 
 /** The hooks file that `.codex-plugin/plugin.json` names, else `hooks/hooks.json`. */

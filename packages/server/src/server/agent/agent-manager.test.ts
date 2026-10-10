@@ -3312,7 +3312,7 @@ describe("launch workspace contract", () => {
     }
   });
 
-  test("a plugin without hooks still reaches the launch config", async () => {
+  test("a plugin without hooks reaches the launch config and gets its skills linked", async () => {
     const workdir = mkdtempSync(join(tmpdir(), "agent-manager-test-"));
     const home = join(workdir, "home");
     const plugin = join(home, ".agents", "plugins", "kit");
@@ -3337,6 +3337,8 @@ describe("launch workspace contract", () => {
         plugins: [{ name: "kit", dir: plugin }],
         hooks: [],
       });
+      // Codex and OpenCode find the plugin's skills through this link.
+      expect(readlinkSync(join(home, ".agents", "skills", "kit"))).toBe(join(plugin, "skills"));
     } finally {
       rmSync(workdir, { recursive: true, force: true });
     }
