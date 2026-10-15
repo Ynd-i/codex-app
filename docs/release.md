@@ -76,12 +76,13 @@ their installs update to it in-app. `scripts/custom-release.mjs` computes the pl
 `.github/workflows/upstream-pr.yml` checks upstream every six hours. When upstream has a
 stable release newer than `main`, it pushes that tag's commit as `upstream-pr/<stable>` and
 opens a pull request into `main`, closing any older `upstream-pr/*` pull request. A conflict
-shows on the pull request; resolve it on that branch by merging `origin/main` into it. Merge
-with **Create a merge commit**, because a squash or rebase merge leaves the tag out of
-`main` and betas stay on the old backend. Closing a pull request without merging skips that
-release. The workflow needs the `UPSTREAM_PR_TOKEN` secret: a fine-grained token for this
-repository with read and write access to Contents, Pull requests and Workflows. The
-`GITHUB_TOKEN` can neither open pull requests here nor push upstream's workflow changes.
+shows on the pull request; resolve it on that branch, in a full clone, by merging
+`origin/main` into it. Merge with **Create a merge commit**, because a squash or rebase
+merge leaves the tag out of `main` and betas stay on the old backend. Closing a pull request
+without merging skips that release. Opening a pull request needs the `UPSTREAM_PR_TOKEN`
+secret: a fine-grained token for this repository with read and write access to Contents,
+Pull requests and Workflows. The `GITHUB_TOKEN` can neither open pull requests here nor push
+upstream's workflow changes.
 
 `.github/workflows/custom-release.yml` only runs by hand. `beta` mode runs format, lint,
 typecheck and the server and app unit suites, builds, signs and smoke-tests the arm64 app,

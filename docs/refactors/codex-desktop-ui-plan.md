@@ -21,15 +21,15 @@ complete; this section replaces that handoff.
   fast-forwarded into `codex-app`.
 - Release state (2026-10-03 12:50 UTC): the product branch `codex/desktop-ui` was
   renamed `codex-app`, and on 2026-10-04 `main`; it is the default branch of `Ynd-i/codex-app`, where only
-  `custom-release.yml` is enabled. User decision: releases follow upstream stable
+  `custom-release.yml` and `upstream-pr.yml` are enabled. User decision: releases follow upstream stable
   releases only, tagged `v<stable>-v<N>-beta<M>` and promoted to `v<stable>-v<N>`, each
   with a `.dmg` and a `.zip`. Porting to stable `v0.10.3` was rejected: 50 files conflict
   and 26 belong to 0.11-only systems. The branch merges upstream `v0.11.0-beta.3`
   (`43b259f`); eight files conflicted under `packages/app/src/usage`, the changelog and
   one e2e spec, resolved by keeping the Mac overview, adding upstream's hover pin glyph
-  and `unavailable` login problems, and localizing that copy in all nine languages. The
-  pipeline releases nothing until upstream ships `0.11.0`; the scheduled sync then
-  merges it and publishes `v0.11.0-v1-beta1`. As user-requested one-off exceptions,
+  and `unavailable` login problems, and localizing that copy in all nine languages. Since
+  2026-10-15, `upstream-pr.yml` opens a pull request for each new upstream stable
+  release instead of merging and publishing it. As user-requested one-off exceptions,
   built and smoke-tested locally and ad-hoc signed, the prereleases
   `v0.11.0-beta.1-v1-beta1` and `v0.11.0-beta.3-v1-beta1` are published by the user.
   Later one-offs run in CI with `upstream_beta`; see
