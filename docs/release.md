@@ -73,16 +73,17 @@ at `-v1-beta1`. While the branch is on an upstream beta, as it is until upstream
 is a full GitHub release. One-offs sort before every release on the stable version, so
 their installs update to it in-app. `scripts/custom-release.mjs` computes the plan.
 
-`.github/workflows/custom-release.yml` runs every six hours in `sync` mode. When upstream
-has a stable release newer than the branch, from `main` or a hotfix branch, it merges that
-tag, runs format, lint, typecheck and the server and app unit suites, builds, signs and
-smoke-tests the arm64 app, then moves `main` and publishes `v<stable>-v1-beta1` with
-that app as a `.dmg` and a `.zip`. Every build runs on GitHub's macOS runners; nothing
-builds on a schedule except after an upstream merge.
+Run `.github/workflows/custom-release.yml` in `sync` mode to pick up an upstream release;
+it has no schedule. When upstream has a stable release newer than the branch, from `main`
+or a hotfix branch, it merges that tag, runs format, lint, typecheck and the server and app
+unit suites, builds, signs and smoke-tests the arm64 app, then moves `main` and publishes
+`v<stable>-v1-beta1` with that app as a `.dmg` and a `.zip`. Every build runs on GitHub's
+macOS runners.
 After pushing UI changes, publish the next beta; promote the latest beta's commit to
 stable once it has proven itself:
 
 ```sh
+gh workflow run custom-release.yml -R Ynd-i/codex-app -f mode=sync
 gh workflow run custom-release.yml -R Ynd-i/codex-app -f mode=beta
 gh workflow run custom-release.yml -R Ynd-i/codex-app -f mode=stable
 gh workflow run custom-release.yml -R Ynd-i/codex-app -f mode=beta -f upstream_beta=true
