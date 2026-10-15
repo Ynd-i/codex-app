@@ -19,11 +19,11 @@ test("betas count up within a release, and a stable release starts the next one"
   assert.equal(nextBetaTag("v0.10.3", ["v0.10.3-v1-beta2", "v0.10.3-v1"]), "v0.10.3-v2-beta1");
 });
 
-test("sync merges only a newer upstream stable release and starts at v1-beta1", () => {
+test("sync names only a newer upstream stable release and releases nothing", () => {
   const tags = ["v0.10.3", "v0.11.0-beta.1", "v0.11.0"];
   assert.deepEqual(
     planRelease({ mode: "sync", current: "v0.11.0-beta.1", upstreamStable: "v0.11.0", tags }),
-    { merge: "v0.11.0", backend: "v0.11.0", tag: "v0.11.0-v1-beta1", from: "HEAD", reason: "" },
+    { merge: "v0.11.0", backend: "v0.11.0", tag: "", from: "", reason: "" },
   );
   const onBeta = { mode: "sync", current: "v0.11.0-beta.1", upstreamStable: "v0.10.3", tags };
   assert.equal(planRelease(onBeta).merge, "");
