@@ -45,6 +45,7 @@ export const en = {
     problemSignInAgain: "Sign in again.",
   },
   desktopChat: {
+    handoffs: { toggle: "Earlier handoffs ({{count}})" },
     activity: "Activity",
     workedFor: "Worked for {{duration}}",
     startWork: "What should we work on?",

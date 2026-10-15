@@ -48,6 +48,7 @@ export const ar: TranslationResources = {
     problemSignInAgain: "سجّل الدخول مرة أخرى.",
   },
   desktopChat: {
+    handoffs: { toggle: "عمليات التسليم السابقة ({{count}})" },
     activity: "النشاط",
     workedFor: "المدة: {{duration}}",
     startWork: "على ماذا نعمل؟",

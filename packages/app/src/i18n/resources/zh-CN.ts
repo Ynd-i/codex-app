@@ -48,6 +48,7 @@ export const zhCN: TranslationResources = {
     problemSignInAgain: "请重新登录。",
   },
   desktopChat: {
+    handoffs: { toggle: "更早的交接（{{count}}）" },
     activity: "活动",
     workedFor: "用时 {{duration}}",
     startWork: "我们应该做些什么？",

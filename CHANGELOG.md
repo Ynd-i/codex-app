@@ -8,6 +8,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Added
 
+- Added auto handoff: when a chat's context passes 350k tokens or 75% of the model's window, whichever is smaller, the agent writes a handoff briefing and a new chat with the same provider and model continues the work. The new chat replaces the old one in the macOS sidebar, and earlier chats of the chain nest greyed under its chevron, keeping its pin and section. See [auto handoff](docs/auto-handoff.md).
+
 - Added drag and drop to the macOS chat sidebar: drag a section header to reorder the sections below Pinned, such as Recent, a custom section and Projects, and drag a project header onto another section to move the project there. The order is saved on this machine.
 
 - Added a context window card on the composer meter: a used/window header, a segmented bar and one row per category, then the compaction buffer and free space. Claude chats list what fills the window; other providers show Used and Free space. The breakdown loads when the card opens on an idle chat, because each one is a Claude API request. Hosts need the new `agentContextUsage` feature.

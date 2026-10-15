@@ -59,12 +59,17 @@ interface FakeAgentSessionOptions {
   memoryMarker?: string | null;
   closeSession?: () => Promise<void>;
   onStartTurn?: (prompt: AgentPromptInput) => void;
+  respond?: FakeTurnScript;
 }
+
+/** Overrides the reply text and completion usage of a plain prompt turn. */
+export type FakeTurnScript = (prompt: string) => { text?: string; usage?: AgentUsage } | undefined;
 
 export interface TestAgentClientOptions {
   beforeCreateSession?: () => Promise<void>;
   closeSession?: () => Promise<void>;
   onStartTurn?: (prompt: AgentPromptInput) => void;
+  respond?: FakeTurnScript;
   supportsMcpServers?: boolean;
 }
 
@@ -338,6 +343,7 @@ class FakeAgentSession implements AgentSession {
 
   private readonly closeSession: (() => Promise<void>) | undefined;
   private readonly onStartTurn: ((prompt: AgentPromptInput) => void) | undefined;
+  private readonly respond: FakeTurnScript | undefined;
 
   constructor(options: FakeAgentSessionOptions) {
     this.capabilities = {
@@ -350,6 +356,7 @@ class FakeAgentSession implements AgentSession {
     this.memoryMarker = options.memoryMarker ?? null;
     this.closeSession = options.closeSession;
     this.onStartTurn = options.onStartTurn;
+    this.respond = options.respond;
     this.historyPath = path.join(
       tmpdir(),
       "paseo-fake-provider-history",
@@ -779,7 +786,8 @@ class FakeAgentSession implements AgentSession {
         }
       }
 
-      const assistantText = this.buildAssistantText(textPrompt);
+      const scripted = this.respond?.(textPrompt);
+      const assistantText = scripted?.text ?? this.buildAssistantText(textPrompt);
       const assistantChunkA: AgentStreamEvent = {
         type: "timeline",
         provider: this.providerName,
@@ -802,7 +810,7 @@ class FakeAgentSession implements AgentSession {
       const completed: AgentStreamEvent = {
         type: "turn_completed",
         provider: this.providerName,
-        usage: { inputTokens: 1, outputTokens: 1 },
+        usage: scripted?.usage ?? { inputTokens: 1, outputTokens: 1 },
       };
       await this.appendHistoryEvent(completed);
       this.notifySubscribers(completed);
@@ -1220,6 +1228,7 @@ class FakeAgentClient implements AgentClient {
       supportsMcpServers: this.options.supportsMcpServers,
       closeSession: this.options.closeSession,
       onStartTurn: this.options.onStartTurn,
+      respond: this.options.respond,
     });
   }
 
@@ -1245,6 +1254,7 @@ class FakeAgentClient implements AgentClient {
       memoryMarker: typeof marker === "string" ? marker : null,
       closeSession: this.options.closeSession,
       onStartTurn: this.options.onStartTurn,
+      respond: this.options.respond,
     });
   }
 

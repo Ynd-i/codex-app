@@ -48,6 +48,7 @@ export const ru: TranslationResources = {
     problemSignInAgain: "Войдите снова.",
   },
   desktopChat: {
+    handoffs: { toggle: "Предыдущие передачи ({{count}})" },
     activity: "Действия",
     workedFor: "Время: {{duration}}",
     startWork: "Над чем поработаем?",
