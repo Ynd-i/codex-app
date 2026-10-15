@@ -48,6 +48,7 @@ export const ja: TranslationResources = {
     problemSignInAgain: "もう一度サインインしてください。",
   },
   desktopChat: {
+    handoffs: { toggle: "以前の引き継ぎ（{{count}}）" },
     activity: "アクティビティ",
     workedFor: "所要時間: {{duration}}",
     startWork: "何をしましょうか？",

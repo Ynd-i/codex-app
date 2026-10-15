@@ -48,6 +48,7 @@ export const es: TranslationResources = {
     problemSignInAgain: "Vuelve a iniciar sesión.",
   },
   desktopChat: {
+    handoffs: { toggle: "Traspasos anteriores ({{count}})" },
     activity: "Actividad",
     workedFor: "Tiempo: {{duration}}",
     startWork: "¿En qué trabajamos?",

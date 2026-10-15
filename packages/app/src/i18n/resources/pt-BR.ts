@@ -48,6 +48,7 @@ export const ptBR: TranslationResources = {
     problemSignInAgain: "Entre novamente.",
   },
   desktopChat: {
+    handoffs: { toggle: "Transferências anteriores ({{count}})" },
     activity: "Atividade",
     workedFor: "Duração: {{duration}}",
     startWork: "Em que vamos trabalhar?",

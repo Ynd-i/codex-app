@@ -48,6 +48,7 @@ export const ko: TranslationResources = {
     problemSignInAgain: "다시 로그인하세요.",
   },
   desktopChat: {
+    handoffs: { toggle: "이전 인계 ({{count}})" },
     activity: "활동",
     workedFor: "소요 시간: {{duration}}",
     startWork: "어떤 작업을 할까요?",
