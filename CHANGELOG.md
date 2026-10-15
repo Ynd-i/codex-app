@@ -142,6 +142,7 @@ distribution and full migration acceptance remain pending; see the
 
 ### Fixed
 
+- Stopped the macOS chat sidebar from leaving an empty workspace row under a project after its last chat is archived. Worktrees without chats are still listed.
 - Drew the context window meter's unused track on the macOS composer, where it matched the composer surface and only the used arc showed.
 - Fixed in-app updates on macOS needing a second Update click: the first click now installs and relaunches. The fix applies to updates from this release onward.
 - Kept a macOS project row's actions visible while the pointer stays on it after New chat, and stopped menus opened with the pointer from highlighting their first item; keyboard navigation still highlights the focused item.

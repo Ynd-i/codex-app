@@ -321,3 +321,27 @@ it("keeps a chain in Pinned and in its section after a handoff", () => {
   expect(partition.recent).toEqual([]);
   expect(partition.custom[0]?.chats.map((agent) => agent.id)).toEqual(["second"]);
 });
+
+it("lists no placeholder workspace for a project whose chats are all archived", () => {
+  const archived = { ...chat("done", "local", "main"), archivedAt: new Date() };
+  const app = project("app", "local", ["main"]);
+  const withWorktree = {
+    ...app,
+    workspaces: [
+      ...app.workspaces,
+      {
+        ...app.workspaces[0]!,
+        workspaceId: "tree",
+        workspaceKey: "local:tree",
+        workspaceKind: "worktree" as const,
+      },
+    ],
+  };
+
+  const sidebar = buildDesktopChatSidebar({ projects: [withWorktree], agents: [archived] });
+
+  expect(sidebar.projects[0]?.chats).toEqual([]);
+  expect(sidebar.projects[0]?.emptyWorkspaces.map((workspace) => workspace.workspaceId)).toEqual([
+    "tree",
+  ]);
+});

@@ -141,13 +141,21 @@ export function buildDesktopChatSidebar({
     // A chat without a project lives in a chat folder project; it shows in Recent only.
     projects: projects
       .filter((project) => !isChatFolderPath(project.iconWorkingDir))
-      .map((project) => ({
-        project,
-        chats: chatsByProject.get(project.viewKey) ?? [],
-        emptyWorkspaces: project.workspaces.filter(
-          (workspace) => !workspacesWithChats.has(workspace.workspaceKey),
-        ),
-      })),
+      .map((project) => {
+        const chats = chatsByProject.get(project.viewKey) ?? [];
+        return {
+          project,
+          chats,
+          // A project without chats keeps its last workspace only so the daemon keeps the project
+          // (see selectEmptiedWorkspaces); its row would repeat the header. Worktrees stay listed
+          // because they can hold uncommitted work.
+          emptyWorkspaces: project.workspaces.filter(
+            (workspace) =>
+              !workspacesWithChats.has(workspace.workspaceKey) &&
+              (chats.length > 0 || workspace.workspaceKind === "worktree"),
+          ),
+        };
+      }),
     pinned: heads
       .filter((agent) => pinnedAt(agent) !== null)
       .sort((left, right) => pinnedAt(right)! - pinnedAt(left)!),
