@@ -1,6 +1,6 @@
-version: 0.11.4-custom.1.beta.3
+version: 0.11.4-custom.1.beta.4
 files:
-  - url: https://github.com/Ynd-i/swan/releases/download/v0.11.4-v1-beta3/Swan-v0.11.4-v1-beta3-arm64.zip
-    sha512: sXEaVqxKYbLecVzkB+lJeMDcZ+NYgO6t7//1I1e4urgjflKEaUl6qYTpzVSntL/dF5G0aZ9g2vpsNbOekuHe8Q==
-    size: 185764438
-releaseDate: '2026-10-16T11:16:04.000Z'
+  - url: https://github.com/Ynd-i/swan/releases/download/v0.11.4-v1-beta4/Swan-v0.11.4-v1-beta4-arm64.zip
+    sha512: xvruTqr3RP9iBhTGeHFy3FkImYfOFfqfmWBm2JYKqSJQY96JApjuzNgwpYsZiXFT4jsvCWs2x2mP131WC+2VJg==
+    size: 185764745
+releaseDate: '2026-10-16T20:50:56.000Z'
