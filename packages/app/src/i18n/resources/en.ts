@@ -323,9 +323,7 @@ export const en = {
       searchPlaceholder: "Search modes...",
       selectWithValue: "Select agent mode ({{value}})",
       desktop: {
-        plan: "Plan mode",
         askForReview: "Ask for review",
-        acceptEdits: "Accept edits",
         autoReview: "Auto-review",
         fullAccess: "Full access",
       },

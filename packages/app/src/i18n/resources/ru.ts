@@ -329,9 +329,7 @@ export const ru: TranslationResources = {
       searchPlaceholder: "Поиск режимов...",
       selectWithValue: "Выбрать режим агента ({{value}})",
       desktop: {
-        plan: "Режим плана",
         askForReview: "Запрашивать проверку",
-        acceptEdits: "Принимать правки",
         autoReview: "Автопроверка",
         fullAccess: "Полный доступ",
       },

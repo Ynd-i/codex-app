@@ -327,9 +327,7 @@ export const zhCN: TranslationResources = {
       searchPlaceholder: "搜索 modes...",
       selectWithValue: "选择 Agent mode（{{value}}）",
       desktop: {
-        plan: "计划模式",
         askForReview: "请求批准",
-        acceptEdits: "接受编辑",
         autoReview: "自动审查",
         fullAccess: "完全访问",
       },

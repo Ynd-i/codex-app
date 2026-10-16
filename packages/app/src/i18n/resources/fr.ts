@@ -330,9 +330,7 @@ export const fr: TranslationResources = {
       searchPlaceholder: "Rechercher un mode…",
       selectWithValue: "Choisir le mode de l’agent ({{value}})",
       desktop: {
-        plan: "Mode plan",
         askForReview: "Demander une revue",
-        acceptEdits: "Accepter les modifications",
         autoReview: "Revue automatique",
         fullAccess: "Accès complet",
       },
