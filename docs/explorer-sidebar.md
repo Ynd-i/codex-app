@@ -13,7 +13,9 @@ contracts.
 The custom macOS desktop keeps one current chat in the main area without a tab
 strip. Supporting tools use Explorer on the right, including ordinary terminals,
 browser, files, diffs and workspace plugin panels. New chat owns provider
-selection; tool launchers omit Terminal profiles and Edit profiles.
+selection; tool launchers omit Terminal profiles and Edit profiles. Agent in the Explorer
+launcher opens a chat draft in the main area and leaves the launcher in place, because a chat
+never stays in Explorer.
 Cmd+W closes the selected Explorer tool tab and does nothing while Explorer is hidden.
 It never closes the chat, because closing a chat tab archives the agent.
 The new chat screen keeps the titlebar toggle and Cmd+E. It has no workspace yet, so its dock
@@ -58,7 +60,8 @@ a compatible pane.
 
 Files and Changes are the Explorer defaults. Their panel manifests mark them as singletons,
 so a pane’s + menu omits each while that pane already contains it. Closing one makes its menu
-item available again. Other compatible tabs, including agents, terminals, files, and diffs,
+item available again. Closing Explorer's last tab leaves Explorer open on the New Tab launcher;
+closing that launcher hides Explorer. Other compatible tabs, including agents, terminals, files, and diffs,
 can move between Explorer and main panes.
 Keep panel implementations independent of either shell. `WorkspacePanelHost` owns mounting and
 retention, while each shell owns its tabs, focus, dragging, resizing, and shortcuts.

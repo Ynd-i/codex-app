@@ -140,6 +140,30 @@ describe("macOS single-chat placement", () => {
     expect(layout.focusedPaneId).toBe("main");
   });
 
+  it("opens a chat launched from the Explorer launcher in main and keeps the launcher", () => {
+    const store = createWorkspaceLayoutStore();
+    const workspaceKey = createWorkspaceKey();
+    store.setState({ layoutByWorkspace: {}, explorerSidebarPaneIdByWorkspace: {} });
+    store
+      .getState()
+      .openTab({ workspaceKey, target: { kind: "agent", agentId: "chat" }, intent: "reveal" });
+    const paneId = store.getState().showExplorerSidebar(workspaceKey)!;
+    const launcherTabId = store.getState().openTab({
+      workspaceKey,
+      target: { kind: "new_tab" },
+      intent: "new",
+      placement: { mode: "pane", paneId },
+    })!;
+    const draftTabId = store
+      .getState()
+      .replaceTab(workspaceKey, launcherTabId, { kind: "draft", draftId: "explorer-agent" });
+    const layout = store.getState().layoutByWorkspace[workspaceKey];
+    expect(findPaneById(layout.root, "main")?.focusedTabId).toBe(draftTabId);
+    expect(findPaneById(layout.root, "explorer")?.focusedTabId).toBe(launcherTabId);
+    expect(findPaneById(layout.root, "explorer")?.hidden).not.toBe(true);
+    expect(layout.focusedPaneId).toBe("main");
+  });
+
   it("opens a local draft in an empty main area without revealing Explorer", () => {
     const store = createWorkspaceLayoutStore();
     const workspaceKey = createWorkspaceKey();
@@ -4519,6 +4543,42 @@ describe("workspace-layout-store actions", () => {
     const layout = workspaceLayoutStore.getState().layoutByWorkspace[workspaceKey];
     expect(findPaneById(layout.root, paneId)?.hidden).toBeUndefined();
     expect(findPaneById(layout.root, paneId)?.tabIds).toEqual(["changes_tree", "working_diff"]);
+  });
+
+  it("closing the last Explorer tab shows the launcher instead of hiding Explorer", () => {
+    const workspaceKey = createWorkspaceKey();
+    const store = workspaceLayoutStore.getState();
+    store.openTab({
+      workspaceKey: workspaceKey,
+      target: { kind: "agent", agentId: "kept" },
+      intent: "reveal",
+    });
+    const paneId = store.showExplorerSidebar(workspaceKey) as string;
+    for (const tabId of findPaneById(
+      workspaceLayoutStore.getState().layoutByWorkspace[workspaceKey].root,
+      paneId,
+    )!.tabIds.slice(1)) {
+      store.closeTab(workspaceKey, tabId);
+    }
+    const lastTabId = findPaneById(
+      workspaceLayoutStore.getState().layoutByWorkspace[workspaceKey].root,
+      paneId,
+    )!.tabIds[0]!;
+
+    store.closeTab(workspaceKey, lastTabId);
+
+    let layout = workspaceLayoutStore.getState().layoutByWorkspace[workspaceKey];
+    const explorer = findPaneById(layout.root, paneId);
+    expect(explorer?.hidden).toBeUndefined();
+    expect(explorer?.tabIds).toHaveLength(1);
+    const launcher = collectAllTabs(layout.root).find(
+      (tab) => tab.tabId === explorer?.focusedTabId,
+    );
+    expect(launcher?.target).toEqual({ kind: "new_tab" });
+
+    store.closeTab(workspaceKey, launcher!.tabId);
+    layout = workspaceLayoutStore.getState().layoutByWorkspace[workspaceKey];
+    expect(findPaneById(layout.root, paneId)?.hidden).toBe(true);
   });
 
   it("closing Files keeps Changes on screen without removing the final ordinary pane", () => {
