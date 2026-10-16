@@ -1,6 +1,6 @@
-version: 0.11.4-custom.1.beta.1
+version: 0.11.4-custom.1.beta.2
 files:
-  - url: https://github.com/Ynd-i/codex-app/releases/download/v0.11.4-v1-beta1/Paseo-Custom-v0.11.4-v1-beta1-arm64.zip
-    sha512: I/UleyPIldtvyA+PE1qQ1U/2dExEY6UutQ2LoK41tKXzD9zDxU3y1Yr2QrLmSK2DlVreFbf7t2a5kGvCPxR7ug==
-    size: 185862939
-releaseDate: '2026-10-15T21:25:10.000Z'
+  - url: https://github.com/Ynd-i/swan/releases/download/v0.11.4-v1-beta2/Swan-v0.11.4-v1-beta2-arm64.zip
+    sha512: /t1Bm+Lnd5ChAY5H3OzzvaE2Z3W7nih3JTjUMQAbuK+S1T9Kixvyg46j/ldtpo8+U+Bq1A8OKX3F9q5pI8e3cw==
+    size: 185840234
+releaseDate: '2026-10-16T10:40:37.000Z'
