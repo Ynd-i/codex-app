@@ -22,9 +22,14 @@ afterEach(async () => {
   for (const cleanup of cleanups.splice(0).toReversed()) await cleanup();
 });
 
+function helperUpsert(status: "running" | "completed") {
+  return { type: "upsert" as const, id: "helper", status };
+}
+
 /**
  * Replies with `briefing` to briefing requests; "Use N context tokens" reports N tokens used. A
  * handoff child's first prompt reports 1200, past the test threshold, as a real briefing can.
+ * "start a helper" and "helper finished" start and finish a background subagent.
  */
 function scriptedTurns(briefing: string) {
   return (prompt: string) => {
@@ -33,10 +38,14 @@ function scriptedTurns(briefing: string) {
       ? "1200"
       : /^Use (\d+) context tokens/.exec(prompt)?.[1];
     if (!tokens) return undefined;
-    return {
-      text: "ok",
-      usage: { contextWindowUsedTokens: Number(tokens), contextWindowMaxTokens: 200_000 },
-    };
+    const usage = { contextWindowUsedTokens: Number(tokens), contextWindowMaxTokens: 200_000 };
+    if (prompt.includes("start a helper")) {
+      return { text: "ok", usage, subagent: helperUpsert("running") };
+    }
+    if (prompt.includes("helper finished")) {
+      return { text: "ok", usage, subagent: helperUpsert("completed") };
+    }
+    return { text: "ok", usage };
   };
 }
 
@@ -75,8 +84,8 @@ async function startSourceAgent(briefing: string) {
         .map((entry) => entry.agent)
         .filter((agent) => agent.labels[HANDOFF_FROM_AGENT_ID_LABEL] === from);
     },
-    async briefingRequests() {
-      const timeline = await client.fetchAgentTimeline(source.id, { projection: "projected" });
+    async briefingRequests(agentId = source.id) {
+      const timeline = await client.fetchAgentTimeline(agentId, { projection: "projected" });
       return timeline.entries.filter(
         (entry) =>
           entry.item.type === "user_message" && entry.item.text.includes("<paseo_auto_handoff>"),
@@ -140,6 +149,54 @@ test("a turn past the threshold hands the work to a new root agent once", async 
       entry.item.type === "user_message" && entry.item.text.includes("<paseo_auto_handoff>"),
   );
   expect(childRequests).toHaveLength(1);
+}, 60_000);
+
+test("a running background subagent defers the handoff until it finishes", async () => {
+  const { client, source, handoffs, briefingRequests, runTurn } = await startSourceAgent(BRIEFING);
+
+  await runTurn("Use 1500 context tokens and start a helper");
+  await runTurn("Use 1600 context tokens while it works");
+  await runTurn("Use 1700 context tokens while it works");
+  expect(await briefingRequests()).toHaveLength(0);
+
+  await client.sendMessage(source.id, "Use 1800 context tokens now the helper finished");
+  await expect.poll(async () => (await handoffs()).length, { timeout: 10_000 }).toBe(1);
+}, 60_000);
+
+test("a running Paseo subagent defers its parent's handoff, and never hands off itself", async () => {
+  const { client, source, workspace, handoffs, briefingRequests, runTurn } =
+    await startSourceAgent(BRIEFING);
+  const child = await client.createAgent({
+    provider: "claude",
+    model: "sonnet",
+    cwd: source.cwd,
+    workspaceId: workspace.id,
+    title: "Reviewer",
+    modeId: "default",
+    labels: { [PARENT_AGENT_ID_LABEL]: source.id },
+  });
+  // The read waits for approval, so the child stays running until the test answers.
+  await client.sendMessage(child.id, "read /etc/hosts");
+  const waiting = await client.waitForFinish(child.id, 10_000);
+  expect(waiting.status).toBe("permission");
+
+  await runTurn("Use 1500 context tokens while the reviewer works");
+  await runTurn("Use 1600 context tokens while the reviewer works");
+  await runTurn("Use 1700 context tokens while the reviewer works");
+  expect(await briefingRequests()).toHaveLength(0);
+
+  await client.respondToPermission(child.id, waiting.final!.pendingPermissions[0]!.id, {
+    behavior: "allow",
+  });
+  await client.waitForFinish(child.id, 10_000);
+  for (const tokens of [1800, 1900, 2000]) {
+    await client.sendMessage(child.id, `Use ${tokens} context tokens to review`);
+    await client.waitForFinish(child.id, 10_000);
+  }
+  expect(await briefingRequests(child.id)).toHaveLength(0);
+
+  await client.sendMessage(source.id, "Use 2100 context tokens now the review is in");
+  await expect.poll(async () => (await handoffs()).length, { timeout: 10_000 }).toBe(1);
 }, 60_000);
 
 test("a reply that is not a briefing is retried once, then the source gives up", async () => {

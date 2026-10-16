@@ -20,10 +20,21 @@ agent's next turn reports usage.
 
 1. On `agent.turn_ended` with outcome `completed`, the agent `idle` and no pending permission, the
    plugin compares usage with the threshold. `usage_updated` fires mid-turn, so the plugin never
-   acts on it.
+   acts on it. A Paseo subagent (an agent with `paseo.parent-agent-id`) never hands off: its
+   parent waits on its id, and a continuation would be a root chat the parent never hears from.
+   It runs until it finishes or its provider compacts it.
+   Past the threshold, the plugin waits while the source has running subagents, both provider
+   subagents (Claude Task agents and workflows) and Paseo subagents that are `initializing` or
+   `running`. They report to the source's id, so a continuation would never see their results.
+   A finish report starts a turn on the source: Claude does this for its own subagents, and
+   `notifyOnFinish` does it for Paseo subagents. The check runs again when that turn ends.
+   Background shells and monitors do not hold the handoff yet.
 2. It sends the source agent a briefing request wrapped in `<paseo_auto_handoff>`. The request
    quotes the user's latest message (skipping earlier requests by that tag) so the briefing is
-   written around what the user asked for last.
+   written around what the user asked for last. Its `## Active skills` section lists the skills
+   the user turned on, such as `/poteto-mode`, and the child prompt tells the child to turn them on
+   again. A skill loaded by a slash command lives in the source's context only; a session-start hook
+   that offers the skill runs in the child too, but does not load it.
 3. When that turn ends, the plugin takes the assistant text after the turn's last tool call, checks
    it has `## Task` and `## Current state`, and creates the new agent in the source's workspace with
    the same provider, model, mode, thinking option and feature values, such as fast mode. A

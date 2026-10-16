@@ -18,6 +18,7 @@ function decide(overrides: Partial<Parameters<typeof shouldHandoff>[0]> = {}) {
     pendingPermissions: 0,
     usage: { contextWindowUsedTokens: 400_000, contextWindowMaxTokens: 1_000_000 },
     handoffChildFirstTurn: false,
+    subagent: false,
     ...overrides,
   });
 }
@@ -34,6 +35,7 @@ test("hands off after a clean turn past the threshold", () => {
 
 test.each([
   ["disabled", { settings: { ...settings, enabled: false } }],
+  ["subagent", { subagent: true }],
   ["handoff child's first turn", { handoffChildFirstTurn: true }],
   ["turn failed", { outcome: "failed" as const }],
   ["turn canceled", { outcome: "canceled" as const }],

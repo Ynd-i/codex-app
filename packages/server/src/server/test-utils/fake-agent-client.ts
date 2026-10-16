@@ -22,6 +22,7 @@ import type {
   FetchCatalogOptions,
 } from "../agent/agent-sdk-types.js";
 import type { AgentPermissionRequest, AgentPermissionResponse } from "../agent/agent-sdk-types.js";
+import type { ProviderSubagentInputEvent } from "../agent/provider-subagents/store.js";
 import { isLikelyExternalToolName } from "@getpaseo/protocol/tool-name-normalization";
 
 const TEST_CAPABILITIES: AgentCapabilityFlags = {
@@ -62,8 +63,10 @@ interface FakeAgentSessionOptions {
   respond?: FakeTurnScript;
 }
 
-/** Overrides the reply text and completion usage of a plain prompt turn. */
-export type FakeTurnScript = (prompt: string) => { text?: string; usage?: AgentUsage } | undefined;
+/** Overrides the reply text and completion usage of a plain prompt turn, and can report a subagent. */
+export type FakeTurnScript = (
+  prompt: string,
+) => { text?: string; usage?: AgentUsage; subagent?: ProviderSubagentInputEvent } | undefined;
 
 export interface TestAgentClientOptions {
   beforeCreateSession?: () => Promise<void>;
@@ -787,6 +790,15 @@ class FakeAgentSession implements AgentSession {
       }
 
       const scripted = this.respond?.(textPrompt);
+      if (scripted?.subagent) {
+        const subagent: AgentStreamEvent = {
+          type: "provider_subagent",
+          provider: this.providerName,
+          event: scripted.subagent,
+        };
+        await this.appendHistoryEvent(subagent);
+        this.notifySubscribers(subagent);
+      }
       const assistantText = scripted?.text ?? this.buildAssistantText(textPrompt);
       const assistantChunkA: AgentStreamEvent = {
         type: "timeline",
