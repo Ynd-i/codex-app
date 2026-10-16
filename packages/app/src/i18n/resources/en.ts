@@ -1188,6 +1188,8 @@ export const en = {
             cancelled: "Cancelled",
           },
         },
+        previewFiles_one: "{{count}} file",
+        previewFiles_other: "{{count}} files",
         states: {
           draft: "Draft",
           merged: "Merged",

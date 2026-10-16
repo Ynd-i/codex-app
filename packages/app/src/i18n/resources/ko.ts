@@ -1187,6 +1187,8 @@ export const ko: TranslationResources = {
             cancelled: "취소됨",
           },
         },
+        previewFiles_one: "파일 {{count}}개",
+        previewFiles_other: "파일 {{count}}개",
         states: {
           draft: "초안",
           merged: "병합됨",

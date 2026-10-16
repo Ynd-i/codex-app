@@ -1193,6 +1193,8 @@ export const ja: TranslationResources = {
             cancelled: "キャンセル済み",
           },
         },
+        previewFiles_one: "{{count}} ファイル",
+        previewFiles_other: "{{count}} ファイル",
         states: {
           draft: "ドラフト",
           merged: "マージ済み",

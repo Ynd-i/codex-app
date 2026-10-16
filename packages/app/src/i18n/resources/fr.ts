@@ -1204,6 +1204,8 @@ export const fr: TranslationResources = {
             cancelled: "Annulée",
           },
         },
+        previewFiles_one: "{{count}} fichier",
+        previewFiles_other: "{{count}} fichiers",
         states: {
           draft: "Brouillon",
           merged: "Fusionnée",
