@@ -84,6 +84,9 @@ Reply with ONLY a handoff briefing in exactly this structure:
 ## Constraints
 - [Must-not / must-preserve]
 
+## Active skills
+- [A skill or mode the user turned on in this chat, such as \`/poteto-mode\`, and the command that turns it on. Write "None" if there is none.]
+
 The next agent continues from the user's most recent request:
 """
 ${input.lastUserRequest}
@@ -99,5 +102,6 @@ export function childPrompt(briefing: string, usedTokens: number): string {
 
 ---
 This briefing was written by the previous agent in this workspace when its context reached ${usedTokens} tokens.
+Before you start, turn on each skill listed under "## Active skills".
 Start from "## Task". Before relying on any claim about a file, read the file.`;
 }

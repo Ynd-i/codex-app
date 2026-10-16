@@ -17,9 +17,11 @@ import {
   type HandoffPhase,
 } from "./server/policy.js";
 
-// Matches HANDOFF_FROM_AGENT_ID_LABEL in @getpaseo/protocol/agent-labels. The bundle imports
-// protocol types only, so the value is repeated here; the e2e test compares the two.
+// Match HANDOFF_FROM_AGENT_ID_LABEL and PARENT_AGENT_ID_LABEL in @getpaseo/protocol/agent-labels.
+// The bundle imports protocol types only, so the values are repeated here; the e2e test covers
+// both.
 const HANDOFF_FROM_LABEL = "paseo.handoff-from-agent-id";
+const PARENT_LABEL = "paseo.parent-agent-id";
 /** How many handoffs led to this agent, so titles survive a rename. */
 const GENERATION_LABEL = "auto-handoff.generation";
 
@@ -95,11 +97,13 @@ export default function contribute(server: PluginServerContext) {
     }
   }
 
-  async function onWorkTurn(
-    event: TurnEnded,
-    agent: PaseoAgentHandle,
-    config: AutoHandoffSettings,
-  ) {
+  async function onWorkTurn(input: {
+    event: TurnEnded;
+    paseo: PaseoApi;
+    agent: PaseoAgentHandle;
+    config: AutoHandoffSettings;
+  }) {
+    const { event, paseo, agent, config } = input;
     const snapshot = agent.current()!;
     const decision = shouldHandoff({
       settings: config,
@@ -110,8 +114,24 @@ export default function contribute(server: PluginServerContext) {
       handoffChildFirstTurn:
         HANDOFF_FROM_LABEL in snapshot.labels &&
         event.timeline.filter((item) => item.type === "user_message").length <= 1,
+      subagent: PARENT_LABEL in snapshot.labels,
     });
     if (!decision.ok) return;
+    // Running subagents report to this agent's id, not to a continuation. A finish report starts a
+    // turn here, and the check runs again when that turn ends.
+    const subagents = await agent.subagents();
+    if (subagents.some((subagent) => subagent.status === "running")) {
+      log("deferred", { source: agent.id, reason: "subagents running" });
+      return;
+    }
+    const children = await paseo.agents.list({
+      filter: { labels: { [PARENT_LABEL]: agent.id }, statuses: ["initializing", "running"] },
+      page: { limit: 1 },
+    });
+    if (children.entries.length > 0) {
+      log("deferred", { source: agent.id, reason: "paseo subagents running" });
+      return;
+    }
     log("requested", { source: agent.id, used: decision.used, threshold: decision.threshold });
     const request = {
       used: decision.used,
@@ -167,7 +187,7 @@ export default function contribute(server: PluginServerContext) {
     const agent = paseo.agents.ref(event.agent.id);
     await agent.refresh();
     if (!agent.current()) return;
-    if (phase.kind === "idle") await onWorkTurn(event, agent, config);
+    if (phase.kind === "idle") await onWorkTurn({ event, paseo, agent, config });
     else await onBriefingTurn({ event, paseo, agent, phase, config });
   });
 

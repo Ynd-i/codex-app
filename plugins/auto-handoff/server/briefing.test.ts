@@ -63,6 +63,7 @@ test("the briefing request is marked, quotes the user request and states the num
     prompt.startsWith("<paseo_auto_handoff>\nYour context window is at 400000 of 1000000"),
   ).toBe(true);
   expect(prompt).toContain('"""\nFix it\n"""');
+  expect(prompt).toContain("## Active skills\n");
   expect(prompt.endsWith("</paseo_auto_handoff>")).toBe(true);
   expect(briefingRequestPrompt({ ...request, retry: true })).toContain(
     "Reply with the briefing only.",
@@ -71,6 +72,6 @@ test("the briefing request is marked, quotes the user request and states the num
 
 test("the child prompt is the briefing followed by the preamble", () => {
   expect(childPrompt(briefing, 400_000)).toBe(
-    `${briefing}\n\n---\nThis briefing was written by the previous agent in this workspace when its context reached 400000 tokens.\nStart from "## Task". Before relying on any claim about a file, read the file.`,
+    `${briefing}\n\n---\nThis briefing was written by the previous agent in this workspace when its context reached 400000 tokens.\nBefore you start, turn on each skill listed under "## Active skills".\nStart from "## Task". Before relying on any claim about a file, read the file.`,
   );
 });

@@ -48,8 +48,14 @@ export function shouldHandoff(input: {
    * context again, and a threshold under the briefing's size would chain handoffs forever.
    */
   handoffChildFirstTurn: boolean;
+  /**
+   * A Paseo subagent reports to its parent by its own id. A continuation would be a root chat
+   * the parent never hears from.
+   */
+  subagent: boolean;
 }): HandoffDecision {
   if (!input.settings.enabled) return { ok: false, reason: "disabled" };
+  if (input.subagent) return { ok: false, reason: "subagent" };
   if (input.handoffChildFirstTurn) return { ok: false, reason: "handoff child's first turn" };
   if (input.outcome !== "completed") return { ok: false, reason: `turn ${input.outcome}` };
   if (input.status !== "idle") return { ok: false, reason: `agent ${input.status}` };
