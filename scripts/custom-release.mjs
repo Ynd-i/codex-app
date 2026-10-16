@@ -8,7 +8,7 @@
 // beta, nothing is released unless `--upstream-beta` asks for a one-off on it, tagged
 // v<upstream-beta>-v<N>-beta<M>, or v<upstream-beta>-v<N> once promoted.
 //
-//   node scripts/custom-release.mjs sync    merge a newer upstream stable release as -v1-beta1
+//   node scripts/custom-release.mjs sync    name a newer upstream stable release to merge
 //   node scripts/custom-release.mjs beta    release the branch as the next beta
 //   node scripts/custom-release.mjs beta --upstream-beta   the same, on an upstream beta
 //   node scripts/custom-release.mjs stable  promote the latest beta to stable
@@ -111,8 +111,7 @@ export function planRelease({
     if (!upstreamStable || compareUpstreamTags(upstreamStable, current) <= 0) {
       return skip(`no upstream stable release is newer than ${current}`);
     }
-    const tag = nextBetaTag(upstreamStable, tags);
-    return { merge: upstreamStable, backend: upstreamStable, tag, from: "HEAD", reason: "" };
+    return { merge: upstreamStable, backend: upstreamStable, tag: "", from: "", reason: "" };
   }
   if (mode !== "beta" && mode !== "stable") {
     throw new Error(`Unknown mode "${mode}"; use sync, beta or stable`);

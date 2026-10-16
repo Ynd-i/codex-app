@@ -1,21 +1,19 @@
 # Paseo Custom releases for the Ynd-i/codex-app fork. See docs/release.md#custom-releases.
 # Follows upstream Paseo stable releases only; nothing publishes while the branch is on an
 # upstream beta, except a one-off run with upstream_beta.
-# sync (scheduled): merge a newer upstream stable release, test, publish v<stable>-v1-beta1.
 # beta (manual): test and publish the branch as the next v<stable>-v<N>-beta<M>.
 # stable (manual): rebuild the latest beta's commit and publish it as v<stable>-v<N>.
+# upstream-pr.yml opens a pull request for each new upstream stable release.
 name: Custom release
 
 on:
-  schedule:
-    - cron: "17 */6 * * *"
   workflow_dispatch:
     inputs:
       mode:
-        description: "sync: merge a newer upstream stable release; beta: release the branch; stable: promote the latest beta"
+        description: "beta: release the branch; stable: promote the latest beta"
         type: choice
-        options: [sync, beta, stable]
-        default: sync
+        options: [beta, stable]
+        default: beta
       upstream_beta:
         description: "beta or stable: release although the branch is on an upstream beta"
         type: boolean
@@ -44,7 +42,6 @@ jobs:
     outputs:
       tag: ${{ steps.plan.outputs.tag }}
       backend: ${{ steps.plan.outputs.backend }}
-      merge: ${{ steps.plan.outputs.merge }}
       prerelease: ${{ steps.plan.outputs.prerelease }}
       version: ${{ steps.plan.outputs.version }}
       sha: ${{ steps.commit.outputs.sha }}
@@ -61,24 +58,8 @@ jobs:
       - name: Plan
         id: plan
         run: >-
-          node scripts/custom-release.mjs "${{ inputs.mode || 'sync' }}"
+          node scripts/custom-release.mjs "${{ inputs.mode }}"
           ${{ inputs.upstream_beta && '--upstream-beta' || '' }} | tee -a "$GITHUB_OUTPUT"
-
-      - name: Merge upstream release
-        if: steps.plan.outputs.merge != ''
-        env:
-          MERGE: ${{ steps.plan.outputs.merge }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if ! git merge --no-edit -m "chore: merge upstream Paseo $MERGE" "refs/tags/$MERGE"; then
-            git diff --name-only --diff-filter=U | sed 's/^/- /' > conflicts.md
-            { echo "Upstream $MERGE conflicts with $BRANCH; merge it by hand:"; cat conflicts.md; } >> "$GITHUB_STEP_SUMMARY"
-            git merge --abort
-            exit 1
-          fi
-          # Tests and the build run on this commit; the branch moves only after they pass.
-          git push --force origin "HEAD:refs/heads/custom-release/$MERGE"
 
       - name: Commit to release
         id: commit
@@ -201,16 +182,10 @@ jobs:
       TAG: ${{ needs.plan.outputs.tag }}
       SHA: ${{ needs.plan.outputs.sha }}
       BACKEND: ${{ needs.plan.outputs.backend }}
-      MERGE: ${{ needs.plan.outputs.merge }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Advance the branch to the merged upstream release
-        if: env.MERGE != ''
-        run: |
-          git push origin "$SHA:refs/heads/$BRANCH"
-          git push origin --delete "custom-release/$MERGE"
       - uses: actions/download-artifact@v4
         with:
           name: paseo-custom
@@ -249,5 +224,5 @@ jobs:
       - name: Keep inherited upstream workflows disabled
         run: |
           gh workflow list --all --json path,state \
-            --jq '.[] | select(.state == "active" and .path != ".github/workflows/custom-release.yml") | .path' |
+            --jq '.[] | select(.state == "active" and .path != ".github/workflows/custom-release.yml" and .path != ".github/workflows/upstream-pr.yml") | .path' |
             while read -r path; do gh workflow disable "$(basename "$path")"; done

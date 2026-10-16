@@ -73,31 +73,39 @@ at `-v1-beta1`. While the branch is on an upstream beta, as it is until upstream
 is a full GitHub release. One-offs sort before every release on the stable version, so
 their installs update to it in-app. `scripts/custom-release.mjs` computes the plan.
 
-`.github/workflows/custom-release.yml` runs every six hours in `sync` mode. When upstream
-has a stable release newer than the branch, from `main` or a hotfix branch, it merges that
-tag, runs format, lint, typecheck and the server and app unit suites, builds, signs and
-smoke-tests the arm64 app, then moves `main` and publishes `v<stable>-v1-beta1` with
-that app as a `.dmg` and a `.zip`. Every build runs on GitHub's macOS runners; nothing
-builds on a schedule except after an upstream merge.
-After pushing UI changes, publish the next beta; promote the latest beta's commit to
-stable once it has proven itself:
+`.github/workflows/upstream-pr.yml` checks upstream every six hours. When upstream has a
+stable release newer than `main`, it pushes that tag's commit as `upstream-pr/<stable>` and
+opens a pull request into `main`, closing any older `upstream-pr/*` pull request. A conflict
+shows on the pull request; resolve it on that branch, in a full clone, by merging
+`origin/main` into it. Merge with **Create a merge commit**, because a squash or rebase
+merge leaves the tag out of `main` and betas stay on the old backend. Closing a pull request
+without merging skips that release. Opening a pull request needs the `UPSTREAM_PR_TOKEN`
+secret: a fine-grained token for this repository with read and write access to Contents,
+Pull requests and Workflows. The `GITHUB_TOKEN` can neither open pull requests here nor push
+upstream's workflow changes.
+
+`.github/workflows/custom-release.yml` only runs by hand. `beta` mode runs format, lint,
+typecheck and the server and app unit suites, builds, signs and smoke-tests the arm64 app,
+and publishes it as a `.dmg` and a `.zip`. The first beta after an upstream merge is
+`v<stable>-v1-beta1`. Every build runs on GitHub's macOS runners. After merging an upstream
+pull request or pushing UI changes, publish the next beta; promote the latest beta's commit
+to stable once it has proven itself:
 
 ```sh
+gh workflow run upstream-pr.yml -R Ynd-i/codex-app
 gh workflow run custom-release.yml -R Ynd-i/codex-app -f mode=beta
 gh workflow run custom-release.yml -R Ynd-i/codex-app -f mode=stable
 gh workflow run custom-release.yml -R Ynd-i/codex-app -f mode=beta -f upstream_beta=true
 gh workflow run custom-release.yml -R Ynd-i/codex-app -f mode=stable -f upstream_beta=true
 ```
 
-A merge conflict or failure publishes nothing, unless only the update feed step failed
-after the GitHub release was created. GitHub emails the failed run, since the fork has
-issues disabled; its summary lists conflicted files. Upstream releases that touch customized files, such as the usage screen, conflict
-and need a manual merge of the tag; after that only `beta` mode tags it. Pull before
-working locally, because a sync adds merge commits.
+A failure publishes nothing, unless only the update feed step failed after the GitHub
+release was created. GitHub emails the failed run, since the fork has issues disabled.
 
 Only the workflow's `GITHUB_TOKEN` creates release tags. Tags created by people still
 start with `v` and would trigger the inherited upstream release, Docker and deploy
-workflows, so the workflow keeps every other workflow disabled in the fork.
+workflows, so each release disables every workflow in the fork except `custom-release.yml` and
+`upstream-pr.yml`.
 
 #### In-app updates
 
