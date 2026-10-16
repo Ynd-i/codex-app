@@ -25,7 +25,11 @@ import {
 import { Composer } from "@/composer";
 import { ComposerDock } from "@/composer/dock";
 import { PaseoLogo } from "@/components/icons/paseo-logo";
-import { getIsElectronMac } from "@/constants/platform";
+import { getIsElectron, getIsElectronMac } from "@/constants/platform";
+import { BROWSER_NEW_TAB_URL } from "@/desktop/browser/new-tab-url";
+import { createWorkspaceBrowser } from "@/desktop/browser/store";
+import type { NewTabLauncher } from "@/workspace-tabs/launcher";
+import type { NewTabSelection } from "@/workspace-tabs/new-tab";
 import { FileDropZone } from "@/components/file-drop/file-drop-zone";
 import {
   resolveComposerAttachmentSubmitFormat,
@@ -159,11 +163,7 @@ import {
 } from "./workspace/terminals/state";
 import { captureWorkspaceDraftCleanup } from "./new-workspace/background-handoff";
 import { useNewWorkspaceScreenPresence } from "./new-workspace/screen-presence";
-import {
-  NewChatExplorerDock,
-  revealNewChatExplorer,
-  type NewChatExplorerTool,
-} from "./new-workspace/new-chat-explorer";
+import { NewChatExplorerDock, revealNewChatExplorer } from "./new-workspace/new-chat-explorer";
 
 const ThemedFolderPlus = withUnistyles(FolderPlus);
 const ThemedPaseoLogo = withUnistyles(PaseoLogo);
@@ -910,6 +910,27 @@ interface WorkspaceDraftSubmissionConfig {
 interface WorkspaceCreationResult {
   workspace: ReturnType<typeof normalizeWorkspaceDescriptor>;
   agent?: AgentSnapshotPayload;
+}
+
+/** Opens a new chat dock tool in the workspace the dock just created. */
+async function createDockToolTarget(input: {
+  selection: Exclude<NewTabSelection, { kind: "agent" }>;
+  workspace: { id: string; workspaceDirectory: string };
+  createTerminal: CreateTerminalWorkspaceInput["createTerminal"];
+}): Promise<WorkspaceTabTarget> {
+  const { selection, workspace } = input;
+  if (selection.kind === "target") return selection.target;
+  if (selection.kind === "browser") {
+    const { browserId } = createWorkspaceBrowser(
+      getIsElectronMac() ? { initialUrl: BROWSER_NEW_TAB_URL } : undefined,
+    );
+    return { kind: "browser", browserId };
+  }
+  const { terminalId } = await input.createTerminal({
+    workspaceDirectory: workspace.workspaceDirectory,
+    workspaceId: workspace.id,
+  });
+  return { kind: "terminal", terminalId };
 }
 
 async function createMultiplicityWorkspace(input: {
@@ -2572,10 +2593,11 @@ export function NewWorkspaceScreen({
   // unsent draft, with its provider setup, into the workspace's chat draft.
   const clearChatDraft = chatDraft.clear;
   const handleOpenExplorerTool = useCallback(
-    async (tool: NewChatExplorerTool) => {
+    async (selection: NewTabSelection) => {
+      if (selection.kind === "agent" || isPending) return;
       try {
         setErrorMessage(null);
-        setPendingAction(tool === "terminal" ? "terminal" : "empty");
+        setPendingAction(selection.kind === "terminal" ? "terminal" : "empty");
         const draft = useDraftStore.getState().getDraftInput(draftKey);
         const { workspace: createdWorkspace } = await ensureWorkspace({
           cwd: selectedSourceDirectory ?? "",
@@ -2584,18 +2606,11 @@ export function NewWorkspaceScreen({
           attachments: [],
           withInitialAgent: false,
         });
-        const toolTarget: WorkspaceTabTarget =
-          tool === "terminal"
-            ? {
-                kind: "terminal",
-                terminalId: (
-                  await createWorkspaceTerminal({
-                    workspaceDirectory: createdWorkspace.workspaceDirectory,
-                    workspaceId: createdWorkspace.id,
-                  })
-                ).terminalId,
-              }
-            : { kind: "changes_tree" };
+        const toolTarget = await createDockToolTarget({
+          selection,
+          workspace: createdWorkspace,
+          createTerminal: createWorkspaceTerminal,
+        });
         if (!isStillOnCreateScreen()) {
           setPendingAction(null);
           return;
@@ -2645,11 +2660,24 @@ export function NewWorkspaceScreen({
       creationIdentity,
       draftKey,
       ensureWorkspace,
+      isPending,
       isStillOnCreateScreen,
       selectedServerId,
       selectedSourceDirectory,
       toast,
     ],
+  );
+  const explorerLauncher = useMemo<NewTabLauncher>(
+    () => ({
+      showChanges: !projectCleared && worktreeSupport !== "unsupported",
+      showPullRequest: false,
+      showBrowser: getIsElectron(),
+      terminalDisabled: isPending,
+      launch: (selection) => {
+        void handleOpenExplorerTool(selection);
+      },
+    }),
+    [handleOpenExplorerTool, isPending, projectCleared, worktreeSupport],
   );
 
   const renderPickerOption = useCallback(
@@ -2839,8 +2867,7 @@ export function NewWorkspaceScreen({
         formStack={formStack}
         errorMessage={errorMessage}
         onImportSession={importSession.open}
-        onOpenExplorerTool={handleOpenExplorerTool}
-        explorerToolsDisabled={isPending}
+        explorerLauncher={explorerLauncher}
       >
         {composer}
       </NewWorkspaceLayout>
@@ -2858,8 +2885,7 @@ function NewWorkspaceLayout({
   formStack,
   errorMessage,
   onImportSession,
-  onOpenExplorerTool,
-  explorerToolsDisabled,
+  explorerLauncher,
   children,
 }: {
   isCompact: boolean;
@@ -2870,8 +2896,7 @@ function NewWorkspaceLayout({
   formStack: ReactNode;
   errorMessage: string | null;
   onImportSession: () => void;
-  onOpenExplorerTool: (tool: NewChatExplorerTool) => void;
-  explorerToolsDisabled: boolean;
+  explorerLauncher: NewTabLauncher;
   children: ReactNode;
 }) {
   const { t } = useTranslation();
@@ -2912,7 +2937,7 @@ function NewWorkspaceLayout({
           {/* Mac imports through History and Cmd+K, like Codex keeping this area clear. */}
           {composer}
         </View>
-        <NewChatExplorerDock onOpenTool={onOpenExplorerTool} disabled={explorerToolsDisabled} />
+        <NewChatExplorerDock serverId={serverId ?? ""} launcher={explorerLauncher} />
       </View>
     );
   } else {

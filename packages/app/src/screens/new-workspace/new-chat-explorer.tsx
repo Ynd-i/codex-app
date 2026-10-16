@@ -1,26 +1,29 @@
 import { useCallback, useMemo } from "react";
-import { View, useWindowDimensions } from "react-native";
+import { ScrollView, useWindowDimensions } from "react-native";
 import Animated from "react-native-reanimated";
 import { useIsFocused } from "@react-navigation/native";
 import { usePathname } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { FileDiff, SquareTerminal } from "lucide-react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { DesktopWorkspaceToolbar } from "@/components/desktop/desktop-shell";
-import { Button } from "@/components/ui/button";
 import { resolveExplorerSidebarWidth } from "@/components/explorer-sidebar-layout";
 import { useAnimatedDock } from "@/components/use-animated-dock";
 import { useKeyboardActionHandler } from "@/hooks/use-keyboard-action-handler";
 import type { KeyboardActionDefinition } from "@/keyboard/keyboard-action-dispatcher";
+import { NewTabLauncherGroups } from "@/panels/new-tab-panel";
 import { WorkspaceExplorerToggle } from "@/screens/workspace/workspace-explorer-toggle";
 import { useWorkspaceLayoutStore } from "@/stores/workspace-layout-store";
 import type { ShortcutKey } from "@/utils/format-shortcut";
+import {
+  NewTabLauncherProvider,
+  useWorkspaceTabLaunchCatalog,
+  type NewTabLauncher,
+  type WorkspaceTabLaunchItem,
+} from "@/workspace-tabs/launcher";
 import { buildWorkspaceTabPersistenceKey, type WorkspaceTabTarget } from "@/workspace-tabs/model";
 
 const EXPLORER_TOGGLE_KEYS: ShortcutKey[] = ["mod", "E"];
 const TOGGLE_ACTIONS = ["sidebar.toggle.right"] as const;
-
-export type NewChatExplorerTool = "terminal" | "changes";
 
 function toggleNewChatExplorer() {
   const store = useWorkspaceLayoutStore.getState();
@@ -52,16 +55,39 @@ export function revealNewChatExplorer(
   if (store.newChatExplorerOpen) store.showExplorerSidebar(workspaceKey);
 }
 
+function launchFromDock(item: WorkspaceTabLaunchItem) {
+  item.launch({ kind: "open" });
+}
+
+function NewChatExplorerLauncher({ serverId }: { serverId: string }) {
+  const groups = useWorkspaceTabLaunchCatalog({
+    serverId,
+    purpose: "supporting",
+    host: "explorer",
+    surface: "panel",
+  });
+  // This screen is already a new chat, so the launcher keeps only the tools.
+  const toolGroups = useMemo(
+    () =>
+      groups.flatMap((group) => {
+        const items = group.items.filter((item) => item.panelKind !== "draft");
+        return items.length > 0 ? [{ ...group, items }] : [];
+      }),
+    [groups],
+  );
+  return <NewTabLauncherGroups groups={toolGroups} onLaunch={launchFromDock} />;
+}
+
 /**
- * The new chat screen has no workspace yet. Its dock keeps the titlebar toggle and Cmd+E, and its
- * tools create the workspace without sending the draft.
+ * The new chat screen has no workspace yet. Its dock keeps the titlebar toggle and Cmd+E and shows
+ * the Explorer launcher, whose tools create the workspace without sending the draft.
  */
 export function NewChatExplorerDock({
-  onOpenTool,
-  disabled,
+  serverId,
+  launcher,
 }: {
-  onOpenTool: (tool: NewChatExplorerTool) => void;
-  disabled: boolean;
+  serverId: string;
+  launcher: NewTabLauncher;
 }) {
   const { t } = useTranslation();
   const open = useWorkspaceLayoutStore((state) => state.newChatExplorerOpen);
@@ -73,10 +99,8 @@ export function NewChatExplorerDock({
   const width = resolveExplorerSidebarWidth({ containerWidth: windowWidth });
   const dock = useAnimatedDock(open, width);
   const dockStyle = useMemo(() => [styles.dock, dock.style], [dock.style]);
-  const contentStyle = useMemo(() => [styles.content, { width }], [width]);
+  const contentStyle = useMemo(() => ({ width }), [width]);
   const accessibilityState = useMemo(() => ({ expanded: open }), [open]);
-  const openTerminal = useCallback(() => onOpenTool("terminal"), [onOpenTool]);
-  const openChanges = useCallback(() => onOpenTool("changes"), [onOpenTool]);
   const handleAction = useCallback((action: KeyboardActionDefinition) => {
     if (action.id !== "sidebar.toggle.right") return false;
     toggleNewChatExplorer();
@@ -111,28 +135,11 @@ export function NewChatExplorerDock({
       ) : null}
       {dock.rendered ? (
         <Animated.View style={dockStyle} pointerEvents={open ? "auto" : "none"}>
-          <View style={contentStyle}>
-            <Button
-              variant="ghost"
-              size="sm"
-              leftIcon={SquareTerminal}
-              onPress={openTerminal}
-              disabled={disabled}
-              testID="new-chat-explorer-terminal"
-            >
-              {t("workspace.tabs.actions.newTerminal")}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              leftIcon={FileDiff}
-              onPress={openChanges}
-              disabled={disabled}
-              testID="new-chat-explorer-changes"
-            >
-              {t("workspace.tabs.actions.changes")}
-            </Button>
-          </View>
+          <ScrollView style={contentStyle} contentContainerStyle={styles.content}>
+            <NewTabLauncherProvider value={launcher}>
+              <NewChatExplorerLauncher serverId={serverId} />
+            </NewTabLauncherProvider>
+          </ScrollView>
         </Animated.View>
       ) : null}
     </>
@@ -148,10 +155,9 @@ const styles = StyleSheet.create((theme) => ({
     backgroundColor: theme.colors.surfaceSidebar,
   },
   content: {
-    flex: 1,
+    flexGrow: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: theme.spacing[1],
-    padding: theme.spacing[4],
+    padding: theme.spacing[6],
   },
 }));
