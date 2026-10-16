@@ -1422,13 +1422,14 @@ The user asked for fewer permission modes, Codex's plan workflow without backend
 changes, and a list of sidebar, composer and transcript fixes. All of it is in
 `packages/app`; the daemon, protocol and provider plugins are unchanged.
 
-- Permission modes: Mac lists Ask for approval, Auto-review and Full access (Claude
-  `default`/`auto`/`bypassPermissions`, Codex `auto`/`auto-review`/`full-access`).
-  Planning modes and Claude `acceptEdits` are hidden by one filter in
-  `agent-controls/policy.ts`, shared by the menu, Shift+Tab cycling and the command
-  center. Other providers keep their non-planning modes. An agent left in a hidden mode
+- Permission modes: Mac lists every non-planning mode the provider reports, with the
+  provider's own labels (Claude shows Always Ask, Accept File Edits, Auto mode and
+  Bypass). Codex modes are renamed to the Codex app's Ask for review, Auto-review and
+  Full access. Planning modes are hidden from the menu, Shift+Tab cycling and the
+  command center because plan is a toggle (below). An agent left in a planning mode
   still shows that mode's label. The Mac mode trigger has no caret and its tooltip shows
-  no shortcut.
+  no shortcut. (2026-10-16: the earlier three-tier list that hid Claude `acceptEdits`
+  and relabeled Claude modes was dropped.)
 - Plan toggle: Codex exposes plan as the `plan_mode` feature, so it combines with any
   permission mode. Claude, OpenCode and Copilot expose plan as a mode, which replaces
   the permission mode. `resolvePlanToggle` drives either. For mode-based plan the app

@@ -327,9 +327,7 @@ export const ko: TranslationResources = {
       searchPlaceholder: "모드 검색...",
       selectWithValue: "에이전트 모드 선택 ({{value}})",
       desktop: {
-        plan: "계획 모드",
         askForReview: "검토 요청",
-        acceptEdits: "편집 수락",
         autoReview: "자동 검토",
         fullAccess: "전체 액세스",
       },

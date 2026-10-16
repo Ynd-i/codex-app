@@ -327,9 +327,7 @@ export const ar: TranslationResources = {
       searchPlaceholder: "أوضاع البحث...",
       selectWithValue: "حدد وضع الوكيل ({{value}})",
       desktop: {
-        plan: "وضع الخطة",
         askForReview: "طلب المراجعة",
-        acceptEdits: "قبول التعديلات",
         autoReview: "مراجعة تلقائية",
         fullAccess: "وصول كامل",
       },

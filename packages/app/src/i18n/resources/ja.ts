@@ -329,9 +329,7 @@ export const ja: TranslationResources = {
       searchPlaceholder: "モードを検索...",
       selectWithValue: "エージェントモードを選択（{{value}}）",
       desktop: {
-        plan: "プランモード",
         askForReview: "承認を求める",
-        acceptEdits: "編集を承認",
         autoReview: "自動レビュー",
         fullAccess: "フルアクセス",
       },
