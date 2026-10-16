@@ -111,6 +111,35 @@ describe("macOS single-chat placement", () => {
     ).toBe("draft");
   });
 
+  it.each([
+    { kind: "terminal", terminalId: "new-chat-terminal" },
+    { kind: "changes_tree" },
+  ] as const)("keeps the new chat draft in main when its dock opens $kind", (tool) => {
+    const store = createWorkspaceLayoutStore();
+    const workspaceKey = createWorkspaceKey();
+    store.setState({ layoutByWorkspace: {}, explorerSidebarPaneIdByWorkspace: {} });
+    const draftTabId = store.getState().openTab({
+      workspaceKey,
+      target: { kind: "draft", draftId: "new-chat-draft" },
+      intent: "reveal",
+    });
+    const paneId = store.getState().showExplorerSidebar(workspaceKey);
+    const toolTabId = store.getState().openTab({
+      workspaceKey,
+      target: tool,
+      intent: "reveal",
+      placement: paneId ? { mode: "pane", paneId } : undefined,
+    });
+    const layout = store.getState().layoutByWorkspace[workspaceKey];
+    expect(findPaneById(layout.root, "main")?.focusedTabId).toBe(draftTabId);
+    expect(collectAllTabs(layout.root).filter((tab) => tab.target.kind === "draft")).toHaveLength(
+      1,
+    );
+    expect(findPaneById(layout.root, "explorer")?.focusedTabId).toBe(toolTabId);
+    expect(findPaneById(layout.root, "explorer")?.hidden).not.toBe(true);
+    expect(layout.focusedPaneId).toBe("main");
+  });
+
   it("opens a local draft in an empty main area without revealing Explorer", () => {
     const store = createWorkspaceLayoutStore();
     const workspaceKey = createWorkspaceKey();

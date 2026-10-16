@@ -52,7 +52,6 @@ export const fr: TranslationResources = {
     activity: "Activité",
     workedFor: "Durée : {{duration}}",
     startWork: "Sur quoi allons-nous travailler ?",
-    explorerAfterStart: "Les fichiers et modifications apparaissent une fois le chat lancé.",
     startInProject: "Sur quoi allons-nous travailler dans {{project}} ?",
     resetReasoning: "Réinitialiser l’intensité du raisonnement",
     newChat: "Nouvelle conversation",

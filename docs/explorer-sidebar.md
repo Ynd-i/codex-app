@@ -16,9 +16,12 @@ browser, files, diffs and workspace plugin panels. New chat owns provider
 selection; tool launchers omit Terminal profiles and Edit profiles.
 Cmd+W closes the selected Explorer tool tab and does nothing while Explorer is hidden.
 It never closes the chat, because closing a chat tab archives the agent.
-The new chat screen keeps the titlebar toggle and Cmd+E. It has no workspace yet, so it shows a
-placeholder dock; while that toggle is on, the workspace the chat creates opens with Explorer
-visible. Explorer and the new chat dock slide open and closed over 220ms, the left sidebar's
+The new chat screen keeps the titlebar toggle and Cmd+E. It has no workspace yet, so its dock
+offers New terminal and Changes. Either one creates the workspace the first message would have
+created, without an agent, opens the workspace with the unsent draft and its provider setup in
+the chat draft, and selects that tool in Explorer. The first message then starts the chat in that
+workspace instead of creating a second one. While the toggle is on, a workspace created by sending
+opens with Explorer visible. Explorer and the new chat dock slide open and closed over 220ms, the left sidebar's
 timing (`packages/app/src/components/use-animated-dock.ts`), and skip it under reduced motion.
 
 Saved layouts are adapted without closing sessions or replacing tab instances.
