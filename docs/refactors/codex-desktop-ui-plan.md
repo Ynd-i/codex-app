@@ -20,7 +20,7 @@ complete; this section replaces that handoff.
   its delivery and an app typecheck fix; see [delivery](#delivery--2026-10-03). It is
   fast-forwarded into `codex-app`.
 - Release state (2026-10-03 12:50 UTC): the product branch `codex/desktop-ui` was
-  renamed `codex-app`, and on 2026-10-04 `main`; it is the default branch of `Ynd-i/codex-app`, where only
+  renamed `codex-app`, and on 2026-10-04 `main`; it is the default branch of `Ynd-i/swan` (`Ynd-i/codex-app` until 2026-10-16), where only
   `custom-release.yml` and `upstream-pr.yml` are enabled. User decision: releases follow upstream stable
   releases only, tagged `v<stable>-v<N>-beta<M>` and promoted to `v<stable>-v<N>`, each
   with a `.dmg` and a `.zip`. Porting to stable `v0.10.3` was rejected: 50 files conflict
@@ -133,7 +133,7 @@ compact layouts and constrained settings windows. Keep the 320px default width
 for new preferences and retain saved widths.
 
 The upstream baseline is `getpaseo/paseo` commit `53ee9cd` on `main`. Work lives on
-`main` of `Ynd-i/codex-app`. This document owns the steps, decisions, progress, and evidence.
+`main` of `Ynd-i/swan`, published as Swan (Paseo Custom until 2026-10-16). This document owns the steps, decisions, progress, and evidence.
 The root [changelog](../../CHANGELOG.md) records custom work under Unreleased;
 the existing versioned entries describe upstream releases.
 
