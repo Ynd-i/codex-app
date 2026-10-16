@@ -2,7 +2,7 @@
 
 ## Unreleased — custom desktop
 
-These changes are available on `codex-app` in local development. Packaged
+These changes are available on `main` of `Ynd-i/swan` in local development. Packaged
 distribution and full migration acceptance remain pending; see the
 [migration plan](docs/refactors/codex-desktop-ui-plan.md).
 
@@ -52,6 +52,8 @@ distribution and full migration acceptance remain pending; see the
 
 ### Changed
 
+- Renamed the custom desktop to Swan and the repository to `Ynd-i/swan`. Installed Paseo Custom builds keep updating in-app and keep their chats, projects and settings.
+- Each custom release deletes the prereleases and tags of older upstream releases; stable releases and the current upstream release's betas stay.
 - Measured the context window meter of Claude chats against the window Claude compacts at, such as its `autoCompactWindow` setting, as Claude Desktop does, instead of the model's full window. The daemon asks Claude once per model, after the first completed turn.
 - The macOS project picker shows a project's favicon or a folder with only its name.
 - The macOS composer offers three permission modes, Ask for approval, Auto-review and Full access, and plan mode is a toggle beside them, as in Codex. Claude's Accept edits is no longer offered. Plan keeps the chosen permission mode: turning it off, or Claude's switch after Implement, returns to that mode. Other providers keep their own non-plan modes.

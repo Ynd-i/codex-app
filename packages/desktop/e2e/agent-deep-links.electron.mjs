@@ -26,7 +26,7 @@ export async function runAgentDeepLinksRegression({
     return { name: app.getName(), packaged: app.isPackaged, userData: app.getPath('userData'), windows: BrowserWindow.getAllWindows().map(win => win.webContents.id) };
   })()`);
   const initial = await appState();
-  expect(initial.name).toBe("Paseo Custom");
+  expect(initial.name).toBe("Swan");
   expect(initial.packaged).toBe(true);
   expect(initial.userData).toBe(userData);
   expect(initial.windows).toHaveLength(1);

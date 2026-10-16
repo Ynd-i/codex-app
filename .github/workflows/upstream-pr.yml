@@ -22,7 +22,7 @@ env:
 
 jobs:
   open:
-    if: github.repository == 'Ynd-i/codex-app'
+    if: github.repository == 'Ynd-i/swan'
     runs-on: ubuntu-latest
     env:
       # The GITHUB_TOKEN can't open pull requests in this repository or push upstream's

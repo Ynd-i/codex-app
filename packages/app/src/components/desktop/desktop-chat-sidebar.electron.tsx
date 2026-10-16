@@ -58,7 +58,7 @@ function ChatSidebarHeader() {
   const inboxState = useMemo(() => ({ selected: inboxOpen }), [inboxOpen]);
   return (
     <View style={styles.header}>
-      <Text style={styles.brand}>Paseox</Text>
+      <Text style={styles.brand}>Swan</Text>
       <View style={styles.spacer} />
       <SidebarDisplayPreferencesMenu chatMode />
       <HeaderToggleButton
