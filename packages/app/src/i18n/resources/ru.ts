@@ -1196,6 +1196,8 @@ export const ru: TranslationResources = {
             cancelled: "Отменено",
           },
         },
+        previewFiles_one: "{{count}} файл",
+        previewFiles_other: "{{count}} файлов",
         states: {
           draft: "Черновик",
           merged: "Объединён",

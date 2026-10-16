@@ -1180,6 +1180,8 @@ export const ar: TranslationResources = {
             cancelled: "تم الإلغاء",
           },
         },
+        previewFiles_one: "{{count}} ملف",
+        previewFiles_other: "{{count}} ملفات",
         states: {
           draft: "مسودة",
           merged: "تم الدمج",

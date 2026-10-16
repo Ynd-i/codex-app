@@ -1202,6 +1202,8 @@ export const ptBR: TranslationResources = {
             cancelled: "Cancelado",
           },
         },
+        previewFiles_one: "{{count}} arquivo",
+        previewFiles_other: "{{count}} arquivos",
         states: {
           draft: "Rascunho",
           merged: "Mergeada",

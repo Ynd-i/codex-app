@@ -1212,6 +1212,8 @@ export const es: TranslationResources = {
             cancelled: "Cancelado",
           },
         },
+        previewFiles_one: "{{count}} archivo",
+        previewFiles_other: "{{count}} archivos",
         states: {
           draft: "Borrador",
           merged: "Fusionado",

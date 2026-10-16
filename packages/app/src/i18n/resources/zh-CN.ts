@@ -1172,6 +1172,8 @@ export const zhCN: TranslationResources = {
             cancelled: "已取消",
           },
         },
+        previewFiles_one: "{{count}} 个文件",
+        previewFiles_other: "{{count}} 个文件",
         states: {
           draft: "草稿",
           merged: "已合并",
