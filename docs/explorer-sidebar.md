@@ -35,7 +35,8 @@ On wide macOS windows, tool tabs and their plus menu share the window titlebar.
 The dock keeps its tabs inline in compact windows, while the main area remains a
 chat. Hiding the dock or leaving the workspace also removes its titlebar controls.
 File tools contain their own tree on the right; toggling it preserves the editor
-instance and unsaved text. One path/action row spans both columns. Its path menu
+instance and unsaved text. The Files view opens with the tree and an opened file without it.
+Opening another file from a file's tree reuses that tab, so the tree stays as the user left it. One path/action row spans both columns. Its path menu
 copies absolute or workspace-relative paths, and its editor action targets the
 current file using the existing local/remote open-target rules.
 
@@ -58,7 +59,8 @@ fixed-target labels and icons from that registration, filter by host, and never 
 panel type for another. Tab moves reject unsupported destinations, and placement resolves only to
 a compatible pane.
 
-Files and Changes are the Explorer defaults. Their panel manifests mark them as singletons,
+Files and Changes are the Explorer defaults outside macOS; the macOS Explorer starts on the New
+Tab launcher instead. Their panel manifests mark them as singletons,
 so a pane’s + menu omits each while that pane already contains it. Closing one makes its menu
 item available again. Closing Explorer's last tab leaves Explorer open on the New Tab launcher;
 closing that launcher hides Explorer. Other compatible tabs, including agents, terminals, files, and diffs,

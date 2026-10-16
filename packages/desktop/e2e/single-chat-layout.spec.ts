@@ -86,7 +86,8 @@ test("macOS keeps one main conversation while tools open in the right sidebar", 
     await expect(right.getByRole("textbox", { name: "Browser URL", exact: true })).toBeVisible();
     await expect(composerLocator(page)).toHaveValue(draft);
 
-    await toolbar.getByRole("button", { name: "Browse workspace files", exact: true }).click();
+    await plus.click();
+    await menu.getByTestId("workspace-new-tab-menu-files").click();
     await right
       .getByTestId("file-explorer-tree-scroll")
       .getByText("example.ts", { exact: true })
@@ -94,6 +95,9 @@ test("macOS keeps one main conversation while tools open in the right sidebar", 
     await expect(right.getByTestId("workspace-file-pane").filter({ visible: true })).toHaveCount(1);
     const tree = right.getByTestId("file-tree-rail-tree").filter({ visible: true });
     const treeToggle = right.getByTestId("file-toggle-tree").filter({ visible: true });
+    // An opened file starts without the folder tree.
+    await expect(tree).toHaveCount(0);
+    await treeToggle.click();
     await expect(tree).toBeVisible();
     const editor = right.locator('.cm-content[contenteditable="true"]').filter({ visible: true });
     await expect(editor).toBeVisible();

@@ -84,8 +84,11 @@ export async function runAgentDeepLinksRegression({
   await expect(composer).toHaveValue(draft);
 
   await page.getByTestId("workspace-explorer-toggle").click();
+  await page
+    .getByTestId("workspace-explorer-sidebar")
+    .getByTestId("workspace-new-tab-files")
+    .click();
   await expect(page.getByTestId("explorer-sidebar-tab-files")).toHaveCSS("height", "32px");
-  await page.getByTestId("explorer-sidebar-tab-files").click();
   const files = page.getByTestId("workspace-explorer-sidebar");
   await expect(files.getByTestId("file-tool-toolbar").filter({ visible: true })).toBeVisible();
   await expect(files.getByTestId("files-empty-editor").filter({ visible: true })).toBeVisible();

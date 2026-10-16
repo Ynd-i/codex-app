@@ -38,7 +38,10 @@ test("desktop panel tabs keep active controls visible and retain terminals acros
     await firstTab.click();
     await expect(harness.terminalSurface(page).filter({ visible: true })).toHaveCount(1);
     await expect(page.getByTestId("terminal-attach-loading")).toBeHidden();
-    await page.getByTestId("explorer-sidebar-tab-files").click();
+    for (const tool of ["changes", "files"]) {
+      await page.getByTestId("explorer-sidebar-new-tab-button").click();
+      await page.getByTestId(`workspace-new-tab-menu-${tool}`).click();
+    }
     await expect(page.getByTestId("files-pane-header")).toBeVisible();
     const explorerRail = page.getByTestId("explorer-sidebar-tab-rail");
     const filesTab = explorerRail.getByRole("button", {

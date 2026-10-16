@@ -120,7 +120,9 @@ test.describe("Workspace open in editor", () => {
     await explorer.click();
     await expect(explorer).toHaveAttribute("aria-expanded", "true");
     await expect(page.getByTestId("workspace-explorer-sidebar-resize-handle")).toBeVisible();
-    await expect(page.getByTestId("explorer-sidebar-tab-files")).toBeVisible();
+    await expect(
+      page.getByTestId("workspace-explorer-sidebar").getByTestId("workspace-new-tab-files"),
+    ).toBeVisible();
     await explorer.click();
     await openSettings(page);
     await expect(editor).toHaveCount(0);
@@ -152,7 +154,9 @@ test.describe("Workspace open in editor", () => {
     });
     await explorer.click();
     await expect(page.getByTestId("workspace-explorer-sidebar")).toBeVisible();
-    await expect(page.getByTestId("explorer-sidebar-tab-files")).toBeVisible();
+    await expect(
+      page.getByTestId("workspace-explorer-sidebar").getByTestId("workspace-new-tab-files"),
+    ).toBeVisible();
     await expect(page.getByTestId("workspace-tabs-row")).toHaveCount(0);
     await explorer.click();
     await page.setViewportSize({ width: 1352, height: 782 });

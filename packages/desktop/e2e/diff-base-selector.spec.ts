@@ -145,7 +145,8 @@ test("macOS comparison selects exact local and remote refs without changing the 
     await expect(selector).toContainText("comparison-base");
     await expect(tree.getByText("committed.ts", { exact: true })).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath("diff-local-base.png") });
-    await page.getByTestId("explorer-sidebar-tab-changes_tree").click();
+    await page.getByTestId("explorer-sidebar-new-tab-button").click();
+    await page.getByTestId("workspace-new-tab-menu-changes").click();
     const changes = page.getByTestId("changes-tree-panel").filter({ visible: true });
     await expect(changes.getByTestId("changes-base-selector")).toHaveCount(0);
     await expect(changes.getByText("committed.ts", { exact: true })).toBeVisible();

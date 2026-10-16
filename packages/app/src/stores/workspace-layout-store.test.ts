@@ -164,6 +164,46 @@ describe("macOS single-chat placement", () => {
     expect(layout.focusedPaneId).toBe("main");
   });
 
+  it("opens Explorer on the launcher instead of Files and Changes", () => {
+    const store = createWorkspaceLayoutStore();
+    const workspaceKey = createWorkspaceKey();
+    store.setState({ layoutByWorkspace: {}, explorerSidebarPaneIdByWorkspace: {} });
+    store
+      .getState()
+      .openTab({ workspaceKey, target: { kind: "agent", agentId: "chat" }, intent: "reveal" });
+    store.getState().showExplorerSidebar(workspaceKey);
+    const layout = store.getState().layoutByWorkspace[workspaceKey];
+    const explorer = findPaneById(layout.root, "explorer");
+    expect(explorer?.hidden).not.toBe(true);
+    expect(
+      collectAllTabs(layout.root)
+        .filter((tab) => explorer?.tabIds.includes(tab.tabId))
+        .map((tab) => tab.target),
+    ).toEqual([{ kind: "new_tab" }]);
+  });
+
+  it("keeps Explorer open on the launcher after its last tool closes", () => {
+    const store = createWorkspaceLayoutStore();
+    const workspaceKey = createWorkspaceKey();
+    store.setState({ layoutByWorkspace: {}, explorerSidebarPaneIdByWorkspace: {} });
+    store
+      .getState()
+      .openTab({ workspaceKey, target: { kind: "agent", agentId: "chat" }, intent: "reveal" });
+    const terminalTabId = store.getState().openTab({
+      workspaceKey,
+      target: { kind: "terminal", terminalId: "shell" },
+      intent: "reveal",
+    })!;
+    store.getState().closeTab(workspaceKey, terminalTabId);
+    const layout = store.getState().layoutByWorkspace[workspaceKey];
+    const explorer = findPaneById(layout.root, "explorer");
+    expect(explorer?.hidden).not.toBe(true);
+    expect(
+      collectAllTabs(layout.root).find((tab) => tab.tabId === explorer?.focusedTabId)?.target,
+    ).toEqual({ kind: "new_tab" });
+    expect(findPaneById(layout.root, "main")?.focusedTabId).toBe("agent_chat");
+  });
+
   it("opens a local draft in an empty main area without revealing Explorer", () => {
     const store = createWorkspaceLayoutStore();
     const workspaceKey = createWorkspaceKey();
