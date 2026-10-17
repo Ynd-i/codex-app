@@ -52,7 +52,6 @@ export const ptBR: TranslationResources = {
     activity: "Atividade",
     workedFor: "Duração: {{duration}}",
     startWork: "Em que vamos trabalhar?",
-    explorerAfterStart: "Arquivos e alterações aparecem quando o chat começar.",
     startInProject: "Em que vamos trabalhar em {{project}}?",
     resetReasoning: "Redefinir intensidade do raciocínio",
     newChat: "Nova conversa",
