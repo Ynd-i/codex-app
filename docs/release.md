@@ -76,7 +76,7 @@ at `-v1-beta1`. While the branch is on an upstream beta, as it is until upstream
 is a full GitHub release. One-offs sort before every release on the stable version, so
 their installs update to it in-app. `scripts/custom-release.mjs` computes the plan.
 
-`.github/workflows/upstream-pr.yml` checks upstream every six hours. When upstream has a
+`.github/workflows/upstream-pr.yml` checks upstream once a day. When upstream has a
 stable release newer than `main`, it pushes that tag's commit as `upstream-pr/<stable>` and
 opens a pull request into `main`, closing any older `upstream-pr/*` pull request. A conflict
 shows on the pull request; resolve it on that branch, in a full clone, by merging
