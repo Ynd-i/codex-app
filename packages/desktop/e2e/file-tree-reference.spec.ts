@@ -185,7 +185,8 @@ test("macOS Files starts with an empty editor beside its searchable tree", async
     const draft = "Keep the conversation draft while browsing files.";
     await composerLocator(page).fill(draft);
     await page.getByTestId("workspace-explorer-toggle").click();
-    const filesTab = page.getByTestId("explorer-sidebar-tab-files");
+    // A tab launched from the launcher keeps the launcher's id, so find Files by its label.
+    const filesTab = page.getByRole("button", { name: "Browse workspace files", exact: true });
     await page
       .getByTestId("workspace-explorer-sidebar")
       .getByTestId("workspace-new-tab-files")

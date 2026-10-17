@@ -73,6 +73,8 @@ test("macOS file toolbar keeps the path and editor actions above both file colum
     await dock.getByText(filename, { exact: true }).click();
     const toolbar = dock.getByTestId("file-tool-toolbar").filter({ visible: true });
     await expect(toolbar).toBeVisible({ timeout: 2_000 });
+    // An opened file starts without the folder tree; this reference covers the file beside it.
+    await toolbar.getByTestId("file-toggle-tree").click();
     const path = toolbar.getByTestId("file-path-menu-trigger");
     await expect(path).toContainText("e2e");
     await expect(path).toContainText(filename);
@@ -128,8 +130,6 @@ test("macOS file toolbar keeps the path and editor actions above both file colum
     await editor.press("Control+s");
     await expect.poll(() => readFile(`${fixture.cwd}/${relativePath}`, "utf8")).toBe(editedSource);
     const node = await editor.elementHandle();
-    // An opened file starts without the folder tree; show it, hide it, then show it again.
-    await toolbar.getByTestId("file-toggle-tree").click();
     await toolbar.getByTestId("file-toggle-tree").click();
     await toolbar.getByTestId("file-toggle-tree").click();
     expect(await node!.evaluate((element) => element.isConnected)).toBe(true);

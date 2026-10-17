@@ -145,7 +145,7 @@ test("macOS code weight reaches files, Markdown, tool output and canvas without 
     await expect(canvas).toHaveCSS("font-weight", "400");
     // Canvas serializes normal 400 without the weight token.
     await expect.poll(paintedFont).toMatch(/^(?:400 )?12px /);
-    await page.getByTestId("explorer-sidebar-tab-files").click();
+    await page.getByRole("button", { name: "Browse workspace files", exact: true }).click();
     await tree.getByText("weights.md", { exact: true }).click();
     await expect(fence).toHaveCSS("font-weight", "400");
     await expect(preview.getByText("strong words", { exact: true })).toHaveCSS(

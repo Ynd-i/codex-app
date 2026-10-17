@@ -54,10 +54,16 @@ test("macOS keeps one main conversation while tools open in the right sidebar", 
     const toolbar = page.getByTestId("desktop-explorer-toolbar");
     const plus = toolbar.getByTestId("explorer-sidebar-new-tab-button");
     await expect(plus).toBeVisible();
+    // Explorer slides open over 220ms; measure once the dock and its toolbar have settled.
+    await expect
+      .poll(async () => {
+        const [bar, dock] = await Promise.all([toolbar.boundingBox(), right.boundingBox()]);
+        return bar && dock ? Math.abs(bar.x - dock.x) : Number.POSITIVE_INFINITY;
+      })
+      .toBeLessThanOrEqual(1);
     const barBox = await toolbar.boundingBox();
     const dockBox = await right.boundingBox();
     if (!barBox || !dockBox) throw new Error("Missing right panel geometry");
-    expect(Math.abs(barBox.x - dockBox.x)).toBeLessThanOrEqual(1);
     expect(Math.abs(barBox.width - dockBox.width)).toBeLessThanOrEqual(1);
     expect(barBox.y).toBeLessThanOrEqual(1);
     expect(Math.abs(barBox.y + barBox.height - dockBox.y)).toBeLessThanOrEqual(1);

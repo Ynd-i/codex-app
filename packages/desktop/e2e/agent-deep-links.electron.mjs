@@ -88,7 +88,9 @@ export async function runAgentDeepLinksRegression({
     .getByTestId("workspace-explorer-sidebar")
     .getByTestId("workspace-new-tab-files")
     .click();
-  await expect(page.getByTestId("explorer-sidebar-tab-files")).toHaveCSS("height", "32px");
+  // A tab launched from the launcher keeps the launcher's id, so find Files by its label.
+  const filesTab = page.getByRole("button", { name: "Browse workspace files", exact: true });
+  await expect(filesTab).toHaveCSS("height", "32px");
   const files = page.getByTestId("workspace-explorer-sidebar");
   await expect(files.getByTestId("file-tool-toolbar").filter({ visible: true })).toBeVisible();
   await expect(files.getByTestId("files-empty-editor").filter({ visible: true })).toBeVisible();
@@ -117,7 +119,7 @@ export async function runAgentDeepLinksRegression({
   if (!closeBrowserId) throw new Error("New browser tab has no UI identity");
   await page.getByTestId(closeBrowserId).click();
   await expect(address).toHaveCount(0);
-  await page.getByTestId("explorer-sidebar-tab-files").click();
+  await filesTab.click();
   await expect(files.getByTestId("files-empty-editor").filter({ visible: true })).toBeVisible();
   await page.evaluate(async () => {
     window.__agentLinkEvents = [];
